@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+
+# Expo specific files
+.expo/
+.expo-shared/
+
+# MacOS specific files
+.DS_Store
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+
+# Build files
+build/
+dist/

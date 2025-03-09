@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Button, StyleSheet, useColorScheme } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { minimalPairs } from '../../constants/minimalPairs';
 import { usePairProgress } from '../../src/context/PairProgressContext';
 
@@ -11,7 +11,6 @@ export default function HomeScreen() {
 
   // Build an array of unique categories
   const categories = Array.from(new Set(minimalPairs.map((mp) => mp.category)));
-  // e.g. ["Consonant Minimal Pairs", "Vowel Minimal Pairs"]
 
   // State for which category + which pair is chosen
   const [categoryIndex, setCategoryIndex] = useState(0);
@@ -22,22 +21,32 @@ export default function HomeScreen() {
   const pairsInCategory = minimalPairs.filter(
     (mp) => mp.category === selectedCategory
   );
-  // pairsInCategory might be e.g. [ {id:"bat-pat", category:"Consonant", pair:[...]}, ... ]
 
   // The chosen minimal pair
   const selectedPair = pairsInCategory[pairIndex];
 
-  // States for the played word + feedback
+  // Track which word was played + feedback
   const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
 
-  // For audio playback (if you add `audio` fields)
+  // For audio playback
   const soundRef = useRef<Audio.Sound | null>(null);
 
-  // Cleanup audio on unmount
   useEffect(() => {
+    // Configure audio to play in iOS silent mode
+    Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
+      interruptionModeIOS: InterruptionModeIOS.DuckOthers, // Use enums instead of constants
+      interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+      shouldDuckAndroid: true,
+      staysActiveInBackground: false,
+      playThroughEarpieceAndroid: false,
+    });
+
+    // Clean up audio on unmount
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
@@ -52,17 +61,14 @@ export default function HomeScreen() {
       await soundRef.current.unloadAsync();
     }
 
-    // pick 0 or 1 randomly
     const idx = Math.random() < 0.5 ? 0 : 1;
     setPlayedWordIndex(idx);
 
     try {
       const newSound = new Audio.Sound();
-      // If you have audio fields like `selectedPair.pair[idx].audio`, load them here:
-      // await newSound.loadAsync(selectedPair.pair[idx].audio);
-
+      await newSound.loadAsync(selectedPair.pair[idx].audio);
       soundRef.current = newSound;
-      // await soundRef.current.playAsync();
+      await soundRef.current.playAsync();
     } catch (err) {
       console.error('Error playing audio', err);
     }
@@ -75,7 +81,6 @@ export default function HomeScreen() {
     const isCorrect = chosenIndex === playedWordIndex;
     setFeedback(isCorrect ? 'correct' : 'incorrect');
 
-    // record in context
     recordAttempt(selectedPair.id, isCorrect);
   }
 
@@ -83,7 +88,7 @@ export default function HomeScreen() {
   const backgroundColor = colorScheme === 'dark' ? '#000' : '#fff';
   const textColor = colorScheme === 'dark' ? '#fff' : '#000';
 
-  // If there's no pairs in this category, handle edge case
+  // Edge case: no pairs in this category
   if (!selectedPair) {
     return (
       <View style={[styles.container, { backgroundColor }]}>
@@ -100,9 +105,9 @@ export default function HomeScreen() {
 
       {/* Category Picker */}
       <Picker
-        selectedValue={String(categoryIndex)} // pass a string
-        onValueChange={(itemValue) => {
-          const numVal = Number(itemValue); // convert back to number
+        selectedValue={String(categoryIndex)}
+        onValueChange={(val) => {
+          const numVal = Number(val);
           setCategoryIndex(numVal);
           setPairIndex(0);
         }}
@@ -116,9 +121,7 @@ export default function HomeScreen() {
       {/* Pair Picker */}
       <Picker
         selectedValue={String(pairIndex)}
-        onValueChange={(itemValue) => {
-          setPairIndex(Number(itemValue));
-        }}
+        onValueChange={(val) => setPairIndex(Number(val))}
         style={{ width: 250, color: textColor }}
       >
         {pairsInCategory.map((p, i) => (
@@ -126,10 +129,8 @@ export default function HomeScreen() {
         ))}
       </Picker>
 
-      {/* Show which pair is selected + controls */}
+      {/* Play + Guess */}
       <Button title="Play Audio" onPress={handlePlay} />
-
-      {/* The 2 words in the pair for user guess */}
       <View style={styles.buttonRow}>
         <Button
           title={selectedPair.pair[0].word}
@@ -141,7 +142,7 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* Feedback: Correct or Incorrect */}
+      {/* Feedback */}
       {feedback === 'correct' && (
         <Text style={{ color: 'green' }}>✓ Correct!</Text>
       )}

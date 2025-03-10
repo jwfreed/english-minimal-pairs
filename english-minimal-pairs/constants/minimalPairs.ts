@@ -1,6 +1,6 @@
 export const minimalPairs = [
   {
-    category: 'Japanese L1 Learners',
+    category: '学習中の日本人',
     pairs: [
       {
         word1: 'road',
@@ -53,7 +53,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Mandarin Chinese L1 Learners',
+    category: '汉语学习者',
     pairs: [
       {
         word1: 'thin',
@@ -98,7 +98,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Thai L1 Learners',
+    category: 'คนไทยที่เป็นผู้เรียน',
     pairs: [
       {
         word1: 'thin',
@@ -143,7 +143,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Spanish L1 Learners',
+    category: 'Hablantes de español',
     pairs: [
       {
         word1: 'sheep',
@@ -188,7 +188,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Arabic L1 Learners',
+    category: 'المتحدثون باللغة العربية الذين يتعلمون',
     pairs: [
       {
         word1: 'pat',
@@ -233,7 +233,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Russian L1 Learners',
+    category: 'Русские, которые учатся',
     pairs: [
       {
         word1: 'wine',
@@ -278,7 +278,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Korean L1 Learners',
+    category: '학습하는 한국인들',
     pairs: [
       {
         word1: 'road',
@@ -323,7 +323,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Hindi/Urdu L1 Learners',
+    category: 'हिंदी/اردو',
     pairs: [
       {
         word1: 'vine',
@@ -364,6 +364,140 @@ export const minimalPairs = [
         ipa2: '/bɛt/',
         audio1: require('../assets/audio/bat.mp3'),
         audio2: require('../assets/audio/bet.mp3'),
+      },
+    ],
+  },
+  {
+    category: 'Português/Brasileiro',
+    pairs: [
+      {
+        word1: 'beat',
+        word2: 'bit',
+        ipa1: '/biːt/',
+        ipa2: '/bɪt/',
+        audio1: require('../assets/audio/beat.mp3'),
+        audio2: require('../assets/audio/bit.mp3'),
+      },
+      {
+        word1: 'thin',
+        word2: 'tin',
+        ipa1: '/θɪn/',
+        ipa2: '/tɪn/',
+        audio1: require('../assets/audio/thin.mp3'),
+        audio2: require('../assets/audio/tin.mp3'),
+      },
+      {
+        word1: 'ship',
+        word2: 'chip',
+        ipa1: '/ʃɪp/',
+        ipa2: '/tʃɪp/',
+        audio1: require('../assets/audio/ship.mp3'),
+        audio2: require('../assets/audio/chip.mp3'),
+      },
+    ],
+  },
+  {
+    category: 'Tiếng Việt',
+    pairs: [
+      {
+        word1: 'sheep',
+        word2: 'sip',
+        ipa1: '/ʃiːp/',
+        ipa2: '/sɪp/',
+        audio1: require('../assets/audio/sheep.mp3'),
+        audio2: require('../assets/audio/sip.mp3'),
+      },
+      {
+        word1: 'leap',
+        word2: 'leave',
+        ipa1: '/liːp/',
+        ipa2: '/liːv/',
+        audio1: require('../assets/audio/leap.mp3'),
+        audio2: require('../assets/audio/leave.mp3'),
+      },
+    ],
+  },
+  {
+    category: 'Türkçe konuşanlar',
+    pairs: [
+      {
+        word1: 'think',
+        word2: 'sink',
+        ipa1: '/θɪŋk/',
+        ipa2: '/sɪŋk/',
+        audio1: require('../assets/audio/think.mp3'),
+        audio2: require('../assets/audio/sink.mp3'),
+      },
+      {
+        word1: 'west',
+        word2: 'vest',
+        ipa1: '/wɛst/',
+        ipa2: '/vɛst/',
+        audio1: require('../assets/audio/west.mp3'),
+        audio2: require('../assets/audio/vest.mp3'),
+      },
+    ],
+  },
+  {
+    category: 'پارسی ها',
+    pairs: [
+      {
+        word1: 'think',
+        word2: 'sink',
+        ipa1: '/θɪŋk/',
+        ipa2: '/sɪŋk/',
+        audio1: require('../assets/audio/think.mp3'),
+        audio2: require('../assets/audio/sink.mp3'),
+      },
+      {
+        word1: 'sheep',
+        word2: 'sip',
+        ipa1: '/ʃiːp/',
+        ipa2: '/sɪp/',
+        audio1: require('../assets/audio/sheep.mp3'),
+        audio2: require('../assets/audio/sip.mp3'),
+      },
+    ],
+  },
+  {
+    category: '講廣東話嘅人',
+    pairs: [
+      {
+        word1: 'right',
+        word2: 'light',
+        ipa1: '/raɪt/',
+        ipa2: '/laɪt/',
+        audio1: require('../assets/audio/right.mp3'),
+        audio2: require('../assets/audio/light.mp3'),
+      },
+      {
+        word1: 'vine',
+        word2: 'fine',
+        ipa1: '/vaɪn/',
+        ipa2: '/faɪn/',
+        audio1: require('../assets/audio/vine.mp3'),
+        audio2: require('../assets/audio/fine.mp3'),
+      },
+    ],
+  },
+  {
+    category: 'Orang Indonesia',
+    pairs: [
+      {
+        word1: 'think',
+        word2: 'sink',
+        ipa1: '/θɪŋk/',
+        ipa2: '/sɪŋk/',
+        audio1: require('../assets/audio/think.mp3'),
+        audio2: require('../assets/audio/sink.mp3'),
+      },
+      {
+        word1: 'sheep',
+        word2: 'sip',
+        ipa1: '/ʃiːp/',
+        ipa2: '/sɪp/',
+        audio1: require('../assets/audio/sheep.mp3'),
+        audio2: require('../assets/audio/sip.mp3'),
       },
     ],
   },

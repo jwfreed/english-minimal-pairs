@@ -1,63 +1,69 @@
-// results.tsx
-
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, FlatList, StyleSheet, useColorScheme } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { minimalPairs } from '../../constants/minimalPairs';
 import { usePairProgress } from '../../src/context/PairProgressContext';
 
-// 1) Define an interface for the flattened pair item
+/** We'll create an interface for the flattened pair item */
 interface FlattenedPair {
-  id: string; // unique ID, e.g. "road-load-(Japanese)"
-  category: string; // e.g. "Japanese L1 Learners"
+  id: string;
   word1: string;
   word2: string;
-  ipa1: string;
-  ipa2: string;
-  // audio1, audio2 if you want them here, but for results, we mainly show attempts/correct
 }
 
+/** We won't redefine the entire structure, just enough for TS clarity. */
+
 export default function ResultsScreen() {
+  const { progress } = usePairProgress();
   const colorScheme = useColorScheme();
   const backgroundColor = colorScheme === 'dark' ? '#000' : '#fff';
   const textColor = colorScheme === 'dark' ? '#fff' : '#000';
 
-  const { progress } = usePairProgress();
-  // progress is { [pairID: string]: { attempts: number; correct: number } }
+  // 1) Gather categories from minimalPairs
+  const categories = minimalPairs.map((catObj) => catObj.category);
 
-  // 2) Flatten all L1 categories into a single list of pairs
-  const allPairs: FlattenedPair[] = minimalPairs.flatMap((catObj) => {
-    return catObj.pairs.map((pairObj) => {
-      // Generate a unique ID
-      const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;
+  // 2) State for chosen category
+  const [categoryIndex, setCategoryIndex] = useState(0);
 
-      return {
-        id: pairID,
-        category: catObj.category,
-        word1: pairObj.word1,
-        word2: pairObj.word2,
-        ipa1: pairObj.ipa1,
-        ipa2: pairObj.ipa2,
-      };
-    });
+  // 3) Find the selected category object
+  const selectedCategoryName = categories[categoryIndex];
+  const catObj = minimalPairs.find(
+    (cat) => cat.category === selectedCategoryName
+  );
+
+  // 4) If no catObj or no pairs
+  if (!catObj || catObj.pairs.length === 0) {
+    return (
+      <View style={[styles.container, { backgroundColor }]}>
+        <Text style={[styles.header, { color: textColor }]}>
+          No pairs found for {selectedCategoryName}
+        </Text>
+      </View>
+    );
+  }
+
+  // 5) Flatten the pairs in this category, building unique IDs
+  const flattenedPairs: FlattenedPair[] = catObj.pairs.map((pairObj) => {
+    // consistent with how you build pair IDs in index.tsx
+    const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;
+    return {
+      id: pairID,
+      word1: pairObj.word1,
+      word2: pairObj.word2,
+    };
   });
 
-  // 3) Rendering each pair in the results list
+  // 6) Render function for each pair
   const renderPair = ({ item }: { item: FlattenedPair }) => {
-    // Look up attempts/correct from progress dictionary
     const stats = progress[item.id] || { attempts: 0, correct: 0 };
     const { attempts, correct } = stats;
     const avg = attempts > 0 ? (correct / attempts) * 100 : 0;
 
     return (
       <View style={styles.row}>
-        {/* 
-          Show something like "road-load (Japanese L1 Learners)" 
-          or just item.word1-word2, your choice 
-        */}
         <Text style={[styles.pairTitle, { color: textColor }]}>
           {item.word1} - {item.word2}
         </Text>
-
         <Text style={[styles.stats, { color: textColor }]}>
           {correct}/{attempts} ({avg.toFixed(1)}%)
         </Text>
@@ -69,9 +75,19 @@ export default function ResultsScreen() {
     <View style={[styles.container, { backgroundColor }]}>
       <Text style={[styles.header, { color: textColor }]}>Average by Pair</Text>
 
-      {/* 4) Pass the flattened list to FlatList */}
+      {/* Category Picker for results */}
+      <Picker
+        selectedValue={String(categoryIndex)}
+        onValueChange={(val) => setCategoryIndex(Number(val))}
+        style={{ width: 250, color: textColor, marginBottom: 16 }}
+      >
+        {categories.map((catName, i) => (
+          <Picker.Item key={catName} label={catName} value={String(i)} />
+        ))}
+      </Picker>
+
       <FlatList
-        data={allPairs}
+        data={flattenedPairs}
         keyExtractor={(item) => item.id}
         renderItem={renderPair}
       />
@@ -86,7 +102,7 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 22,
-    marginBottom: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
   row: {

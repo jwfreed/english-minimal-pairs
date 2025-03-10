@@ -1,30 +1,28 @@
 // types.ts
 
-/** Represents a single word in a minimal pair */
-export interface PairWord {
-  word: string;
-  ipa: string;
-  audio: any; // Could be number if using require(...), or string for URI
+/** Represents one minimal pair (e.g. "road-load") */
+export interface SimplePair {
+  word1: string;
+  word2: string;
+  ipa1: string;
+  ipa2: string;
+  audio1: any; // require(...) or string for URI
+  audio2: any; // likewise
 }
 
-/** Represents one minimal pair (e.g., "bat-pat"), with two words */
-export interface MinimalPairItem {
-  id: string;
-  words: PairWord[];
-}
-
-/** Represents a category containing multiple minimal pairs (e.g., Consonants) */
-export interface MinimalPairCategory {
+/** Represents a single L1 category with an array of minimal pairs */
+export interface L1Category {
   category: string;
-  pair: MinimalPairItem[];
+  pairs: SimplePair[];
 }
 
-/** Your top-level data array would be MinimalPairCategory[] */
+/** The top-level data array is L1Category[] */
 ///////////////////////////////////////////////////////////////
 // *** EXAMPLE minimalPairs.ts ***
-// import { MinimalPairCategory } from './types';
-
-// export const minimalPairs: MinimalPairCategory[] = [...];
+//
+// import { L1Category } from './types';
+//
+// export const minimalPairs: L1Category[] = [ ... ];
 ///////////////////////////////////////////////////////////////
 
 /** Describes a single practice session for a given pair */
@@ -36,7 +34,9 @@ export interface PairSession {
   correct: number;
 }
 
-/** Maps each pair ID to an array of practice sessions */
+/** Maps each pair ID to an array of practice sessions,
+ * if you track multiple sessions per pair.
+ */
 export interface PairSessionHistory {
   [pairId: string]: PairSession[];
 }

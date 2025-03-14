@@ -1,6 +1,6 @@
 export const minimalPairs = [
   {
-    category: '学習中の日本人',
+    category: '日本語',
     pairs: [
       {
         word1: 'road',
@@ -53,7 +53,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: '汉语学习者',
+    category: '中文',
     pairs: [
       {
         word1: 'thin',
@@ -98,7 +98,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'คนไทยที่เป็นผู้เรียน',
+    category: 'ภาษาไทย',
     pairs: [
       {
         word1: 'thin',
@@ -143,7 +143,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Hablantes de español',
+    category: 'idioma español',
     pairs: [
       {
         word1: 'sheep',
@@ -188,7 +188,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'المتحدثون باللغة العربية الذين يتعلمون',
+    category: 'اللغة العربية',
     pairs: [
       {
         word1: 'pat',
@@ -233,7 +233,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Русские, которые учатся',
+    category: 'русский язык',
     pairs: [
       {
         word1: 'wine',
@@ -278,7 +278,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: '학습하는 한국인들',
+    category: '한국어',
     pairs: [
       {
         word1: 'road',
@@ -368,7 +368,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Português/Brasileiro',
+    category: 'Português',
     pairs: [
       {
         word1: 'beat',
@@ -418,7 +418,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Türkçe konuşanlar',
+    category: 'Türkçe',
     pairs: [
       {
         word1: 'think',
@@ -439,7 +439,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'پارسی ها',
+    category: 'زبان فارسی',
     pairs: [
       {
         word1: 'think',
@@ -460,7 +460,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: '講廣東話嘅人',
+    category: '廣東話',
     pairs: [
       {
         word1: 'right',
@@ -481,7 +481,7 @@ export const minimalPairs = [
     ],
   },
   {
-    category: 'Orang Indonesia',
+    category: 'bahasa Indo',
     pairs: [
       {
         word1: 'think',

@@ -1,54 +1,54 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Button, StyleSheet, useColorScheme } from 'react-native';
+// index.tsx
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { minimalPairs } from '../../constants/minimalPairs';
 import { usePairProgress } from '../../src/context/PairProgressContext';
+import { useLanguageScheme } from '../../hooks/useLanguageScheme';
+import { useColorScheme } from 'react-native';
 
 export default function HomeScreen() {
   const { recordAttempt } = usePairProgress();
-  const colorScheme = useColorScheme();
+  const { setLanguage, t, categoryIndex, setCategoryIndex } =
+    useLanguageScheme();
 
-  // 1) Gather the category names from minimalPairs
+  // Get the list of languages (categories) from minimalPairs
   const categories = minimalPairs.map((catObj) => catObj.category);
 
-  // 2) State for which category + which pair is chosen
-  const [categoryIndex, setCategoryIndex] = useState(0);
+  // Remove local state for category index; it's now global.
   const [pairIndex, setPairIndex] = useState(0);
-
-  // 3) Find the selected category object
-  const selectedCategoryName = categories[categoryIndex];
-  const catObj = minimalPairs.find(
-    (cat) => cat.category === selectedCategoryName
-  );
-
-  // If we can’t find the category or there are no pairs, show a message
-  if (!catObj || catObj.pairs.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>
-          No pairs found for {selectedCategoryName}
-        </Text>
-      </View>
-    );
-  }
-
-  // 4) The array of pairs in this category
-  const pairsInCategory = catObj.pairs;
-
-  // 5) The chosen minimal pair from that array
-  const selectedPair = pairsInCategory[pairIndex];
-
-  // Track which word was played (0 or 1) + feedback
   const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
 
-  // Audio reference
-  const soundRef = useRef<Audio.Sound | null>(null);
+  // Update language context when global categoryIndex changes.
+  useEffect(() => {
+    setLanguage(categories[categoryIndex]);
+  }, [categoryIndex, categories, setLanguage]);
 
-  // Configure audio and unload on unmount
+  // Get selected category and pair.
+  const selectedCategoryName = categories[categoryIndex];
+  const catObj = minimalPairs.find(
+    (cat) => cat.category === selectedCategoryName
+  );
+
+  if (!catObj || catObj.pairs.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text
+          style={styles.title}
+        >{`No pairs found for ${selectedCategoryName}`}</Text>
+      </View>
+    );
+  }
+
+  const pairsInCategory = catObj.pairs;
+  const selectedPair = pairsInCategory[pairIndex];
+  const soundRef = React.useRef<Audio.Sound | null>(null);
+
+  // Configure audio on mount.
   useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
@@ -59,7 +59,6 @@ export default function HomeScreen() {
       staysActiveInBackground: false,
       playThroughEarpieceAndroid: false,
     });
-
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
@@ -67,23 +66,17 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Handle audio playback
   async function handlePlay() {
-    setFeedback(null); // reset feedback for a new round
-
+    setFeedback(null);
     if (soundRef.current) {
       await soundRef.current.unloadAsync();
     }
-
-    // Randomly pick word1 or word2
     const idx = Math.random() < 0.5 ? 0 : 1;
     setPlayedWordIndex(idx);
-
     try {
       const newSound = new Audio.Sound();
       const audioToLoad = idx === 0 ? selectedPair.audio1 : selectedPair.audio2;
       await newSound.loadAsync(audioToLoad);
-
       soundRef.current = newSound;
       await newSound.playAsync();
     } catch (err) {
@@ -91,7 +84,6 @@ export default function HomeScreen() {
     }
   }
 
-  // When user chooses which word they heard
   function handleAnswer(chosenIndex: 0 | 1) {
     if (playedWordIndex === null) return;
     const isCorrect = chosenIndex === playedWordIndex;
@@ -99,34 +91,25 @@ export default function HomeScreen() {
     const catObj = minimalPairs.find(
       (cat) => cat.category === selectedCategoryName
     );
-
-    if (!catObj || catObj.pairs.length === 0) {
-      return (
-        <View style={[styles.container, { backgroundColor }]}>
-          <Text style={[styles.title, { color: textColor }]}>
-            No pairs found for {selectedCategoryName}
-          </Text>
-        </View>
-      );
-    }
-
-    const pairsInCategory = catObj.pairs;
-    const selectedPair = pairsInCategory[pairIndex];
-
-    // Build a unique ID for progress tracking
+    if (!catObj || catObj.pairs.length === 0) return;
+    const selectedPair = catObj.pairs[pairIndex];
     const pairID = `${selectedPair.word1}-${selectedPair.word2}-(${catObj.category})`;
     recordAttempt(pairID, isCorrect);
   }
 
-  // Dark mode styling
+  // Dark mode styling.
+  const colorScheme = useColorScheme(); // returns "light" or "dark"
   const backgroundColor = colorScheme === 'dark' ? '#000' : '#fff';
   const textColor = colorScheme === 'dark' ? '#fff' : '#000';
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
-      <Text style={[styles.title, { color: textColor }]}>Practice Pairs</Text>
+      {/* Use the language context for dynamic text */}
+      <Text style={[styles.title, { color: textColor }]}>
+        {t('practicePairs')}
+      </Text>
 
-      {/* Category Picker */}
+      {/* Category Picker uses global category state */}
       <Picker
         selectedValue={String(categoryIndex)}
         onValueChange={(val) => {
@@ -141,7 +124,7 @@ export default function HomeScreen() {
         ))}
       </Picker>
 
-      {/* Pair Picker (within selected category) */}
+      {/* Pair Picker */}
       <Picker
         selectedValue={String(pairIndex)}
         onValueChange={(val) => {
@@ -156,14 +139,12 @@ export default function HomeScreen() {
         })}
       </Picker>
 
-      {/* Play & Answer */}
       <Button title="Play Audio" onPress={handlePlay} />
       <View style={styles.buttonRow}>
         <Button title={selectedPair.word1} onPress={() => handleAnswer(0)} />
         <Button title={selectedPair.word2} onPress={() => handleAnswer(1)} />
       </View>
 
-      {/* Instant feedback */}
       {feedback === 'correct' && (
         <Text style={[styles.feedbackText, { color: 'green' }]}>
           ✓ Correct!
@@ -179,23 +160,13 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: 40,
-  },
-  title: {
-    fontSize: 22,
-    marginBottom: 10,
-  },
+  container: { flex: 1, alignItems: 'center', paddingTop: 40 },
+  title: { fontSize: 22, marginBottom: 10 },
   buttonRow: {
     flexDirection: 'row',
     marginVertical: 20,
     justifyContent: 'space-around',
     width: '60%',
   },
-  feedbackText: {
-    marginTop: 10,
-    fontSize: 18,
-  },
+  feedbackText: { marginTop: 10, fontSize: 18 },
 });

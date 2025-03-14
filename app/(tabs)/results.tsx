@@ -1,7 +1,6 @@
 // results.tsx
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, useColorScheme } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { minimalPairs } from '../../constants/minimalPairs';
 import { usePairProgress } from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
@@ -14,12 +13,11 @@ interface FlattenedPair {
 
 export default function ResultsScreen() {
   const { progress } = usePairProgress();
-  const { t, categoryIndex, setCategoryIndex } = useLanguageScheme();
+  const { t, categoryIndex } = useLanguageScheme();
   const colorScheme = useColorScheme();
   const backgroundColor = colorScheme === 'dark' ? '#000' : '#fff';
   const textColor = colorScheme === 'dark' ? '#fff' : '#000';
 
-  // Get the list of languages (categories) from minimalPairs.
   const categories = minimalPairs.map((catObj) => catObj.category);
   const selectedCategoryName = categories[categoryIndex];
   const catObj = minimalPairs.find(
@@ -63,18 +61,6 @@ export default function ResultsScreen() {
       <Text style={[styles.header, { color: textColor }]}>
         {t('averageByPair')}
       </Text>
-
-      {/* Use the global category state */}
-      <Picker
-        selectedValue={String(categoryIndex)}
-        onValueChange={(val) => setCategoryIndex(Number(val))}
-        style={{ width: 250, color: textColor, marginBottom: 16 }}
-      >
-        {categories.map((catName, i) => (
-          <Picker.Item key={catName} label={catName} value={String(i)} />
-        ))}
-      </Picker>
-
       <FlatList
         data={flattenedPairs}
         keyExtractor={(item) => item.id}

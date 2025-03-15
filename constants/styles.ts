@@ -7,8 +7,8 @@ interface ThemeColors {
   error: string;
   primary: string;
   buttonText: string;
-  cardBackground?: string; // Optional in case some screens don't use it
-  shadow?: string; // Optional in case some screens don't use it
+  cardBackground?: string;
+  shadow?: string;
 }
 
 const createStyles = (themeColors: ThemeColors) =>
@@ -16,53 +16,86 @@ const createStyles = (themeColors: ThemeColors) =>
     container: {
       flex: 1,
       alignItems: 'center',
-      paddingTop: 40,
-      backgroundColor: themeColors.background, // Dynamic background
+      paddingTop: 20,
+      backgroundColor: themeColors.background,
     },
     title: {
-      fontSize: 22,
-      marginBottom: 10,
-      color: themeColors.text, // Dynamic text color
+      fontSize: 20,
+      marginBottom: 8,
+      color: themeColors.text,
     },
-    buttonRow: {
-      flexDirection: 'row',
-      marginVertical: 20,
-      justifyContent: 'space-around',
-      width: '60%',
+
+    // Scroll container styling (if you use ScrollView)
+    scrollContainer: {
+      flexGrow: 1,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingBottom: 20,
     },
-    feedbackText: {
-      marginTop: 10,
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-    correctFeedback: {
-      color: themeColors.success,
-      fontSize: 80,
-      fontWeight: 'bold',
-      textAlign: 'center',
-    },
-    incorrectFeedback: {
-      color: themeColors.error,
-      fontSize: 80,
-      fontWeight: 'bold',
-      textAlign: 'center',
-    },
+
     picker: {
       width: 250,
-      color: themeColors.text, // Dynamic picker text color
+      color: themeColors.text,
+      marginVertical: 4, // Add slight vertical spacing (or remove if you want)
     },
+
+    // Main Buttons
     button: {
-      backgroundColor: themeColors.primary, // Custom background color
-      paddingVertical: 12,
-      paddingHorizontal: 24,
+      backgroundColor: themeColors.primary,
+      paddingVertical: 10,
+      paddingHorizontal: 20,
       borderRadius: 8,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 10,
+      marginTop: 8,
+    },
+    buttonText: {
+      color: themeColors.buttonText,
+      fontSize: 15,
+      fontWeight: 'bold',
     },
 
-    buttonText: {
-      color: themeColors.buttonText, // Ensure proper text contrast
+    // Container for the "answer" buttons & feedback
+    answerContainer: {
+      position: 'relative',
+      width: '80%',
+      height: 100,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 16,
+    },
+
+    // The row with the two answer buttons
+    buttonRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      alignItems: 'center',
+    },
+
+    // Absolutely positioned feedback overlay
+    feedbackOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1,
+      alignItems: 'center',
+    },
+
+    // Large ✓ or ✗ symbol
+    feedbackSymbol: {
+      fontSize: 60,
+      fontWeight: 'bold',
+    },
+
+    // Colors for correct/incorrect feedback
+    correctFeedback: { color: themeColors.success },
+    incorrectFeedback: { color: themeColors.error },
+
+    // Optional feedback text style
+    feedbackText: {
+      marginTop: 6,
       fontSize: 16,
       fontWeight: 'bold',
     },

@@ -7,10 +7,11 @@ import { usePairProgress } from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import createStyles from '../../constants/styles';
+import { alternateLanguages } from '../../constants/alternateLanguages';
 
 export default function HomeScreen() {
   const { recordAttempt } = usePairProgress();
-  const { setLanguage, t, categoryIndex, setCategoryIndex } =
+  const { setLanguage, t, categoryIndex, setCategoryIndex, language } =
     useLanguageScheme();
 
   // Get the list of languages (categories) from minimalPairs
@@ -109,6 +110,8 @@ export default function HomeScreen() {
     recordAttempt(pairID, isCorrect);
   }
 
+  const playAudioText = alternateLanguages[language]?.playAudio || 'Play Audio';
+
   return (
     <View
       style={[styles.container, { backgroundColor: themeColors.background }]}
@@ -144,7 +147,7 @@ export default function HomeScreen() {
       </Picker>
 
       <TouchableOpacity style={styles.button} onPress={handlePlay}>
-        <Text style={styles.buttonText}>Play Audio</Text>
+        <Text style={styles.buttonText}>{playAudioText}</Text>
       </TouchableOpacity>
 
       <View style={styles.buttonRow}>

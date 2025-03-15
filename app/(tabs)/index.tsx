@@ -154,17 +154,16 @@ export default function HomeScreen() {
         <TouchableOpacity style={styles.button} onPress={() => handleAnswer(0)}>
           <Text style={styles.buttonText}>{selectedPair.word1}</Text>
         </TouchableOpacity>
+        {feedback === 'correct' && (
+          <Text style={styles.correctFeedback}>✓</Text>
+        )}
+        {feedback === 'incorrect' && (
+          <Text style={styles.incorrectFeedback}>✗</Text>
+        )}
         <TouchableOpacity style={styles.button} onPress={() => handleAnswer(1)}>
           <Text style={styles.buttonText}>{selectedPair.word2}</Text>
         </TouchableOpacity>
       </View>
-
-      {feedback === 'correct' && (
-        <Text style={styles.correctFeedback}>✓ Correct!</Text>
-      )}
-      {feedback === 'incorrect' && (
-        <Text style={styles.incorrectFeedback}>✗ Incorrect!</Text>
-      )}
     </View>
   );
 }

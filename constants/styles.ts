@@ -36,10 +36,16 @@ const createStyles = (themeColors: ThemeColors) =>
       fontWeight: 'bold',
     },
     correctFeedback: {
-      color: themeColors.success, // Theme-based success color
+      color: themeColors.success,
+      fontSize: 80,
+      fontWeight: 'bold',
+      textAlign: 'center',
     },
     incorrectFeedback: {
-      color: themeColors.error, // Theme-based error color
+      color: themeColors.error,
+      fontSize: 80,
+      fontWeight: 'bold',
+      textAlign: 'center',
     },
     picker: {
       width: 250,

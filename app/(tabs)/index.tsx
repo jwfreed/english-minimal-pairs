@@ -1,12 +1,12 @@
-// index.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import { minimalPairs } from '../../constants/minimalPairs';
 import { usePairProgress } from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
-import { useColorScheme } from 'react-native';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import createStyles from '../../constants/styles';
 
 export default function HomeScreen() {
   const { recordAttempt } = usePairProgress();
@@ -22,6 +22,18 @@ export default function HomeScreen() {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
+
+  // Fetch theme-based colors inside the component
+  const themeColors = {
+    background: useThemeColor({}, 'background')(),
+    text: useThemeColor({}, 'text')(),
+    success: useThemeColor({}, 'success')(),
+    error: useThemeColor({}, 'error')(),
+    primary: useThemeColor({}, 'primary')(),
+    buttonText: useThemeColor({}, 'buttonText')(),
+  };
+
+  const styles = createStyles(themeColors);
 
   // Update language context when global categoryIndex changes.
   useEffect(() => {
@@ -97,19 +109,12 @@ export default function HomeScreen() {
     recordAttempt(pairID, isCorrect);
   }
 
-  // Dark mode styling.
-  const colorScheme = useColorScheme(); // returns "light" or "dark"
-  const backgroundColor = colorScheme === 'dark' ? '#000' : '#fff';
-  const textColor = colorScheme === 'dark' ? '#fff' : '#000';
-
   return (
-    <View style={[styles.container, { backgroundColor }]}>
-      {/* Use the language context for dynamic text */}
-      <Text style={[styles.title, { color: textColor }]}>
-        {t('practicePairs')}
-      </Text>
+    <View
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+    >
+      <Text style={styles.title}>{t('practicePairs')}</Text>
 
-      {/* Category Picker uses global category state */}
       <Picker
         selectedValue={String(categoryIndex)}
         onValueChange={(val) => {
@@ -117,21 +122,20 @@ export default function HomeScreen() {
           setPairIndex(0);
           setFeedback(null);
         }}
-        style={{ width: 250, color: textColor }}
+        style={{ width: 250, color: themeColors.text }}
       >
         {categories.map((catName, i) => (
           <Picker.Item key={catName} label={catName} value={String(i)} />
         ))}
       </Picker>
 
-      {/* Pair Picker */}
       <Picker
         selectedValue={String(pairIndex)}
         onValueChange={(val) => {
           setPairIndex(Number(val));
           setFeedback(null);
         }}
-        style={{ width: 250, color: textColor }}
+        style={{ width: 250, color: themeColors.text }}
       >
         {pairsInCategory.map((p, i) => {
           const label = `${p.word1} - ${p.word2}`;
@@ -139,34 +143,25 @@ export default function HomeScreen() {
         })}
       </Picker>
 
-      <Button title="Play Audio" onPress={handlePlay} />
+      <TouchableOpacity style={styles.button} onPress={handlePlay}>
+        <Text style={styles.buttonText}>Play Audio</Text>
+      </TouchableOpacity>
+
       <View style={styles.buttonRow}>
-        <Button title={selectedPair.word1} onPress={() => handleAnswer(0)} />
-        <Button title={selectedPair.word2} onPress={() => handleAnswer(1)} />
+        <TouchableOpacity style={styles.button} onPress={() => handleAnswer(0)}>
+          <Text style={styles.buttonText}>{selectedPair.word1}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={() => handleAnswer(1)}>
+          <Text style={styles.buttonText}>{selectedPair.word2}</Text>
+        </TouchableOpacity>
       </View>
 
       {feedback === 'correct' && (
-        <Text style={[styles.feedbackText, { color: 'green' }]}>
-          ✓ Correct!
-        </Text>
+        <Text style={styles.correctFeedback}>✓ Correct!</Text>
       )}
       {feedback === 'incorrect' && (
-        <Text style={[styles.feedbackText, { color: 'red' }]}>
-          ✗ Incorrect!
-        </Text>
+        <Text style={styles.incorrectFeedback}>✗ Incorrect!</Text>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', paddingTop: 40 },
-  title: { fontSize: 22, marginBottom: 10 },
-  buttonRow: {
-    flexDirection: 'row',
-    marginVertical: 20,
-    justifyContent: 'space-around',
-    width: '60%',
-  },
-  feedbackText: { marginTop: 10, fontSize: 18 },
-});

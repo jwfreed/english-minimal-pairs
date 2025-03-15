@@ -10,12 +10,16 @@ export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark
 ) {
-  const theme = useColorScheme() ?? 'light';
-  const colorFromProps = props[theme];
+  return function getThemeColor() {
+    const theme = useColorScheme() ?? 'light';
 
-  if (colorFromProps) {
-    return colorFromProps;
-  } else {
-    return Colors[theme][colorName];
-  }
+    const colorFromProps = props[theme];
+
+    if (colorFromProps) {
+      return colorFromProps;
+    }
+
+    const themeColors = Colors[theme] || Colors.light;
+    return themeColors[colorName] ?? '#000'; // Fallback to black
+  };
 }

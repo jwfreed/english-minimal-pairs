@@ -24,6 +24,35 @@ const createStyles = (themeColors: ThemeColors) =>
       marginBottom: 8,
       color: themeColors.text,
     },
+    
+    // Custom dropdown button
+    dropdownButton: {
+      backgroundColor: themeColors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 8,
+      marginBottom: 10,
+    },
+    dropdownButtonText: {
+      color: themeColors.buttonText,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    dropdownList: {
+      width: 250,
+      borderWidth: 1,
+      borderColor: themeColors.shadow,
+      borderRadius: 5,
+      backgroundColor: themeColors.background,
+      marginBottom: 10,
+    },
+    dropdownItem: {
+      padding: 10,
+    },
+    dropdownItemText: {
+      fontSize: 16,
+      color: themeColors.text,
+    },
 
     // Scroll container styling (if you use ScrollView)
     scrollContainer: {
@@ -36,7 +65,7 @@ const createStyles = (themeColors: ThemeColors) =>
     picker: {
       width: 250,
       color: themeColors.text,
-      marginVertical: 4, // Add slight vertical spacing (or remove if you want)
+      marginVertical: 4, 
     },
 
     // Main Buttons

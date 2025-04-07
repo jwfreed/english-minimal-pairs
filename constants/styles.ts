@@ -16,15 +16,6 @@ interface ThemeColors {
   shadow?: string;
 }
 
-/**
- * createStyles
- *
- * Generates a StyleSheet with refined “professional and polished” tweaks:
- * - Larger corners (12px)
- * - Elevated heading size
- * - Slightly stronger shadows
- * - Slightly bigger feedback symbols
- */
 const createStyles = (themeColors: ThemeColors) =>
   StyleSheet.create({
     // Main screen container

@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  Animated,
+  Easing,
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
+
 import { minimalPairs } from '../../constants/minimalPairs';
 import { usePairProgress } from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
@@ -9,25 +17,38 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
 
+/**
+ * HomeScreen
+ *
+ * The main quiz interface:
+ *  - Floating dropdown for Category selection
+ *  - Native Picker for Pair selection
+ *  - "Play Audio" to hear a random word from the selected pair
+ *  - Two answer buttons with ✓/✗ feedback
+ */
 export default function HomeScreen() {
+  // Global context usage
   const { recordAttempt } = usePairProgress();
   const { setLanguage, t, categoryIndex, setCategoryIndex, language } =
     useLanguageScheme();
 
-  // Generate categories from minimalPairs
+  // Categories from minimalPairs
   const categories = minimalPairs.map((catObj) => catObj.category);
 
-  // Local state for the app logic
+  // Local quiz state
   const [pairIndex, setPairIndex] = useState(0);
   const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
 
-  // local state for toggling the category dropdown
+  // Floating dropdown toggle
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  // Theme Colors
+  // Fade/Scale animation for the floating dropdown
+  const dropdownOpacity = useRef(new Animated.Value(0)).current;
+
+  // Theming
   const themeColors = {
     background: useThemeColor({}, 'background')(),
     text: useThemeColor({}, 'text')(),
@@ -36,22 +57,23 @@ export default function HomeScreen() {
     primary: useThemeColor({}, 'primary')(),
     buttonText: useThemeColor({}, 'buttonText')(),
   };
-
   const styles = createStyles(themeColors);
 
-  // Set the language in context whenever categoryIndex changes
+  /**
+   * Keep the language context updated whenever categoryIndex changes
+   */
   useEffect(() => {
     setLanguage(categories[categoryIndex]);
   }, [categoryIndex, categories, setLanguage]);
 
-  // Determine the selected category name
+  /**
+   * Identify the currently selected category object, or show fallback if empty
+   */
   const selectedCategoryName = categories[categoryIndex];
-  // Find category object
   const catObj = minimalPairs.find(
     (cat) => cat.category === selectedCategoryName
   );
 
-  // Check for empty category
   if (!catObj || catObj.pairs.length === 0) {
     return (
       <View style={styles.container}>
@@ -62,12 +84,14 @@ export default function HomeScreen() {
     );
   }
 
-  // Pull the pairs for the selected category
+  // Extract pairs and find the active pair
   const pairsInCategory = catObj.pairs;
   const selectedPair = pairsInCategory[pairIndex];
-  const soundRef = React.useRef<Audio.Sound | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
-  // Configure audio on mount
+  /**
+   * Configure audio on mount
+   */
   useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
@@ -85,14 +109,18 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Handle "Play Audio" logic
+  /**
+   * Play a random word from the pair
+   */
   async function handlePlay() {
     setFeedback(null);
     if (soundRef.current) {
       await soundRef.current.unloadAsync();
     }
+
     const idx = Math.random() < 0.5 ? 0 : 1;
     setPlayedWordIndex(idx);
+
     try {
       const newSound = new Audio.Sound();
       const audioToLoad = idx === 0 ? selectedPair.audio1 : selectedPair.audio2;
@@ -104,13 +132,15 @@ export default function HomeScreen() {
     }
   }
 
-  // Handle answering logic
+  /**
+   * Determine if the user answered correctly or not
+   */
   function handleAnswer(chosenIndex: 0 | 1) {
     if (playedWordIndex === null) return;
     const isCorrect = chosenIndex === playedWordIndex;
     setFeedback(isCorrect ? 'correct' : 'incorrect');
 
-    // Re-find the catObj in case user changed categories
+    // Re-fetch catObj in case the category changed mid-flow
     const catObj = minimalPairs.find(
       (cat) => cat.category === selectedCategoryName
     );
@@ -121,7 +151,36 @@ export default function HomeScreen() {
     recordAttempt(pairID, isCorrect);
   }
 
+  // Localized or custom text for "Play Audio"
   const playAudioText = alternateLanguages[language]?.playAudio || 'Play Audio';
+
+  /**
+   * Animate the floating dropdown open
+   */
+  function openDropdown() {
+    setShowCategoryDropdown(true);
+    Animated.timing(dropdownOpacity, {
+      toValue: 1,
+      duration: 200,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start();
+  }
+
+  /**
+   * Animate the floating dropdown closed
+   */
+  function closeDropdown() {
+    Animated.timing(dropdownOpacity, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setShowCategoryDropdown(false);
+      }
+    });
+  }
 
   return (
     <View
@@ -129,37 +188,61 @@ export default function HomeScreen() {
     >
       <Text style={styles.title}>{t('practicePairs')}</Text>
 
-      {/* Custom Dropdown for Category*/}
+      {/**
+       * Floating dropdown trigger for categories
+       */}
       <TouchableOpacity
         style={styles.dropdownButton}
-        onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+        onPress={() =>
+          showCategoryDropdown ? closeDropdown() : openDropdown()
+        }
       >
-        <Text style={styles.dropdownButtonText}>
-          {/* Show the currently selected category */}
-          {selectedCategoryName} ▼
-        </Text>
+        <Text style={styles.dropdownButtonText}>{selectedCategoryName} ▼</Text>
       </TouchableOpacity>
 
+      {/**
+       * If open, show an overlay and an animated dropdown card
+       */}
       {showCategoryDropdown && (
-        <View style={styles.dropdownList}>
-          {categories.map((catName, i) => (
-            <TouchableOpacity
-              key={catName}
-              style={styles.dropdownItem}
-              onPress={() => {
-                setCategoryIndex(i);
-                setPairIndex(0);
-                setFeedback(null);
-                setShowCategoryDropdown(false);
-              }}
-            >
-              <Text style={styles.dropdownItemText}>{catName}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Pressable style={styles.overlay} onPress={closeDropdown}>
+          <Animated.View
+            style={[
+              styles.dropdownCard,
+              {
+                opacity: dropdownOpacity,
+                transform: [
+                  {
+                    scale: dropdownOpacity.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.9, 1],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            {categories.map((catName, i) => (
+              <TouchableOpacity
+                key={catName}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setCategoryIndex(i);
+                  setPairIndex(0);
+                  setFeedback(null);
+                  closeDropdown();
+                }}
+              >
+                <Text style={styles.dropdownItemText}>{catName}</Text>
+              </TouchableOpacity>
+            ))}
+          </Animated.View>
+        </Pressable>
       )}
 
-      {/* Pair Picker */}
+      {/**
+       * Pair Picker (native)
+       * Lets the user pick which minimal pair to practice next
+       */}
       <Picker
         selectedValue={String(pairIndex)}
         onValueChange={(val) => {
@@ -174,12 +257,16 @@ export default function HomeScreen() {
         })}
       </Picker>
 
-      {/* Play Audio Button */}
+      {/**
+       * Play Audio button
+       */}
       <TouchableOpacity style={styles.button} onPress={handlePlay}>
         <Text style={styles.buttonText}>{playAudioText}</Text>
       </TouchableOpacity>
 
-      {/* Buttons + Feedback */}
+      {/**
+       * Two answer buttons (the minimal pair words) + feedback overlay
+       */}
       <View style={styles.answerContainer}>
         <View style={styles.buttonRow}>
           <TouchableOpacity
@@ -188,7 +275,6 @@ export default function HomeScreen() {
           >
             <Text style={styles.buttonText}>{selectedPair.word1}</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={styles.button}
             onPress={() => handleAnswer(1)}

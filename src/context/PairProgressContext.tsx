@@ -1,85 +1,46 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// src/context/PairProgressContext.tsx
 
-type PairStats = {
-  attempts: number;
-  correct: number;
-};
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  saveAttempt,
+  getProgress,
+  PairStats,
+} from '../storage/progressStorage';
 
-type PairProgressMap = {
-  [pairId: string]: PairStats;
-};
-
-type PairProgressContextValue = {
-  progress: PairProgressMap;
+const PairProgressContext = createContext<{
+  progress: Record<string, PairStats>;
   recordAttempt: (pairId: string, isCorrect: boolean) => void;
-};
+}>({
+  progress: {},
+  recordAttempt: () => {},
+});
 
-const STORAGE_KEY = '@pairProgress';
-
-const PairProgressContext = createContext<PairProgressContextValue | undefined>(
-  undefined
-);
-
-export function PairProgressProvider({
+export const PairProgressProvider = ({
   children,
 }: {
   children: React.ReactNode;
-}) {
-  const [progress, setProgress] = useState<PairProgressMap>({});
+}) => {
+  const [progress, setProgress] = useState<Record<string, PairStats>>({});
 
-  // Load saved progress from AsyncStorage on mount
   useEffect(() => {
+    const loadProgress = async () => {
+      const storedProgress = await getProgress();
+      setProgress(storedProgress);
+    };
     loadProgress();
   }, []);
 
-  async function loadProgress() {
-    try {
-      const data = await AsyncStorage.getItem(STORAGE_KEY);
-      if (data) {
-        setProgress(JSON.parse(data));
-      }
-    } catch (err) {
-      console.error('Error loading pair progress:', err);
-    }
-  }
-
-  // Save progress to AsyncStorage
-  async function saveProgress(updated: PairProgressMap) {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (err) {
-      console.error('Error saving pair progress:', err);
-    }
-  }
-
-  // Called when user guesses a pair
-  function recordAttempt(pairId: string, isCorrect: boolean) {
-    setProgress((prev) => {
-      const prevStats = prev[pairId] || { attempts: 0, correct: 0 };
-      const newStats: PairStats = {
-        attempts: prevStats.attempts + 1,
-        correct: prevStats.correct + (isCorrect ? 1 : 0),
-      };
-      const updated = { ...prev, [pairId]: newStats };
-      saveProgress(updated);
-      return updated;
-    });
-  }
+  const recordAttempt = async (pairId: string, isCorrect: boolean) => {
+    await saveAttempt(pairId, isCorrect);
+    const updatedProgress = await getProgress();
+    setProgress(updatedProgress);
+  };
 
   return (
     <PairProgressContext.Provider value={{ progress, recordAttempt }}>
       {children}
     </PairProgressContext.Provider>
   );
-}
+};
 
-export function usePairProgress() {
-  const context = useContext(PairProgressContext);
-  if (!context) {
-    throw new Error(
-      'usePairProgress must be used within a PairProgressProvider'
-    );
-  }
-  return context;
-}
+export const usePairProgress = () => useContext(PairProgressContext);

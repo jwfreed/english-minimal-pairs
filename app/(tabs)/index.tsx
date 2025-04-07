@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
-
+import * as Haptics from 'expo-haptics'; // 1) Import Expo Haptics
 import { minimalPairs } from '../../constants/minimalPairs';
 import { usePairProgress } from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
@@ -25,6 +25,7 @@ import { alternateLanguages } from '../../constants/alternateLanguages';
  *  - Native Picker for Pair selection
  *  - "Play Audio" to hear a random word from the selected pair
  *  - Two answer buttons with ✓/✗ feedback
+ *  - Micro-animation & haptic feedback on correct answers
  */
 export default function HomeScreen() {
   // Global context usage
@@ -41,6 +42,9 @@ export default function HomeScreen() {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
+
+  // 2) Micro-animation: track an Animated.Value for correct button scale
+  const correctButtonScale = useRef(new Animated.Value(1)).current;
 
   // Floating dropdown toggle
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -133,12 +137,39 @@ export default function HomeScreen() {
   }
 
   /**
+   * 3) Define a "pop" animation for correct answers
+   */
+  function popAnimation() {
+    correctButtonScale.setValue(0.9);
+    Animated.sequence([
+      Animated.spring(correctButtonScale, {
+        toValue: 1.2,
+        friction: 2,
+        useNativeDriver: true,
+      }),
+      Animated.spring(correctButtonScale, {
+        toValue: 1,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }
+
+  /**
    * Determine if the user answered correctly or not
    */
   function handleAnswer(chosenIndex: 0 | 1) {
     if (playedWordIndex === null) return;
     const isCorrect = chosenIndex === playedWordIndex;
     setFeedback(isCorrect ? 'correct' : 'incorrect');
+
+    // 4) Provide haptic feedback
+    if (isCorrect) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      popAnimation(); // Trigger the pop on the correct button
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
 
     // Re-fetch catObj in case the category changed mid-flow
     const catObj = minimalPairs.find(
@@ -265,22 +296,58 @@ export default function HomeScreen() {
       </TouchableOpacity>
 
       {/**
-       * Two answer buttons (the minimal pair words) + feedback overlay
+       * Two answer buttons (the minimal pair words) + feedback overlay.
+       * We'll conditionally wrap the correct button with an Animated.View
+       * so it "pops" if the user is correct.
        */}
       <View style={styles.answerContainer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => handleAnswer(0)}
-          >
-            <Text style={styles.buttonText}>{selectedPair.word1}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => handleAnswer(1)}
-          >
-            <Text style={styles.buttonText}>{selectedPair.word2}</Text>
-          </TouchableOpacity>
+          {/**
+           * If the correct answer was button 0, and user got it right,
+           * wrap it in an Animated.View to run the pop.
+           */}
+          {playedWordIndex === 0 && feedback === 'correct' ? (
+            <Animated.View
+              style={{ transform: [{ scale: correctButtonScale }] }}
+            >
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleAnswer(0)}
+              >
+                <Text style={styles.buttonText}>{selectedPair.word1}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          ) : (
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => handleAnswer(0)}
+            >
+              <Text style={styles.buttonText}>{selectedPair.word1}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/**
+           * Same logic for button 1
+           */}
+          {playedWordIndex === 1 && feedback === 'correct' ? (
+            <Animated.View
+              style={{ transform: [{ scale: correctButtonScale }] }}
+            >
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => handleAnswer(1)}
+              >
+                <Text style={styles.buttonText}>{selectedPair.word2}</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          ) : (
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => handleAnswer(1)}
+            >
+              <Text style={styles.buttonText}>{selectedPair.word2}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {feedback && (

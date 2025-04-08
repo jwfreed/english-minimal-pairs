@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useLanguageScheme } from '@/hooks/useLanguageScheme';
 
 interface Props {
   minutes: number;
@@ -9,12 +10,13 @@ interface Props {
 }
 
 export default function TimePracticedBar({ minutes, goal = 60 }: Props) {
+  const { t } = useLanguageScheme();
   const progress = Math.min(minutes / goal, 1);
 
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
-        Time Practiced: {minutes.toFixed(0)} / {goal} min
+        {`${t('timePracticed')}: ${minutes.toFixed(0)} / ${goal} ${t('min')}`}
       </Text>
       <View style={styles.barBackground}>
         <View style={[styles.barFill, { width: `${progress * 100}%` }]} />

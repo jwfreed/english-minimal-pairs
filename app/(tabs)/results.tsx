@@ -102,9 +102,9 @@ export default function ResultsScreen() {
               {`${item.word1} - ${item.word2}`}
             </Text>
             <Text style={{ color: themeColors.text }}>
-              Total: {`${correct}/${total} (${rawAvg.toFixed(
+              {`${t('total')}: ${correct}/${total} (${rawAvg.toFixed(
                 1
-              )}%) — Weighted: ${weightedAvg.toFixed(1)}%`}
+              )}%) — ${t('weightedAverage')}: ${weightedAvg.toFixed(1)}%`}
             </Text>
           </View>
 

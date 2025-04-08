@@ -4,6 +4,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { LineChart, XAxis, Grid } from 'react-native-svg-charts';
 import * as shape from 'd3-shape';
+import { useLanguageScheme } from '@/hooks/useLanguageScheme';
 
 interface ChartEntry {
   timeLabel: string;
@@ -16,6 +17,8 @@ interface Props {
 }
 
 export default function AccuracyTimeChart({ data }: Props) {
+  const { t } = useLanguageScheme();
+
   if (!data || data.length === 0) return <Text>No data available.</Text>;
 
   const accuracyData = data.map((d) => d.accuracy * 100); // percent
@@ -26,7 +29,7 @@ export default function AccuracyTimeChart({ data }: Props) {
   return (
     <View style={{ height: 220, width: '100%', paddingHorizontal: 10 }}>
       <Text style={{ marginBottom: 10, fontWeight: 'bold' }}>
-        Accuracy Trend
+        {t('accuracyTrend')}
       </Text>
       <LineChart
         style={{ height: 160, width: '100%' }}

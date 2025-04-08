@@ -24,12 +24,12 @@ export default function AccuracyTimeChart({ data }: Props) {
   const contentInset = { top: 20, bottom: 20 };
 
   return (
-    <View style={{ height: 200, padding: 20 }}>
+    <View style={{ height: 220, width: '100%', paddingHorizontal: 10 }}>
       <Text style={{ marginBottom: 10, fontWeight: 'bold' }}>
         Accuracy Trend
       </Text>
       <LineChart
-        style={{ flex: 1 }}
+        style={{ height: 160, width: '100%' }}
         data={accuracyData}
         svg={{ stroke: 'green', strokeWidth: 2 }}
         contentInset={contentInset}

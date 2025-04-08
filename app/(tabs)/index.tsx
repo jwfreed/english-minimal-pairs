@@ -16,11 +16,14 @@ import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs(['Warning: Grid: Support for defaultProps']);
 
 /**
  * HomeScreen
  *
- * The main quiz interface:
+ * The main practice interface:
  *  - Floating dropdown for Category selection
  *  - Native Picker for Pair selection
  *  - "Play Audio" to hear a random word from the selected pair

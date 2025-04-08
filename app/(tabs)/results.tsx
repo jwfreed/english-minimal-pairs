@@ -73,28 +73,59 @@ export default function ResultsScreen() {
         : 0;
 
     return (
-      <View style={styles.buttonRow}>
-        <Text style={[styles.title, { color: themeColors.text }]}>
-          {`${item.word1} - ${item.word2}`}
-        </Text>
-        <Text style={{ color: themeColors.text }}>
-          {`${correct}/${total} (${rawAvg.toFixed(
-            1
-          )}%) — Weighted: ${weightedAvg.toFixed(1)}%`}
-        </Text>
-        {trendData.length > 0 && (
-          <View style={{ marginTop: 10 }}>
-            <AccuracyTimeChart data={trendData} />
-            <TimePracticedBar minutes={timePracticed} />
+      <View
+        style={{
+          marginBottom: 24,
+          backgroundColor: '#ffffff20',
+          borderRadius: 12,
+          padding: 12,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+          }}
+        >
+          {/* Left Column: Pair + Accuracy Text */}
+          <View
+            style={{
+              flexGrow: 1,
+              flexShrink: 1,
+              minWidth: 140,
+              paddingRight: 8,
+            }}
+          >
+            <Text style={[styles.title, { color: themeColors.text }]}>
+              {`${item.word1} - ${item.word2}`}
+            </Text>
+            <Text style={{ color: themeColors.text }}>
+              {`${correct}/${total} (${rawAvg.toFixed(
+                1
+              )}%) — Weighted: ${weightedAvg.toFixed(1)}%`}
+            </Text>
           </View>
-        )}
+
+          {/* Right Column: Chart + Bar */}
+          {trendData.length > 0 && (
+            <View style={{ flexGrow: 1, minWidth: 180, maxWidth: '100%' }}>
+              <AccuracyTimeChart data={trendData} />
+              <TimePracticedBar minutes={timePracticed} />
+            </View>
+          )}
+        </View>
       </View>
     );
   };
 
   return (
     <View
-      style={[styles.container, { backgroundColor: themeColors.background }]}
+      style={[
+        styles.container,
+        { flex: 1, backgroundColor: themeColors.background },
+      ]}
     >
       <Text
         style={[styles.title, { color: themeColors.text, marginBottom: 12 }]}

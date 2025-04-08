@@ -25,6 +25,7 @@ export default function TimePracticedBar({ minutes, goal = 60 }: Props) {
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
     marginTop: 10,
     marginBottom: 20,
     paddingHorizontal: 20,

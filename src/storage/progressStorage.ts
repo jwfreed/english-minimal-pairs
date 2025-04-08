@@ -71,6 +71,95 @@ export const getWeightedAccuracy = (
   return totalWeight ? weightedCorrect / totalWeight : 0;
 };
 
+export const estimateActivePracticeTime = (
+  attempts: PairAttempt[],
+  maxGapMs: number = 2 * 60 * 1000
+): number => {
+  if (attempts.length < 2) return 0;
+
+  const sorted = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
+  let total = 0;
+  let sessionStart = sorted[0].timestamp;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const gap = sorted[i].timestamp - sorted[i - 1].timestamp;
+    if (gap > maxGapMs) {
+      total += sorted[i - 1].timestamp - sessionStart;
+      sessionStart = sorted[i].timestamp;
+    }
+  }
+
+  total += sorted[sorted.length - 1].timestamp - sessionStart;
+  return total;
+};
+
+export const getAccuracyAndTimeOverTime = (
+  attempts: PairAttempt[],
+  sessionGapMs: number = 2 * 60 * 1000
+): { timeLabel: string; accuracy: number; cumulativeTimeMin: number }[] => {
+  if (attempts.length === 0) return [];
+
+  const sorted = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
+  let sessionStart = sorted[0].timestamp;
+  let cumulativeTime = 0;
+  let sessionAttempts: PairAttempt[] = [];
+  const output = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const current = sorted[i];
+    const prev = sorted[i - 1];
+    const isNewSession =
+      i > 0 && current.timestamp - prev.timestamp > sessionGapMs;
+
+    if (isNewSession) {
+      const sessionEnd = prev.timestamp;
+      const sessionDuration = sessionEnd - sessionStart;
+      cumulativeTime += sessionDuration;
+
+      const correct = sessionAttempts.filter((a) => a.isCorrect).length;
+      const accuracy = sessionAttempts.length
+        ? correct / sessionAttempts.length
+        : 0;
+      const timeLabel = new Date(sessionEnd).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      output.push({
+        timeLabel,
+        accuracy,
+        cumulativeTimeMin: cumulativeTime / 60000,
+      });
+
+      sessionStart = current.timestamp;
+      sessionAttempts = [];
+    }
+
+    sessionAttempts.push(current);
+  }
+
+  // Add the final session
+  const last = sorted[sorted.length - 1].timestamp;
+  const lastSessionDuration = last - sessionStart;
+  cumulativeTime += lastSessionDuration;
+  const correct = sessionAttempts.filter((a) => a.isCorrect).length;
+  const accuracy = sessionAttempts.length
+    ? correct / sessionAttempts.length
+    : 0;
+  const timeLabel = new Date(last).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  output.push({
+    timeLabel,
+    accuracy,
+    cumulativeTimeMin: cumulativeTime / 60000,
+  });
+
+  return output;
+};
+
 export const resetProgress = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(PROGRESS_KEY);

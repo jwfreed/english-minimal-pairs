@@ -5,7 +5,12 @@ import { usePairProgress } from '../../src/context/PairProgressContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import createStyles from '../../constants/styles';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
-import { getWeightedAccuracy } from '../../src/storage/progressStorage';
+import {
+  getWeightedAccuracy,
+  getAccuracyAndTimeOverTime,
+} from '../../src/storage/progressStorage';
+import AccuracyTimeChart from '../../components/AccuracyTimeChart';
+import TimePracticedBar from '../../components/TimePracticedBar';
 
 interface FlattenedPair {
   id: string;
@@ -61,6 +66,11 @@ export default function ResultsScreen() {
     const correct = attempts.filter((a) => a.isCorrect).length;
     const rawAvg = total > 0 ? (correct / total) * 100 : 0;
     const weightedAvg = getWeightedAccuracy(attempts) * 100;
+    const trendData = getAccuracyAndTimeOverTime(attempts);
+    const timePracticed =
+      trendData.length > 0
+        ? Math.max(...trendData.map((d) => d.cumulativeTimeMin))
+        : 0;
 
     return (
       <View style={styles.buttonRow}>
@@ -72,6 +82,12 @@ export default function ResultsScreen() {
             1
           )}%) — Weighted: ${weightedAvg.toFixed(1)}%`}
         </Text>
+        {trendData.length > 0 && (
+          <View style={{ marginTop: 10 }}>
+            <AccuracyTimeChart data={trendData} />
+            <TimePracticedBar minutes={timePracticed} />
+          </View>
+        )}
       </View>
     );
   };

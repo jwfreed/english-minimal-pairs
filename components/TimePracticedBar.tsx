@@ -1,4 +1,4 @@
-// src/components/TimePracticedBar.tsx
+// components/TimePracticedBar.tsx
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';

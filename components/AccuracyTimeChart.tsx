@@ -1,4 +1,4 @@
-// src/components/AccuracyTimeChart.tsx
+// components/AccuracyTimeChart.tsx
 
 import React from 'react';
 import { View, Text } from 'react-native';

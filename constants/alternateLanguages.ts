@@ -4,6 +4,11 @@ interface LanguageTranslations {
   practicePairs: string;
   averageByPair: string;
   playAudio: string;
+  accuracyTrend: string;
+  timePracticed: string;
+  min: string;
+  weightedAverage: string;
+  total: string;
   [key: string]: string; // Allows any string key to be used
 }
 
@@ -14,6 +19,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: '練習ペア',
     averageByPair: 'ペア別平均',
     playAudio: 'オーディオを再生',
+    accuracyTrend: '正答率の推移',
+    timePracticed: '練習時間',
+    min: '分',
+    weightedAverage: '加重平均',
+    total: '合計',
   },
   中文: {
     home: '首页',
@@ -21,6 +31,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: '练习对',
     averageByPair: '每对平均',
     playAudio: '播放音频',
+    accuracyTrend: '准确率趋势',
+    timePracticed: '练习时间',
+    min: '分钟',
+    weightedAverage: '加权平均',
+    total: '总计',
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
@@ -28,6 +43,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'คู่ฝึก',
     averageByPair: 'เฉลี่ยต่อคู่',
     playAudio: 'เล่นเสียง',
+    accuracyTrend: 'แนวโน้มความถูกต้อง',
+    timePracticed: 'เวลาที่ฝึกฝน',
+    min: 'นาที',
+    weightedAverage: 'ค่าเฉลี่ยถ่วงน้ำหนัก',
+    total: 'ทั้งหมด',
   },
   'idioma español': {
     home: 'Inicio',
@@ -35,6 +55,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'Parejas de práctica',
     averageByPair: 'Promedio por pareja',
     playAudio: 'Reproducir Audio',
+    accuracyTrend: 'Tendencia de precisión',
+    timePracticed: 'Tiempo practicado',
+    min: 'minutos',
+    weightedAverage: 'Promedio ponderado',
+    total: 'Total',
   },
   'اللغة العربية': {
     home: 'الرئيسية',
@@ -42,6 +67,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'أزواج التدريب',
     averageByPair: 'متوسط الزوج',
     playAudio: 'تشغيل الصوت',
+    accuracyTrend: 'اتجاه الدقة',
+    timePracticed: 'الوقت الممارس',
+    min: 'دقائق',
+    weightedAverage: 'المتوسط المرجح',
+    total: 'المجموع',
   },
   'русский язык': {
     home: 'Главная',
@@ -49,6 +79,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'Пары для практики',
     averageByPair: 'Среднее по парам',
     playAudio: 'Воспроизвести аудио',
+    accuracyTrend: 'Тенденция точности',
+    timePracticed: 'Время практики',
+    min: 'минут',
+    weightedAverage: 'Взвешенное среднее',
+    total: 'Итого',
   },
   한국어: {
     home: '홈',
@@ -56,6 +91,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: '연습 쌍',
     averageByPair: '쌍별 평균',
     playAudio: '오디오 재생',
+    accuracyTrend: '정확도 추이',
+    timePracticed: '연습 시간',
+    min: '분',
+    weightedAverage: '가중 평균',
+    total: '총합',
   },
   'हिंदी/اردو': {
     home: 'होम/ہوم',
@@ -63,6 +103,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'अभ्यास जोड़ी/عملی جوڑے',
     averageByPair: 'जोड़ी द्वारा औसत/جوڑے کے حساب سے اوسط',
     playAudio: 'ऑडियो चलाएँ/آڈیو چلائیں',
+    accuracyTrend: 'सटीकता प्रवृत्ति/درستگی کا رجحان',
+    timePracticed: 'अभ्यास का समय/مشق کا وقت',
+    min: 'मिनट/منٹ',
+    weightedAverage: 'भारित औसत/وزنی اوسط',
+    total: 'कुल/کل',
   },
   Português: {
     home: 'Início',
@@ -70,6 +115,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'Pares de prática',
     averageByPair: 'Média por par',
     playAudio: 'Reproduzir áudio',
+    accuracyTrend: 'Tendência de precisão',
+    timePracticed: 'Tempo praticado',
+    min: 'minutos',
+    weightedAverage: 'Média ponderada',
+    total: 'Total',
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
@@ -77,6 +127,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'Cặp luyện tập',
     averageByPair: 'Trung bình theo cặp',
     playAudio: 'Phát âm thanh',
+    accuracyTrend: 'Xu hướng chính xác',
+    timePracticed: 'Thời gian luyện tập',
+    min: 'phút',
+    weightedAverage: 'Trung bình trọng số',
+    total: 'Tổng cộng',
   },
   Türkçe: {
     home: 'Ana Sayfa',
@@ -84,6 +139,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'Alıştırma Çiftleri',
     averageByPair: 'Çifte Göre Ortalama',
     playAudio: 'Ses çal',
+    accuracyTrend: 'Doğruluk Trendi',
+    timePracticed: 'Alıştırma süresi',
+    min: 'dakika',
+    weightedAverage: 'Ağırlıklı Ortalama',
+    total: 'Toplam',
   },
   'زبان فارسی': {
     home: 'خانه',
@@ -91,6 +151,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'جفت‌های تمرینی',
     averageByPair: 'میانگین هر جفت',
     playAudio: 'پخش صدا',
+    accuracyTrend: 'روند دقت',
+    timePracticed: 'زمان تمرین',
+    min: 'دقیقه',
+    weightedAverage: 'میانگین وزنی',
+    total: 'مجموع',
   },
   廣東話: {
     home: '首頁',
@@ -98,6 +163,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: '練習對',
     averageByPair: '每對平均',
     playAudio: '播放音頻',
+    accuracyTrend: '準確率趨勢',
+    timePracticed: '練習時間',
+    min: '分鐘',
+    weightedAverage: '加權平均',
+    total: '總計',
   },
   'bahasa Indo': {
     home: 'Beranda',
@@ -105,5 +175,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     practicePairs: 'Pasangan Latihan',
     averageByPair: 'Rata-rata per Pasangan',
     playAudio: 'Putar Audio',
+    accuracyTrend: 'Tren Akurasi',
+    timePracticed: 'Waktu berlatih',
+    min: 'menit',
+    weightedAverage: 'Rata-rata tertimbang',
+    total: 'Total',
   },
 };

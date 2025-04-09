@@ -1,3 +1,4 @@
+// app/_layout.tsx
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,

@@ -28,21 +28,54 @@ const createStyles = (themeColors: ThemeColors) =>
 
     // Larger title for a stronger visual hierarchy
     title: {
-      fontSize: 24, // Increased from 20
-      marginBottom: 10, // Slightly increased spacing
+      fontSize: 24,
+      marginBottom: 10,
       color: themeColors.text,
-      fontWeight: '600', // Adds a bit more emphasis
+      fontWeight: '600',
     },
 
-    // (Optional) If using a custom font, you could do:
-    // title: { fontFamily: 'OpenSans-Bold', ... }
+    // Paragraph text for descriptions
+    paragraph: {
+      fontSize: 16,
+      lineHeight: 24,
+      marginBottom: 10,
+      color: themeColors.text,
+    },
+
+    // Enhanced InfoScreen styles
+    infoCard: {
+      backgroundColor: themeColors.background,
+      borderRadius: 16,
+      paddingVertical: 20,
+      paddingHorizontal: 16,
+    },
+    infoTitle: {
+      fontSize: 22,
+      fontWeight: '800',
+      marginTop: 28,
+      marginBottom: 10,
+      color: themeColors.text,
+    },
+    infoText: {
+      fontSize: 16,
+      lineHeight: 26,
+      marginBottom: 12,
+      color: themeColors.text,
+    },
+    infoList: {
+      fontSize: 16,
+      lineHeight: 28,
+      marginBottom: 12,
+      paddingLeft: 12,
+      color: themeColors.text,
+    },
 
     // Dropdown Trigger Button
     dropdownButton: {
       backgroundColor: themeColors.primary,
       paddingHorizontal: 16,
       paddingVertical: 10,
-      borderRadius: 12, // More rounded corners
+      borderRadius: 12,
       marginBottom: 10,
     },
     dropdownButtonText: {
@@ -56,7 +89,7 @@ const createStyles = (themeColors: ThemeColors) =>
       width: 250,
       borderWidth: 1,
       borderColor: themeColors.shadow || '#ccc',
-      borderRadius: 12, // Match new corner radius
+      borderRadius: 12,
       backgroundColor: themeColors.background,
       marginBottom: 10,
     },
@@ -88,30 +121,25 @@ const createStyles = (themeColors: ThemeColors) =>
       backgroundColor: themeColors.primary,
       paddingVertical: 10,
       paddingHorizontal: 20,
-      borderRadius: 12, // Rounded corners
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 8,
-      // If you want a subtle shadow on buttons:
-      // shadowColor: '#000',
-      // shadowOffset: { width: 0, height: 2 },
-      // shadowOpacity: 0.15,
-      // shadowRadius: 3,
-      // elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 3,
+      elevation: 2,
     },
     buttonText: {
       color: themeColors.buttonText,
-      fontSize: 16, // Slightly bigger text for better readability
+      fontSize: 16,
       fontWeight: 'bold',
     },
 
-    /**
-     * Optional: Pressed State for Buttons
-     * (if you implement onPressIn / onPressOut logic)
-     */
-    // buttonPressed: {
-    //   backgroundColor: '#D76D1F', // e.g., a darker shade of your primary
-    // },
+    buttonPressed: {
+      backgroundColor: '#D76D1F',
+    },
 
     // Container for answer buttons + feedback
     answerContainer: {
@@ -138,9 +166,8 @@ const createStyles = (themeColors: ThemeColors) =>
       zIndex: 1,
       alignItems: 'center',
     },
-    // Slightly larger for a polished highlight
     feedbackSymbol: {
-      fontSize: 64, // Was 60
+      fontSize: 64,
       fontWeight: 'bold',
     },
     correctFeedback: {
@@ -162,7 +189,7 @@ const createStyles = (themeColors: ThemeColors) =>
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.3)', // Dim the background more if needed
+      backgroundColor: 'rgba(0,0,0,0.3)',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 999,
@@ -172,12 +199,11 @@ const createStyles = (themeColors: ThemeColors) =>
     dropdownCard: {
       width: 280,
       backgroundColor: themeColors.background,
-      borderRadius: 12, // Round corners for a modern look
+      borderRadius: 12,
       paddingVertical: 10,
-      // Subtle shadow – stronger for more “premium” feel
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25, // Increased from 0.2
+      shadowOpacity: 0.25,
       shadowRadius: 4,
       elevation: 5,
     },

@@ -1,6 +1,10 @@
 // Mock AsyncStorage globally
 jest.mock('@react-native-async-storage/async-storage');
 jest.mock('expo-av');
+
+// Cache the original console.error
+const originalConsoleError = console.error;
+
 // Silence animated act(...) warnings from React Native
 jest.spyOn(console, 'error').mockImplementation((message, ...args) => {
   if (
@@ -9,5 +13,5 @@ jest.spyOn(console, 'error').mockImplementation((message, ...args) => {
   ) {
     return;
   }
-  console.error(message, ...args);
+  originalConsoleError(message, ...args);
 });

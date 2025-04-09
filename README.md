@@ -6,8 +6,7 @@
 ![Expo](https://img.shields.io/badge/Built%20with-Expo-000020?style=for-the-badge&logo=expo)
 ![Mobile](https://img.shields.io/badge/Mobile-Friendly-28a745?style=for-the-badge&logo=android)
 ![React Native](https://img.shields.io/badge/Framework-React%20Native-61dafb?style=for-the-badge&logo=react)
-![Coverage](https://img.shields.io/badge/Coverage-Tracked-success?style=for-the-badge&logo=jest)
-[![codecov](https://codecov.io/gh/jwfreed/english-minimal-pairs/branch/main/graph/badge.svg?token=YOUR_TOKEN)](https://codecov.io/gh/jwfreed/english-minimal-pairs)
+[![codecov](https://codecov.io/gh/jwfreed/english-minimal-pairs/graph/badge.svg?token=79B3H4KJ4Z)](https://codecov.io/gh/jwfreed/english-minimal-pairs)
 
 This is an interactive language learning app designed to help English learners improve their phonemic awareness by practicing minimal pairs (words that differ by only one sound). The app supports learners with different first languages (L1) by providing tailored pairs for various L1 backgrounds.
 

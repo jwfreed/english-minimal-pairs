@@ -19,14 +19,10 @@ jobs:
           node-version: '21'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Run Tests with Coverage
         run: npx jest --coverage
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
-        with:
-          fail_ci_if_error: true
-          flags: unittests
-          name: codecov-coverage

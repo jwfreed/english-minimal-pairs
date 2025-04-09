@@ -18,7 +18,9 @@ import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
 import { LogBox } from 'react-native';
 
-LogBox.ignoreLogs(['Warning: Grid: Support for defaultProps']);
+if (LogBox?.ignoreLogs) {
+  LogBox.ignoreLogs(['Warning: Grid: Support for defaultProps']);
+}
 
 /**
  * HomeScreen

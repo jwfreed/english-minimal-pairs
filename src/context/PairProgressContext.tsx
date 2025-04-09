@@ -1,11 +1,15 @@
-// src/context/PairProgressContext.tsx
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   saveAttempt,
   getProgress,
   PairStats,
 } from '../storage/progressStorage';
+
+// Only use act in test environment to avoid dev/prod performance penalty
+const isTest = process.env.NODE_ENV === 'test';
+const maybeAct = isTest
+  ? require('react-test-renderer').act
+  : (fn: () => void) => fn();
 
 const PairProgressContext = createContext<{
   progress: Record<string, PairStats>;
@@ -25,7 +29,7 @@ export const PairProgressProvider = ({
   useEffect(() => {
     const loadProgress = async () => {
       const storedProgress = await getProgress();
-      setProgress(storedProgress);
+      maybeAct(() => setProgress(storedProgress));
     };
     loadProgress();
   }, []);
@@ -33,7 +37,7 @@ export const PairProgressProvider = ({
   const recordAttempt = async (pairId: string, isCorrect: boolean) => {
     await saveAttempt(pairId, isCorrect);
     const updatedProgress = await getProgress();
-    setProgress(updatedProgress);
+    maybeAct(() => setProgress(updatedProgress));
   };
 
   return (
@@ -44,3 +48,5 @@ export const PairProgressProvider = ({
 };
 
 export const usePairProgress = () => useContext(PairProgressContext);
+
+export { PairProgressContext };

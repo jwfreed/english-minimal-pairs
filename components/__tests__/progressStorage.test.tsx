@@ -72,14 +72,38 @@ describe('progressStorage persistence', () => {
     jest.clearAllMocks();
   });
 
-  it('saveAttempt calls AsyncStorage.setItem', async () => {
-    await saveAttempt('pair1', true);
-    expect(AsyncStorage.setItem).toHaveBeenCalled();
+  it('saveAttempt stores correct structure', async () => {
+    const pairId = 'pair1';
+    const isCorrect = true;
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
+
+    await saveAttempt(pairId, isCorrect);
+
+    const storedValue = (AsyncStorage.setItem as jest.Mock).mock.calls[0][1];
+    const parsed = JSON.parse(storedValue);
+
+    expect(parsed[pairId].attempts).toHaveLength(1);
+    expect(typeof parsed[pairId].attempts[0].timestamp).toBe('number');
+    expect(parsed[pairId].attempts[0].isCorrect).toBe(true);
   });
 
-  it('getProgress calls AsyncStorage.getItem', async () => {
-    await getProgress();
-    expect(AsyncStorage.getItem).toHaveBeenCalled();
+  it('getProgress returns correct structure', async () => {
+    const data = {
+      pair1: {
+        attempts: [
+          { timestamp: 123, isCorrect: true },
+          { timestamp: 456, isCorrect: false },
+        ],
+      },
+    };
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify(data)
+    );
+    const progress = await getProgress();
+
+    expect(progress.pair1.attempts).toHaveLength(2);
+    expect(progress.pair1.attempts[0].isCorrect).toBe(true);
+    expect(progress.pair1.attempts[1].isCorrect).toBe(false);
   });
 
   it('resetProgress calls AsyncStorage.removeItem', async () => {
@@ -88,23 +112,39 @@ describe('progressStorage persistence', () => {
   });
 
   it('handles AsyncStorage errors gracefully in saveAttempt', async () => {
+    jest.spyOn(console, 'log').mockImplementation(() => {});
     (AsyncStorage.setItem as jest.Mock).mockImplementationOnce(() => {
       throw new Error('fail');
     });
-    await saveAttempt('pair1', true); // Should not throw
+    await saveAttempt('pair1', true);
+    expect(console.log).toHaveBeenCalledWith(
+      'Failed to save attempt',
+      expect.any(Error)
+    );
   });
 
   it('handles AsyncStorage errors gracefully in getProgress', async () => {
+    jest.spyOn(console, 'log').mockImplementation(() => {});
     (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => {
       throw new Error('fail');
     });
-    await getProgress(); // Should not throw
+    const result = await getProgress();
+    expect(console.log).toHaveBeenCalledWith(
+      'Failed to fetch progress',
+      expect.any(Error)
+    );
+    expect(result).toEqual({});
   });
 
   it('handles AsyncStorage errors gracefully in resetProgress', async () => {
+    jest.spyOn(console, 'log').mockImplementation(() => {});
     (AsyncStorage.removeItem as jest.Mock).mockImplementationOnce(() => {
       throw new Error('fail');
     });
-    await resetProgress(); // Should not throw
+    await resetProgress();
+    expect(console.log).toHaveBeenCalledWith(
+      'Failed to reset progress',
+      expect.any(Error)
+    );
   });
 });

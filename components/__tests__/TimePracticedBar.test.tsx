@@ -13,12 +13,6 @@ jest.mock('@/hooks/useLanguageScheme', () => ({
 }));
 
 describe('TimePracticedBar', () => {
-  const getWidthStyle = (barFill: any) => {
-    return Array.isArray(barFill.props.style)
-      ? barFill.props.style.find((s: any) => s?.width)
-      : barFill.props.style;
-  };
-
   it('renders with default goal and expected text', () => {
     const { getByText } = render(<TimePracticedBar minutes={15} />);
     expect(getByText('Time Practiced: 15 / 60 min')).toBeTruthy();
@@ -27,7 +21,9 @@ describe('TimePracticedBar', () => {
   it('renders correct bar width for full progress', () => {
     const { getByTestId } = render(<TimePracticedBar minutes={60} goal={60} />);
     const barFill = getByTestId('progress-bar-fill');
-    const style = getWidthStyle(barFill);
+    const style = Array.isArray(barFill.props.style)
+      ? barFill.props.style.find((s: any) => s?.width)
+      : barFill.props.style;
     expect(style?.width).toBe('100%');
   });
 
@@ -36,7 +32,9 @@ describe('TimePracticedBar', () => {
       <TimePracticedBar minutes={120} goal={60} />
     );
     const barFill = getByTestId('progress-bar-fill');
-    const style = getWidthStyle(barFill);
+    const style = Array.isArray(barFill.props.style)
+      ? barFill.props.style.find((s: any) => s?.width)
+      : barFill.props.style;
     expect(style?.width).toBe('100%');
   });
 
@@ -46,7 +44,9 @@ describe('TimePracticedBar', () => {
     );
     expect(getByText('Time Practiced: 0 / 60 min')).toBeTruthy();
     const barFill = getByTestId('progress-bar-fill');
-    const style = getWidthStyle(barFill);
+    const style = Array.isArray(barFill.props.style)
+      ? barFill.props.style.find((s: any) => s?.width)
+      : barFill.props.style;
     expect(style?.width).toBe('0%');
   });
 });

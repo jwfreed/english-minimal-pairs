@@ -1,5 +1,3 @@
-// components/TimePracticedBar.tsx
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useLanguageScheme } from '@/hooks/useLanguageScheme';
@@ -18,8 +16,11 @@ export default function TimePracticedBar({ minutes, goal = 60 }: Props) {
       <Text style={styles.label}>
         {`${t('timePracticed')}: ${minutes.toFixed(0)} / ${goal} ${t('min')}`}
       </Text>
-      <View style={styles.barBackground}>
-        <View style={[styles.barFill, { width: `${progress * 100}%` }]} />
+      <View testID="progress-bar" style={styles.barBackground}>
+        <View
+          testID="progress-bar-fill"
+          style={[styles.barFill, { width: `${progress * 100}%` }]}
+        />
       </View>
     </View>
   );

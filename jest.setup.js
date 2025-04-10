@@ -1,17 +1,14 @@
-// Mock AsyncStorage globally
-jest.mock('@react-native-async-storage/async-storage');
-jest.mock('expo-av');
-
-// Cache the original console.error
-const originalConsoleError = console.error;
-
-// Silence animated act(...) warnings from React Native
-jest.spyOn(console, 'error').mockImplementation((message, ...args) => {
+const originalError = globalThis.console.error;
+globalThis.console.error = (...args) => {
+  const msg = args[0];
   if (
-    typeof message === 'string' &&
-    message.includes('Animated(View) inside a test was not wrapped in act')
+    typeof msg === 'string' &&
+    msg.includes('Animated(View) inside a test was not wrapped in act')
   ) {
     return;
   }
-  originalConsoleError(message, ...args);
-});
+  originalError(...args);
+};
+
+jest.mock('@react-native-async-storage/async-storage');
+jest.mock('expo-av');

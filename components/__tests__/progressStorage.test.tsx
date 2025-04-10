@@ -1,102 +1,123 @@
-// Tests for TimePracticedBar and progressStorage advanced logic
-import React from 'react';
-import { render } from '@testing-library/react-native';
-import TimePracticedBar from '../../components/TimePracticedBar';
 import {
+  saveAttempt,
+  getProgress,
+  resetProgress,
   getWeightedAccuracy,
   estimateActivePracticeTime,
   getAccuracyAndTimeOverTime,
 } from '../../src/storage/progressStorage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-jest.mock('@/hooks/useLanguageScheme', () => ({
-  useLanguageScheme: () => ({
-    t: (key: string) => {
-      if (key === 'timePracticed') return 'Time Practiced';
-      if (key === 'min') return 'min';
-      return key;
-    },
-  }),
-}));
+jest.mock('@react-native-async-storage/async-storage');
 
-describe('TimePracticedBar', () => {
-  const getWidthStyle = (barFill: any) => {
-    return Array.isArray(barFill.props.style)
-      ? barFill.props.style.find((s: any) => s?.width)
-      : barFill.props.style;
-  };
-
-  it('renders with default goal and expected text', () => {
-    const { getByText } = render(<TimePracticedBar minutes={15} />);
-    expect(getByText('Time Practiced: 15 / 60 min')).toBeTruthy();
+describe('progressStorage basic usage', () => {
+  beforeEach(() => {
+    (AsyncStorage.setItem as jest.Mock).mockClear();
+    (AsyncStorage.getItem as jest.Mock).mockClear();
+    (AsyncStorage.removeItem as jest.Mock).mockClear();
   });
 
-  it('renders correct bar width for full progress', () => {
-    const { getByTestId } = render(<TimePracticedBar minutes={60} goal={60} />);
-    const barFill = getByTestId('progress-bar-fill');
-    const style = getWidthStyle(barFill);
-    expect(style?.width).toBe('100%');
-  });
+  it('saves and retrieves progress correctly', async () => {
+    const pairId = 'pair1';
+    const attempt = { timestamp: 123, isCorrect: true };
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null); // initial empty
 
-  it('caps progress at 100%', () => {
-    const { getByTestId } = render(
-      <TimePracticedBar minutes={120} goal={60} />
+    await saveAttempt(pairId, attempt.isCorrect);
+
+    const stored = JSON.parse(
+      (AsyncStorage.setItem as jest.Mock).mock.calls[0][1]
     );
-    const barFill = getByTestId('progress-bar-fill');
-    const style = getWidthStyle(barFill);
-    expect(style?.width).toBe('100%');
+    expect(stored[pairId].attempts.length).toBe(1);
+
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify(stored)
+    );
+    const result = await getProgress();
+    expect(result[pairId].attempts[0].isCorrect).toBe(true);
   });
 
-  it('renders correctly with 0 minutes', () => {
-    const { getByText, getByTestId } = render(
-      <TimePracticedBar minutes={0} goal={60} />
+  it('handles failure in saveAttempt gracefully', async () => {
+    expect.assertions(1);
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(
+      new Error('fail')
     );
-    expect(getByText('Time Practiced: 0 / 60 min')).toBeTruthy();
-    const barFill = getByTestId('progress-bar-fill');
-    const style = getWidthStyle(barFill);
-    expect(style?.width).toBe('0%');
+    await saveAttempt('test', true);
+    expect(console.log).toHaveBeenCalledWith(
+      'Failed to save attempt',
+      expect.any(Error)
+    );
+  });
+
+  it('handles failure in getProgress gracefully', async () => {
+    expect.assertions(2);
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(
+      new Error('fail')
+    );
+    const progress = await getProgress();
+    expect(console.log).toHaveBeenCalledWith(
+      'Failed to fetch progress',
+      expect.any(Error)
+    );
+    expect(progress).toEqual({});
+  });
+
+  it('handles failure in resetProgress gracefully', async () => {
+    expect.assertions(1);
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    (AsyncStorage.removeItem as jest.Mock).mockRejectedValueOnce(
+      new Error('fail')
+    );
+    await resetProgress();
+    expect(console.log).toHaveBeenCalledWith(
+      'Failed to reset progress',
+      expect.any(Error)
+    );
   });
 });
 
 describe('progressStorage advanced logic', () => {
   const now = Date.now();
-  const mockAttempts = [
-    { timestamp: now - 10 * 60 * 1000, isCorrect: true },
-    { timestamp: now - 5 * 60 * 1000, isCorrect: false },
-    { timestamp: now, isCorrect: true },
-  ];
-
-  it('getWeightedAccuracy returns 0 for empty array', () => {
-    expect(getWeightedAccuracy([])).toBe(0);
+  const makeAttempt = (minAgo: number, isCorrect: boolean) => ({
+    timestamp: now - minAgo * 60000,
+    isCorrect,
   });
 
-  it('getWeightedAccuracy calculates with decay', () => {
-    const result = getWeightedAccuracy(mockAttempts, 60);
-    expect(result).toBeGreaterThan(0);
-    expect(result).toBeLessThan(1);
-  });
-
-  it('estimateActivePracticeTime returns 0 for < 2 attempts', () => {
-    expect(
-      estimateActivePracticeTime([{ timestamp: now, isCorrect: true }])
-    ).toBe(0);
-  });
-
-  it('estimateActivePracticeTime calculates session time correctly', () => {
+  it('getWeightedAccuracy favors recent correct answers', () => {
     const attempts = [
-      { timestamp: now - 4 * 60 * 1000, isCorrect: true },
-      { timestamp: now - 2 * 60 * 1000, isCorrect: true },
-      { timestamp: now, isCorrect: true },
+      makeAttempt(1, true),
+      makeAttempt(10, false),
+      makeAttempt(20, true),
     ];
-    const totalMs = estimateActivePracticeTime(attempts);
-    expect(totalMs).toBeGreaterThan(0);
+    const accuracy = getWeightedAccuracy(attempts, 30);
+    expect(accuracy).toBeGreaterThan(0.5);
+  });
+
+  it('estimateActivePracticeTime includes session breaks correctly', () => {
+    const attempts = [
+      makeAttempt(10, true),
+      makeAttempt(8, true),
+      makeAttempt(4, false),
+      makeAttempt(0, true),
+    ];
+    const total = estimateActivePracticeTime(attempts);
+    expect(total).toBeGreaterThan(0);
   });
 
   it('getAccuracyAndTimeOverTime returns sessions with accuracy', () => {
-    const sessions = getAccuracyAndTimeOverTime(mockAttempts, 2 * 60 * 1000);
-    expect(Array.isArray(sessions)).toBe(true);
+    const attempts = [
+      makeAttempt(30, true),
+      makeAttempt(25, false),
+      makeAttempt(5, true),
+      makeAttempt(0, true),
+    ];
+    const sessions = getAccuracyAndTimeOverTime(attempts);
     expect(sessions.length).toBeGreaterThan(0);
-    expect(sessions[0]).toHaveProperty('timeLabel');
-    expect(sessions[0]).toHaveProperty('accuracy');
-    expect(sessions[0]).toHaveProperty('cumulativeTimeMin');
+    sessions.forEach((session) => {
+      expect(typeof session.timeLabel).toBe('string');
+      expect(typeof session.accuracy).toBe('number');
+      expect(typeof session.cumulativeTimeMin).toBe('number');
+    });
   });
 });

@@ -1,6 +1,12 @@
+// Tests for TimePracticedBar and progressStorage advanced logic
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import TimePracticedBar from '../../components/TimePracticedBar';
+import {
+  getWeightedAccuracy,
+  estimateActivePracticeTime,
+  getAccuracyAndTimeOverTime,
+} from '../../src/storage/progressStorage';
 
 jest.mock('@/hooks/useLanguageScheme', () => ({
   useLanguageScheme: () => ({
@@ -48,5 +54,49 @@ describe('TimePracticedBar', () => {
     const barFill = getByTestId('progress-bar-fill');
     const style = getWidthStyle(barFill);
     expect(style?.width).toBe('0%');
+  });
+});
+
+describe('progressStorage advanced logic', () => {
+  const now = Date.now();
+  const mockAttempts = [
+    { timestamp: now - 10 * 60 * 1000, isCorrect: true },
+    { timestamp: now - 5 * 60 * 1000, isCorrect: false },
+    { timestamp: now, isCorrect: true },
+  ];
+
+  it('getWeightedAccuracy returns 0 for empty array', () => {
+    expect(getWeightedAccuracy([])).toBe(0);
+  });
+
+  it('getWeightedAccuracy calculates with decay', () => {
+    const result = getWeightedAccuracy(mockAttempts, 60);
+    expect(result).toBeGreaterThan(0);
+    expect(result).toBeLessThan(1);
+  });
+
+  it('estimateActivePracticeTime returns 0 for < 2 attempts', () => {
+    expect(
+      estimateActivePracticeTime([{ timestamp: now, isCorrect: true }])
+    ).toBe(0);
+  });
+
+  it('estimateActivePracticeTime calculates session time correctly', () => {
+    const attempts = [
+      { timestamp: now - 4 * 60 * 1000, isCorrect: true },
+      { timestamp: now - 2 * 60 * 1000, isCorrect: true },
+      { timestamp: now, isCorrect: true },
+    ];
+    const totalMs = estimateActivePracticeTime(attempts);
+    expect(totalMs).toBeGreaterThan(0);
+  });
+
+  it('getAccuracyAndTimeOverTime returns sessions with accuracy', () => {
+    const sessions = getAccuracyAndTimeOverTime(mockAttempts, 2 * 60 * 1000);
+    expect(Array.isArray(sessions)).toBe(true);
+    expect(sessions.length).toBeGreaterThan(0);
+    expect(sessions[0]).toHaveProperty('timeLabel');
+    expect(sessions[0]).toHaveProperty('accuracy');
+    expect(sessions[0]).toHaveProperty('cumulativeTimeMin');
   });
 });

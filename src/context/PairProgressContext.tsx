@@ -1,33 +1,27 @@
 // src/context/PairProgressContext.tsx
-
-import React, { useMemo, createContext, useContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 import {
   saveAttempt,
   getProgress,
   PairStats,
 } from '../storage/progressStorage';
 
-// Only use act in test environment to avoid dev/prod performance penalty
 const isTest = process.env.NODE_ENV === 'test';
 const maybeAct = isTest
   ? require('react-test-renderer').act
   : (fn: () => void) => fn();
 
-/**
- * The shape of our PairProgress context,
- * now with recordAttempt supporting an optional `durationMin` param
- */
-const PairProgressContext = createContext<{
-  progress: Record<string, PairStats>;
-  recordAttempt: (
-    pairId: string,
-    isCorrect: boolean,
-    durationMin?: number
-  ) => Promise<void>;
-}>({
-  progress: {},
-  recordAttempt: async () => {}, // default empty
-});
+// Split context: one for progress, one for recordAttempt
+const ProgressContext = createContext<Record<string, PairStats>>({});
+const RecordAttemptContext = createContext<
+  (pairId: string, isCorrect: boolean, durationMin?: number) => void
+>(() => {});
 
 export const PairProgressProvider = ({
   children,
@@ -36,7 +30,6 @@ export const PairProgressProvider = ({
 }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
 
-  // Load progress from storage on mount
   useEffect(() => {
     const loadProgress = async () => {
       const storedProgress = await getProgress();
@@ -45,28 +38,24 @@ export const PairProgressProvider = ({
     loadProgress();
   }, []);
 
-  /**
-   * recordAttempt - saves a new attempt with optional time spent
-   */
   const recordAttempt = async (
     pairId: string,
     isCorrect: boolean,
-    durationMin = 0
-  ): Promise<void> => {
-    // pass all three arguments
+    durationMin: number = 0
+  ) => {
     await saveAttempt(pairId, isCorrect, durationMin);
     const updatedProgress = await getProgress();
     maybeAct(() => setProgress(updatedProgress));
   };
 
-  const contextValue = useMemo(() => ({ progress, recordAttempt }), [progress]);
   return (
-    <PairProgressContext.Provider value={contextValue}>
-      {children}
-    </PairProgressContext.Provider>
+    <ProgressContext.Provider value={progress}>
+      <RecordAttemptContext.Provider value={recordAttempt}>
+        {children}
+      </RecordAttemptContext.Provider>
+    </ProgressContext.Provider>
   );
 };
 
-export const usePairProgress = () => useContext(PairProgressContext);
-
-export { PairProgressContext };
+export const useProgress = () => useContext(ProgressContext);
+export const useRecordAttempt = () => useContext(RecordAttemptContext);

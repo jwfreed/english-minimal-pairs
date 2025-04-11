@@ -1,7 +1,10 @@
 import React from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { minimalPairs } from '../../constants/minimalPairs';
-import { usePairProgress } from '../../src/context/PairProgressContext';
+import {
+  useProgress,
+  useRecordAttempt,
+} from '../../src/context/PairProgressContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import createStyles from '../../constants/styles';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
@@ -12,56 +15,60 @@ import {
 } from '../../src/storage/progressStorage';
 import AccuracyTimeChart from '../../components/AccuracyTimeChart';
 
+/* -- Data Interfaces -- */
 interface FlattenedPair {
   id: string;
   word1: string;
   word2: string;
+  audio1: string;
+  audio2: string;
+  category: string;
 }
 
-export default function ResultsScreen() {
-  const { progress } = usePairProgress();
-  const { t, categoryIndex } = useLanguageScheme();
+/* 
+  Updated type interface for attempts to match what's expected in progressStorage.
+  Now called PairAttempt and includes the required timestamp property.
+*/
+interface PairAttempt {
+  isCorrect: boolean;
+  timestamp: number;
+}
 
-  const themeColors = {
-    background: useThemeColor({}, 'background'),
-    text: useThemeColor({}, 'text'),
-    success: useThemeColor({}, 'success'),
-    error: useThemeColor({}, 'error'),
-    primary: useThemeColor({}, 'primary'),
-    buttonText: useThemeColor({}, 'buttonText'),
-  };
+interface PairStats {
+  attempts: PairAttempt[];
+}
 
-  const styles = createStyles(themeColors);
+/* -- Theme and Styles Interfaces -- */
+interface ThemeColors {
+  background: string;
+  text: string;
+  success: string;
+  error: string;
+  primary: string;
+  buttonText: string;
+  cardBackground: string;
+  shadow: string;
+  icon: string;
+}
 
-  const categories = minimalPairs.map((cat) => cat.category);
-  const selectedCategoryName = categories[categoryIndex];
-  const catObj = minimalPairs.find(
-    (cat) => cat.category === selectedCategoryName
-  );
+interface Styles {
+  container: any;
+  title: any;
+  // add additional style properties if needed
+}
 
-  if (!catObj || catObj.pairs.length === 0) {
-    return (
-      <View
-        style={[styles.container, { backgroundColor: themeColors.background }]}
-      >
-        <Text style={[styles.title, { color: themeColors.text }]}>
-          {`No pairs found for ${selectedCategoryName}`}
-        </Text>
-      </View>
-    );
-  }
+/* -- PairItem Component Props -- */
+interface PairItemProps {
+  item: FlattenedPair;
+  stats: PairStats;
+  t: (key: string) => string;
+  themeColors: ThemeColors;
+  styles: Styles;
+}
 
-  const flattenedPairs: FlattenedPair[] = catObj.pairs.map((pairObj) => {
-    const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;
-    return {
-      id: pairID,
-      word1: pairObj.word1,
-      word2: pairObj.word2,
-    };
-  });
-
-  const renderPair = ({ item }: { item: FlattenedPair }) => {
-    const stats = progress[item.id] || { attempts: [] };
+/* -- Memoized PairItem Component -- */
+const PairItem: React.FC<PairItemProps> = React.memo(
+  ({ item, stats, t, themeColors, styles }) => {
     const attempts = stats.attempts || [];
     const total = attempts.length;
     const correct = attempts.filter((a) => a.isCorrect).length;
@@ -69,9 +76,7 @@ export default function ResultsScreen() {
     const weightedAvg = getWeightedAccuracy(attempts) * 100;
     const trendData = getAccuracyAndTimeOverTime(attempts);
     const timePracticed =
-      stats && stats.attempts
-        ? Math.round(estimateActivePracticeTime(stats.attempts) / 60000)
-        : 0;
+      total > 0 ? Math.round(estimateActivePracticeTime(attempts) / 60000) : 0;
 
     return (
       <View
@@ -108,13 +113,10 @@ export default function ResultsScreen() {
               )}%) — ${t('weightedAverage')}: ${weightedAvg.toFixed(1)}%`}
             </Text>
           </View>
-
           {/* Right Column: Chart and Inline Progress Bar */}
           {trendData.length > 0 && (
             <View style={{ flexGrow: 1, minWidth: 180, maxWidth: '100%' }}>
               <AccuracyTimeChart practiceData={trendData} />
-
-              {/* Inline Time Practiced Progress Bar */}
               <View style={{ marginTop: 10 }}>
                 <Text
                   style={{
@@ -124,9 +126,7 @@ export default function ResultsScreen() {
                     color: themeColors.text,
                   }}
                 >
-                  {`${t('timePracticed')}: ${timePracticed.toFixed(0)} / 60 ${t(
-                    'min'
-                  )}`}
+                  {`${t('timePracticed')}: ${timePracticed} / 60 ${t('min')}`}
                 </Text>
                 <View
                   style={{
@@ -151,7 +151,60 @@ export default function ResultsScreen() {
         </View>
       </View>
     );
+  }
+);
+
+/* -- Main ResultsScreen Component -- */
+export default function ResultsScreen() {
+  const progress = useProgress();
+  const recordAttempt = useRecordAttempt();
+
+  const { t, categoryIndex } = useLanguageScheme();
+
+  const themeColors: ThemeColors = {
+    background: useThemeColor({}, 'background'),
+    text: useThemeColor({}, 'text'),
+    success: useThemeColor({}, 'success'),
+    error: useThemeColor({}, 'error'),
+    primary: useThemeColor({}, 'primary'),
+    buttonText: useThemeColor({}, 'buttonText'),
+    cardBackground: useThemeColor({}, 'cardBackground'),
+    shadow: useThemeColor({}, 'shadow'),
+    icon: useThemeColor({}, 'icon'),
   };
+
+  const styles: Styles = createStyles(themeColors);
+
+  const categories = minimalPairs.map((cat) => cat.category);
+  const selectedCategoryName = categories[categoryIndex];
+  const catObj = minimalPairs.find(
+    (cat) => cat.category === selectedCategoryName
+  );
+
+  if (!catObj || catObj.pairs.length === 0) {
+    return (
+      <View
+        style={[styles.container, { backgroundColor: themeColors.background }]}
+      >
+        <Text style={[styles.title, { color: themeColors.text }]}>
+          {`No pairs found for ${selectedCategoryName}`}
+        </Text>
+      </View>
+    );
+  }
+
+  // Map pairs to our flattened format including audio and category details
+  const flattenedPairs: FlattenedPair[] = catObj.pairs.map((pairObj) => {
+    const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;
+    return {
+      id: pairID,
+      word1: pairObj.word1,
+      word2: pairObj.word2,
+      audio1: pairObj.audio1,
+      audio2: pairObj.audio2,
+      category: catObj.category,
+    };
+  });
 
   return (
     <View
@@ -168,7 +221,18 @@ export default function ResultsScreen() {
       <FlatList
         data={flattenedPairs}
         keyExtractor={(item) => item.id}
-        renderItem={renderPair}
+        renderItem={({ item }) => {
+          const stats = progress[item.id] || { attempts: [] };
+          return (
+            <PairItem
+              item={item}
+              stats={stats}
+              t={t}
+              themeColors={themeColors}
+              styles={styles}
+            />
+          );
+        }}
       />
     </View>
   );

@@ -1,50 +1,89 @@
-import { StyleSheet } from 'react-native';
+// styles.ts
+import { StyleSheet, Platform } from 'react-native';
+import { Colors } from './Colors';
 
-/**
- * ThemeColors Interface
- *
- * Represents the color properties needed by your theme.
- */
-interface ThemeColors {
+export type ThemeColors = {
   background: string;
   text: string;
   success: string;
   error: string;
   primary: string;
   buttonText: string;
-  cardBackground?: string;
-  shadow?: string;
+  cardBackground: string;
+  shadow: string;
+  icon: string;
+};
+
+// We define constants for repeated values
+const Z_INDEX = {
+  feedback: 500,
+  dropdown: 900,
+  overlay: 1000,
+};
+
+function baseFont(color: string) {
+  return {
+    fontSize: 16,
+    color,
+  };
 }
 
-const createStyles = (themeColors: ThemeColors) =>
+const padding = {
+  vertical: 10,
+  horizontal: 20,
+};
+
+function getShadowStyles() {
+  if (Platform.OS === 'android') {
+    return {
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 2,
+    };
+  }
+  return {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  };
+}
+
+const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
-    // Main screen container
     container: {
       flex: 1,
       alignItems: 'center',
       paddingTop: 20,
-      backgroundColor: themeColors.background,
+      backgroundColor: colors.background,
     },
-
-    // Larger title for a stronger visual hierarchy
     title: {
       fontSize: 24,
-      marginBottom: 10,
-      color: themeColors.text,
       fontWeight: '600',
-    },
-
-    // Paragraph text for descriptions
-    paragraph: {
-      fontSize: 16,
-      lineHeight: 24,
       marginBottom: 10,
-      color: themeColors.text,
+      color: colors.text,
     },
-
-    // Enhanced InfoScreen styles
+    paragraph: {
+      ...baseFont(colors.text),
+      textAlign: 'center',
+    },
+    chartTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginTop: 20,
+      marginBottom: 10,
+      textAlign: 'center',
+      color: colors.text,
+    },
+    chartContainer: {
+      marginTop: 20,
+      paddingHorizontal: 20,
+    },
     infoCard: {
-      backgroundColor: themeColors.background,
+      backgroundColor: colors.background,
       borderRadius: 16,
       paddingVertical: 20,
       paddingHorizontal: 16,
@@ -54,94 +93,74 @@ const createStyles = (themeColors: ThemeColors) =>
       fontWeight: '800',
       marginTop: 28,
       marginBottom: 10,
-      color: themeColors.text,
+      color: colors.text,
     },
     infoText: {
-      fontSize: 16,
+      ...baseFont(colors.text),
       lineHeight: 26,
       marginBottom: 12,
-      color: themeColors.text,
     },
     infoList: {
-      fontSize: 16,
+      ...baseFont(colors.text),
       lineHeight: 28,
       marginBottom: 12,
       paddingLeft: 12,
-      color: themeColors.text,
     },
-
-    // Dropdown Trigger Button
     dropdownButton: {
-      backgroundColor: themeColors.primary,
+      backgroundColor: colors.primary,
       paddingHorizontal: 16,
       paddingVertical: 10,
       borderRadius: 12,
       marginBottom: 10,
     },
     dropdownButtonText: {
-      color: themeColors.buttonText,
+      color: colors.buttonText,
       fontSize: 16,
       fontWeight: 'bold',
     },
-
-    // Simple (non-floating) Dropdown List
     dropdownList: {
       width: 250,
       borderWidth: 1,
-      borderColor: themeColors.shadow || '#ccc',
+      borderColor: colors.shadow,
       borderRadius: 12,
-      backgroundColor: themeColors.background,
+      backgroundColor: colors.background,
       marginBottom: 10,
     },
     dropdownItem: {
       padding: 10,
     },
     dropdownItemText: {
-      fontSize: 16,
-      color: themeColors.text,
+      ...baseFont(colors.text),
     },
-
-    // Scroll container styling (if wrapping content in ScrollView)
     scrollContainer: {
       flexGrow: 1,
       alignItems: 'center',
       justifyContent: 'flex-start',
       paddingBottom: 20,
     },
-
-    // Picker (native) styling
     picker: {
       width: 250,
-      color: themeColors.text,
+      color: colors.text,
       marginVertical: 4,
     },
-
-    // Main Buttons (e.g. “Play Audio,” answer choices)
     button: {
-      backgroundColor: themeColors.primary,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
+      backgroundColor: colors.primary,
+      paddingVertical: padding.vertical,
+      paddingHorizontal: padding.horizontal,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 8,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 3,
-      elevation: 2,
+      ...getShadowStyles(),
     },
     buttonText: {
-      color: themeColors.buttonText,
+      color: colors.buttonText,
       fontSize: 16,
       fontWeight: 'bold',
     },
-
     buttonPressed: {
       backgroundColor: '#D76D1F',
     },
-
-    // Container for answer buttons + feedback
     answerContainer: {
       position: 'relative',
       width: '80%',
@@ -156,14 +175,12 @@ const createStyles = (themeColors: ThemeColors) =>
       width: '100%',
       alignItems: 'center',
     },
-
-    // Feedback Overlay for ✓ or ✗
     feedbackOverlay: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
-      zIndex: 1,
+      zIndex: Z_INDEX.feedback,
       alignItems: 'center',
     },
     feedbackSymbol: {
@@ -171,18 +188,17 @@ const createStyles = (themeColors: ThemeColors) =>
       fontWeight: 'bold',
     },
     correctFeedback: {
-      color: themeColors.success,
+      color: colors.success,
     },
     incorrectFeedback: {
-      color: themeColors.error,
+      color: colors.error,
     },
     feedbackText: {
       marginTop: 6,
       fontSize: 16,
       fontWeight: 'bold',
+      color: colors.text,
     },
-
-    // Overlay for a floating, animated dropdown
     overlay: {
       position: 'absolute',
       top: 0,
@@ -192,20 +208,14 @@ const createStyles = (themeColors: ThemeColors) =>
       backgroundColor: 'rgba(0,0,0,0.3)',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 999,
+      zIndex: Z_INDEX.overlay,
     },
-
-    // The floating dropdown card
     dropdownCard: {
       width: 280,
-      backgroundColor: themeColors.background,
+      backgroundColor: colors.background,
       borderRadius: 12,
       paddingVertical: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
+      ...getShadowStyles(),
     },
   });
 

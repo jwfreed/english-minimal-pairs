@@ -24,6 +24,9 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
     error: useThemeColor({}, 'error'),
     primary: useThemeColor({}, 'primary'),
     buttonText: useThemeColor({}, 'buttonText'),
+    cardBackground: useThemeColor({}, 'cardBackground'),
+    shadow: useThemeColor({}, 'shadow'),
+    icon: useThemeColor({}, 'icon'),
   };
 
   const styles = createStyles(themeColors);

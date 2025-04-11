@@ -11,7 +11,10 @@ import { Picker } from '@react-native-picker/picker';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
 import * as Haptics from 'expo-haptics'; // 1) Import Expo Haptics
 import { minimalPairs } from '../../constants/minimalPairs';
-import { usePairProgress } from '../../src/context/PairProgressContext';
+import {
+  useProgress,
+  useRecordAttempt,
+} from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import createStyles from '../../constants/styles';
@@ -35,7 +38,9 @@ if (LogBox?.ignoreLogs) {
  */
 export default function HomeScreen() {
   // 1) Access global context
-  const { recordAttempt } = usePairProgress();
+  const progress = useProgress();
+  const recordAttempt = useRecordAttempt();
+
   const { setLanguage, t, categoryIndex, setCategoryIndex, language } =
     useLanguageScheme();
 
@@ -67,6 +72,9 @@ export default function HomeScreen() {
     error: useThemeColor({}, 'error'),
     primary: useThemeColor({}, 'primary'),
     buttonText: useThemeColor({}, 'buttonText'),
+    cardBackground: useThemeColor({}, 'cardBackground'),
+    shadow: useThemeColor({}, 'shadow'),
+    icon: useThemeColor({}, 'icon'),
   };
 
   const styles = createStyles(themeColors);

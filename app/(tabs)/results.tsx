@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, FlatList } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { minimalPairs } from '../../constants/minimalPairs';
 import {
   useProgress,
@@ -25,10 +25,6 @@ interface FlattenedPair {
   category: string;
 }
 
-/* 
-  Updated type interface for attempts to match what's expected in progressStorage.
-  Now called PairAttempt and includes the required timestamp property.
-*/
 interface PairAttempt {
   isCorrect: boolean;
   timestamp: number;
@@ -57,128 +53,145 @@ interface Styles {
   // add additional style properties if needed
 }
 
-/* -- PairItem Component Props -- */
-interface PairItemProps {
+/* -- Consolidated Theme Hook -- */
+const useAllThemeColors = (): ThemeColors => ({
+  background: useThemeColor({}, 'background'),
+  text: useThemeColor({}, 'text'),
+  success: useThemeColor({}, 'success'),
+  error: useThemeColor({}, 'error'),
+  primary: useThemeColor({}, 'primary'),
+  buttonText: useThemeColor({}, 'buttonText'),
+  cardBackground: useThemeColor({}, 'cardBackground'),
+  shadow: useThemeColor({}, 'shadow'),
+  icon: useThemeColor({}, 'icon'),
+});
+
+/* -- Static Styles for PairItem -- */
+const pairItemStyles = StyleSheet.create({
+  container: {
+    marginBottom: 24,
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.125)', // corresponds to "#ffffff20"
+  },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  leftColumn: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 140,
+    paddingRight: 8,
+  },
+  rightColumn: {
+    flexGrow: 1,
+    minWidth: 180,
+    maxWidth: '100%',
+  },
+  progressBarOuter: {
+    height: 12,
+    width: '100%',
+    backgroundColor: '#e5e7eb',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  progressBarInner: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+  },
+});
+
+/* -- Memoized PairItem Component -- */
+const PairItem: React.FC<{
   item: FlattenedPair;
   stats: PairStats;
   t: (key: string) => string;
   themeColors: ThemeColors;
   styles: Styles;
-}
+}> = React.memo(({ item, stats, t, themeColors, styles }) => {
+  const attempts = stats.attempts || [];
+  const total = attempts.length;
 
-/* -- Memoized PairItem Component -- */
-const PairItem: React.FC<PairItemProps> = React.memo(
-  ({ item, stats, t, themeColors, styles }) => {
-    const attempts = stats.attempts || [];
-    const total = attempts.length;
+  // Memoize computed values
+  const { rawAvg, weightedAvg, trendData, timePracticed } = useMemo(() => {
     const correct = attempts.filter((a) => a.isCorrect).length;
-    const rawAvg = total > 0 ? (correct / total) * 100 : 0;
-    const weightedAvg = getWeightedAccuracy(attempts) * 100;
-    const trendData = getAccuracyAndTimeOverTime(attempts);
-    const timePracticed =
-      total > 0 ? Math.round(estimateActivePracticeTime(attempts) / 60000) : 0;
+    const rawAvgValue = total > 0 ? (correct / total) * 100 : 0;
+    return {
+      rawAvg: rawAvgValue,
+      weightedAvg: getWeightedAccuracy(attempts) * 100,
+      trendData: getAccuracyAndTimeOverTime(attempts),
+      timePracticed:
+        total > 0
+          ? Math.round(estimateActivePracticeTime(attempts) / 60000)
+          : 0,
+    };
+  }, [attempts, total]);
 
-    return (
-      <View
-        style={{
-          marginBottom: 24,
-          backgroundColor: '#ffffff20',
-          borderRadius: 12,
-          padding: 12,
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-          }}
-        >
-          {/* Left Column: Pair Title and Accuracy Stats */}
-          <View
-            style={{
-              flexGrow: 1,
-              flexShrink: 1,
-              minWidth: 140,
-              paddingRight: 8,
-            }}
-          >
-            <Text style={[styles.title, { color: themeColors.text }]}>
-              {`${item.word1} - ${item.word2}`}
-            </Text>
-            <Text style={{ color: themeColors.text }}>
-              {`${t('total')}: ${correct}/${total} (${rawAvg.toFixed(
-                1
-              )}%) — ${t('weightedAverage')}: ${weightedAvg.toFixed(1)}%`}
-            </Text>
-          </View>
-          {/* Right Column: Chart and Inline Progress Bar */}
-          {trendData.length > 0 && (
-            <View style={{ flexGrow: 1, minWidth: 180, maxWidth: '100%' }}>
-              <AccuracyTimeChart practiceData={trendData} />
-              <View style={{ marginTop: 10 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    marginBottom: 6,
-                    fontWeight: '600',
-                    color: themeColors.text,
-                  }}
-                >
-                  {`${t('timePracticed')}: ${timePracticed} / 60 ${t('min')}`}
-                </Text>
+  return (
+    <View style={pairItemStyles.container}>
+      <View style={pairItemStyles.row}>
+        {/* Left Column: Pair Title and Accuracy Stats */}
+        <View style={pairItemStyles.leftColumn}>
+          <Text style={[styles.title, { color: themeColors.text }]}>
+            {`${item.word1} - ${item.word2}`}
+          </Text>
+          <Text style={{ color: themeColors.text }}>
+            {`${t('total')}: ${
+              total -
+              (total -
+                (total > 0 ? attempts.filter((a) => a.isCorrect).length : 0))
+            }/${total} (${rawAvg.toFixed(1)}%) — ${t(
+              'weightedAverage'
+            )}: ${weightedAvg.toFixed(1)}%`}
+          </Text>
+        </View>
+        {/* Right Column: Chart and Inline Progress Bar */}
+        {trendData.length > 0 && (
+          <View style={pairItemStyles.rightColumn}>
+            <AccuracyTimeChart practiceData={trendData} />
+            <View style={{ marginTop: 10 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  marginBottom: 6,
+                  fontWeight: '600',
+                  color: themeColors.text,
+                }}
+              >
+                {`${t('timePracticed')}: ${timePracticed} / 60 ${t('min')}`}
+              </Text>
+              <View style={pairItemStyles.progressBarOuter}>
                 <View
-                  style={{
-                    height: 12,
-                    width: '100%',
-                    backgroundColor: '#e5e7eb',
-                    borderRadius: 6,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <View
-                    style={{
-                      height: '100%',
-                      width: `${Math.min(timePracticed / 60, 1) * 100}%`,
-                      backgroundColor: '#3b82f6',
-                    }}
-                  />
-                </View>
+                  style={[
+                    pairItemStyles.progressBarInner,
+                    { width: `${Math.min(timePracticed / 60, 1) * 100}%` },
+                  ]}
+                />
               </View>
             </View>
-          )}
-        </View>
+          </View>
+        )}
       </View>
-    );
-  }
-);
+    </View>
+  );
+});
 
 /* -- Main ResultsScreen Component -- */
 export default function ResultsScreen() {
   const progress = useProgress();
   const recordAttempt = useRecordAttempt();
-
   const { t, categoryIndex } = useLanguageScheme();
-
-  const themeColors: ThemeColors = {
-    background: useThemeColor({}, 'background'),
-    text: useThemeColor({}, 'text'),
-    success: useThemeColor({}, 'success'),
-    error: useThemeColor({}, 'error'),
-    primary: useThemeColor({}, 'primary'),
-    buttonText: useThemeColor({}, 'buttonText'),
-    cardBackground: useThemeColor({}, 'cardBackground'),
-    shadow: useThemeColor({}, 'shadow'),
-    icon: useThemeColor({}, 'icon'),
-  };
-
+  const themeColors = useAllThemeColors();
   const styles: Styles = createStyles(themeColors);
 
-  const categories = minimalPairs.map((cat) => cat.category);
+  const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
-  const catObj = minimalPairs.find(
-    (cat) => cat.category === selectedCategoryName
+  const catObj = useMemo(
+    () => minimalPairs.find((cat) => cat.category === selectedCategoryName),
+    [selectedCategoryName]
   );
 
   if (!catObj || catObj.pairs.length === 0) {
@@ -193,18 +206,20 @@ export default function ResultsScreen() {
     );
   }
 
-  // Map pairs to our flattened format including audio and category details
-  const flattenedPairs: FlattenedPair[] = catObj.pairs.map((pairObj) => {
-    const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;
-    return {
-      id: pairID,
-      word1: pairObj.word1,
-      word2: pairObj.word2,
-      audio1: pairObj.audio1,
-      audio2: pairObj.audio2,
-      category: catObj.category,
-    };
-  });
+  // Memoize flattenedPairs so that they are not recalculated on every render
+  const flattenedPairs: FlattenedPair[] = useMemo(() => {
+    return catObj.pairs.map((pairObj) => {
+      const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;
+      return {
+        id: pairID,
+        word1: pairObj.word1,
+        word2: pairObj.word2,
+        audio1: pairObj.audio1,
+        audio2: pairObj.audio2,
+        category: catObj.category,
+      };
+    });
+  }, [catObj]);
 
   return (
     <View

@@ -8,6 +8,7 @@ import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 import {
   getWeightedAccuracy,
   getAccuracyAndTimeOverTime,
+  estimateActivePracticeTime,
 } from '../../src/storage/progressStorage';
 import AccuracyTimeChart from '../../components/AccuracyTimeChart';
 
@@ -68,8 +69,8 @@ export default function ResultsScreen() {
     const weightedAvg = getWeightedAccuracy(attempts) * 100;
     const trendData = getAccuracyAndTimeOverTime(attempts);
     const timePracticed =
-      trendData.length > 0
-        ? Math.max(...trendData.map((d) => d.cumulativeTimeMin))
+      stats && stats.attempts
+        ? Math.round(estimateActivePracticeTime(stats.attempts) / 60000)
         : 0;
 
     return (
@@ -111,7 +112,8 @@ export default function ResultsScreen() {
           {/* Right Column: Chart and Inline Progress Bar */}
           {trendData.length > 0 && (
             <View style={{ flexGrow: 1, minWidth: 180, maxWidth: '100%' }}>
-              <AccuracyTimeChart data={trendData} />
+              <AccuracyTimeChart practiceData={trendData} />
+
               {/* Inline Time Practiced Progress Bar */}
               <View style={{ marginTop: 10 }}>
                 <Text

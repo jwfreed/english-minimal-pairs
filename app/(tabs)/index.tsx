@@ -127,26 +127,51 @@ export default function HomeScreen() {
    * Play a random word from the pair
    * (start timing the user's attempt)
    */
+  // Declare soundRef to store both preloaded Audio.Sound instances
+  const soundRefs = useRef<Audio.Sound[]>([]);
+
+  // Preload audio whenever the selected pair or category changes
+  useEffect(() => {
+    let sound1: Audio.Sound;
+    let sound2: Audio.Sound;
+
+    const preloadAudio = async () => {
+      if (!selectedPair) return;
+
+      try {
+        sound1 = new Audio.Sound();
+        await sound1.loadAsync(selectedPair.audio1);
+
+        sound2 = new Audio.Sound();
+        await sound2.loadAsync(selectedPair.audio2);
+
+        soundRefs.current = [sound1, sound2]; // store both loaded sounds
+      } catch (e) {
+        console.warn('Failed to preload audio', e);
+      }
+    };
+
+    preloadAudio();
+
+    // Cleanup: unload sounds on pair/category change
+    return () => {
+      sound1?.unloadAsync();
+      sound2?.unloadAsync();
+    };
+  }, [pairIndex, categoryIndex, selectedPair]);
+
+  // Event handler to play audio instantly
   async function handlePlay() {
     setFeedback(null);
     setStartTime(Date.now());
 
-    if (soundRef.current) {
-      await soundRef.current.unloadAsync();
-    }
-
-    // Decide which word (0 or 1) to play
     const idx = Math.random() < 0.5 ? 0 : 1;
     setPlayedWordIndex(idx);
 
     try {
-      const newSound = new Audio.Sound();
-      const audioToLoad = idx === 0 ? selectedPair.audio1 : selectedPair.audio2;
-      await newSound.loadAsync(audioToLoad);
-      soundRef.current = newSound;
-      await newSound.playAsync();
+      await soundRefs.current[idx]?.replayAsync();
     } catch (err) {
-      console.error('Error playing audio', err);
+      console.error('Error playing audio:', err);
     }
   }
 

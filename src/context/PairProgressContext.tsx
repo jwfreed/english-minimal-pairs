@@ -1,6 +1,6 @@
 // src/context/PairProgressContext.tsx
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useMemo, createContext, useContext, useState, useEffect } from 'react';
 import {
   saveAttempt,
   getProgress,
@@ -59,8 +59,9 @@ export const PairProgressProvider = ({
     maybeAct(() => setProgress(updatedProgress));
   };
 
+  const contextValue = useMemo(() => ({ progress, recordAttempt }), [progress]);
   return (
-    <PairProgressContext.Provider value={{ progress, recordAttempt }}>
+    <PairProgressContext.Provider value={contextValue}>
       {children}
     </PairProgressContext.Provider>
   );

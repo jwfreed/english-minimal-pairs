@@ -10,7 +10,6 @@ import {
   getAccuracyAndTimeOverTime,
 } from '../../src/storage/progressStorage';
 import AccuracyTimeChart from '../../components/AccuracyTimeChart';
-import TimePracticedBar from '../../components/TimePracticedBar';
 
 interface FlattenedPair {
   id: string;
@@ -89,7 +88,7 @@ export default function ResultsScreen() {
             justifyContent: 'space-between',
           }}
         >
-          {/* Left Column: Pair + Accuracy Text */}
+          {/* Left Column: Pair Title and Accuracy Stats */}
           <View
             style={{
               flexGrow: 1,
@@ -108,11 +107,42 @@ export default function ResultsScreen() {
             </Text>
           </View>
 
-          {/* Right Column: Chart + Bar */}
+          {/* Right Column: Chart and Inline Progress Bar */}
           {trendData.length > 0 && (
             <View style={{ flexGrow: 1, minWidth: 180, maxWidth: '100%' }}>
               <AccuracyTimeChart data={trendData} />
-              <TimePracticedBar minutes={timePracticed} />
+              {/* Inline Time Practiced Progress Bar */}
+              <View style={{ marginTop: 10 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    marginBottom: 6,
+                    fontWeight: '600',
+                    color: themeColors.text,
+                  }}
+                >
+                  {`${t('timePracticed')}: ${timePracticed.toFixed(0)} / 60 ${t(
+                    'min'
+                  )}`}
+                </Text>
+                <View
+                  style={{
+                    height: 12,
+                    width: '100%',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: 6,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <View
+                    style={{
+                      height: '100%',
+                      width: `${Math.min(timePracticed / 60, 1) * 100}%`,
+                      backgroundColor: '#3b82f6',
+                    }}
+                  />
+                </View>
+              </View>
             </View>
           )}
         </View>
@@ -124,7 +154,7 @@ export default function ResultsScreen() {
     <View
       style={[
         styles.container,
-        { flex: 1, backgroundColor: themeColors.background },
+        { flex: 1, backgroundColor: themeColors.background, padding: 16 },
       ]}
     >
       <Text

@@ -18,6 +18,7 @@ import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
 import { LogBox } from 'react-native';
 
+// This hides the "Warning: Grid: Support for defaultProps" message
 if (LogBox?.ignoreLogs) {
   LogBox.ignoreLogs(['Warning: Grid: Support for defaultProps']);
 }
@@ -26,35 +27,36 @@ if (LogBox?.ignoreLogs) {
  * HomeScreen
  *
  * The main practice interface:
- *  - Floating dropdown for Category selection
- *  - Native Picker for Pair selection
- *  - "Play Audio" to hear a random word from the selected pair
- *  - Two answer buttons with ✓/✗ feedback
- *  - Micro-animation & haptic feedback on correct answers
+ *  - Category selection (dropdown)
+ *  - Picker for Pair selection
+ *  - "Play Audio" => times the user's attempt
+ *  - Two answer buttons with immediate feedback
+ *  - Micro-animations & haptics on correct/incorrect
  */
 export default function HomeScreen() {
-  // Global context usage
+  // 1) Access global context
   const { recordAttempt } = usePairProgress();
   const { setLanguage, t, categoryIndex, setCategoryIndex, language } =
     useLanguageScheme();
 
-  // Categories from minimalPairs
+  // 2) Gather categories
   const categories = minimalPairs.map((catObj) => catObj.category);
 
-  // Local quiz state
+  // 3) Local quiz state
   const [pairIndex, setPairIndex] = useState(0);
   const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
 
-  // 2) Micro-animation: track an Animated.Value for correct button scale
+  // 4) Track the start time for each attempt (when user taps "Play Audio")
+  const [startTime, setStartTime] = useState<number | null>(null);
+
+  // Micro-animation for correct answers
   const correctButtonScale = useRef(new Animated.Value(1)).current;
 
-  // Floating dropdown toggle
+  // Floating category dropdown
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-
-  // Fade/Scale animation for the floating dropdown
   const dropdownOpacity = useRef(new Animated.Value(0)).current;
 
   // Theming
@@ -76,7 +78,7 @@ export default function HomeScreen() {
   }, [categoryIndex, categories, setLanguage]);
 
   /**
-   * Identify the currently selected category object, or show fallback if empty
+   * Identify the currently selected category object
    */
   const selectedCategoryName = categories[categoryIndex];
   const catObj = minimalPairs.find(
@@ -86,9 +88,9 @@ export default function HomeScreen() {
   if (!catObj || catObj.pairs.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>
-          {`No pairs found for ${selectedCategoryName}`}
-        </Text>
+        <Text
+          style={styles.title}
+        >{`No pairs found for ${selectedCategoryName}`}</Text>
       </View>
     );
   }
@@ -96,6 +98,8 @@ export default function HomeScreen() {
   // Extract pairs and find the active pair
   const pairsInCategory = catObj.pairs;
   const selectedPair = pairsInCategory[pairIndex];
+
+  // Audio reference
   const soundRef = useRef<Audio.Sound | null>(null);
 
   /**
@@ -120,13 +124,17 @@ export default function HomeScreen() {
 
   /**
    * Play a random word from the pair
+   * (start timing the user's attempt)
    */
   async function handlePlay() {
     setFeedback(null);
+    setStartTime(Date.now());
+
     if (soundRef.current) {
       await soundRef.current.unloadAsync();
     }
 
+    // Decide which word (0 or 1) to play
     const idx = Math.random() < 0.5 ? 0 : 1;
     setPlayedWordIndex(idx);
 
@@ -142,7 +150,7 @@ export default function HomeScreen() {
   }
 
   /**
-   * 3) Define a "pop" animation for correct answers
+   * Show a little 'pop' for correct answers
    */
   function popAnimation() {
     correctButtonScale.setValue(0.9);
@@ -161,33 +169,41 @@ export default function HomeScreen() {
   }
 
   /**
-   * Determine if the user answered correctly or not
+   * The user selects which word they think was played
    */
   function handleAnswer(chosenIndex: 0 | 1) {
     if (playedWordIndex === null) return;
+
+    // 1) Determine correctness
     const isCorrect = chosenIndex === playedWordIndex;
     setFeedback(isCorrect ? 'correct' : 'incorrect');
 
-    // 4) Provide haptic feedback
+    // 2) Haptics
     if (isCorrect) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      popAnimation(); // Trigger the pop on the correct button
+      popAnimation();
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
 
-    // Re-fetch catObj in case the category changed mid-flow
+    // 3) Gather Pair ID for storage
     const catObj = minimalPairs.find(
       (cat) => cat.category === selectedCategoryName
     );
     if (!catObj || catObj.pairs.length === 0) return;
-
     const selectedPair = catObj.pairs[pairIndex];
     const pairID = `${selectedPair.word1}-${selectedPair.word2}-(${catObj.category})`;
-    recordAttempt(pairID, isCorrect);
+
+    // 4) Compute how long since user tapped "Play"
+    const endTime = Date.now();
+    const msElapsed = startTime ? endTime - startTime : 0;
+    const durationMin = msElapsed / 60000; // convert ms to minutes
+
+    // 5) Save attempt with time spent
+    recordAttempt(pairID, isCorrect, durationMin);
   }
 
-  // Localized or custom text for "Play Audio"
+  // Localized text for "Play Audio"
   const playAudioText = alternateLanguages[language]?.playAudio || 'Play Audio';
 
   /**
@@ -224,9 +240,7 @@ export default function HomeScreen() {
     >
       <Text style={styles.title}>{t('practicePairs')}</Text>
 
-      {/**
-       * Floating dropdown trigger for categories
-       */}
+      {/* Floating dropdown for categories */}
       <TouchableOpacity
         style={styles.dropdownButton}
         onPress={() =>
@@ -236,9 +250,6 @@ export default function HomeScreen() {
         <Text style={styles.dropdownButtonText}>{selectedCategoryName} ▼</Text>
       </TouchableOpacity>
 
-      {/**
-       * If open, show an overlay and an animated dropdown card
-       */}
       {showCategoryDropdown && (
         <Pressable style={styles.overlay} onPress={closeDropdown}>
           <Animated.View
@@ -275,10 +286,7 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      {/**
-       * Pair Picker (native)
-       * Lets the user pick which minimal pair to practice next
-       */}
+      {/* Pair Picker */}
       <Picker
         selectedValue={String(pairIndex)}
         onValueChange={(val) => {
@@ -293,24 +301,15 @@ export default function HomeScreen() {
         })}
       </Picker>
 
-      {/**
-       * Play Audio button
-       */}
+      {/* Play Audio */}
       <TouchableOpacity style={styles.button} onPress={handlePlay}>
         <Text style={styles.buttonText}>{playAudioText}</Text>
       </TouchableOpacity>
 
-      {/**
-       * Two answer buttons (the minimal pair words) + feedback overlay.
-       * We'll conditionally wrap the correct button with an Animated.View
-       * so it "pops" if the user is correct.
-       */}
+      {/* Two answer buttons + feedback overlay */}
       <View style={styles.answerContainer}>
         <View style={styles.buttonRow}>
-          {/**
-           * If the correct answer was button 0, and user got it right,
-           * wrap it in an Animated.View to run the pop.
-           */}
+          {/* Left Option (word1) */}
           {playedWordIndex === 0 && feedback === 'correct' ? (
             <Animated.View
               style={{ transform: [{ scale: correctButtonScale }] }}
@@ -331,9 +330,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
 
-          {/**
-           * Same logic for button 1
-           */}
+          {/* Right Option (word2) */}
           {playedWordIndex === 1 && feedback === 'correct' ? (
             <Animated.View
               style={{ transform: [{ scale: correctButtonScale }] }}
@@ -355,6 +352,7 @@ export default function HomeScreen() {
           )}
         </View>
 
+        {/* Correct / Incorrect overlay (✓ / ✗) */}
         {feedback && (
           <View style={styles.feedbackOverlay}>
             <Text

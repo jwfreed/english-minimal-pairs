@@ -1,48 +1,93 @@
-// components/TimePracticedBar.tsx
+// src/storage/progressStorage.ts
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import * as Progress from 'react-native-progress';
-import { useLanguageScheme } from '@/hooks/useLanguageScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface Props {
-  minutes: number;
-  goal?: number;
+const PROGRESS_KEY = '@userProgress';
+
+/**
+ * Represents a single quiz attempt on a specific pair
+ */
+export interface PairAttempt {
+  isCorrect: boolean;
+  timestamp: number; // when the attempt was made
+  durationMin?: number; // how many minutes spent on this attempt (optional)
 }
 
-export default function TimePracticedBar({ minutes, goal = 60 }: Props) {
-  const { t } = useLanguageScheme();
-  const progress = Math.min(minutes / goal, 1);
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.label}>
-        {`${t('timePracticed')}: ${minutes.toFixed(0)} / ${goal} ${t('min')}`}
-      </Text>
-      <Progress.Bar
-        progress={progress}
-        width={null}
-        height={12}
-        borderRadius={6}
-        color="#3b82f6"
-        unfilledColor="#e5e7eb"
-        borderWidth={0}
-        animated
-      />
-    </View>
-  );
+/**
+ * Cumulative stats for a single minimal pair
+ */
+export interface PairStats {
+  attempts: PairAttempt[];
+  totalPracticeTimeMin: number; // sum of all durations for this pair
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    marginTop: 10,
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 6,
-    fontWeight: '600',
-  },
-});
+/**
+ * Load all progress from AsyncStorage
+ */
+export async function getProgress(): Promise<Record<string, PairStats>> {
+  try {
+    const stored = await AsyncStorage.getItem(PROGRESS_KEY);
+    if (!stored) {
+      return {};
+    }
+    return JSON.parse(stored);
+  } catch (error) {
+    console.error('Error loading progress from storage:', error);
+    return {};
+  }
+}
+
+/**
+ * Save a single attempt for a given pairId
+ *
+ * @param pairId - unique ID for the minimal pair (e.g. "ship-sheep" or "bit-beat")
+ * @param isCorrect - whether the user got it right
+ * @param durationMin - optional time in minutes spent on this attempt
+ */
+export async function saveAttempt(
+  pairId: string,
+  isCorrect: boolean,
+  durationMin = 0
+) {
+  try {
+    // Load existing progress
+    const progress = await getProgress();
+
+    // Ensure the pairStats object exists
+    if (!progress[pairId]) {
+      progress[pairId] = {
+        attempts: [],
+        totalPracticeTimeMin: 0,
+      };
+    }
+
+    // Create a new attempt
+    const newAttempt: PairAttempt = {
+      isCorrect,
+      timestamp: Date.now(),
+      durationMin,
+    };
+
+    // Push attempt
+    progress[pairId].attempts.push(newAttempt);
+
+    // Increment total practice time
+    progress[pairId].totalPracticeTimeMin += durationMin;
+
+    // Persist updated progress
+    await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+  } catch (error) {
+    console.error('Error saving attempt:', error);
+  }
+}
+
+/**
+ * Reset all user progress (remove from AsyncStorage)
+ */
+export async function resetProgress() {
+  try {
+    await AsyncStorage.removeItem(PROGRESS_KEY);
+  } catch (error) {
+    console.error('Error resetting progress:', error);
+  }
+}

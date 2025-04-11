@@ -1,4 +1,4 @@
-// src/storage/progressStorage.js
+// src/storage/progressStorage.ts
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -7,15 +7,18 @@ const PROGRESS_KEY = '@userProgress';
 export type PairAttempt = {
   timestamp: number;
   isCorrect: boolean;
+  durationMin?: number;
 };
 
 export type PairStats = {
   attempts: PairAttempt[];
+  totalPracticeTimeMin?: number;
 };
 
 export const saveAttempt = async (
   pairId: string,
-  isCorrect: boolean
+  isCorrect: boolean,
+  durationMin: number = 0
 ): Promise<void> => {
   try {
     const currentData = await AsyncStorage.getItem(PROGRESS_KEY);
@@ -26,13 +29,21 @@ export const saveAttempt = async (
     const newAttempt: PairAttempt = {
       timestamp: Date.now(),
       isCorrect,
+      durationMin,
     };
 
     const updatedPairAttempts = parsed[pairId]?.attempts || [];
     updatedPairAttempts.push(newAttempt);
 
+    // Compute total practice time (in minutes) from all attempts
+    const totalPracticeTimeMin = updatedPairAttempts.reduce(
+      (acc, attempt) => acc + (attempt.durationMin || 0),
+      0
+    );
+
     parsed[pairId] = {
       attempts: updatedPairAttempts,
+      totalPracticeTimeMin,
     };
 
     await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(parsed));

@@ -8,13 +8,14 @@ import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 export default function InfoScreen() {
   const { t, language } = useLanguageScheme();
   const themeColors = {
-    background: useThemeColor({}, 'background')(),
-    text: useThemeColor({}, 'text')(),
-    success: useThemeColor({}, 'success')(),
-    error: useThemeColor({}, 'error')(),
-    primary: useThemeColor({}, 'primary')(),
-    buttonText: useThemeColor({}, 'buttonText')(),
+    background: useThemeColor({}, 'background'),
+    text: useThemeColor({}, 'text'),
+    success: useThemeColor({}, 'success'),
+    error: useThemeColor({}, 'error'),
+    primary: useThemeColor({}, 'primary'),
+    buttonText: useThemeColor({}, 'buttonText'),
   };
+
   const styles = createStyles(themeColors);
 
   return (

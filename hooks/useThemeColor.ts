@@ -1,25 +1,35 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
+// useThemeColor.ts
+import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
+// The keys in Colors.light & Colors.dark
+type ColorName = keyof typeof Colors.light & keyof typeof Colors.dark;
+
+interface ThemeOverrideProps {
+  light?: string;
+  dark?: string;
+}
+
+/**
+ * useThemeColor - returns a **string** color value based on current scheme
+ *
+ * @param props Optional overrides for light/dark color
+ * @param colorName Key of Colors.light/dark (like 'background', 'text', etc.)
+ * @returns a **string** color
+ */
 export function useThemeColor(
-  props: { light?: string; dark?: string },
-  colorName: keyof typeof Colors.light & keyof typeof Colors.dark
-) {
-  return function getThemeColor() {
-    const theme = useColorScheme() ?? 'light';
+  props: ThemeOverrideProps,
+  colorName: ColorName
+): string {
+  // e.g. "light" | "dark" | "no-preference"
+  const theme = useColorScheme() || 'light';
 
-    const colorFromProps = props[theme];
+  // If user provided overrides, use them
+  const override = theme === 'dark' ? props.dark : props.light;
+  if (override) {
+    return override;
+  }
 
-    if (colorFromProps) {
-      return colorFromProps;
-    }
-
-    const themeColors = Colors[theme] || Colors.light;
-    return themeColors[colorName] ?? '#000'; // Fallback to black
-  };
+  // Otherwise fallback to Colors.ts
+  return theme === 'dark' ? Colors.dark[colorName] : Colors.light[colorName];
 }

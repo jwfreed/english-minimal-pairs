@@ -22,13 +22,14 @@ export default function ResultsScreen() {
   const { t, categoryIndex } = useLanguageScheme();
 
   const themeColors = {
-    background: useThemeColor({}, 'background')(),
-    text: useThemeColor({}, 'text')(),
-    success: useThemeColor({}, 'success')(),
-    error: useThemeColor({}, 'error')(),
-    primary: useThemeColor({}, 'primary')(),
-    buttonText: useThemeColor({}, 'buttonText')(),
+    background: useThemeColor({}, 'background'),
+    text: useThemeColor({}, 'text'),
+    success: useThemeColor({}, 'success'),
+    error: useThemeColor({}, 'error'),
+    primary: useThemeColor({}, 'primary'),
+    buttonText: useThemeColor({}, 'buttonText'),
   };
+
   const styles = createStyles(themeColors);
 
   const categories = minimalPairs.map((cat) => cat.category);

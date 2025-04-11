@@ -61,13 +61,14 @@ export default function HomeScreen() {
 
   // Theming
   const themeColors = {
-    background: useThemeColor({}, 'background')(),
-    text: useThemeColor({}, 'text')(),
-    success: useThemeColor({}, 'success')(),
-    error: useThemeColor({}, 'error')(),
-    primary: useThemeColor({}, 'primary')(),
-    buttonText: useThemeColor({}, 'buttonText')(),
+    background: useThemeColor({}, 'background'),
+    text: useThemeColor({}, 'text'),
+    success: useThemeColor({}, 'success'),
+    error: useThemeColor({}, 'error'),
+    primary: useThemeColor({}, 'primary'),
+    buttonText: useThemeColor({}, 'buttonText'),
   };
+
   const styles = createStyles(themeColors);
 
   /**

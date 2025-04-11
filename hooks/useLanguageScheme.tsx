@@ -1,6 +1,15 @@
-// /hooks/useLanguageScheme.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from 'react';
 import { alternateLanguages } from '../constants/alternateLanguages';
+
+// Compute the default language only once at the module level.
+const DEFAULT_LANGUAGE = Object.keys(alternateLanguages)[0];
 
 interface LanguageSchemeContextProps {
   language: string;
@@ -20,18 +29,29 @@ export const LanguageSchemeProvider = ({
 }: {
   children: ReactNode;
 }) => {
-  const defaultLanguage = Object.keys(alternateLanguages)[0];
-  const [language, setLanguage] = useState(defaultLanguage);
+  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
   const [categoryIndex, setCategoryIndex] = useState(0);
 
-  const t = (key: string) => {
-    return alternateLanguages[language]?.[key] || key;
-  };
+  // Memoize the translation function so it only changes when the language changes.
+  const t = useCallback(
+    (key: string) => alternateLanguages[language]?.[key] || key,
+    [language]
+  );
+
+  // Memoize the provider value to prevent unnecessary re-renders.
+  const value = useMemo(
+    () => ({
+      language,
+      setLanguage,
+      t,
+      categoryIndex,
+      setCategoryIndex,
+    }),
+    [language, t, categoryIndex]
+  );
 
   return (
-    <LanguageSchemeContext.Provider
-      value={{ language, setLanguage, t, categoryIndex, setCategoryIndex }}
-    >
+    <LanguageSchemeContext.Provider value={value}>
       {children}
     </LanguageSchemeContext.Provider>
   );

@@ -1,10 +1,10 @@
-// src/context/PairProgressContext.tsx
 import React, {
   createContext,
   useContext,
   useEffect,
   useState,
-  useMemo,
+  useCallback,
+  useRef,
 } from 'react';
 import {
   saveAttempt,
@@ -29,24 +29,33 @@ export const PairProgressProvider = ({
   children: React.ReactNode;
 }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
+  const isMounted = useRef<boolean>(true);
 
   useEffect(() => {
+    isMounted.current = true;
     const loadProgress = async () => {
       const storedProgress = await getProgress();
-      maybeAct(() => setProgress(storedProgress));
+      if (isMounted.current) {
+        maybeAct(() => setProgress(storedProgress));
+      }
     };
     loadProgress();
+
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
-  const recordAttempt = async (
-    pairId: string,
-    isCorrect: boolean,
-    durationMin: number = 0
-  ) => {
-    await saveAttempt(pairId, isCorrect, durationMin);
-    const updatedProgress = await getProgress();
-    maybeAct(() => setProgress(updatedProgress));
-  };
+  const recordAttempt = useCallback(
+    async (pairId: string, isCorrect: boolean, durationMin: number = 0) => {
+      await saveAttempt(pairId, isCorrect, durationMin);
+      const updatedProgress = await getProgress();
+      if (isMounted.current) {
+        maybeAct(() => setProgress(updatedProgress));
+      }
+    },
+    []
+  );
 
   return (
     <ProgressContext.Provider value={progress}>

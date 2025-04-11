@@ -1,5 +1,8 @@
+// components/TimePracticedBar.tsx
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import * as Progress from 'react-native-progress';
 import { useLanguageScheme } from '@/hooks/useLanguageScheme';
 
 interface Props {
@@ -16,12 +19,16 @@ export default function TimePracticedBar({ minutes, goal = 60 }: Props) {
       <Text style={styles.label}>
         {`${t('timePracticed')}: ${minutes.toFixed(0)} / ${goal} ${t('min')}`}
       </Text>
-      <View testID="progress-bar" style={styles.barBackground}>
-        <View
-          testID="progress-bar-fill"
-          style={[styles.barFill, { width: `${progress * 100}%` }]}
-        />
-      </View>
+      <Progress.Bar
+        progress={progress}
+        width={null}
+        height={12}
+        borderRadius={6}
+        color="#3b82f6"
+        unfilledColor="#e5e7eb"
+        borderWidth={0}
+        animated
+      />
     </View>
   );
 }
@@ -35,18 +42,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  barBackground: {
-    width: '100%',
-    height: 12,
-    backgroundColor: '#ccc',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    backgroundColor: 'blue',
+    marginBottom: 6,
+    fontWeight: '600',
   },
 });

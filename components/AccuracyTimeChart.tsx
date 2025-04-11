@@ -1,9 +1,8 @@
 // components/AccuracyTimeChart.tsx
 
 import React from 'react';
-import { View, Text } from 'react-native';
-import { LineChart, XAxis, Grid } from 'react-native-svg-charts';
-import * as shape from 'd3-shape';
+import { View, Text, Dimensions } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
 import { useLanguageScheme } from '@/hooks/useLanguageScheme';
 
 interface ChartEntry {
@@ -18,34 +17,39 @@ interface Props {
 
 export default function AccuracyTimeChart({ data }: Props) {
   const { t } = useLanguageScheme();
-
   if (!data || data.length === 0) return <Text>No data available.</Text>;
 
   const accuracyData = data.map((d) => d.accuracy * 100); // percent
   const labels = data.map((d) => d.timeLabel);
 
-  const contentInset = { top: 20, bottom: 20 };
-
   return (
-    <View style={{ height: 220, width: '100%', paddingHorizontal: 10 }}>
+    <View style={{ paddingHorizontal: 10 }}>
       <Text style={{ marginBottom: 10, fontWeight: 'bold' }}>
         {t('accuracyTrend')}
       </Text>
       <LineChart
-        style={{ height: 160, width: '100%' }}
-        data={accuracyData}
-        svg={{ stroke: 'green', strokeWidth: 2 }}
-        contentInset={contentInset}
-        curve={shape.curveMonotoneX}
-      >
-        <Grid />
-      </LineChart>
-      <XAxis
-        style={{ marginTop: 10 }}
-        data={accuracyData}
-        formatLabel={(_value: number, index: number) => labels[index]}
-        contentInset={{ left: 20, right: 20 }}
-        svg={{ fontSize: 10, fill: 'black' }}
+        data={{
+          labels,
+          datasets: [{ data: accuracyData }],
+        }}
+        width={Dimensions.get('window').width - 20}
+        height={220}
+        yAxisSuffix="%"
+        chartConfig={{
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#ffffff',
+          decimalPlaces: 0,
+          color: (opacity = 1) => `rgba(0, 128, 0, ${opacity})`,
+          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          propsForDots: {
+            r: '4',
+            strokeWidth: '2',
+            stroke: '#388e3c',
+          },
+        }}
+        bezier
+        style={{ borderRadius: 8 }}
       />
     </View>
   );

@@ -1,141 +1,109 @@
-// src/storage/progressStorage.ts
+// progressStorage.ts
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const PROGRESS_KEY = '@userProgress';
-
-export type PairAttempt = {
-  timestamp: number;
+/* -- Interfaces -- */
+export interface PairAttempt {
   isCorrect: boolean;
-  durationMin?: number;
-};
+  timestamp: number;
+}
 
-export type PairStats = {
+export interface PairStats {
   attempts: PairAttempt[];
-  totalPracticeTimeMin?: number;
-};
+}
 
-export const saveAttempt = async (
+const STORAGE_KEY = 'pairProgress';
+
+/* -- Storage Functions -- */
+// Retrieve the progress from storage. If none exists, return an empty object.
+export async function getProgress(): Promise<Record<string, PairStats>> {
+  try {
+    const stored = await AsyncStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored) as Record<string, PairStats>;
+    }
+  } catch (error) {
+    console.error('Error reading progress:', error);
+  }
+  return {};
+}
+
+// Save an attempt for a given pair.
+// The function reads the current progress, appends a new attempt (while limiting to the last 100),
+// and writes the updated progress back to storage.
+export async function saveAttempt(
   pairId: string,
   isCorrect: boolean,
   durationMin: number = 0
-): Promise<void> => {
+): Promise<void> {
   try {
-    const currentData = await AsyncStorage.getItem(PROGRESS_KEY);
-    const parsed: Record<string, PairStats> = currentData
-      ? JSON.parse(currentData)
-      : {};
+    const progress = await getProgress();
+    const now = Date.now();
+    const newAttempt: PairAttempt = { isCorrect, timestamp: now };
 
-    const newAttempt: PairAttempt = {
-      timestamp: Date.now(),
-      isCorrect,
-      durationMin,
-    };
+    const pairStats = progress[pairId] || { attempts: [] };
+    const updatedAttempts = [...pairStats.attempts, newAttempt];
 
-    const updatedPairAttempts = parsed[pairId]?.attempts || [];
-    updatedPairAttempts.push(newAttempt);
+    // Limit attempts to the last 100 for memory efficiency.
+    pairStats.attempts = updatedAttempts.slice(-100);
+    progress[pairId] = pairStats;
 
-    const totalPracticeTimeMin = updatedPairAttempts.reduce(
-      (acc, attempt) => acc + (attempt.durationMin || 0),
-      0
-    );
-
-    parsed[pairId] = {
-      attempts: updatedPairAttempts,
-      totalPracticeTimeMin,
-    };
-
-    await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(parsed));
-  } catch (e) {
-    console.log('Failed to save attempt', e);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  } catch (error) {
+    console.error('Error saving attempt:', error);
   }
-};
+}
 
-export const getProgress = async (): Promise<Record<string, PairStats>> => {
-  try {
-    const savedProgress = await AsyncStorage.getItem(PROGRESS_KEY);
-    return savedProgress != null ? JSON.parse(savedProgress) : {};
-  } catch (e) {
-    console.log('Failed to fetch progress', e);
-    return {};
+/* -- Calculation Helpers -- */
+// Compute a weighted accuracy giving more weight to recent attempts.
+export function getWeightedAccuracy(attempts: PairAttempt[]): number {
+  if (attempts.length === 0) return 0;
+
+  let weightSum = 0;
+  let correctWeightedSum = 0;
+  const total = attempts.length;
+
+  for (let i = 0; i < total; i++) {
+    // Here, the weight increases linearly for more recent attempts.
+    const weight = (i + 1) / total;
+    weightSum += weight;
+    if (attempts[i].isCorrect) {
+      correctWeightedSum += weight;
+    }
   }
-};
+  return correctWeightedSum / weightSum;
+}
 
-export const getWeightedAccuracy = (
-  attempts: PairAttempt[],
-  halfLifeMinutes: number = 60
-): number => {
-  const now = Date.now();
-  const decayRate = Math.log(2) / (halfLifeMinutes * 60 * 1000);
+// Generate data showing accuracy over time for charting purposes.
+export function getAccuracyAndTimeOverTime(
+  attempts: PairAttempt[]
+): { timestamp: number; accuracy: number }[] {
+  const data: { timestamp: number; accuracy: number }[] = [];
+  let correct = 0;
 
-  let weightedCorrect = 0;
-  let totalWeight = 0;
-
-  attempts.forEach(({ timestamp, isCorrect }: PairAttempt) => {
-    const age = now - timestamp;
-    const weight = Math.exp(-decayRate * age);
-    totalWeight += weight;
-    if (isCorrect) weightedCorrect += weight;
+  attempts.forEach((attempt, index) => {
+    if (attempt.isCorrect) {
+      correct += 1;
+    }
+    const accuracy = (correct / (index + 1)) * 100;
+    data.push({ timestamp: attempt.timestamp, accuracy });
   });
+  return data;
+}
 
-  return totalWeight ? weightedCorrect / totalWeight : 0;
-};
+// Estimate active practice time based on the timestamp difference between the first
+// and the last attempt. The result is clamped to 1 hour (3600000 ms) as a conservative estimate.
+export function estimateActivePracticeTime(attempts: PairAttempt[]): number {
+  if (attempts.length === 0) return 0;
 
-export const estimateActivePracticeTime = (
-  attempts: PairAttempt[],
-  maxGapMs = 2 * 60 * 1000
-): number => {
-  if (attempts.length < 2) return 0;
+  const first = attempts[0].timestamp;
+  const last = attempts[attempts.length - 1].timestamp;
+  const delta = last - first;
 
-  const sorted = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
-  let total = 0;
-  let sessionStart = sorted[0].timestamp;
+  // Clamp the elapsed time to a maximum of 1 hour.
+  const clampedTime = Math.min(delta, 3600000);
 
-  for (let i = 1; i < sorted.length; i++) {
-    const gap = sorted[i].timestamp - sorted[i - 1].timestamp;
-    if (gap > maxGapMs) {
-      total += sorted[i - 1].timestamp - sessionStart;
-      sessionStart = sorted[i].timestamp;
-    }
-  }
-
-  total += sorted[sorted.length - 1].timestamp - sessionStart;
-  return total;
-};
-
-export const getAccuracyAndTimeOverTime = (
-  attempts: PairAttempt[],
-  sessionGapMs: number = 2 * 60 * 1000
-): { accuracy: number; timestamp: number }[] => {
-  if (attempts.length === 0) return [];
-
-  const sorted = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
-  const result: { accuracy: number; timestamp: number }[] = [];
-
-  let session: PairAttempt[] = [sorted[0]];
-
-  for (let i = 1; i < sorted.length; i++) {
-    const current = sorted[i];
-    const prev = sorted[i - 1];
-    const gap = current.timestamp - prev.timestamp;
-
-    if (gap <= sessionGapMs) {
-      session.push(current);
-    } else {
-      const accuracy =
-        session.filter((a) => a.isCorrect).length / session.length;
-      result.push({
-        accuracy,
-        timestamp: session[session.length - 1].timestamp,
-      });
-      session = [current];
-    }
-  }
-
-  if (session.length) {
-    const accuracy = session.filter((a) => a.isCorrect).length / session.length;
-    result.push({ accuracy, timestamp: session[session.length - 1].timestamp });
-  }
-
-  return result;
-};
+  // Scale down the earned time by a factor (e.g., 0.5 for 50%).
+  const scalingFactor = 0.5;
+  return clampedTime * scalingFactor;
+}

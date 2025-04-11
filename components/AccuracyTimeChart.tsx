@@ -33,12 +33,12 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
 
   const chartData = useMemo(() => {
     const limitedData = practiceData.slice(-100);
-
     return {
       labels: limitedData.map((_, idx) => `${idx + 1}`),
       datasets: [
         {
-          data: limitedData.map((d) => d.accuracy * 100),
+          // Remove the extra multiplication so that accuracy is already in 0-100 range.
+          data: limitedData.map((d) => d.accuracy),
         },
       ],
     };

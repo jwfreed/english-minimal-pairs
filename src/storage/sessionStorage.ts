@@ -1,42 +1,61 @@
-// src/storage/sessionStorage.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PairSession, PairSessionHistory } from './types';
 
 const SESSION_HISTORY_KEY = '@pairsSessionHistory';
+// This key is used to store the session history in AsyncStorage.
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
-export async function loadSessionHistory(): Promise<PairSessionHistory> {
+// Initialize cachedHistory as an empty object
+let cachedHistory: PairSessionHistory = {};
+
+async function getSessionHistory(): Promise<PairSessionHistory> {
+  // Optionally, you could check if the object is empty to load only once.
+  // For example, using Object.keys(cachedHistory).length === 0 might be enough.
   try {
     const data = await AsyncStorage.getItem(SESSION_HISTORY_KEY);
-    return data ? JSON.parse(data) : {};
+    cachedHistory = data ? JSON.parse(data) : {};
   } catch (error) {
     console.error('Error loading session history', error);
-    return {};
+    // Leave cachedHistory as {}
   }
+  return cachedHistory;
 }
 
-export async function saveSessionHistory(history: PairSessionHistory) {
-  try {
-    await AsyncStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(history));
-  } catch (error) {
-    console.error('Error saving session history', error);
-  }
+function scheduleSave() {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    try {
+      if (cachedHistory !== null) {
+        await AsyncStorage.setItem(
+          SESSION_HISTORY_KEY,
+          JSON.stringify(cachedHistory)
+        );
+      }
+    } catch (error) {
+      console.error('Error saving session history', error);
+    }
+  }, 500);
 }
 
-/**
- * Appends a new session to the history for the given pair.
- */
 export async function addPairSession(pairId: string, session: PairSession) {
-  const history = await loadSessionHistory();
-  const sessions = history[pairId] || [];
-  sessions.push(session);
-  history[pairId] = sessions;
-  await saveSessionHistory(history);
+  const history = await getSessionHistory();
+  if (!history[pairId]) {
+    history[pairId] = [];
+  }
+  history[pairId].push(session);
+  scheduleSave();
 }
 
-/**
- * Get all sessions for a specific pair.
- */
 export async function getPairSessions(pairId: string): Promise<PairSession[]> {
-  const history = await loadSessionHistory();
+  const history = await getSessionHistory();
   return history[pairId] || [];
+}
+
+export async function clearSessionHistory() {
+  cachedHistory = {};
+  try {
+    await AsyncStorage.removeItem(SESSION_HISTORY_KEY);
+  } catch (error) {
+    console.error('Error clearing session history', error);
+  }
 }

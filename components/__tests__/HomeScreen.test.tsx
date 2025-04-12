@@ -5,6 +5,14 @@ import { PairProgressProvider } from '../../src/context/PairProgressContext';
 import { LanguageSchemeProvider } from '../../hooks/useLanguageScheme';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+// Fix LogBox for test environment
+import { LogBox } from 'react-native';
+if (!LogBox.ignoreLogs) {
+  LogBox.ignoreLogs = jest.fn();
+}
+jest.mock('react-native/Libraries/ReactNative/LogBox', () => ({
+  ignoreLogs: jest.fn(),
+}));
 
 jest.mock('expo-av', () => {
   const mockPlayAsync = jest.fn(() => Promise.resolve());

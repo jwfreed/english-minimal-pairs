@@ -1,3 +1,4 @@
+// Silence "Animated.View act()" warning
 const originalError = globalThis.console.error;
 globalThis.console.error = (...args) => {
   const msg = args[0];
@@ -10,5 +11,6 @@ globalThis.console.error = (...args) => {
   originalError(...args);
 };
 
+// Basic mocks
 jest.mock('@react-native-async-storage/async-storage');
 jest.mock('expo-av');

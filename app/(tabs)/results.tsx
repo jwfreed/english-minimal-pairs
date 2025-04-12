@@ -2,10 +2,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { minimalPairs } from '../../constants/minimalPairs';
-import {
-  useProgress,
-  useRecordAttempt,
-} from '../../src/context/PairProgressContext';
+import { useProgress } from '../../src/context/PairProgressContext';
 import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';

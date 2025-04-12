@@ -1,10 +1,10 @@
 module.exports = {
   preset: 'jest-expo',
-  setupFiles: ['./jest.setup.js'],
+  setupFiles: ['<rootDir>/jest.setup.js'],
   collectCoverage: true,
   collectCoverageFrom: [
-    'components/TimePracticedBar.tsx',
     'components/ThemedText.tsx',
+    'components/AccuracyTimeChart.test.tsx',
     'src/context/PairProgressContext.tsx',
     'src/storage/progressStorage.ts',
     'app/(tabs)/*.tsx',

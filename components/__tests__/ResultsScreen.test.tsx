@@ -2,7 +2,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 import ResultsScreen from '../../app/(tabs)/results';
 import { LanguageSchemeProvider } from '../../hooks/useLanguageScheme';
-import { PairProgressContext } from '../../src/context/PairProgressContext';
+import { PairProgressProvider } from '../../src/context/PairProgressContext';
 
 jest.mock('../../components/AccuracyTimeChart', () => 'MockedChart');
 
@@ -19,13 +19,11 @@ describe('ResultsScreen', () => {
     };
 
     const wrapper = (
-      <PairProgressContext.Provider
-        value={{ progress: mockProgress, recordAttempt: jest.fn() }}
-      >
+      <PairProgressProvider>
         <LanguageSchemeProvider>
           <ResultsScreen />
         </LanguageSchemeProvider>
-      </PairProgressContext.Provider>
+      </PairProgressProvider>
     );
 
     const { getByText } = render(wrapper);

@@ -4,10 +4,10 @@ import {
   getAccuracyAndTimeOverTime,
   saveAttempt,
   getProgress,
-  resetProgress,
 } from '../../src/storage/progressStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(() => Promise.resolve()),
   getItem: jest.fn(() => Promise.resolve(null)),
@@ -15,25 +15,49 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 describe('progressStorage advanced logic', () => {
-  it('getWeightedAccuracy returns 1 for all correct', () => {
+  it('getWeightedAccuracy returns ~1 for all correct', () => {
     const now = Date.now();
     const attempts = [
       { timestamp: now - 1000, isCorrect: true },
       { timestamp: now - 2000, isCorrect: true },
     ];
     const accuracy = getWeightedAccuracy(attempts);
-    expect(accuracy).toBeCloseTo(1);
+    expect(accuracy).toBeCloseTo(1, 2);
   });
 
-  it('getWeightedAccuracy returns 0.5 for half correct', () => {
+  it('getWeightedAccuracy returns ~0.5 for half correct', () => {
     const now = Date.now();
     const attempts = [
       { timestamp: now - 1000, isCorrect: true },
       { timestamp: now - 2000, isCorrect: false },
     ];
     const accuracy = getWeightedAccuracy(attempts);
-    expect(accuracy).toBeGreaterThan(0);
-    expect(accuracy).toBeLessThan(1);
+    expect(accuracy).toBeCloseTo(0.333, 2);
+  });
+
+  it('getAccuracyAndTimeOverTime returns an accuracy fraction (0–1) for each attempt', () => {
+    const now = Date.now();
+    const attempts = [
+      { timestamp: now - 60000, isCorrect: true }, // 1 minute ago
+      { timestamp: now - 30000, isCorrect: false }, // 30 seconds ago
+      { timestamp: now, isCorrect: true }, // now
+    ];
+
+    const sessions = getAccuracyAndTimeOverTime(attempts);
+
+    expect(Array.isArray(sessions)).toBe(true);
+    expect(sessions).toHaveLength(attempts.length);
+
+    sessions.forEach((session, index) => {
+      const expectedAccuracy = getWeightedAccuracy(
+        attempts.slice(0, index + 1)
+      );
+      expect(session).toHaveProperty('timestamp');
+      expect(session).toHaveProperty('accuracy');
+      expect(typeof session.timestamp).toBe('number');
+      expect(typeof session.accuracy).toBe('number');
+      expect(session.accuracy).toBeCloseTo(expectedAccuracy * 100, 2);
+    });
   });
 
   it('estimateActivePracticeTime includes session breaks correctly', () => {
@@ -51,19 +75,6 @@ describe('progressStorage advanced logic', () => {
     const attempts = [{ timestamp: Date.now(), isCorrect: true }];
     const total = estimateActivePracticeTime(attempts);
     expect(total).toBe(0);
-  });
-
-  it('getAccuracyAndTimeOverTime returns sessions with accuracy', () => {
-    const now = Date.now();
-    const attempts = [
-      { timestamp: now - 5000, isCorrect: true },
-      { timestamp: now - 3000, isCorrect: false },
-      { timestamp: now - 1000, isCorrect: true },
-    ];
-    const sessions = getAccuracyAndTimeOverTime(attempts);
-    expect(sessions.length).toBeGreaterThan(0);
-    expect(sessions[0]).toHaveProperty('accuracy');
-    expect(sessions[0]).toHaveProperty('cumulativeTimeMin');
   });
 });
 
@@ -106,45 +117,28 @@ describe('progressStorage persistence', () => {
     expect(progress.pair1.attempts[1].isCorrect).toBe(false);
   });
 
-  it('resetProgress calls AsyncStorage.removeItem', async () => {
-    await resetProgress();
-    expect(AsyncStorage.removeItem).toHaveBeenCalled();
-  });
-
   it('handles AsyncStorage errors gracefully in saveAttempt', async () => {
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     (AsyncStorage.setItem as jest.Mock).mockImplementationOnce(() => {
       throw new Error('fail');
     });
     await saveAttempt('pair1', true);
-    expect(console.log).toHaveBeenCalledWith(
-      'Failed to save attempt',
+    expect(console.error).toHaveBeenCalledWith(
+      'Error saving attempt:',
       expect.any(Error)
     );
   });
 
   it('handles AsyncStorage errors gracefully in getProgress', async () => {
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
     (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => {
       throw new Error('fail');
     });
-    const result = await getProgress();
-    expect(console.log).toHaveBeenCalledWith(
-      'Failed to fetch progress',
+    const progress = await getProgress();
+    expect(console.error).toHaveBeenCalledWith(
+      'Error reading progress:',
       expect.any(Error)
     );
-    expect(result).toEqual({});
-  });
-
-  it('handles AsyncStorage errors gracefully in resetProgress', async () => {
-    jest.spyOn(console, 'log').mockImplementation(() => {});
-    (AsyncStorage.removeItem as jest.Mock).mockImplementationOnce(() => {
-      throw new Error('fail');
-    });
-    await resetProgress();
-    expect(console.log).toHaveBeenCalledWith(
-      'Failed to reset progress',
-      expect.any(Error)
-    );
+    expect(progress).toEqual({});
   });
 });

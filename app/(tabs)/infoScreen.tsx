@@ -1,21 +1,15 @@
 // app/(tabs)/infoScreen.tsx
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { ScrollView, Text } from 'react-native';
 import createStyles from '../../constants/styles';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
+// Import your consolidated hook from your theme module
+import { useAllThemeColors } from '../../src/context/theme';
 
 export default function InfoScreen() {
-  const { t, language } = useLanguageScheme();
-  const themeColors = {
-    background: useThemeColor({}, 'background'),
-    text: useThemeColor({}, 'text'),
-    success: useThemeColor({}, 'success'),
-    error: useThemeColor({}, 'error'),
-    primary: useThemeColor({}, 'primary'),
-    buttonText: useThemeColor({}, 'buttonText'),
-  };
-
+  const { t } = useLanguageScheme();
+  // Use the consolidated theme hook instead of multiple useThemeColor calls
+  const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 
   return (

@@ -5,7 +5,8 @@ import {
   useProgress,
   useRecordAttempt,
 } from '../../src/context/PairProgressContext';
-import { useThemeColor } from '@/hooks/useThemeColor';
+// Import the consolidated theme hook from your theme module:
+import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 import {
@@ -52,19 +53,6 @@ interface Styles {
   title: any;
   // add additional style properties if needed
 }
-
-/* -- Consolidated Theme Hook -- */
-const useAllThemeColors = (): ThemeColors => ({
-  background: useThemeColor({}, 'background'),
-  text: useThemeColor({}, 'text'),
-  success: useThemeColor({}, 'success'),
-  error: useThemeColor({}, 'error'),
-  primary: useThemeColor({}, 'primary'),
-  buttonText: useThemeColor({}, 'buttonText'),
-  cardBackground: useThemeColor({}, 'cardBackground'),
-  shadow: useThemeColor({}, 'shadow'),
-  icon: useThemeColor({}, 'icon'),
-});
 
 /* -- Static Styles for PairItem -- */
 const pairItemStyles = StyleSheet.create({
@@ -115,7 +103,7 @@ const PairItem: React.FC<{
   const attempts = stats.attempts || [];
   const total = attempts.length;
 
-  // Memoize computed values
+  // Memoize computed values to avoid re-calculation on each render
   const { rawAvg, weightedAvg, trendData, timePracticed } = useMemo(() => {
     const correct = attempts.filter((a) => a.isCorrect).length;
     const rawAvgValue = total > 0 ? (correct / total) * 100 : 0;
@@ -184,9 +172,11 @@ export default function ResultsScreen() {
   const progress = useProgress();
   const recordAttempt = useRecordAttempt();
   const { t, categoryIndex } = useLanguageScheme();
+  // Use the consolidated theme hook from our theme module
   const themeColors = useAllThemeColors();
   const styles: Styles = createStyles(themeColors);
 
+  // Memoize categories and selected category
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
   const catObj = useMemo(
@@ -206,7 +196,7 @@ export default function ResultsScreen() {
     );
   }
 
-  // Memoize flattenedPairs so that they are not recalculated on every render
+  // Memoize flattened pairs to prevent re-computation on every render
   const flattenedPairs: FlattenedPair[] = useMemo(() => {
     return catObj.pairs.map((pairObj) => {
       const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;

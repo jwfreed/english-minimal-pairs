@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -6,94 +12,43 @@ import {
   Pressable,
   Animated,
   Easing,
+  LogBox,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
-import * as Haptics from 'expo-haptics'; // 1) Import Expo Haptics
+import * as Haptics from 'expo-haptics';
 import { minimalPairs } from '../../constants/minimalPairs';
 import {
   useProgress,
   useRecordAttempt,
 } from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
-import { useThemeColor } from '@/hooks/useThemeColor';
+// Import our consolidated theme hook:
+import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
-import { LogBox } from 'react-native';
 
-// This hides the "Warning: Grid: Support for defaultProps" message
-if (LogBox?.ignoreLogs) {
-  LogBox.ignoreLogs(['Warning: Grid: Support for defaultProps']);
-}
+// Move LogBox config outside the component to avoid re-running it on each render
+LogBox.ignoreLogs?.(['Warning: Grid: Support for defaultProps']);
 
-/**
- * HomeScreen
- *
- * The main practice interface:
- *  - Category selection (dropdown)
- *  - Picker for Pair selection
- *  - "Play Audio" => times the user's attempt
- *  - Two answer buttons with immediate feedback
- *  - Micro-animations & haptics on correct/incorrect
- */
 export default function HomeScreen() {
-  // 1) Access global context
+  // Global context values
   const progress = useProgress();
   const recordAttempt = useRecordAttempt();
-
   const { setLanguage, t, categoryIndex, setCategoryIndex, language } =
     useLanguageScheme();
-
-  // 2) Gather categories
-  const categories = minimalPairs.map((catObj) => catObj.category);
-
-  // 3) Local quiz state
-  const [pairIndex, setPairIndex] = useState(0);
-  const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
-    null
-  );
-
-  // 4) Track the start time for each attempt (when user taps "Play Audio")
-  const [startTime, setStartTime] = useState<number | null>(null);
-
-  // Micro-animation for correct answers
-  const correctButtonScale = useRef(new Animated.Value(1)).current;
-
-  // Floating category dropdown
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const dropdownOpacity = useRef(new Animated.Value(0)).current;
-
-  // Theming
-  const themeColors = {
-    background: useThemeColor({}, 'background'),
-    text: useThemeColor({}, 'text'),
-    success: useThemeColor({}, 'success'),
-    error: useThemeColor({}, 'error'),
-    primary: useThemeColor({}, 'primary'),
-    buttonText: useThemeColor({}, 'buttonText'),
-    cardBackground: useThemeColor({}, 'cardBackground'),
-    shadow: useThemeColor({}, 'shadow'),
-    icon: useThemeColor({}, 'icon'),
-  };
-
+  const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 
-  /**
-   * Keep the language context updated whenever categoryIndex changes
-   */
-  useEffect(() => {
-    setLanguage(categories[categoryIndex]);
-  }, [categoryIndex, categories, setLanguage]);
-
-  /**
-   * Identify the currently selected category object
-   */
+  // Memoized categories and current category object
+  const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
-  const catObj = minimalPairs.find(
-    (cat) => cat.category === selectedCategoryName
+  const catObj = useMemo(
+    () => minimalPairs.find((cat) => cat.category === selectedCategoryName),
+    [selectedCategoryName]
   );
 
+  // Early return if no pairs are available
   if (!catObj || catObj.pairs.length === 0) {
     return (
       <View style={styles.container}>
@@ -104,16 +59,35 @@ export default function HomeScreen() {
     );
   }
 
-  // Extract pairs and find the active pair
-  const pairsInCategory = catObj.pairs;
-  const selectedPair = pairsInCategory[pairIndex];
+  // Local state for quiz logic
+  const [pairIndex, setPairIndex] = useState(0);
+  const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
+    null
+  );
+  const [startTime, setStartTime] = useState<number | null>(null);
 
-  // Audio reference
-  const soundRef = useRef<Audio.Sound | null>(null);
+  // Animation refs for correct answer feedback and dropdown opacity
+  const correctButtonScale = useRef(new Animated.Value(1)).current;
+  const dropdownOpacity = useRef(new Animated.Value(0)).current;
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  /**
-   * Configure audio on mount
-   */
+  // Audio: use one ref to store both preloaded audio sounds
+  const soundRefs = useRef<Audio.Sound[]>([]);
+
+  // Update language context when the category changes
+  useEffect(() => {
+    setLanguage(categories[categoryIndex]);
+  }, [categoryIndex, categories, setLanguage]);
+
+  // Extract active pairs from the selected category; memoize for performance
+  const pairsInCategory = useMemo(() => catObj.pairs, [catObj]);
+  const selectedPair = useMemo(
+    () => pairsInCategory[pairIndex],
+    [pairsInCategory, pairIndex]
+  );
+
+  // Configure audio mode on mount and clean up on unmount
   useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
@@ -125,35 +99,23 @@ export default function HomeScreen() {
       playThroughEarpieceAndroid: false,
     });
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-      }
+      soundRefs.current.forEach((sound) => sound?.unloadAsync());
     };
   }, []);
 
-  /**
-   * Play a random word from the pair
-   * (start timing the user's attempt)
-   */
-  // Declare soundRef to store both preloaded Audio.Sound instances
-  const soundRefs = useRef<Audio.Sound[]>([]);
-
-  // Preload audio whenever the selected pair or category changes
+  // Preload audio when the active pair changes
   useEffect(() => {
     let sound1: Audio.Sound;
     let sound2: Audio.Sound;
 
     const preloadAudio = async () => {
       if (!selectedPair) return;
-
       try {
         sound1 = new Audio.Sound();
         await sound1.loadAsync(selectedPair.audio1);
-
         sound2 = new Audio.Sound();
         await sound2.loadAsync(selectedPair.audio2);
-
-        soundRefs.current = [sound1, sound2]; // store both loaded sounds
+        soundRefs.current = [sound1, sound2];
       } catch (e) {
         console.warn('Failed to preload audio', e);
       }
@@ -161,18 +123,16 @@ export default function HomeScreen() {
 
     preloadAudio();
 
-    // Cleanup: unload sounds on pair/category change
     return () => {
       sound1?.unloadAsync();
       sound2?.unloadAsync();
     };
   }, [pairIndex, categoryIndex, selectedPair]);
 
-  // Event handler to play audio instantly
-  async function handlePlay() {
+  // Play a random word from the selected pair; time the attempt
+  const handlePlay = useCallback(async () => {
     setFeedback(null);
     setStartTime(Date.now());
-
     const idx = Math.random() < 0.5 ? 0 : 1;
     setPlayedWordIndex(idx);
 
@@ -181,12 +141,10 @@ export default function HomeScreen() {
     } catch (err) {
       console.error('Error playing audio:', err);
     }
-  }
+  }, []);
 
-  /**
-   * Show a little 'pop' for correct answers
-   */
-  function popAnimation() {
+  // Animation for correct answer "pop" effect
+  const popAnimation = useCallback(() => {
     correctButtonScale.setValue(0.9);
     Animated.sequence([
       Animated.spring(correctButtonScale, {
@@ -200,50 +158,40 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }
+  }, [correctButtonScale]);
 
-  /**
-   * The user selects which word they think was played
-   */
-  function handleAnswer(chosenIndex: 0 | 1) {
-    if (playedWordIndex === null) return;
+  // Handler for when the user selects an answer
+  const handleAnswer = useCallback(
+    (chosenIndex: 0 | 1) => {
+      if (playedWordIndex === null) return;
+      const isCorrect = chosenIndex === playedWordIndex;
+      setFeedback(isCorrect ? 'correct' : 'incorrect');
 
-    // 1) Determine correctness
-    const isCorrect = chosenIndex === playedWordIndex;
-    setFeedback(isCorrect ? 'correct' : 'incorrect');
+      if (isCorrect) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        popAnimation();
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
 
-    // 2) Haptics
-    if (isCorrect) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      popAnimation();
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
+      // Use memoized values for pair ID and compute duration
+      const pairID = `${selectedPair.word1}-${selectedPair.word2}-(${catObj.category})`;
+      const msElapsed = startTime ? Date.now() - startTime : 0;
+      const durationMin = msElapsed / 60000;
+      recordAttempt(pairID, isCorrect, durationMin);
+    },
+    [
+      playedWordIndex,
+      popAnimation,
+      selectedPair,
+      catObj,
+      startTime,
+      recordAttempt,
+    ]
+  );
 
-    // 3) Gather Pair ID for storage
-    const catObj = minimalPairs.find(
-      (cat) => cat.category === selectedCategoryName
-    );
-    if (!catObj || catObj.pairs.length === 0) return;
-    const selectedPair = catObj.pairs[pairIndex];
-    const pairID = `${selectedPair.word1}-${selectedPair.word2}-(${catObj.category})`;
-
-    // 4) Compute how long since user tapped "Play"
-    const endTime = Date.now();
-    const msElapsed = startTime ? endTime - startTime : 0;
-    const durationMin = msElapsed / 60000; // convert ms to minutes
-
-    // 5) Save attempt with time spent
-    recordAttempt(pairID, isCorrect, durationMin);
-  }
-
-  // Localized text for "Play Audio"
-  const playAudioText = alternateLanguages[language]?.playAudio || 'Play Audio';
-
-  /**
-   * Animate the floating dropdown open
-   */
-  function openDropdown() {
+  // Handlers for opening/closing the floating category dropdown
+  const openDropdown = useCallback(() => {
     setShowCategoryDropdown(true);
     Animated.timing(dropdownOpacity, {
       toValue: 1,
@@ -251,22 +199,18 @@ export default function HomeScreen() {
       easing: Easing.linear,
       useNativeDriver: true,
     }).start();
-  }
+  }, [dropdownOpacity]);
 
-  /**
-   * Animate the floating dropdown closed
-   */
-  function closeDropdown() {
+  const closeDropdown = useCallback(() => {
     Animated.timing(dropdownOpacity, {
       toValue: 0,
       duration: 150,
       useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) {
-        setShowCategoryDropdown(false);
-      }
-    });
-  }
+    }).start(({ finished }) => finished && setShowCategoryDropdown(false));
+  }, [dropdownOpacity]);
+
+  // Localized text for the Play Audio button
+  const playAudioText = alternateLanguages[language]?.playAudio || 'Play Audio';
 
   return (
     <View
@@ -335,58 +279,32 @@ export default function HomeScreen() {
         })}
       </Picker>
 
-      {/* Play Audio */}
+      {/* Play Audio Button */}
       <TouchableOpacity style={styles.button} onPress={handlePlay}>
         <Text style={styles.buttonText}>{playAudioText}</Text>
       </TouchableOpacity>
 
-      {/* Two answer buttons + feedback overlay */}
+      {/* Answer Buttons and Feedback */}
       <View style={styles.answerContainer}>
         <View style={styles.buttonRow}>
-          {/* Left Option (word1) */}
-          {playedWordIndex === 0 && feedback === 'correct' ? (
-            <Animated.View
-              style={{ transform: [{ scale: correctButtonScale }] }}
-            >
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => handleAnswer(0)}
-              >
-                <Text style={styles.buttonText}>{selectedPair.word1}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ) : (
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => handleAnswer(0)}
-            >
-              <Text style={styles.buttonText}>{selectedPair.word1}</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Right Option (word2) */}
-          {playedWordIndex === 1 && feedback === 'correct' ? (
-            <Animated.View
-              style={{ transform: [{ scale: correctButtonScale }] }}
-            >
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => handleAnswer(1)}
-              >
-                <Text style={styles.buttonText}>{selectedPair.word2}</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ) : (
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => handleAnswer(1)}
-            >
-              <Text style={styles.buttonText}>{selectedPair.word2}</Text>
-            </TouchableOpacity>
-          )}
+          {[0, 1].map((idx) => {
+            const word = idx === 0 ? selectedPair.word1 : selectedPair.word2;
+            const animatedStyle =
+              playedWordIndex === idx && feedback === 'correct'
+                ? { transform: [{ scale: correctButtonScale }] }
+                : {};
+            return (
+              <Animated.View style={animatedStyle} key={idx}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => handleAnswer(idx as 0 | 1)}
+                >
+                  <Text style={styles.buttonText}>{word}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
         </View>
-
-        {/* Correct / Incorrect overlay (✓ / ✗) */}
         {feedback && (
           <View style={styles.feedbackOverlay}>
             <Text

@@ -15,7 +15,7 @@ interface Props {
 }
 
 export default function AccuracyTimeChart({ practiceData }: Props) {
-  const { t } = useLanguageScheme();
+  const { translate } = useLanguageScheme();
 
   const themeColors = {
     background: useThemeColor({}, 'background'),
@@ -54,7 +54,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
           color: themeColors.text,
         }}
       >
-        {t('accuracyTrend')}
+        {translate('accuracyTrend')}
       </Text>
       <LineChart
         data={chartData}

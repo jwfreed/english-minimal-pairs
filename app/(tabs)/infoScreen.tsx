@@ -7,8 +7,7 @@ import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 import { useAllThemeColors } from '../../src/context/theme';
 
 export default function InfoScreen() {
-  const { t } = useLanguageScheme();
-  // Use the consolidated theme hook instead of multiple useThemeColor calls
+  const { translate } = useLanguageScheme();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 
@@ -20,14 +19,14 @@ export default function InfoScreen() {
         { backgroundColor: themeColors.background },
       ]}
     >
-      <Text style={styles.infoTitle}>{t('titleOne')}</Text>
-      <Text style={styles.infoText}>{t('infoOne')}</Text>
+      <Text style={styles.infoTitle}>{translate('titleOne')}</Text>
+      <Text style={styles.infoText}>{translate('infoOne')}</Text>
 
-      <Text style={styles.infoTitle}>{t('titleTwo')}</Text>
-      <Text style={styles.infoText}>{t('infoTwo')}</Text>
+      <Text style={styles.infoTitle}>{translate('titleTwo')}</Text>
+      <Text style={styles.infoText}>{translate('infoTwo')}</Text>
 
-      <Text style={styles.infoTitle}>{t('titleThree')}</Text>
-      <Text style={styles.infoList}>{t('infoThree')}</Text>
+      <Text style={styles.infoTitle}>{translate('titleThree')}</Text>
+      <Text style={styles.infoList}>{translate('infoThree')}</Text>
     </ScrollView>
   );
 }

@@ -35,7 +35,7 @@ export default function HomeScreen() {
   // Global context values
   const progress = useProgress();
   const recordAttempt = useRecordAttempt();
-  const { setLanguage, t, categoryIndex, setCategoryIndex, language } =
+  const { setLanguage, translate, categoryIndex, setCategoryIndex, language } =
     useLanguageScheme();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
@@ -216,7 +216,7 @@ export default function HomeScreen() {
     <View
       style={[styles.container, { backgroundColor: themeColors.background }]}
     >
-      <Text style={styles.title}>{t('practicePairs')}</Text>
+      <Text style={styles.title}>{translate('practicePairs')}</Text>
 
       {/* Floating dropdown for categories */}
       <TouchableOpacity

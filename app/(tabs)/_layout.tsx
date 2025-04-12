@@ -11,7 +11,7 @@ import { useColorScheme } from 'react-native'; // Detect system theme if desired
 import { Colors } from '@/constants/Colors'; // Your themed colors
 
 function TabLayout() {
-  const { t, language } = useLanguageScheme();
+  const { translate, language } = useLanguageScheme();
   const deviceColorScheme = useColorScheme();
 
   // Active vs. inactive icon colors
@@ -68,22 +68,22 @@ function TabLayout() {
         name="index"
         options={{
           // tab label or title from language context
-          title: t('home'),
+          title: translate('home'),
         }}
       />
       <Tabs.Screen
         name="results"
         options={{
-          title: t('results'),
-          tabBarLabel: t('results'),
+          title: translate('results'),
+          tabBarLabel: translate('results'),
         }}
       />
       {/** The new info screen tab */}
       <Tabs.Screen
         name="infoScreen"
         options={{
-          title: t('info'),
-          tabBarLabel: t('info'), // or 'Info', up to you
+          title: translate('info'),
+          tabBarLabel: translate('info'), // or 'Info', up to you
         }}
       />
     </Tabs>

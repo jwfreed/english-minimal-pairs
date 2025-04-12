@@ -9,7 +9,7 @@ import {
 import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
-import PairItem from '../../components/PairItem'; // ✅ Now imported as a component
+import PairItem from '../../components/PairItem';
 
 /* -- Types used only for screen logic -- */
 interface FlattenedPair {
@@ -23,8 +23,7 @@ interface FlattenedPair {
 
 export default function ResultsScreen() {
   const progress = useProgress();
-  const recordAttempt = useRecordAttempt();
-  const { t, categoryIndex } = useLanguageScheme();
+  const { translate, categoryIndex } = useLanguageScheme(); // ✅ renamed from `t`
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 
@@ -71,7 +70,7 @@ export default function ResultsScreen() {
       <Text
         style={[styles.title, { color: themeColors.text, marginBottom: 12 }]}
       >
-        {t('averageByPair')}
+        {translate('averageByPair')}
       </Text>
       <FlatList
         data={flattenedPairs}
@@ -82,7 +81,7 @@ export default function ResultsScreen() {
             <PairItem
               item={item}
               stats={stats}
-              t={t}
+              translate={translate} // ✅ renamed
               themeColors={themeColors}
               styles={styles}
             />

@@ -47,13 +47,13 @@ interface Styles {
 interface Props {
   item: FlattenedPair;
   stats: PairStats;
-  t: (key: string) => string;
+  translate: (key: string) => string; // ✅ updated from `t`
   themeColors: ThemeColors;
   styles: Styles;
 }
 
 const PairItem: React.FC<Props> = React.memo(
-  ({ item, stats, t, themeColors, styles }) => {
+  ({ item, stats, translate, themeColors, styles }) => {
     const attempts = stats.attempts || [];
     const total = attempts.length;
 
@@ -80,11 +80,11 @@ const PairItem: React.FC<Props> = React.memo(
               {`${item.word1} - ${item.word2}`}
             </Text>
             <Text style={{ color: themeColors.text }}>
-              {`${t('total')}: ${
+              {`${translate('total')}: ${
                 total -
                 (total -
                   (total > 0 ? attempts.filter((a) => a.isCorrect).length : 0))
-              }/${total} (${rawAvg.toFixed(1)}%) — ${t(
+              }/${total} (${rawAvg.toFixed(1)}%) — ${translate(
                 'weightedAverage'
               )}: ${weightedAvg.toFixed(1)}%`}
             </Text>
@@ -103,7 +103,9 @@ const PairItem: React.FC<Props> = React.memo(
                     color: themeColors.text,
                   }}
                 >
-                  {`${t('timePracticed')}: ${timePracticed} / 60 ${t('min')}`}
+                  {`${translate(
+                    'timePracticed'
+                  )}: ${timePracticed} / 60 ${translate('min')}`}
                 </Text>
                 <View style={pairItemStyles.progressBarOuter}>
                   <View

@@ -1,14 +1,24 @@
-// theme.ts
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+// src/context/theme.tsx
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { useThemeColor } from '../../hooks/useThemeColor';
+import { useColorScheme } from '../../hooks/useColorScheme'; // Patched hook
 
-// Define theme objects – these could come from what you currently have in Colors.ts.
 const lightTheme = {
   background: '#ffffff',
   text: '#000000',
   primary: '#6200ee',
   buttonText: '#ffffff',
-  // ...other colors
+  success: '#16a34a',
+  error: '#dc2626',
+  cardBackground: '#f9fafb',
+  shadow: '#00000050',
+  icon: '#6b7280',
 };
 
 const darkTheme = {
@@ -16,7 +26,11 @@ const darkTheme = {
   text: '#ffffff',
   primary: '#bb86fc',
   buttonText: '#000000',
-  // ...other colors
+  success: '#22c55e',
+  error: '#ef4444',
+  cardBackground: '#1f2937',
+  shadow: '#ffffff20',
+  icon: '#d1d5db',
 };
 
 export type Theme = typeof lightTheme;
@@ -25,21 +39,27 @@ interface ThemeContextData {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
-  // Helper to get a color by key
   getColor: (key: keyof Theme) => string;
 }
 
 const ThemeContext = createContext<ThemeContextData | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  // Here you can add logic to pick the initial theme (e.g., from system settings)
-  const [theme, setTheme] = useState<Theme>(lightTheme);
+  const deviceScheme = useColorScheme();
+
+  const [theme, setTheme] = useState<Theme>(
+    deviceScheme === 'dark' ? darkTheme : lightTheme
+  );
+
+  // Automatically update theme when system setting changes
+  useEffect(() => {
+    setTheme(deviceScheme === 'dark' ? darkTheme : lightTheme);
+  }, [deviceScheme]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === lightTheme ? darkTheme : lightTheme));
   };
 
-  // Helper that picks a color based on the active theme
   const getColor = (key: keyof Theme) => theme[key];
 
   return (
@@ -49,18 +69,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// A unified hook to use the theme
 export const useTheme = (): ThemeContextData => {
   const context = useContext(ThemeContext);
   if (!context) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };
-
-// // Optionally, a simpler hook to get a color for a given key
-// export const useThemeColor = (colorKey: keyof Theme): string => {
-//   const { getColor } = useTheme();
-//   return getColor(colorKey);
-// };
 
 export const useAllThemeColors = () => ({
   background: useThemeColor({}, 'background'),

@@ -1,6 +1,7 @@
 // app/(tabs)/results.tsx
 import React, { useMemo } from 'react';
-import { View, Text, FlatList } from 'react-native';
+import { View, Text } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { minimalPairs } from '../../constants/minimalPairs';
 import { useProgress } from '../../src/context/PairProgressContext';
 import { useAllThemeColors } from '../../src/context/theme';
@@ -60,20 +61,15 @@ export default function ResultsScreen() {
   }, [catObj]);
 
   return (
-    <View
-      style={[
-        styles.container,
-        { flex: 1, backgroundColor: themeColors.background, padding: 16 },
-      ]}
-    >
-      <Text
-        style={[styles.title, { color: themeColors.text, marginBottom: 12 }]}
-      >
+    <View style={{ flex: 1, backgroundColor: themeColors.background }}>
+      <Text style={[styles.title, { color: themeColors.text, margin: 16 }]}>
         {translate(tKeys.accuracyTrend)}
       </Text>
-      <FlatList
+      <FlashList
+        contentContainerStyle={{ padding: 16 }}
         data={flattenedPairs}
         keyExtractor={(item) => item.id}
+        estimatedItemSize={220}
         renderItem={({ item }) => {
           const stats = progress[item.id] || { attempts: [] };
           return (

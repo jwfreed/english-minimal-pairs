@@ -1,4 +1,3 @@
-// src/hooks/useLanguageScheme.tsx
 import React, {
   createContext,
   useContext,
@@ -6,9 +5,12 @@ import React, {
   ReactNode,
   useMemo,
   useCallback,
+  useEffect,
 } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { alternateLanguages } from '../constants/alternateLanguages';
 
+const STORAGE_KEY = '@userLanguage';
 const DEFAULT_LANGUAGE = Object.keys(alternateLanguages)[0];
 
 interface LanguageSchemeContextProps {
@@ -28,8 +30,25 @@ export const LanguageSchemeProvider = ({
 }: {
   children: ReactNode;
 }) => {
-  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+  const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
   const [categoryIndex, setCategoryIndex] = useState(0);
+
+  // Load language from storage
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const storedLang = await AsyncStorage.getItem(STORAGE_KEY);
+      if (storedLang && alternateLanguages[storedLang]) {
+        setLanguageState(storedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
+
+  // Update both state and storage
+  const setLanguage = useCallback((lang: string) => {
+    setLanguageState(lang);
+    AsyncStorage.setItem(STORAGE_KEY, lang);
+  }, []);
 
   const translate = useCallback(
     (key: string) => alternateLanguages[language]?.[key] || key,
@@ -44,7 +63,7 @@ export const LanguageSchemeProvider = ({
       categoryIndex,
       setCategoryIndex,
     }),
-    [language, translate, categoryIndex]
+    [language, setLanguage, translate, categoryIndex]
   );
 
   return (

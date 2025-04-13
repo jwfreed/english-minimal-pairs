@@ -217,6 +217,40 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: 10,
       ...getShadowStyles(),
     },
+    pairItemContainer: {
+      marginBottom: 24,
+      borderRadius: 12,
+      padding: 12,
+      backgroundColor: 'rgba(255, 255, 255, 0.125)',
+    },
+    pairItemRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+    },
+    pairItemLeftColumn: {
+      flexGrow: 1,
+      flexShrink: 1,
+      minWidth: 140,
+      paddingRight: 8,
+    },
+    pairItemRightColumn: {
+      flexGrow: 1,
+      minWidth: 180,
+      maxWidth: '100%',
+    },
+    progressBarOuter: {
+      height: 12,
+      width: '100%',
+      backgroundColor: '#e5e7eb',
+      borderRadius: 6,
+      overflow: 'hidden',
+    },
+    progressBarInner: {
+      height: '100%',
+      backgroundColor: '#3b82f6',
+    },
   });
 
 export default createStyles;

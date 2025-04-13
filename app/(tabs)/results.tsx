@@ -78,7 +78,7 @@ export default function ResultsScreen() {
             <PairItem
               item={item}
               stats={stats}
-              translate={translate} // ✅ renamed
+              translate={translate}
               themeColors={themeColors}
               styles={styles}
             />

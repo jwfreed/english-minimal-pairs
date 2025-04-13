@@ -40,3 +40,13 @@ export interface PairSession {
 export interface PairSessionHistory {
   [pairId: string]: PairSession[];
 }
+
+export interface PairAttempt {
+  isCorrect: boolean;
+  timestamp: number;
+  durationMin?: number;
+}
+
+export interface PairStats {
+  attempts: PairAttempt[];
+}

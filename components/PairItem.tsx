@@ -1,6 +1,5 @@
-// src/components/PairItem.tsx
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import AccuracyTimeChart from './AccuracyTimeChart';
 import {
   getWeightedAccuracy,
@@ -20,6 +19,7 @@ interface FlattenedPair {
 interface PairAttempt {
   isCorrect: boolean;
   timestamp: number;
+  durationMin?: number;
 }
 
 interface PairStats {
@@ -41,13 +41,18 @@ interface ThemeColors {
 interface Styles {
   container: any;
   title: any;
-  // extend if needed
+  pairItemContainer: any;
+  pairItemRow: any;
+  pairItemLeftColumn: any;
+  pairItemRightColumn: any;
+  progressBarOuter: any;
+  progressBarInner: any;
 }
 
 interface Props {
   item: FlattenedPair;
   stats: PairStats;
-  translate: (key: string) => string; // ✅ updated from `t`
+  translate: (key: string) => string;
   themeColors: ThemeColors;
   styles: Styles;
 }
@@ -72,10 +77,9 @@ const PairItem: React.FC<Props> = React.memo(
     }, [attempts, total]);
 
     return (
-      <View style={pairItemStyles.container}>
-        <View style={pairItemStyles.row}>
-          {/* Left Column */}
-          <View style={pairItemStyles.leftColumn}>
+      <View style={styles.pairItemContainer}>
+        <View style={styles.pairItemRow}>
+          <View style={styles.pairItemLeftColumn}>
             <Text style={[styles.title, { color: themeColors.text }]}>
               {`${item.word1} - ${item.word2}`}
             </Text>
@@ -90,9 +94,8 @@ const PairItem: React.FC<Props> = React.memo(
             </Text>
           </View>
 
-          {/* Right Column */}
           {trendData.length > 0 && (
-            <View style={pairItemStyles.rightColumn}>
+            <View style={styles.pairItemRightColumn}>
               <AccuracyTimeChart practiceData={trendData} />
               <View style={{ marginTop: 10 }}>
                 <Text
@@ -107,10 +110,10 @@ const PairItem: React.FC<Props> = React.memo(
                     'timePracticed'
                   )}: ${timePracticed} / 60 ${translate('min')}`}
                 </Text>
-                <View style={pairItemStyles.progressBarOuter}>
+                <View style={styles.progressBarOuter}>
                   <View
                     style={[
-                      pairItemStyles.progressBarInner,
+                      styles.progressBarInner,
                       { width: `${Math.min(timePracticed / 60, 1) * 100}%` },
                     ]}
                   />
@@ -125,40 +128,3 @@ const PairItem: React.FC<Props> = React.memo(
 );
 
 export default PairItem;
-
-const pairItemStyles = StyleSheet.create({
-  container: {
-    marginBottom: 24,
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.125)',
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  leftColumn: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 140,
-    paddingRight: 8,
-  },
-  rightColumn: {
-    flexGrow: 1,
-    minWidth: 180,
-    maxWidth: '100%',
-  },
-  progressBarOuter: {
-    height: 12,
-    width: '100%',
-    backgroundColor: '#e5e7eb',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  progressBarInner: {
-    height: '100%',
-    backgroundColor: '#3b82f6',
-  },
-});

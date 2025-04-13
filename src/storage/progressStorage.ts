@@ -1,109 +1,100 @@
-// progressStorage.ts
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PairStats } from './types';
 
-/* -- Interfaces -- */
-export interface PairAttempt {
-  isCorrect: boolean;
-  timestamp: number;
+const PROGRESS_KEY = '@userProgress';
+
+// Utility: compute time weighting based on attention span
+function computeEffectiveDuration(durationMs: number): number {
+  if (durationMs < 500) return 0; // Likely a guess
+  if (durationMs > 10000) return 0.2 * (5000 / 60000); // Distracted: heavily discounted
+  return Math.min(durationMs, 5000) / 60000; // Max 5 seconds counted
 }
 
-export interface PairStats {
-  attempts: PairAttempt[];
-}
-
-const STORAGE_KEY = 'pairProgress';
-
-/* -- Storage Functions -- */
-// Retrieve the progress from storage. If none exists, return an empty object.
-export async function getProgress(): Promise<Record<string, PairStats>> {
-  try {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored) as Record<string, PairStats>;
-    }
-  } catch (error) {
-    console.error('Error reading progress:', error);
-  }
-  return {};
-}
-
-// Save an attempt for a given pair.
-// The function reads the current progress, appends a new attempt (while limiting to the last 100),
-// and writes the updated progress back to storage.
 export async function saveAttempt(
   pairId: string,
   isCorrect: boolean,
   durationMin: number = 0
-): Promise<void> {
+) {
   try {
-    const progress = await getProgress();
-    const now = Date.now();
-    const newAttempt: PairAttempt = { isCorrect, timestamp: now };
+    const data = await AsyncStorage.getItem(PROGRESS_KEY);
+    const progress = data ? JSON.parse(data) : {};
+    const attempts = progress[pairId]?.attempts || [];
 
-    const pairStats = progress[pairId] || { attempts: [] };
-    const updatedAttempts = [...pairStats.attempts, newAttempt];
+    attempts.push({
+      isCorrect,
+      timestamp: Date.now(),
+      durationMin,
+    });
 
-    // Limit attempts to the last 100 for memory efficiency.
-    pairStats.attempts = updatedAttempts.slice(-100);
-    progress[pairId] = pairStats;
-
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
-  } catch (error) {
-    console.error('Error saving attempt:', error);
+    progress[pairId] = { attempts };
+    await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+  } catch (e) {
+    console.error('Failed to save progress', e);
   }
 }
 
-/* -- Calculation Helpers -- */
-// Compute a weighted accuracy giving more weight to recent attempts.
-export function getWeightedAccuracy(attempts: PairAttempt[]): number {
-  if (attempts.length === 0) return 0;
-
-  let weightSum = 0;
-  let correctWeightedSum = 0;
-  const total = attempts.length;
-
-  for (let i = 0; i < total; i++) {
-    // Here, the weight increases linearly for more recent attempts.
-    const weight = (i + 1) / total;
-    weightSum += weight;
-    if (attempts[i].isCorrect) {
-      correctWeightedSum += weight;
-    }
+export async function getProgress(): Promise<Record<string, PairStats>> {
+  try {
+    const data = await AsyncStorage.getItem(PROGRESS_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch (e) {
+    console.error('Failed to get progress', e);
+    return {};
   }
-  return correctWeightedSum / weightSum;
 }
 
-// Generate data showing accuracy over time for charting purposes.
+export async function resetProgress() {
+  try {
+    await AsyncStorage.removeItem(PROGRESS_KEY);
+  } catch (e) {
+    console.error('Failed to reset progress', e);
+  }
+}
+
+// Analytics functions
+export function getWeightedAccuracy(attempts: { isCorrect: boolean; timestamp: number }[]): number {
+  if (!attempts.length) return 0;
+  const now = Date.now();
+  const decay = 0.95;
+  let weightedCorrect = 0;
+  let totalWeight = 0;
+
+  for (let i = 0; i < attempts.length; i++) {
+    const { isCorrect, timestamp } = attempts[i];
+    const age = now - timestamp;
+    const weight = Math.pow(decay, age / 3600000); // Decay per hour
+    totalWeight += weight;
+    if (isCorrect) weightedCorrect += weight;
+  }
+
+  return totalWeight > 0 ? weightedCorrect / totalWeight : 0;
+}
+
+export function estimateActivePracticeTime(attempts: { durationMin?: number }[]): number {
+  return attempts.reduce((total, attempt) => total + (attempt.durationMin || 0), 0) * 60000; // in ms
+}
+
 export function getAccuracyAndTimeOverTime(
-  attempts: PairAttempt[]
+  attempts: { isCorrect: boolean; timestamp: number; durationMin?: number }[]
 ): { timestamp: number; accuracy: number }[] {
-  const data: { timestamp: number; accuracy: number }[] = [];
-  let correct = 0;
+  const windowSize = 5;
+  const result = [];
 
-  attempts.forEach((attempt, index) => {
-    if (attempt.isCorrect) {
-      correct += 1;
-    }
-    const accuracy = (correct / (index + 1)) * 100;
-    data.push({ timestamp: attempt.timestamp, accuracy });
-  });
-  return data;
+  for (let i = windowSize - 1; i < attempts.length; i++) {
+    const window = attempts.slice(i - windowSize + 1, i + 1);
+    const correctCount = window.filter((a) => a.isCorrect).length;
+    result.push({
+      timestamp: attempts[i].timestamp,
+      accuracy: correctCount / window.length,
+    });
+  }
+
+  return result;
 }
 
-// Estimate active practice time based on the timestamp difference between the first
-// and the last attempt. The result is clamped to 1 hour (3600000 ms) as a conservative estimate.
-export function estimateActivePracticeTime(attempts: PairAttempt[]): number {
-  if (attempts.length === 0) return 0;
-
-  const first = attempts[0].timestamp;
-  const last = attempts[attempts.length - 1].timestamp;
-  const delta = last - first;
-
-  // Clamp the elapsed time to a maximum of 1 hour.
-  const clampedTime = Math.min(delta, 3600000);
-
-  // Scale down the earned time by a factor (e.g., 0.5 for 50%).
-  const scalingFactor = 0.5;
-  return clampedTime * scalingFactor;
+// Optional: helper for computing effective duration externally
+export function getEffectiveDurationMs(startTime: number): number {
+  const now = Date.now();
+  const elapsed = now - startTime;
+  return Math.round(computeEffectiveDuration(elapsed) * 60000); // Return ms value for display or saving
 }

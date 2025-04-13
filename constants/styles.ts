@@ -161,6 +161,14 @@ const createStyles = (colors: ThemeColors) =>
     buttonPressed: {
       backgroundColor: '#D76D1F',
     },
+    ipaText: {
+      fontSize: 14,
+      fontStyle: 'italic',
+      color: colors.text,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+
     answerContainer: {
       position: 'relative',
       width: '80%',

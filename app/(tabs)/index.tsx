@@ -282,6 +282,7 @@ export default function HomeScreen() {
         <View style={styles.buttonRow}>
           {[0, 1].map((idx) => {
             const word = idx === 0 ? selectedPair.word1 : selectedPair.word2;
+            const ipa = idx === 0 ? selectedPair.ipa1 : selectedPair.ipa2;
             const animatedStyle =
               playedWordIndex === idx && feedback === 'correct'
                 ? { transform: [{ scale: correctButtonScale }] }
@@ -293,6 +294,7 @@ export default function HomeScreen() {
                   onPress={() => handleAnswer(idx as 0 | 1)}
                 >
                   <Text style={styles.buttonText}>{word}</Text>
+                  <Text style={styles.ipaText}>{ipa}</Text>
                 </TouchableOpacity>
               </Animated.View>
             );

@@ -5,7 +5,8 @@ import { minimalPairs } from '../../constants/minimalPairs';
 import { useProgress } from '../../src/context/PairProgressContext';
 import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
-import { useLanguageScheme } from '../../hooks/useLanguageScheme';
+import { useLanguage } from '../../src/context/LanguageContext';
+import { useCategory } from '../../src/context/CategoryContext';
 import { tKeys } from '../../constants/translationKeys';
 import PairItem from '../../components/PairItem';
 
@@ -20,7 +21,8 @@ interface FlattenedPair {
 
 export default function ResultsScreen() {
   const progress = useProgress();
-  const { translate, categoryIndex } = useLanguageScheme();
+  const { translate } = useLanguage();
+  const { categoryIndex } = useCategory();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 

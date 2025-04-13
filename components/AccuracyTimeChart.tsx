@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { useLanguageScheme } from '@/hooks/useLanguageScheme';
+import { useLanguage } from '../src/context/LanguageContext';
 import createStyles from '@/constants/styles';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { tKeys } from '@/constants/translationKeys';
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function AccuracyTimeChart({ practiceData }: Props) {
-  const { translate } = useLanguageScheme();
+  const { translate } = useLanguage();
 
   const themeColors = {
     background: useThemeColor({}, 'background'),

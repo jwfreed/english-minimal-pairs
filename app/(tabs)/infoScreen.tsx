@@ -2,12 +2,12 @@
 import React from 'react';
 import { ScrollView, Text } from 'react-native';
 import createStyles from '../../constants/styles';
-import { useLanguageScheme } from '../../hooks/useLanguageScheme';
+import { useLanguage } from '../../src/context/LanguageContext';
 import { useAllThemeColors } from '../../src/context/theme';
 import { tKeys } from '../../constants/translationKeys';
 
 export default function InfoScreen() {
-  const { translate } = useLanguageScheme();
+  const { translate } = useLanguage();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 

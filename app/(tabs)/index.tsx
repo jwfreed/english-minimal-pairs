@@ -23,7 +23,8 @@ import {
   useProgress,
   useRecordAttempt,
 } from '../../src/context/PairProgressContext';
-import { useLanguageScheme } from '../../hooks/useLanguageScheme';
+import { useLanguage } from '../../src/context/LanguageContext';
+import { useCategory } from '../../src/context/CategoryContext';
 import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
@@ -34,8 +35,8 @@ LogBox.ignoreLogs?.(['Warning: Grid: Support for defaultProps']);
 export default function HomeScreen() {
   const progress = useProgress();
   const recordAttempt = useRecordAttempt();
-  const { setLanguage, translate, categoryIndex, setCategoryIndex, language } =
-    useLanguageScheme();
+  const { translate, language, setLanguage } = useLanguage();
+  const { categoryIndex, setCategoryIndex } = useCategory();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 

@@ -136,11 +136,20 @@ export default function HomeScreen() {
     const idx = Math.random() < 0.5 ? 0 : 1;
     setPlayedWordIndex(idx);
 
+    const sound = soundRefs.current[idx];
+    if (!sound) {
+      Alert.alert('Audio Error', 'Audio not ready. Please try again.');
+      return;
+    }
+
     try {
-      await soundRefs.current[idx]?.replayAsync();
+      await sound.replayAsync();
     } catch (err) {
-      console.error('Error playing audio:', err);
-      Alert.alert('Audio Error', 'Failed to play audio. Try again.');
+      console.error('Audio playback error:', err);
+      Alert.alert(
+        'Audio Error',
+        'Failed to play audio. Please check your volume and try again.'
+      );
     }
   }, []);
 

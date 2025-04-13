@@ -6,6 +6,7 @@ import {
   getAccuracyAndTimeOverTime,
   estimateActivePracticeTime,
 } from '../src/storage/progressStorage';
+import { tKeys } from '../constants/translationKeys';
 
 interface FlattenedPair {
   id: string;
@@ -84,12 +85,12 @@ const PairItem: React.FC<Props> = React.memo(
               {`${item.word1} - ${item.word2}`}
             </Text>
             <Text style={{ color: themeColors.text }}>
-              {`${translate('total')}: ${
+              {`${translate(tKeys.total)}: ${
                 total -
                 (total -
                   (total > 0 ? attempts.filter((a) => a.isCorrect).length : 0))
               }/${total} (${rawAvg.toFixed(1)}%) — ${translate(
-                'weightedAverage'
+                tKeys.weightedAverage
               )}: ${weightedAvg.toFixed(1)}%`}
             </Text>
           </View>
@@ -107,8 +108,8 @@ const PairItem: React.FC<Props> = React.memo(
                   }}
                 >
                   {`${translate(
-                    'timePracticed'
-                  )}: ${timePracticed} / 60 ${translate('min')}`}
+                    tKeys.timePracticed
+                  )}: ${timePracticed} / 60 ${translate(tKeys.min)}`}
                 </Text>
                 <View style={styles.progressBarOuter}>
                   <View

@@ -4,6 +4,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { useLanguageScheme } from '@/hooks/useLanguageScheme';
 import createStyles from '@/constants/styles';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { tKeys } from '@/constants/translationKeys';
 
 interface PracticeData {
   accuracy: number;
@@ -31,7 +32,6 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
 
   const styles = createStyles(themeColors);
 
-  // Optional smoothing: moving average over 3 points
   const smoothedData = useMemo(() => {
     return practiceData.map((point, i, arr) => {
       const window = arr.slice(Math.max(0, i - 2), i + 1);
@@ -65,7 +65,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
           color: themeColors.text,
         }}
       >
-        {translate('accuracyTrend')}
+        {translate(tKeys.accuracyTrend)}
       </Text>
       <LineChart
         data={chartData}
@@ -94,8 +94,6 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         yLabelsOffset={10}
         yAxisInterval={0.1}
         segments={5}
-        // yAxisMin={0}
-        // yAxisMax={1}
         style={{ marginVertical: 8, borderRadius: 8 }}
       />
     </View>

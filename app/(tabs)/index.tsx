@@ -27,6 +27,7 @@ import { useLanguageScheme } from '../../hooks/useLanguageScheme';
 import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
+import { tKeys } from '../../constants/translationKeys';
 
 LogBox.ignoreLogs?.(['Warning: Grid: Support for defaultProps']);
 
@@ -204,13 +205,14 @@ export default function HomeScreen() {
     }).start(({ finished }) => finished && setShowCategoryDropdown(false));
   }, [dropdownOpacity]);
 
-  const playAudioText = alternateLanguages[language]?.playAudio || 'Play Audio';
+  const playAudioText =
+    alternateLanguages[language]?.[tKeys.playAudio] || 'Play Audio';
 
   return (
     <View
       style={[styles.container, { backgroundColor: themeColors.background }]}
     >
-      <Text style={styles.title}>{translate('practicePairs')}</Text>
+      <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
 
       <TouchableOpacity
         style={styles.dropdownButton}

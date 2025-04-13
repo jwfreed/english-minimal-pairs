@@ -6,9 +6,9 @@ import { useProgress } from '../../src/context/PairProgressContext';
 import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
+import { tKeys } from '../../constants/translationKeys';
 import PairItem from '../../components/PairItem';
 
-/* -- Types used only for screen logic -- */
 interface FlattenedPair {
   id: string;
   word1: string;
@@ -20,7 +20,7 @@ interface FlattenedPair {
 
 export default function ResultsScreen() {
   const progress = useProgress();
-  const { translate, categoryIndex } = useLanguageScheme(); // ✅ renamed from `t`
+  const { translate, categoryIndex } = useLanguageScheme();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 
@@ -67,7 +67,7 @@ export default function ResultsScreen() {
       <Text
         style={[styles.title, { color: themeColors.text, marginBottom: 12 }]}
       >
-        {translate('averageByPair')}
+        {translate(tKeys.accuracyTrend)}
       </Text>
       <FlatList
         data={flattenedPairs}

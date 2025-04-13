@@ -13,6 +13,7 @@ import {
   Animated,
   Easing,
   LogBox,
+  Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
@@ -23,16 +24,13 @@ import {
   useRecordAttempt,
 } from '../../src/context/PairProgressContext';
 import { useLanguageScheme } from '../../hooks/useLanguageScheme';
-// Import our consolidated theme hook:
 import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
 
-// Move LogBox config outside the component to avoid re-running it on each render
 LogBox.ignoreLogs?.(['Warning: Grid: Support for defaultProps']);
 
 export default function HomeScreen() {
-  // Global context values
   const progress = useProgress();
   const recordAttempt = useRecordAttempt();
   const { setLanguage, translate, categoryIndex, setCategoryIndex, language } =
@@ -40,7 +38,6 @@ export default function HomeScreen() {
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 
-  // Memoized categories and current category object
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
   const catObj = useMemo(
@@ -48,7 +45,6 @@ export default function HomeScreen() {
     [selectedCategoryName]
   );
 
-  // Early return if no pairs are available
   if (!catObj || catObj.pairs.length === 0) {
     return (
       <View style={styles.container}>
@@ -59,7 +55,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Local state for quiz logic
   const [pairIndex, setPairIndex] = useState(0);
   const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
@@ -67,27 +62,23 @@ export default function HomeScreen() {
   );
   const [startTime, setStartTime] = useState<number | null>(null);
 
-  // Animation refs for correct answer feedback and dropdown opacity
   const correctButtonScale = useRef(new Animated.Value(1)).current;
   const dropdownOpacity = useRef(new Animated.Value(0)).current;
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  // Audio: use one ref to store both preloaded audio sounds
   const soundRefs = useRef<Audio.Sound[]>([]);
+  const soundCache = useRef<Record<string, Audio.Sound>>({});
 
-  // Update language context when the category changes
   useEffect(() => {
     setLanguage(categories[categoryIndex]);
   }, [categoryIndex, categories, setLanguage]);
 
-  // Extract active pairs from the selected category; memoize for performance
   const pairsInCategory = useMemo(() => catObj.pairs, [catObj]);
   const selectedPair = useMemo(
     () => pairsInCategory[pairIndex],
     [pairsInCategory, pairIndex]
   );
 
-  // Configure audio mode on mount and clean up on unmount
   useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
@@ -98,38 +89,41 @@ export default function HomeScreen() {
       staysActiveInBackground: false,
       playThroughEarpieceAndroid: false,
     });
+
     return () => {
-      soundRefs.current.forEach((sound) => sound?.unloadAsync());
+      Object.values(soundCache.current).forEach((sound) =>
+        sound?.unloadAsync()
+      );
     };
   }, []);
 
-  // Preload audio when the active pair changes
   useEffect(() => {
-    let sound1: Audio.Sound;
-    let sound2: Audio.Sound;
-
     const preloadAudio = async () => {
       if (!selectedPair) return;
       try {
-        sound1 = new Audio.Sound();
-        await sound1.loadAsync(selectedPair.audio1);
-        sound2 = new Audio.Sound();
-        await sound2.loadAsync(selectedPair.audio2);
-        soundRefs.current = [sound1, sound2];
+        const keys = [`${selectedPair.word1}`, `${selectedPair.word2}`];
+        for (let i = 0; i < 2; i++) {
+          const key = keys[i];
+          if (!soundCache.current[key]) {
+            const sound = new Audio.Sound();
+            await sound.loadAsync(
+              i === 0 ? selectedPair.audio1 : selectedPair.audio2
+            );
+            soundCache.current[key] = sound;
+          }
+        }
+        soundRefs.current = [
+          soundCache.current[keys[0]],
+          soundCache.current[keys[1]],
+        ];
       } catch (e) {
         console.warn('Failed to preload audio', e);
       }
     };
 
     preloadAudio();
-
-    return () => {
-      sound1?.unloadAsync();
-      sound2?.unloadAsync();
-    };
   }, [pairIndex, categoryIndex, selectedPair]);
 
-  // Play a random word from the selected pair; time the attempt
   const handlePlay = useCallback(async () => {
     setFeedback(null);
     setStartTime(Date.now());
@@ -140,10 +134,10 @@ export default function HomeScreen() {
       await soundRefs.current[idx]?.replayAsync();
     } catch (err) {
       console.error('Error playing audio:', err);
+      Alert.alert('Audio Error', 'Failed to play audio. Try again.');
     }
   }, []);
 
-  // Animation for correct answer "pop" effect
   const popAnimation = useCallback(() => {
     correctButtonScale.setValue(0.9);
     Animated.sequence([
@@ -160,7 +154,6 @@ export default function HomeScreen() {
     ]).start();
   }, [correctButtonScale]);
 
-  // Handler for when the user selects an answer
   const handleAnswer = useCallback(
     (chosenIndex: 0 | 1) => {
       if (playedWordIndex === null) return;
@@ -174,7 +167,6 @@ export default function HomeScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
 
-      // Use memoized values for pair ID and compute duration
       const pairID = `${selectedPair.word1}-${selectedPair.word2}-(${catObj.category})`;
       const msElapsed = startTime ? Date.now() - startTime : 0;
       const durationMin = msElapsed / 60000;
@@ -190,7 +182,6 @@ export default function HomeScreen() {
     ]
   );
 
-  // Handlers for opening/closing the floating category dropdown
   const openDropdown = useCallback(() => {
     setShowCategoryDropdown(true);
     Animated.timing(dropdownOpacity, {
@@ -209,7 +200,6 @@ export default function HomeScreen() {
     }).start(({ finished }) => finished && setShowCategoryDropdown(false));
   }, [dropdownOpacity]);
 
-  // Localized text for the Play Audio button
   const playAudioText = alternateLanguages[language]?.playAudio || 'Play Audio';
 
   return (
@@ -218,7 +208,6 @@ export default function HomeScreen() {
     >
       <Text style={styles.title}>{translate('practicePairs')}</Text>
 
-      {/* Floating dropdown for categories */}
       <TouchableOpacity
         style={styles.dropdownButton}
         onPress={() =>
@@ -264,7 +253,6 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      {/* Pair Picker */}
       <Picker
         selectedValue={String(pairIndex)}
         onValueChange={(val) => {
@@ -279,12 +267,10 @@ export default function HomeScreen() {
         })}
       </Picker>
 
-      {/* Play Audio Button */}
       <TouchableOpacity style={styles.button} onPress={handlePlay}>
         <Text style={styles.buttonText}>{playAudioText}</Text>
       </TouchableOpacity>
 
-      {/* Answer Buttons and Feedback */}
       <View style={styles.answerContainer}>
         <View style={styles.buttonRow}>
           {[0, 1].map((idx) => {

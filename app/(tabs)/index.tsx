@@ -74,9 +74,13 @@ export default function HomeScreen() {
   }, [categoryIndex, categories, setLanguage]);
 
   const pairsInCategory = useMemo(() => catObj.pairs, [catObj]);
+  const visiblePairs = useMemo(
+    () => pairsInCategory.slice(0, 10),
+    [pairsInCategory]
+  );
   const selectedPair = useMemo(
-    () => pairsInCategory[pairIndex],
-    [pairsInCategory, pairIndex]
+    () => visiblePairs[pairIndex],
+    [visiblePairs, pairIndex]
   );
 
   useEffect(() => {
@@ -261,7 +265,7 @@ export default function HomeScreen() {
         }}
         style={{ width: 250, color: themeColors.text, marginBottom: 10 }}
       >
-        {pairsInCategory.map((p, i) => {
+        {visiblePairs.map((p, i) => {
           const label = `${p.word1} - ${p.word2}`;
           return <Picker.Item key={label} label={label} value={String(i)} />;
         })}

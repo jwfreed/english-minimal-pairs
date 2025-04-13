@@ -39,7 +39,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         window.reduce((sum, p) => sum + p.accuracy, 0) / window.length;
       return avg;
     });
-  }, [practiceData]);
+  }, [JSON.stringify(practiceData)]);
 
   const chartData = useMemo(
     () => ({
@@ -52,7 +52,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         },
       ],
     }),
-    [practiceData, smoothedData, themeColors.primary]
+    [JSON.stringify(practiceData), smoothedData, themeColors.primary]
   );
 
   return (

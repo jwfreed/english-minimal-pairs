@@ -29,6 +29,8 @@ import { useAllThemeColors } from '../../src/context/theme';
 import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
 import { tKeys } from '../../constants/translationKeys';
+import { Dimensions } from 'react-native';
+const screenWidth = Dimensions.get('window').width;
 
 LogBox.ignoreLogs?.(['Warning: Grid: Support for defaultProps']);
 
@@ -275,10 +277,14 @@ export default function HomeScreen() {
           setPairIndex(Number(val));
           setFeedback(null);
         }}
-        style={{ width: 250, color: themeColors.text, marginBottom: 10 }}
+        style={{
+          width: screenWidth - 48, // padding/margin safe zone
+          color: themeColors.text,
+          marginBottom: 10,
+        }}
       >
         {visiblePairs.map((p, i) => {
-          const label = `${p.word1} - ${p.word2}`;
+          const label = `${p.word1} (${p.ipa1}) - ${p.word2} (${p.ipa2})`;
           return <Picker.Item key={label} label={label} value={String(i)} />;
         })}
       </Picker>

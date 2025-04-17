@@ -10,6 +10,15 @@ interface LanguageTranslations {
   min: string;
   weightedAverage: string;
   total: string;
+  titleOne: string;
+  infoOne: string;
+  titleTwo: string;
+  infoTwo: string;
+  titleThree: string;
+  infoThree: string;
+  audioErrorTitle: string;
+  audioErrorNotReady: string;
+  audioErrorPlaybackFail: string;
   [key: string]: string; // Allows any string key to be used
 }
 

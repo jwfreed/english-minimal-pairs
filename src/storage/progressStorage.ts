@@ -52,7 +52,9 @@ export async function resetProgress() {
 }
 
 // Analytics functions
-export function getWeightedAccuracy(attempts: { isCorrect: boolean; timestamp: number }[]): number {
+export function getWeightedAccuracy(
+  attempts: { isCorrect: boolean; timestamp: number }[]
+): number {
   if (!attempts.length) return 0;
   const now = Date.now();
   const decay = 0.95;
@@ -70,15 +72,20 @@ export function getWeightedAccuracy(attempts: { isCorrect: boolean; timestamp: n
   return totalWeight > 0 ? weightedCorrect / totalWeight : 0;
 }
 
-export function estimateActivePracticeTime(attempts: { durationMin?: number }[]): number {
-  return attempts.reduce((total, attempt) => total + (attempt.durationMin || 0), 0) * 60000; // in ms
+export function estimateActivePracticeTime(
+  attempts: { durationMin?: number }[]
+): number {
+  return (
+    attempts.reduce((total, attempt) => total + (attempt.durationMin || 0), 0) *
+    60000
+  ); // in ms
 }
 
 export function getAccuracyAndTimeOverTime(
   attempts: { isCorrect: boolean; timestamp: number; durationMin?: number }[]
 ): { timestamp: number; accuracy: number }[] {
   const windowSize = 5;
-  const result = [];
+  const result: { timestamp: number; accuracy: number }[] = [];
 
   for (let i = windowSize - 1; i < attempts.length; i++) {
     const window = attempts.slice(i - windowSize + 1, i + 1);

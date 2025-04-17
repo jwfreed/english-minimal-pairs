@@ -11,13 +11,15 @@ export const tKeys = {
   timePracticed: 'timePracticed',
   min: 'min',
   accuracyTrend: 'accuracyTrend',
-  // InfoScreen keys
   titleOne: 'titleOne',
   infoOne: 'infoOne',
   titleTwo: 'titleTwo',
   infoTwo: 'infoTwo',
   titleThree: 'titleThree',
   infoThree: 'infoThree',
+  audioErrorTitle: 'audioErrorTitle',
+  audioErrorNotReady: 'audioErrorNotReady',
+  audioErrorPlaybackFail: 'audioErrorPlaybackFail',
 };
 
 export type TranslationKey = keyof typeof tKeys;

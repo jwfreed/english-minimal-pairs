@@ -77,7 +77,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
           color: () => themeColors.primary,
           labelColor: () => themeColors.text,
           propsForDots: {
-            r: '2',
+            r: '1',
             strokeWidth: '1',
             stroke: themeColors.primary,
           },

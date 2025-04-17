@@ -23,6 +23,7 @@ import {
   useProgress,
   useRecordAttempt,
 } from '../../src/context/PairProgressContext';
+import { addPairSession } from '../../src/storage/sessionStorage';
 import { useLanguage } from '../../src/context/LanguageContext';
 import { useCategory } from '../../src/context/CategoryContext';
 import { useAllThemeColors } from '../../src/context/theme';
@@ -30,35 +31,28 @@ import createStyles from '../../constants/styles';
 import { alternateLanguages } from '../../constants/alternateLanguages';
 import { tKeys } from '../../constants/translationKeys';
 import { Dimensions } from 'react-native';
-const screenWidth = Dimensions.get('window').width;
 
+const screenWidth = Dimensions.get('window').width;
 LogBox.ignoreLogs?.(['Warning: Grid: Support for defaultProps']);
 
+// Cap each session at 30 seconds
+const MAX_SESSION_MS = 30_000;
+
 export default function HomeScreen() {
+  // Contexts: retrieve & record progress
   const progress = useProgress();
-  const recordAttempt = useRecordAttempt();
+  const recordAttempt = useRecordAttempt(); // ■ recordAttempt → saveAttempt → AsyncStorage (progressStorage)
   const { translate, language, setLanguage } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
 
-  const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
-  const selectedCategoryName = categories[categoryIndex];
-  const catObj = useMemo(
-    () => minimalPairs.find((cat) => cat.category === selectedCategoryName),
-    [selectedCategoryName]
-  );
+  // Refs for audio & session timing
+  const soundRefs = useRef<Audio.Sound[]>([]);
+  const soundCache = useRef<Record<string, Audio.Sound>>({});
+  const accumulatedMs = useRef(0);
 
-  if (!catObj || catObj.pairs.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text
-          style={styles.title}
-        >{`No pairs found for ${selectedCategoryName}`}</Text>
-      </View>
-    );
-  }
-
+  // Local state
   const [pairIndex, setPairIndex] = useState(0);
   const [playedWordIndex, setPlayedWordIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
@@ -66,27 +60,28 @@ export default function HomeScreen() {
   );
   const [startTime, setStartTime] = useState<number | null>(null);
 
-  const correctButtonScale = useRef(new Animated.Value(1)).current;
+  // Dropdown state
   const dropdownOpacity = useRef(new Animated.Value(0)).current;
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  const soundRefs = useRef<Audio.Sound[]>([]);
-  const soundCache = useRef<Record<string, Audio.Sound>>({});
-
-  useEffect(() => {
-    setLanguage(categories[categoryIndex]);
-  }, [categoryIndex, categories, setLanguage]);
-
-  const pairsInCategory = useMemo(() => catObj.pairs, [catObj]);
-  const visiblePairs = useMemo(
-    () => pairsInCategory.slice(0, 10),
-    [pairsInCategory]
+  // Categories & pairs
+  const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
+  const selectedCategoryName = categories[categoryIndex];
+  const catObj = useMemo(
+    () => minimalPairs.find((c) => c.category === selectedCategoryName),
+    [selectedCategoryName]
   );
-  const selectedPair = useMemo(
-    () => visiblePairs[pairIndex],
-    [visiblePairs, pairIndex]
-  );
+  if (!catObj || catObj.pairs.length === 0)
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>No pairs found</Text>
+      </View>
+    );
 
+  const visiblePairs = useMemo(() => catObj.pairs.slice(0, 10), [catObj]);
+  const selectedPair = visiblePairs[pairIndex];
+
+  // Audio setup
   useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
@@ -97,128 +92,102 @@ export default function HomeScreen() {
       staysActiveInBackground: false,
       playThroughEarpieceAndroid: false,
     });
-
-    return () => {
-      Object.values(soundCache.current).forEach((sound) =>
-        sound?.unloadAsync()
-      );
-    };
+    return () =>
+      Object.values(soundCache.current).forEach((s) => s?.unloadAsync());
   }, []);
 
   useEffect(() => {
-    const preloadAudio = async () => {
+    (async () => {
       if (!selectedPair) return;
-      try {
-        const keys = [`${selectedPair.word1}`, `${selectedPair.word2}`];
-        for (let i = 0; i < 2; i++) {
-          const key = keys[i];
-          if (!soundCache.current[key]) {
-            const sound = new Audio.Sound();
-            await sound.loadAsync(
-              i === 0 ? selectedPair.audio1 : selectedPair.audio2
-            );
-            soundCache.current[key] = sound;
-          }
+      const keys = [selectedPair.word1, selectedPair.word2];
+      for (let i = 0; i < 2; i++) {
+        const key = keys[i];
+        if (!soundCache.current[key]) {
+          const s = new Audio.Sound();
+          await s.loadAsync(
+            i === 0 ? selectedPair.audio1 : selectedPair.audio2
+          );
+          soundCache.current[key] = s;
         }
-        soundRefs.current = [
-          soundCache.current[keys[0]],
-          soundCache.current[keys[1]],
-        ];
-      } catch (e) {
-        console.warn('Failed to preload audio', e);
       }
-    };
-
-    preloadAudio();
+      soundRefs.current = [
+        soundCache.current[keys[0]],
+        soundCache.current[keys[1]],
+      ];
+    })();
   }, [pairIndex, categoryIndex, selectedPair]);
 
-  const handlePlay = useCallback(async () => {
-    setFeedback(null);
-    setStartTime(Date.now());
-    const idx = Math.random() < 0.5 ? 0 : 1;
-    setPlayedWordIndex(idx);
-
-    const sound = soundRefs.current[idx];
-    if (!sound) {
-      Alert.alert('Audio Error', 'Audio not ready. Please try again.');
-      return;
-    }
-
-    try {
-      await sound.replayAsync();
-    } catch (err) {
-      console.error('Audio playback error:', err);
-      Alert.alert(
-        'Audio Error',
-        'Failed to play audio. Please check your volume and try again.'
-      );
-    }
-  }, []);
-
-  const popAnimation = useCallback(() => {
-    correctButtonScale.setValue(0.9);
-    Animated.sequence([
-      Animated.spring(correctButtonScale, {
-        toValue: 1.2,
-        friction: 2,
-        useNativeDriver: true,
-      }),
-      Animated.spring(correctButtonScale, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [correctButtonScale]);
-
-  const handleAnswer = useCallback(
-    (chosenIndex: 0 | 1) => {
-      if (playedWordIndex === null) return;
-      const isCorrect = chosenIndex === playedWordIndex;
-      setFeedback(isCorrect ? 'correct' : 'incorrect');
-
-      if (isCorrect) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        popAnimation();
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-
-      const pairID = `${selectedPair.word1}-${selectedPair.word2}-(${catObj.category})`;
-      const msElapsed = startTime ? Date.now() - startTime : 0;
-      const durationMin = msElapsed / 60000;
-      recordAttempt(pairID, isCorrect, durationMin);
-    },
-    [
-      playedWordIndex,
-      popAnimation,
-      selectedPair,
-      catObj,
-      startTime,
-      recordAttempt,
-    ]
-  );
-
+  // Dropdown controls
   const openDropdown = useCallback(() => {
     setShowCategoryDropdown(true);
     Animated.timing(dropdownOpacity, {
       toValue: 1,
       duration: 200,
-      easing: Easing.linear,
       useNativeDriver: true,
     }).start();
-  }, [dropdownOpacity]);
-
+  }, []);
   const closeDropdown = useCallback(() => {
     Animated.timing(dropdownOpacity, {
       toValue: 0,
       duration: 150,
       useNativeDriver: true,
     }).start(({ finished }) => finished && setShowCategoryDropdown(false));
-  }, [dropdownOpacity]);
+  }, []);
 
+  // UI text
   const playAudioText =
     alternateLanguages[language]?.[tKeys.playAudio] || 'Play Audio';
+
+  // Play button handler: accumulate prior interval and reset startTime
+  const handlePlay = useCallback(async () => {
+    if (startTime) accumulatedMs.current += Date.now() - startTime;
+    setFeedback(null);
+    setStartTime(Date.now());
+    const idx = Math.random() < 0.5 ? 0 : 1;
+    setPlayedWordIndex(idx);
+    const sound = soundRefs.current[idx];
+    if (!sound) return Alert.alert('Audio Error', 'Audio not ready');
+    try {
+      await sound.replayAsync();
+    } catch {
+      Alert.alert('Audio Error', 'Playback failed');
+    }
+  }, [startTime]);
+
+  // Answer handler: compute, cap, record, save session, reset
+  const handleAnswer = useCallback(
+    async (chosenIndex: 0 | 1) => {
+      if (playedWordIndex === null) return;
+      const isCorrect = chosenIndex === playedWordIndex;
+      setFeedback(isCorrect ? 'correct' : 'incorrect');
+      Haptics.notificationAsync(
+        isCorrect
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Error
+      );
+
+      const now = Date.now();
+      const lastInterval = startTime ? now - startTime : 0;
+      const totalMs = accumulatedMs.current + lastInterval;
+      const cappedMs = Math.min(totalMs, MAX_SESSION_MS);
+      const durationMin = cappedMs / 60000;
+
+      const pairID = `${selectedPair.word1}-${selectedPair.word2}-(${catObj.category})`;
+      recordAttempt(pairID, isCorrect, durationMin);
+      await addPairSession(pairID, {
+        sessionId: `${pairID}-${Date.now()}`,
+        startTime: now - cappedMs,
+        endTime: now,
+        attempts: 1,
+        correct: isCorrect ? 1 : 0,
+        durationMs: cappedMs,
+      });
+
+      accumulatedMs.current = 0;
+      setStartTime(null);
+    },
+    [playedWordIndex, startTime]
+  );
 
   return (
     <View
@@ -278,7 +247,7 @@ export default function HomeScreen() {
           setFeedback(null);
         }}
         style={{
-          width: screenWidth - 48, // padding/margin safe zone
+          width: screenWidth - 48,
           color: themeColors.text,
           marginBottom: 10,
         }}
@@ -300,7 +269,7 @@ export default function HomeScreen() {
             const ipa = idx === 0 ? selectedPair.ipa1 : selectedPair.ipa2;
             const animatedStyle =
               playedWordIndex === idx && feedback === 'correct'
-                ? { transform: [{ scale: correctButtonScale }] }
+                ? { transform: [{ scale: new Animated.Value(1) }] }
                 : {};
             return (
               <Animated.View style={animatedStyle} key={idx}>

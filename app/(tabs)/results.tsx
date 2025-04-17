@@ -68,6 +68,7 @@ export default function ResultsScreen() {
       <FlashList
         contentContainerStyle={{ padding: 16 }}
         data={flattenedPairs}
+        extraData={progress} // ← add this
         keyExtractor={(item) => item.id}
         estimatedItemSize={220}
         renderItem={({ item }) => {

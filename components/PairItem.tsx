@@ -6,16 +6,9 @@ import {
   getAccuracyAndTimeOverTime,
   estimateActivePracticeTime,
 } from '../src/storage/progressStorage';
-import { tKeys } from '../constants/translationKeys';
 
-interface FlattenedPair {
-  id: string;
-  word1: string;
-  word2: string;
-  audio1: string;
-  audio2: string;
-  category: string;
-}
+// Maximum minutes to display in the progress bar
+const MAX_PRACTICE_MIN = 60;
 
 interface PairAttempt {
   isCorrect: boolean;
@@ -27,55 +20,56 @@ interface PairStats {
   attempts: PairAttempt[];
 }
 
-interface ThemeColors {
-  background: string;
-  text: string;
-  success: string;
-  error: string;
-  primary: string;
-  buttonText: string;
-  cardBackground: string;
-  shadow: string;
-  icon: string;
-}
-
-interface Styles {
-  container: any;
-  title: any;
-  pairItemContainer: any;
-  pairItemRow: any;
-  pairItemLeftColumn: any;
-  pairItemRightColumn: any;
-  progressBarOuter: any;
-  progressBarInner: any;
+interface FlattenedPair {
+  id: string;
+  word1: string;
+  word2: string;
+  audio1: string;
+  audio2: string;
+  category: string;
 }
 
 interface Props {
   item: FlattenedPair;
   stats: PairStats;
   translate: (key: string) => string;
-  themeColors: ThemeColors;
-  styles: Styles;
+  themeColors: Record<string, string>;
+  styles: any;
 }
 
 const PairItem: React.FC<Props> = React.memo(
   ({ item, stats, translate, themeColors, styles }) => {
     const attempts = stats.attempts || [];
-    const total = attempts.length;
 
-    const { rawAvg, weightedAvg, trendData, timePracticed } = useMemo(() => {
-      const correct = attempts.filter((a) => a.isCorrect).length;
-      const rawAvgValue = total > 0 ? (correct / total) * 100 : 0;
+    // Compute averages and trend data
+    const {
+      rawAvg,
+      weightedAvg,
+      trendData,
+      rawPracticeMin,
+      displayPracticeMin,
+    } = useMemo(() => {
+      const total = attempts.length;
+      const correctCount = attempts.filter((a) => a.isCorrect).length;
+      const rawAvgValue = total > 0 ? (correctCount / total) * 100 : 0;
+
+      const weightedAvgValue = getWeightedAccuracy(attempts) * 100;
+      const trend = getAccuracyAndTimeOverTime(attempts);
+
+      const totalMs = estimateActivePracticeTime(attempts);
+      const rawMin = totalMs / 60000;
+      const cappedMin = Math.min(rawMin, MAX_PRACTICE_MIN);
+
       return {
         rawAvg: rawAvgValue,
-        weightedAvg: getWeightedAccuracy(attempts) * 100,
-        trendData: getAccuracyAndTimeOverTime(attempts),
-        timePracticed:
-          total > 0
-            ? Math.round(estimateActivePracticeTime(attempts) / 60000)
-            : 0,
+        weightedAvg: weightedAvgValue,
+        trendData: trend,
+        rawPracticeMin: rawMin,
+        displayPracticeMin: cappedMin,
       };
-    }, [attempts, total]);
+    }, [attempts]);
+
+    const percentFilled = displayPracticeMin / MAX_PRACTICE_MIN;
 
     return (
       <View style={styles.pairItemContainer}>
@@ -85,12 +79,10 @@ const PairItem: React.FC<Props> = React.memo(
               {`${item.word1} - ${item.word2}`}
             </Text>
             <Text style={{ color: themeColors.text }}>
-              {`${translate(tKeys.total)}: ${
-                total -
-                (total -
-                  (total > 0 ? attempts.filter((a) => a.isCorrect).length : 0))
-              }/${total} (${rawAvg.toFixed(1)}%) — ${translate(
-                tKeys.weightedAverage
+              {`${translate('total')}: ${
+                attempts.filter((a) => a.isCorrect).length
+              }/${attempts.length} (${rawAvg.toFixed(1)}%) — ${translate(
+                'weightedAverage'
               )}: ${weightedAvg.toFixed(1)}%`}
             </Text>
           </View>
@@ -107,15 +99,21 @@ const PairItem: React.FC<Props> = React.memo(
                     color: themeColors.text,
                   }}
                 >
-                  {`${translate(
-                    tKeys.timePracticed
-                  )}: ${timePracticed} / 60 ${translate(tKeys.min)}`}
+                  {`${translate('timePracticed')}: ${displayPracticeMin.toFixed(
+                    1
+                  )} / ${MAX_PRACTICE_MIN} ${translate('min')}`}
                 </Text>
                 <View style={styles.progressBarOuter}>
                   <View
                     style={[
                       styles.progressBarInner,
-                      { width: `${Math.min(timePracticed / 60, 1) * 100}%` },
+                      {
+                        width: `${percentFilled * 100}%`, // smooth fractional width
+                        backgroundColor:
+                          percentFilled >= 1
+                            ? themeColors.success
+                            : themeColors.primary,
+                      },
                     ]}
                   />
                 </View>

@@ -32,7 +32,9 @@ export interface PairSession {
   endTime?: number;
   attempts: number;
   correct: number;
+  durationMs: number;
 }
+
 
 /** Maps each pair ID to an array of practice sessions,
  * if you track multiple sessions per pair.

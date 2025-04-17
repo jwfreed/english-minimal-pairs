@@ -4,55 +4,51 @@ import React, {
   useEffect,
   useState,
   useCallback,
-  useRef,
+  ReactNode,
 } from 'react';
-import {
-  saveAttempt,
-  getProgress,
-  PairStats,
-} from '../storage/progressStorage';
+import { saveAttempt, getProgress } from '../storage/progressStorage';
+import { PairStats, PairAttempt } from '../storage/types';
 
-const isTest = process.env.NODE_ENV === 'test';
-const maybeAct = isTest
-  ? require('react-test-renderer').act
-  : (fn: () => void) => fn();
-
-// Split context: one for progress, one for recordAttempt
+// Contexts for read-only progress and recording new attempts
 const ProgressContext = createContext<Record<string, PairStats>>({});
 const RecordAttemptContext = createContext<
   (pairId: string, isCorrect: boolean, durationMin?: number) => void
 >(() => {});
 
-export const PairProgressProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
-  const isMounted = useRef<boolean>(true);
 
+  // Load existing progress on mount
   useEffect(() => {
-    isMounted.current = true;
-    const loadProgress = async () => {
-      const storedProgress = await getProgress();
-      if (isMounted.current) {
-        maybeAct(() => setProgress(storedProgress));
-      }
-    };
-    loadProgress();
-
-    return () => {
-      isMounted.current = false;
-    };
+    getProgress()
+      .then((stored) => setProgress(stored))
+      .catch((err) => console.error('Failed to load progress', err));
   }, []);
 
+  // Optimistic update: immediately update UI, then persist in background
   const recordAttempt = useCallback(
-    async (pairId: string, isCorrect: boolean, durationMin: number = 0) => {
-      await saveAttempt(pairId, isCorrect, durationMin);
-      const updatedProgress = await getProgress();
-      if (isMounted.current) {
-        maybeAct(() => setProgress(updatedProgress));
-      }
+    (pairId: string, isCorrect: boolean, durationMin: number = 0) => {
+      const newAttempt: PairAttempt = {
+        isCorrect,
+        timestamp: Date.now(),
+        durationMin,
+      };
+
+      // 1️⃣ Synchronous state update for instant UI feedback
+      setProgress((prev) => {
+        const prevStats = prev[pairId] || { attempts: [] };
+        return {
+          ...prev,
+          [pairId]: {
+            attempts: [...prevStats.attempts, newAttempt],
+          },
+        };
+      });
+
+      // 2️⃣ Persist to AsyncStorage (fire-and-forget)
+      saveAttempt(pairId, isCorrect, durationMin).catch((err) => {
+        console.error('Failed to save attempt', err);
+      });
     },
     []
   );
@@ -66,5 +62,6 @@ export const PairProgressProvider = ({
   );
 };
 
+// Hooks for consuming context values
 export const useProgress = () => useContext(ProgressContext);
 export const useRecordAttempt = () => useContext(RecordAttemptContext);

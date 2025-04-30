@@ -1,5 +1,4 @@
-// app/(tabs)/index.tsx – per‑contrast adaptive: speed ladder then lexical promotion
-// -----------------------------------------------------------------------------
+// app/(tabs)/index.tsx
 import React, { useCallback, useState } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useLanguage } from '@/src/context/LanguageContext';

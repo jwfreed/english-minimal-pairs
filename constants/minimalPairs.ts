@@ -26,6 +26,7 @@ export interface Category {
 
 /* ─── Language datasets ──────────────────────────────────────────── */
 import japanese from './minimalPairs/japanese';
+import chinese from './minimalPairs/chinese';
 // import mandarin from './minimalPairs/mandarin';
 // import thai     from './minimalPairs/thai';
 // …add more as they are created
@@ -33,6 +34,7 @@ import japanese from './minimalPairs/japanese';
 /* ─── Aggregated export (keep ordering as preferred) ─────────────── */
 export const minimalPairs: Category[] = [
   japanese,
+  chinese,
   // mandarin,
   // thai,
 ];

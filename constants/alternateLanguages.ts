@@ -10,16 +10,17 @@ interface LanguageTranslations {
   min: string;
   weightedAverage: string;
   total: string;
+
   titleOne: string;
   infoOne: string;
   titleTwo: string;
   infoTwo: string;
   titleThree: string;
   infoThree: string;
-  audioErrorTitle: string;
-  audioErrorNotReady: string;
-  audioErrorPlaybackFail: string;
-  [key: string]: string; // Allows any string key to be used
+  audioErrorTitle?: string | undefined;
+  audioErrorNotReady?: string | undefined;
+  audioErrorPlaybackFail?: string | undefined;
+  [key: string]: string | undefined;
 }
 
 export const alternateLanguages: Record<string, LanguageTranslations> = {
@@ -35,6 +36,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     min: '分',
     weightedAverage: '加重平均',
     total: '合計',
+    audioErrorTitle: '音声エラー',
+    audioErrorNotReady: '音声がまだ準備できていません',
+    audioErrorPlaybackFail: '再生に失敗しました',
     titleOne: '👂 耳を鍛えて、リスニング力を変えよう！',
     infoOne:
       '多くの英語学習者は "ship" と "sheep"、"light" と "right" の違いを聞き取れません。このアプリは、そうした違いを聞き取れる耳を作るためのトレーニングを提供します。',
@@ -57,6 +61,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: '练习时间',
     min: '分钟',
     weightedAverage: '加权平均',
+    audioErrorTitle: '音频错误',
+    audioErrorNotReady: '音频尚未准备好',
+    audioErrorPlaybackFail: '播放失败',
     total: '总计',
     titleOne: '👂 训练你的耳朵，改善听力理解！',
     infoOne:
@@ -78,6 +85,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'เวลาที่ฝึกฝน',
     min: 'นาที',
     weightedAverage: 'ค่าเฉลี่ยถ่วงน้ำหนัก',
+    audioErrorTitle: 'ข้อผิดพลาดเสียง',
+    audioErrorNotReady: 'ไฟล์เสียงยังไม่พร้อม',
+    audioErrorPlaybackFail: 'เล่นเสียงไม่สำเร็จ',
     total: 'ทั้งหมด',
     titleOne: '👂 ฝึกหูของคุณ เปลี่ยนการฟังของคุณ!',
     infoOne:
@@ -100,6 +110,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'Tiempo practicado',
     min: 'minutos',
     weightedAverage: 'Promedio ponderado',
+    audioErrorTitle: 'Error de audio',
+    audioErrorNotReady: 'El audio aún no está listo',
+    audioErrorPlaybackFail: 'Error al reproducir',
     total: 'Total',
     titleOne: '👂 ¡Entrena tus oídos y mejora tu comprensión auditiva!',
     infoOne:
@@ -122,6 +135,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'الوقت الممارس',
     min: 'دقائق',
     weightedAverage: 'المتوسط المرجح',
+    audioErrorTitle: 'خطأ في الصوت',
+    audioErrorNotReady: 'الصوت غير جاهز بعد',
+    audioErrorPlaybackFail: 'فشل في التشغيل',
     total: 'المجموع',
     titleOne: '👂 درّب أذنيك وغيّر مهارات الاستماع!',
     infoOne:
@@ -144,6 +160,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'Время практики',
     min: 'минут',
     weightedAverage: 'Взвешенное среднее',
+    audioErrorTitle: 'Ошибка аудио',
+    audioErrorNotReady: 'Аудио ещё не готово',
+    audioErrorPlaybackFail: 'Не удалось воспроизвести',
     total: 'Итого',
     titleOne: '👂 Тренируй слух — улучшай понимание!',
     infoOne:
@@ -166,6 +185,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: '연습 시간',
     min: '분',
     weightedAverage: '가중 평균',
+    audioErrorTitle: '오디오 오류',
+    audioErrorNotReady: '오디오가 아직 준비되지 않았습니다',
+    audioErrorPlaybackFail: '재생에 실패했습니다',
     total: '총합',
     titleOne: '👂 귀를 훈련하여 듣기 능력을 향상시키세요!',
     infoOne:
@@ -188,6 +210,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'अभ्यास का समय/مشق کا وقت',
     min: 'मिनट/منٹ',
     weightedAverage: 'भारित औसत/وزنی اوسط',
+    audioErrorTitle: 'ऑडियो त्रुटि',
+    audioErrorNotReady: 'ऑडियो अभी तैयार नहीं है',
+    audioErrorPlaybackFail: 'प्लेबैक विफल हुआ',
     total: 'कुल/کل',
     titleOne: '👂 अपने कानों को प्रशिक्षित करें, सुनने की क्षमता सुधारें!',
     infoOne:
@@ -210,6 +235,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'Tempo praticado',
     min: 'minutos',
     weightedAverage: 'Média ponderada',
+    audioErrorTitle: 'Erro de áudio',
+    audioErrorNotReady: 'O áudio ainda não está pronto',
+    audioErrorPlaybackFail: 'Falha na reprodução',
     total: 'Total',
     titleOne: '👂 Treine seus ouvidos, melhore sua escuta!',
     infoOne:
@@ -232,6 +260,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'Thời gian luyện tập',
     min: 'phút',
     weightedAverage: 'Trung bình trọng số',
+    audioErrorTitle: 'Lỗi âm thanh',
+    audioErrorNotReady: 'Âm thanh chưa sẵn sàng',
+    audioErrorPlaybackFail: 'Phát lại thất bại',
     total: 'Tổng cộng',
     titleOne: '👂 Luyện tai, cải thiện kỹ năng nghe!',
     infoOne:
@@ -254,6 +285,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'Alıştırma süresi',
     min: 'dakika',
     weightedAverage: 'Ağırlıklı Ortalama',
+    audioErrorTitle: 'Ses hatası',
+    audioErrorNotReady: 'Ses henüz hazır değil',
+    audioErrorPlaybackFail: 'Oynatma başarısız',
     total: 'Toplam',
     titleOne: '👂 Kulaklarınızı eğitin, dinleme becerinizi geliştirin!',
     infoOne:
@@ -276,6 +310,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'زمان تمرین',
     min: 'دقیقه',
     weightedAverage: 'میانگین وزنی',
+    audioErrorTitle: 'خطای صدا',
+    audioErrorNotReady: 'صدا هنوز آماده نیست',
+    audioErrorPlaybackFail: 'پخش ناموفق بود',
     total: 'مجموع',
     titleOne: '👂 گوش‌های خود را آموزش دهید و مهارت شنیداری را بهبود دهید!',
     infoOne:
@@ -298,6 +335,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: '練習時間',
     min: '分鐘',
     weightedAverage: '加權平均',
+    audioErrorTitle: '聲音錯誤',
+    audioErrorNotReady: '聲音尚未準備好',
+    audioErrorPlaybackFail: '播放失敗',
     total: '總計',
     titleOne: '👂 訓練耳朵，改善聽力！',
     infoOne:
@@ -319,6 +359,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     timePracticed: 'Waktu berlatih',
     min: 'menit',
     weightedAverage: 'Rata-rata tertimbang',
+    audioErrorTitle: 'Kesalahan audio',
+    audioErrorNotReady: 'Audio belum siap',
+    audioErrorPlaybackFail: 'Pemutaran gagal',
     total: 'Total',
     titleOne: '👂 Latih pendengaranmu, tingkatkan kemampuan listening!',
     infoOne:

@@ -1,107 +1,102 @@
+// src/storage/progressStorage.ts – single‑source of truth for practice analytics
+// -----------------------------------------------------------------------------
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PairStats } from './types';
 
-const PROGRESS_KEY = '@userProgress';
+const STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
 
-// Utility: compute time weighting based on attention span
-function computeEffectiveDuration(durationMs: number): number {
-  if (durationMs < 500) return 0; // Likely a guess
-  if (durationMs > 10000) return 0.2 * (5000 / 60000); // Distracted: heavily discounted
-  return Math.min(durationMs, 5000) / 60000; // Max 5 seconds counted
+/* ─── types ──────────────────────────────────────────────────────────────── */
+export interface PairAttempt {
+  isCorrect: boolean;
+  timestamp: number; // epoch ms – MUST be present for charting
+  durationMin: number; // minutes spent on this attempt (0‑based ok)
+}
+
+export interface PairStats {
+  attempts: PairAttempt[];
+}
+
+/* ─── helpers ─────────────────────────────────────────────────────────────── */
+const safeParse = (raw: string | null) => {
+  if (!raw) return {} as Record<string, PairStats>;
+  try {
+    return JSON.parse(raw) as Record<string, PairStats>;
+  } catch {
+    return {} as Record<string, PairStats>;
+  }
+};
+
+/* ─── public API ──────────────────────────────────────────────────────────── */
+export async function getProgress(): Promise<Record<string, PairStats>> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEY);
+  return safeParse(raw);
 }
 
 export async function saveAttempt(
   pairId: string,
   isCorrect: boolean,
-  durationMin: number = 0
+  durationMin = 0
 ) {
-  try {
-    const data = await AsyncStorage.getItem(PROGRESS_KEY);
-    const progress = data ? JSON.parse(data) : {};
-    const attempts = progress[pairId]?.attempts || [];
+  const progress = await getProgress();
+  const stats = progress[pairId] ?? { attempts: [] };
 
-    attempts.push({
-      isCorrect,
-      timestamp: Date.now(),
-      durationMin,
-    });
+  stats.attempts.push({
+    isCorrect,
+    timestamp: Date.now(),
+    durationMin,
+  });
 
-    progress[pairId] = { attempts };
-    await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-  } catch (e) {
-    console.error('Failed to save progress', e);
-  }
+  progress[pairId] = stats;
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
-export async function getProgress(): Promise<Record<string, PairStats>> {
-  try {
-    const data = await AsyncStorage.getItem(PROGRESS_KEY);
-    return data ? JSON.parse(data) : {};
-  } catch (e) {
-    console.error('Failed to get progress', e);
-    return {};
-  }
-}
+/* ─── analytics helpers used across the UI ────────────────────────────────── */
 
-export async function resetProgress() {
-  try {
-    await AsyncStorage.removeItem(PROGRESS_KEY);
-  } catch (e) {
-    console.error('Failed to reset progress', e);
-  }
-}
-
-// Analytics functions
-export function getWeightedAccuracy(
-  attempts: { isCorrect: boolean; timestamp: number }[]
-): number {
-  if (!attempts.length) return 0;
+/**
+ * Simple recency‑weighted accuracy.
+ * Newer attempts get exponentially more weight (half‑life = 10 minutes).
+ */
+export function getWeightedAccuracy(attempts: PairAttempt[]): number {
+  if (attempts.length === 0) return 0;
   const now = Date.now();
-  const decay = 0.95;
+  const HALF_LIFE_MIN = 10; // tweak as desired
+
   let weightedCorrect = 0;
   let totalWeight = 0;
 
-  for (let i = 0; i < attempts.length; i++) {
-    const { isCorrect, timestamp } = attempts[i];
-    const age = now - timestamp;
-    const weight = Math.pow(decay, age / 3600000); // Decay per hour
-    totalWeight += weight;
-    if (isCorrect) weightedCorrect += weight;
-  }
+  attempts.forEach((a) => {
+    const ageMin = (now - a.timestamp) / 60000;
+    const w = Math.pow(0.5, ageMin / HALF_LIFE_MIN);
+    totalWeight += w;
+    if (a.isCorrect) weightedCorrect += w;
+  });
 
-  return totalWeight > 0 ? weightedCorrect / totalWeight : 0;
+  return weightedCorrect / totalWeight;
 }
 
-export function estimateActivePracticeTime(
-  attempts: { durationMin?: number }[]
-): number {
-  return (
-    attempts.reduce((total, attempt) => total + (attempt.durationMin || 0), 0) *
-    60000
-  ); // in ms
-}
-
+/**
+ * Cumulative running accuracy over time – for spark‑line charting.
+ * Returns values in **0‑1 range** (the chart multiplies by 100).
+ */
 export function getAccuracyAndTimeOverTime(
-  attempts: { isCorrect: boolean; timestamp: number; durationMin?: number }[]
-): { timestamp: number; accuracy: number }[] {
-  const windowSize = 5;
-  const result: { timestamp: number; accuracy: number }[] = [];
+  attempts: PairAttempt[]
+): { accuracy: number; timestamp: number }[] {
+  if (attempts.length === 0) return [];
 
-  for (let i = windowSize - 1; i < attempts.length; i++) {
-    const window = attempts.slice(i - windowSize + 1, i + 1);
-    const correctCount = window.filter((a) => a.isCorrect).length;
-    result.push({
-      timestamp: attempts[i].timestamp,
-      accuracy: correctCount / window.length,
-    });
-  }
+  const sorted = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
+  let correctSoFar = 0;
 
-  return result;
+  return sorted.map((a, idx) => {
+    if (a.isCorrect) correctSoFar += 1;
+    return {
+      accuracy: correctSoFar / (idx + 1),
+      timestamp: a.timestamp,
+    };
+  });
 }
 
-// Optional: helper for computing effective duration externally
-export function getEffectiveDurationMs(startTime: number): number {
-  const now = Date.now();
-  const elapsed = now - startTime;
-  return Math.round(computeEffectiveDuration(elapsed) * 60000); // Return ms value for display or saving
+/**
+ * Sum of all attempt durations in **milliseconds** (UI divides by 60 000).
+ */
+export function estimateActivePracticeTime(attempts: PairAttempt[]): number {
+  return attempts.reduce((sum, a) => sum + a.durationMin * 60000, 0);
 }

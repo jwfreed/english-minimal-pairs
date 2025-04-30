@@ -1,45 +1,38 @@
-// constants/minimalPairs.ts
-// --------------------------------------------
-// Master index that re-exports every L1 dataset
-// so HomeScreen and other modules can simply do:
-//
-//   import { minimalPairs } from '@/constants/minimalPairs';
-//
-// Add additional imports (mandarin, thai, …) as
-// you create them.  No other code needs to change.
-// --------------------------------------------
+// constants/minimalPairs.ts  – aggregator + shared types (patched with `group`)
+// -----------------------------------------------------------------------------
+// This file re‑exports all per‑language datasets so the rest of the app can do:
+//     import { minimalPairs } from '@/constants/minimalPairs';
+// -----------------------------------------------------------------------------
 
-/* ── shared types ─────────────────────────── */
-export type Difficulty = 1 | 2 | 3 | 4; // 1 easy … 4 very-hard
+/* ─── Shared TS types ─────────────────────────────────────────────── */
+export type Difficulty = 1 | 2 | 3 | 4;
 
 export interface Pair {
   word1: string;
   word2: string;
   ipa1: string;
   ipa2: string;
-  difficulty: Difficulty;
-  /** optional custom playback-rate (falls back to global table) */
-  variantRate?: number;
-  audio1: any; // require() at build time
+  difficulty: Difficulty; // lexical/context tier
+  group: string; // contrast ID (e.g. 'rL', 'bV')
+  variantRate?: number; // optional custom speed override
+  audio1: any; // static require()
   audio2: any;
 }
 
 export interface Category {
-  /** UI label for the dropdown – here: the language in its own script */
-  category: string; // e.g. '日本語', '中文', 'ไทย'
+  category: string; // language label – 日本語, 中文, ไทย …
   pairs: Pair[];
 }
 
-/* ── language datasets ────────────────────── */
+/* ─── Language datasets ──────────────────────────────────────────── */
 import japanese from './minimalPairs/japanese';
 // import mandarin from './minimalPairs/mandarin';
 // import thai     from './minimalPairs/thai';
-// …add more as you create them
+// …add more as they are created
 
-/* ── aggregated export (unchanged import path) */
+/* ─── Aggregated export (keep ordering as preferred) ─────────────── */
 export const minimalPairs: Category[] = [
   japanese,
   // mandarin,
   // thai,
-  // …
 ];

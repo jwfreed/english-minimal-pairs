@@ -20,7 +20,7 @@ const diskFiles = new Set(
 );
 
 // 📝 2. derive expected list from the <lang>.ts source --------------------------
-const lang = (process.argv[2] || 'chinese').replace(/\.ts$/, '');
+const lang = (process.argv[2] || 'thai').replace(/\.ts$/, '');
 const TS_PATH = path.join(__dirname, `../constants/minimalPairs/${lang}.ts`);
 
 if (!fs.existsSync(TS_PATH)) {

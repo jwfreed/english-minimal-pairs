@@ -21,7 +21,7 @@ const MAX_SPEED: 2 = 2; // promote lexical after reaching 2 → streak
 
 export default function HomeScreen() {
   /* ─── contexts & theme */
-  const { translate } = useLanguage();
+  const { translate, setLanguage } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const theme = useAllThemeColors();
   const styles = createStyles(theme);
@@ -116,6 +116,9 @@ export default function HomeScreen() {
         current={categoryIndex}
         onSelect={(idx) => {
           setCategoryIndex(idx);
+          const newLang = minimalPairs[idx].category;
+          setLanguage(newLang);
+
           setPairIndex(0);
           setFeedback(null);
           setPlayedIdx(null);

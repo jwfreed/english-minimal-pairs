@@ -1,3 +1,4 @@
+// src/context/PairProgressContext.tsx
 import React, {
   createContext,
   useContext,
@@ -6,10 +7,9 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
-import { saveAttempt, getProgress } from '../storage/progressStorage';
-import { PairStats, PairAttempt } from '../storage/types';
+import { saveAttempt, getProgress } from '@/src/storage/progressStorage';
+import { PairStats, PairAttempt } from '@/src/storage/types';
 
-// Contexts for read-only progress and recording new attempts
 const ProgressContext = createContext<Record<string, PairStats>>({});
 const RecordAttemptContext = createContext<
   (pairId: string, isCorrect: boolean, durationMin?: number) => void
@@ -18,14 +18,12 @@ const RecordAttemptContext = createContext<
 export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
 
-  // Load existing progress on mount
   useEffect(() => {
     getProgress()
-      .then((stored) => setProgress(stored))
+      .then(setProgress)
       .catch((err) => console.error('Failed to load progress', err));
   }, []);
 
-  // Optimistic update: immediately update UI, then persist in background
   const recordAttempt = useCallback(
     (pairId: string, isCorrect: boolean, durationMin: number = 0) => {
       const newAttempt: PairAttempt = {
@@ -34,7 +32,6 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
         durationMin,
       };
 
-      // 1️⃣ Synchronous state update for instant UI feedback
       setProgress((prev) => {
         const prevStats = prev[pairId] || { attempts: [] };
         return {
@@ -45,7 +42,6 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
         };
       });
 
-      // 2️⃣ Persist to AsyncStorage (fire-and-forget)
       saveAttempt(pairId, isCorrect, durationMin).catch((err) => {
         console.error('Failed to save attempt', err);
       });
@@ -62,6 +58,5 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Hooks for consuming context values
 export const useProgress = () => useContext(ProgressContext);
 export const useRecordAttempt = () => useContext(RecordAttemptContext);

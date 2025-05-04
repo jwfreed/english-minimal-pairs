@@ -1,14 +1,15 @@
-// app/(tabs)/_layout.tsx
+// app/(tabs)/_layout.tsx  — unified imports
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { PairProgressProvider } from '../../src/context/PairProgressContext';
+
+import { PairProgressProvider } from '@/src/context/PairProgressContext';
+import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
+import { CategoryProvider } from '@/src/context/CategoryContext';
+
 import { useColorScheme } from 'react-native';
 import { Colors } from '@/constants/Colors';
-import { LanguageProvider } from '../../src/context/LanguageContext';
-import { CategoryProvider } from '../../src/context/CategoryContext';
-import { useLanguage } from '../../src/context/LanguageContext';
-import { tKeys } from '../../constants/translationKeys';
+import { tKeys } from '@/constants/translationKeys';
 
 function TabLayout() {
   const { translate, language } = useLanguage();

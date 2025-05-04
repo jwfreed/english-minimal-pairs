@@ -10,6 +10,7 @@ import { useLanguage } from '../../src/context/LanguageContext';
 import { useCategory } from '../../src/context/CategoryContext';
 import { tKeys } from '../../constants/translationKeys';
 import PairItem from '../../components/PairItem';
+import { buildPairId } from '@/src/utils/idHelpers';
 
 interface FlattenedPair {
   id: string;
@@ -46,11 +47,11 @@ export default function ResultsScreen() {
     );
   }
 
-  const flattenedPairs: FlattenedPair[] = useMemo(() => {
+  const flattenedPairs = useMemo(() => {
     return catObj.pairs.map((pairObj) => {
-      const pairID = `${pairObj.word1}-${pairObj.word2}-(${catObj.category})`;
+      const id = buildPairId(pairObj, catObj.category);
       return {
-        id: pairID,
+        id,
         word1: pairObj.word1,
         word2: pairObj.word2,
         audio1: pairObj.audio1,

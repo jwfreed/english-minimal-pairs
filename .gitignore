@@ -31,3 +31,6 @@ expo-env.d.ts
 # @end expo-clicoverage/
 
 coverage/
+
+echo "ios/" >> .gitignore
+echo "android/" >> .gitignore

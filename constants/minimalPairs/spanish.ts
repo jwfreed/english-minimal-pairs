@@ -109,7 +109,7 @@ const thetaS: Row[] = [
 
 /* ---------- export ------------------------------------------------ */
 const spanish: Category = {
-  category: 'spanish',
+    category: 'idioma español',
   pairs: [
     ...iVsI.map(make),
     ...uhVsAh.map(make),

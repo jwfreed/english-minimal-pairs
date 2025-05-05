@@ -34,3 +34,7 @@ coverage/
 
 echo "ios/" >> .gitignore
 echo "android/" >> .gitignore
+
+# Let EAS Build regenerate native folders
+/ios
+/android

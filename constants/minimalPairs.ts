@@ -26,7 +26,7 @@ export interface Category {
 
 /* ─── Language datasets ──────────────────────────────────────────── */
 import japanese from './minimalPairs/japanese';
-import chinese from './minimalPairs/chinese';
+import mandarin from './minimalPairs/mandarin';
 import thai from './minimalPairs/thai';
 import spanish from './minimalPairs/spanish';
 import arabic from './minimalPairs/arabic';
@@ -36,13 +36,13 @@ import portuguese from './minimalPairs/portuguese';
 import vietnamese from './minimalPairs/vietnamese';
 import turkish from './minimalPairs/turkish';
 import farsi from './minimalPairs/farsi';
-// import mandarin from './minimalPairs/mandarin';
+import cantonese from './minimalPairs/cantonese';
 // …add more as they are created
 
 /* ─── Aggregated export (keep ordering as preferred) ─────────────── */
 export const minimalPairs: Category[] = [
   japanese,
-  chinese,
+  mandarin,
   thai,
   spanish,
   arabic,
@@ -52,5 +52,5 @@ export const minimalPairs: Category[] = [
   vietnamese,
   turkish,
   farsi,
-  // mandarin,
+  cantonese,
 ];

@@ -38,6 +38,7 @@ import turkish from './minimalPairs/turkish';
 import farsi from './minimalPairs/farsi';
 import cantonese from './minimalPairs/cantonese';
 import indonesian from './minimalPairs/indonesian';
+import hinduUrdu from './minimalPairs/hindu_urdu';
 // …add more as they are created
 
 /* ─── Aggregated export (keep ordering as preferred) ─────────────── */
@@ -55,4 +56,5 @@ export const minimalPairs: Category[] = [
   farsi,
   cantonese,
   indonesian,
+  hinduUrdu,
 ];

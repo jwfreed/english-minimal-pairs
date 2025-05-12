@@ -37,6 +37,7 @@ import vietnamese from './minimalPairs/vietnamese';
 import turkish from './minimalPairs/turkish';
 import farsi from './minimalPairs/farsi';
 import cantonese from './minimalPairs/cantonese';
+import indonesian from './minimalPairs/indonesian';
 // …add more as they are created
 
 /* ─── Aggregated export (keep ordering as preferred) ─────────────── */
@@ -53,4 +54,5 @@ export const minimalPairs: Category[] = [
   turkish,
   farsi,
   cantonese,
+  indonesian,
 ];

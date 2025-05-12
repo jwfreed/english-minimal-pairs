@@ -35,6 +35,7 @@ import korean from './minimalPairs/korean';
 import portuguese from './minimalPairs/portuguese';
 import vietnamese from './minimalPairs/vietnamese';
 import turkish from './minimalPairs/turkish';
+import farsi from './minimalPairs/farsi';
 // import mandarin from './minimalPairs/mandarin';
 // …add more as they are created
 
@@ -50,5 +51,6 @@ export const minimalPairs: Category[] = [
   portuguese,
   vietnamese,
   turkish,
+  farsi,
   // mandarin,
 ];

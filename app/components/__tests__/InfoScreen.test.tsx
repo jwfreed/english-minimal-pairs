@@ -2,7 +2,7 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import InfoScreen from '../../app/(tabs)/infoScreen';
 import { LanguageSchemeProvider } from @/srchooks/useLanguageScheme';
-import { PairProgressProvider } from '@/src/context/PairProgressContext';
+import { PairProgressProvider } from '@/app/context/PairProgressContext';
 
 describe('InfoScreen', () => {
   it('displays the first title in the default language', () => {

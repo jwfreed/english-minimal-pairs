@@ -6,9 +6,9 @@ import {
   PairProgressProvider,
   useProgress,
   useRecordAttempt,
-} from '@/src/context/PairProgressContext';
+} from '@/app/context/PairProgressContext';
 
-import * as storage from '@/src/storage/progressStorage';
+import * as storage from '@/app/storage/progressStorage';
 
 jest.mock('@/src/storage/progressStorage', () => ({
   getProgress: jest.fn(),

@@ -2,21 +2,21 @@
 // -----------------------------------------------------------------------------
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
-import { useLanguage } from '@/src/context/LanguageContext';
-import { useCategory } from '@/src/context/CategoryContext';
-import { useRecordAttempt } from '@/src/context/PairProgressContext';
-import { useAllThemeColors } from '@/src/context/theme';
-import createStyles from '@/src/constants/styles';
-import { minimalPairs, Pair } from '@/src/constants/minimalPairs';
-import { tKeys } from '@/src/constants/translationKeys';
+import { useLanguage } from '@/app/context/LanguageContext';
+import { useCategory } from '@/app/context/CategoryContext';
+import { useRecordAttempt } from '@/app/context/PairProgressContext';
+import { useAllThemeColors } from '@/app/context/theme';
+import createStyles from '@/app/constants/styles';
+import { minimalPairs, Pair } from '@/app/constants/minimalPairs';
+import { tKeys } from '@/app/constants/translationKeys';
 
-import CategoryDropdown from '@/src/components/CategoryDropdown';
-import PairPicker from '@/src/components/PairPicker';
-import AnswerButtons from '@/src/components/AnswerButtons';
+import CategoryDropdown from '@/app/components/CategoryDropdown';
+import PairPicker from '@/app/components/PairPicker';
+import AnswerButtons from '@/app/components/AnswerButtons';
 
-import { useContrastPairs } from '@/src/hooks/useContrastPairs';
-import { useAudio } from '@/src/hooks/useAudio';
-import { buildPairId } from '@/src/utils/idHelpers';
+import { useContrastPairs } from '@/app/hooks/useContrastPairs';
+import { useAudio } from '@/app/hooks/useAudio';
+import { buildPairId } from '@/app/utils/idHelpers';
 
 /* Playback-rate steps per acoustic tier (0–2) */
 const SPEED_TABLE: Record<0 | 1 | 2, number> = { 0: 1.0, 1: 1.1, 2: 1.2 };

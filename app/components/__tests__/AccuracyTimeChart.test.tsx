@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text } from 'react-native'; // ✅ Needed for <Text>
 import { render } from '@testing-library/react-native';
-import AccuracyTimeChart from '@/src/components/AccuracyTimeChart';
+import AccuracyTimeChart from '@/app/components/AccuracyTimeChart';
 
 // ✅ Mock react-native-chart-kit and output chart data as JSON inside <Text>
 jest.mock('react-native-chart-kit', () => ({

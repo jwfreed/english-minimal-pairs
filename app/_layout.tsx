@@ -12,8 +12,8 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Import the wrapper
 
-import { useColorScheme } from '@/src/hooks/useColorScheme';
-import { Colors } from '@/src/constants/Colors';
+import { useColorScheme } from '@/app/hooks/useColorScheme';
+import { Colors } from '@/app/constants/Colors';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -42,7 +42,7 @@ export default function RootLayout() {
     colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme;
 
   const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {

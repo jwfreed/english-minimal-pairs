@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { Pair } from '@/src/constants/minimalPairs';
+import type { Pair } from '@/app/constants/minimalPairs';
 
 export const useContrastPairs = (pairs: Pair[]) => {
   // map group → highest tier mastered (start at 1)

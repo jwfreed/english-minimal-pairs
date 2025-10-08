@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 // 📂 1. catalogue files on disk ------------------------------------------------
-const AUDIO_DIR = path.join(__dirname, '../assets/audio');
+const AUDIO_DIR = path.join(__dirname, '@/assets/audio');
 const diskFiles = new Set(
   fs.readdirSync(AUDIO_DIR).filter((f) => /\.(mp3|wav|m4a)$/i.test(f))
 );

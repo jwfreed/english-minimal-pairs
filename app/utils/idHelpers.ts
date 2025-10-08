@@ -1,6 +1,6 @@
 // src/utils/idHelpers.ts
 // -----------------------------------------------------------------------------
-import { Pair } from '@/src/constants/minimalPairs';
+import { Pair } from '@/app/constants/minimalPairs';
 
 /**
  * Consistent ID used for tracking progress per pair.

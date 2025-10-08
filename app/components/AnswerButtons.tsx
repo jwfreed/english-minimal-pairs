@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
-import createStyles from '@/src/constants/styles';
-import { useAllThemeColors } from '@/src/context/theme';
+import createStyles from '@/app/constants/styles';
+import { useAllThemeColors } from '@/app/context/theme';
 
 interface Pair {
   word1: string;

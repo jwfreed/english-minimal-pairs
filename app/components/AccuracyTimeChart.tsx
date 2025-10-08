@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { useLanguage } from '@/src/context/LanguageContext';
-import createStyles from '@/src/constants/styles';
-import { useThemeColor } from '@/src/hooks/useThemeColor';
-import { tKeys } from '@/src/constants/translationKeys';
+import { useLanguage } from '@/app/context/LanguageContext';
+import createStyles from '@/app/constants/styles';
+import { useThemeColor } from '@/app/hooks/useThemeColor';
+import { tKeys } from '@/app/constants/translationKeys';
 
 interface PracticeData {
   accuracy: number;

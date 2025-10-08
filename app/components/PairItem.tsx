@@ -5,7 +5,7 @@ import {
   getWeightedAccuracy,
   getAccuracyAndTimeOverTime,
   estimateActivePracticeTime,
-} from '@/src/storage/progressStorage';
+} from '@/app/storage/progressStorage';
 
 // Maximum minutes to display in the progress bar
 const MAX_PRACTICE_MIN = 60;

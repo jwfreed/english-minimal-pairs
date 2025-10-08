@@ -3,13 +3,13 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { PairProgressProvider } from '@/src/context/PairProgressContext';
-import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
-import { CategoryProvider } from '@/src/context/CategoryContext';
+import { PairProgressProvider } from '@/app/context/PairProgressContext';
+import { LanguageProvider, useLanguage } from '@/app/context/LanguageContext';
+import { CategoryProvider } from '@/app/context/CategoryContext';
 
 import { useColorScheme } from 'react-native';
-import { Colors } from '@/src/constants/Colors';
-import { tKeys } from '@/src/constants/translationKeys';
+import { Colors } from '@/app/constants/Colors';
+import { tKeys } from '@/app/constants/translationKeys';
 
 function TabLayout() {
   const { translate, language } = useLanguage();

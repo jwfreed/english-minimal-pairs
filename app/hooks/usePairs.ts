@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
-import { minimalPairs } from '@/src/constants/minimalPairs';
-import { useCategory } from '@/src/context/CategoryContext';
+import { minimalPairs } from '@/app/constants/minimalPairs';
+import { useCategory } from '@/app/context/CategoryContext';
 
 export const usePairs = (difficulty: 1|2|3|4) => {
   const { categoryIndex } = useCategory();

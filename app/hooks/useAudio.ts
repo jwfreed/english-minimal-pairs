@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 import { useEffect, useRef } from 'react';
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av';
-import type { Pair } from '@/src/constants/minimalPairs';
+import type { Pair } from '@/app/constants/minimalPairs';
 
 /**
  * @param selectedPair  The currently displayed minimal‑pair object (may be undefined on first render)

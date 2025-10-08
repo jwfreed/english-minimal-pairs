@@ -6,8 +6,8 @@ import React, {
   useMemo,
 } from 'react';
 import { TouchableOpacity, Text, Animated, Pressable } from 'react-native';
-import createStyles from '@/src/constants/styles';
-import { useAllThemeColors } from '@/src/context/theme';
+import createStyles from '@/app/constants/styles';
+import { useAllThemeColors } from '@/app/context/theme';
 
 interface Props {
   /** List of category names shown in the dropdown */

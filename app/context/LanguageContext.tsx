@@ -9,7 +9,7 @@ import React, {
   useMemo,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { alternateLanguages } from '@/src/constants/alternateLanguages';
+import { alternateLanguages } from '@/app/constants/alternateLanguages';
 
 const STORAGE_KEY = '@userLanguage';
 const DEFAULT_LANGUAGE = Object.keys(alternateLanguages)[0];

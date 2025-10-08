@@ -4,7 +4,7 @@ import {
   getAccuracyAndTimeOverTime,
   saveAttempt,
   getProgress,
-} from '@/src/storage/progressStorage';
+} from '@/app/storage/progressStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Mock AsyncStorage

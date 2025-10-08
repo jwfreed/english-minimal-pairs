@@ -2,7 +2,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 import ResultsScreen from '../../app/(tabs)/results';
 import { LanguageSchemeProvider } from @/srchooks/useLanguageScheme';
-import { PairProgressProvider } from '@/src/context/PairProgressContext';
+import { PairProgressProvider } from '@/app/context/PairProgressContext';
 
 jest.mock('@/src/components/AccuracyTimeChart', () => 'MockedChart');
 

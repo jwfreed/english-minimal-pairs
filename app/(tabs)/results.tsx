@@ -2,15 +2,15 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { minimalPairs } from '@/src/constants/minimalPairs';
-import { useProgress } from '@/src/context/PairProgressContext';
-import { useAllThemeColors } from '@/src/context/theme';
-import createStyles from '@/src/constants/styles';
-import { useLanguage } from '@/src/context/LanguageContext';
-import { useCategory } from '@/src/context/CategoryContext';
-import { tKeys } from '@/src/constants/translationKeys';
-import PairItem from '@/src/components/PairItem';
-import { buildPairId } from '@/src/utils/idHelpers';
+import { minimalPairs } from '@/app/constants/minimalPairs';
+import { useProgress } from '@/app/context/PairProgressContext';
+import { useAllThemeColors } from '@/app/context/theme';
+import createStyles from '@/app/constants/styles';
+import { useLanguage } from '@/app/context/LanguageContext';
+import { useCategory } from '@/app/context/CategoryContext';
+import { tKeys } from '@/app/constants/translationKeys';
+import PairItem from '@/app/components/PairItem';
+import { buildPairId } from '@/app/utils/idHelpers';
 
 interface FlattenedPair {
   id: string;

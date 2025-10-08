@@ -1,10 +1,10 @@
 // app/(tabs)/infoScreen.tsx
 import React from 'react';
 import { ScrollView, Text } from 'react-native';
-import createStyles from '@/src/constants/styles';
-import { useLanguage } from '@/src/context/LanguageContext';
-import { useAllThemeColors } from '@/src/context/theme';
-import { tKeys } from '@/src/constants/translationKeys';
+import createStyles from '@/app/constants/styles';
+import { useLanguage } from '@/app/context/LanguageContext';
+import { useAllThemeColors } from '@/app/context/theme';
+import { tKeys } from '@/app/constants/translationKeys';
 
 export default function InfoScreen() {
   const { translate } = useLanguage();

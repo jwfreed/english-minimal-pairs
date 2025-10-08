@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import HomeScreen from '../../app/(tabs)/index';
-import { PairProgressProvider } from '@/src/context/PairProgressContext';
+import { PairProgressProvider } from '@/app/context/PairProgressContext';
 import { LanguageSchemeProvider } from @/srchooks/useLanguageScheme';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';

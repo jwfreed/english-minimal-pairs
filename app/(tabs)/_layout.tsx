@@ -8,8 +8,8 @@ import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
 import { CategoryProvider } from '@/src/context/CategoryContext';
 
 import { useColorScheme } from 'react-native';
-import { Colors } from '@/constants/Colors';
-import { tKeys } from '@/constants/translationKeys';
+import { Colors } from '@/src/constants/Colors';
+import { tKeys } from '@/src/constants/translationKeys';
 
 function TabLayout() {
   const { translate, language } = useLanguage();

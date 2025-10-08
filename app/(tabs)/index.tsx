@@ -6,16 +6,16 @@ import { useLanguage } from '@/src/context/LanguageContext';
 import { useCategory } from '@/src/context/CategoryContext';
 import { useRecordAttempt } from '@/src/context/PairProgressContext';
 import { useAllThemeColors } from '@/src/context/theme';
-import createStyles from '@/constants/styles';
-import { minimalPairs, Pair } from '@/constants/minimalPairs';
-import { tKeys } from '@/constants/translationKeys';
+import createStyles from '@/src/constants/styles';
+import { minimalPairs, Pair } from '@/src/constants/minimalPairs';
+import { tKeys } from '@/src/constants/translationKeys';
 
-import CategoryDropdown from '@/components/CategoryDropdown';
-import PairPicker from '@/components/PairPicker';
-import AnswerButtons from '@/components/AnswerButtons';
+import CategoryDropdown from '@/src/components/CategoryDropdown';
+import PairPicker from '@/src/components/PairPicker';
+import AnswerButtons from '@/src/components/AnswerButtons';
 
-import { useContrastPairs } from '@/hooks/useContrastPairs';
-import { useAudio } from '@/hooks/useAudio';
+import { useContrastPairs } from '@/src/hooks/useContrastPairs';
+import { useAudio } from '@/src/hooks/useAudio';
 import { buildPairId } from '@/src/utils/idHelpers';
 
 /* Playback-rate steps per acoustic tier (0–2) */

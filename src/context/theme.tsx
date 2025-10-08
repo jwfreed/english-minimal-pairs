@@ -6,8 +6,8 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import { useThemeColor } from '../../hooks/useThemeColor';
-import { useColorScheme } from '../../hooks/useColorScheme'; // Patched hook
+import { useThemeColor } from '../hooks/useThemeColor';
+import { useColorScheme } from '../hooks/useColorScheme'; // Patched hook
 
 const lightTheme = {
   background: '#ffffff',

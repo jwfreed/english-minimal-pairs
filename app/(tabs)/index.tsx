@@ -53,9 +53,13 @@ export default function HomeScreen() {
   const selectedPair: Pair = visible[pairIndex];
 
   const speedTier = groupSpeed[selectedPair.group] ?? 0;
-  const { play } = useAudio(selectedPair, SPEED_TABLE[speedTier]);
+  const { play, audioModeReady } = useAudio(selectedPair, SPEED_TABLE[speedTier]);
 
   const handlePlay = useCallback(async () => {
+    if (!audioModeReady) {
+      Alert.alert('Audio Error', 'Audio system is still initializing. Please try again.');
+      return;
+    }
     setFeedback(null);
     setPlayedIdx(null);
     setStartTime(Date.now());
@@ -63,10 +67,12 @@ export default function HomeScreen() {
     setPlayedIdx(idx);
     try {
       await play(idx);
-    } catch {
-      Alert.alert('Audio Error', 'Cannot play clip');
+    } catch (error) {
+      console.error('Audio playback error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
+      Alert.alert('Audio Error', errorMessage);
     }
-  }, [play]);
+  }, [play, audioModeReady]);
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {

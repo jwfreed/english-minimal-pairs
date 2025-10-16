@@ -2,6 +2,7 @@ interface LanguageTranslations {
   home: string;
   results: string;
   info: string;
+  settings?: string;
   practicePairs: string;
   averageByPair: string;
   playAudio: string;
@@ -20,6 +21,18 @@ interface LanguageTranslations {
   audioErrorTitle?: string | undefined;
   audioErrorNotReady?: string | undefined;
   audioErrorPlaybackFail?: string | undefined;
+  
+  configureApp?: string;
+  voiceSelection?: string;
+  systemDefault?: string;
+  systemDefaultDescription?: string;
+  loadingVoices?: string;
+  noVoicesAvailable?: string;
+  refresh?: string;
+  appInfo?: string;
+  version?: string;
+  build?: string;
+  
   [key: string]: string | undefined;
 }
 
@@ -28,6 +41,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     home: 'ホーム',
     results: '結果',
     info: '情報',
+    settings: '設定',
     practicePairs: '練習ペア',
     averageByPair: 'ペア別平均',
     playAudio: 'オーディオを再生',
@@ -39,6 +53,16 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorTitle: '音声エラー',
     audioErrorNotReady: '音声がまだ準備できていません',
     audioErrorPlaybackFail: '再生に失敗しました',
+    configureApp: 'アプリを設定',
+    voiceSelection: '音声選択',
+    systemDefault: 'システムデフォルト',
+    systemDefaultDescription: 'デバイスのデフォルト音声を使用',
+    loadingVoices: '音声を読み込み中...',
+    noVoicesAvailable: '利用可能な音声がありません',
+    refresh: '更新',
+    appInfo: 'アプリ情報',
+    version: 'バージョン',
+    build: 'ビルド',
     titleOne: '👂 耳を鍛えて、リスニング力を変えよう！',
     infoOne:
       '多くの英語学習者は "ship" と "sheep"、"light" と "right" の違いを聞き取れません。このアプリは、そうした違いを聞き取れる耳を作るためのトレーニングを提供します。',

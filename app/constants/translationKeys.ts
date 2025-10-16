@@ -4,6 +4,7 @@ export const tKeys = {
   home: 'home',
   results: 'results',
   info: 'info',
+  settings: 'settings',
   practicePairs: 'practicePairs',
   playAudio: 'playAudio',
   total: 'total',
@@ -20,6 +21,16 @@ export const tKeys = {
   audioErrorTitle: 'audioErrorTitle',
   audioErrorNotReady: 'audioErrorNotReady',
   audioErrorPlaybackFail: 'audioErrorPlaybackFail',
+  configureApp: 'configureApp',
+  voiceSelection: 'voiceSelection',
+  systemDefault: 'systemDefault',
+  systemDefaultDescription: 'systemDefaultDescription',
+  loadingVoices: 'loadingVoices',
+  noVoicesAvailable: 'noVoicesAvailable',
+  refresh: 'refresh',
+  appInfo: 'appInfo',
+  version: 'version',
+  build: 'build',
 };
 
 export type TranslationKey = keyof typeof tKeys;

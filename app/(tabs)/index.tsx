@@ -5,6 +5,7 @@ import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
 import { useRecordAttempt } from '@/app/context/PairProgressContext';
+import { useSettings } from '@/app/context/SettingsContext';
 import { useAllThemeColors } from '@/app/context/theme';
 import createStyles from '@/app/constants/styles';
 import { minimalPairs, Pair } from '@/app/constants/minimalPairs';
@@ -26,6 +27,7 @@ export default function HomeScreen() {
   const { translate, setLanguage } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const recordAttempt = useRecordAttempt();
+  const { selectedVoice } = useSettings();
   const theme = useAllThemeColors();
   const styles = createStyles(theme);
   const playAudioText = translate(tKeys.playAudio);
@@ -53,7 +55,11 @@ export default function HomeScreen() {
   const selectedPair: Pair = visible[pairIndex];
 
   const speedTier = groupSpeed[selectedPair.group] ?? 0;
-  const { play, audioModeReady } = useAudio(selectedPair, SPEED_TABLE[speedTier]);
+  const { play, audioModeReady } = useAudio(
+    selectedPair,
+    SPEED_TABLE[speedTier],
+    selectedVoice
+  );
 
   const handlePlay = useCallback(async () => {
     if (!audioModeReady) {

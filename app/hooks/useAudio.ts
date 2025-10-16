@@ -8,8 +8,13 @@ import type { Pair } from '@/app/constants/minimalPairs';
  * Custom hook for text-to-speech playback of minimal pairs
  * @param selectedPair  The currently displayed minimal‑pair object (may be undefined on first render)
  * @param rate          Playback‑rate multiplier (e.g. 0.8, 1.0, 1.1)
+ * @param voice         Optional voice to use for speech (from SettingsContext)
  */
-export const useAudio = (selectedPair: Pair | undefined, rate: number) => {
+export const useAudio = (
+  selectedPair: Pair | undefined,
+  rate: number,
+  voice?: Speech.Voice | null
+) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioModeReady] = useState(true); // Speech API is always ready
 
@@ -32,20 +37,23 @@ export const useAudio = (selectedPair: Pair | undefined, rate: number) => {
 
       setIsSpeaking(true);
 
-      // Use Speech.speak with optimized options for performance
-      Speech.speak(word, {
+      // Build speech options
+      const speechOptions: Speech.SpeechOptions = {
         language: 'en-US', // American English
         pitch: 1.0, // Normal pitch
         rate: rate, // Use the provided rate
+        ...(voice ? { voice: voice.identifier } : {}),
         onDone: () => setIsSpeaking(false),
         onStopped: () => setIsSpeaking(false),
         onError: () => {
           setIsSpeaking(false);
           console.error(`Failed to speak word: ${word}`);
         },
-      });
+      };
+
+      Speech.speak(word, speechOptions);
     },
-    [selectedPair, rate, isSpeaking]
+    [selectedPair, rate, voice, isSpeaking]
   );
 
   return { play, audioModeReady };

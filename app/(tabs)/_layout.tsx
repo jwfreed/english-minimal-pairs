@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PairProgressProvider } from '@/app/context/PairProgressContext';
 import { LanguageProvider, useLanguage } from '@/app/context/LanguageContext';
 import { CategoryProvider } from '@/app/context/CategoryContext';
+import { SettingsProvider } from '@/app/context/SettingsContext';
 
 import { useColorScheme } from 'react-native';
 import { Colors } from '@/app/constants/Colors';
@@ -53,6 +54,14 @@ function TabLayout() {
                     color={iconColor(focused)}
                   />
                 );
+              case 'settings':
+                return (
+                  <Ionicons
+                    name={focused ? 'settings' : 'settings-outline'}
+                    size={size}
+                    color={iconColor(focused)}
+                  />
+                );
               default:
                 return null;
             }
@@ -71,6 +80,13 @@ function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="settings"
+        options={{
+          title: translate(tKeys.settings),
+          tabBarLabel: translate(tKeys.settings),
+        }}
+      />
+      <Tabs.Screen
         name="infoScreen"
         options={{
           title: translate(tKeys.info),
@@ -85,9 +101,11 @@ export default function Layout() {
   return (
     <PairProgressProvider>
       <LanguageProvider>
-        <CategoryProvider>
-          <TabLayout />
-        </CategoryProvider>
+        <SettingsProvider>
+          <CategoryProvider>
+            <TabLayout />
+          </CategoryProvider>
+        </SettingsProvider>
       </LanguageProvider>
     </PairProgressProvider>
   );

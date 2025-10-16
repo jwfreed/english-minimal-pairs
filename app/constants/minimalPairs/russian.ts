@@ -13,62 +13,7 @@ const make = ([w1, w2, diff, ipa1, ipa2, group]: Row) => ({
   ipa2,
   difficulty: diff,
   group,
-  audio1: audio[w1],
-  audio2: audio[w2],
 });
-
-/* ---------- static require map ---------------------------------- */
-const audio: Record<string, any> = {
-  // iː ~ ɪ
-  sheep: require('@/assets/audio/sheep.mp3'),
-  ship: require('@/assets/audio/ship.mp3'),
-  leave: require('@/assets/audio/leave.mp3'),
-  live: require('@/assets/audio/live.mp3'),
-  beat: require('@/assets/audio/beat.mp3'),
-  bit: require('@/assets/audio/bit.mp3'),
-  feet: require('@/assets/audio/feet.mp3'),
-  fit: require('@/assets/audio/fit.mp3'),
-
-  // æ ~ ʌ
-  bat: require('@/assets/audio/bat.mp3'),
-  but: require('@/assets/audio/but.mp3'),
-  cap: require('@/assets/audio/cap.mp3'),
-  cup: require('@/assets/audio/cup.mp3'),
-  pan: require('@/assets/audio/pan.mp3'),
-  pun: require('@/assets/audio/pun.mp3'),
-  ban: require('@/assets/audio/ban.mp3'),
-  bun: require('@/assets/audio/bun.mp3'),
-
-  // w ~ v
-  wine: require('@/assets/audio/wine.mp3'),
-  vine: require('@/assets/audio/vine.mp3'),
-  west: require('@/assets/audio/west.mp3'),
-  vest: require('@/assets/audio/vest.mp3'),
-  wow: require('@/assets/audio/wow.mp3'),
-  vow: require('@/assets/audio/vow.mp3'),
-  wane: require('@/assets/audio/wane.mp3'),
-  vane: require('@/assets/audio/vane.mp3'),
-
-  // θ ~ s
-  thin: require('@/assets/audio/thin.mp3'),
-  sin: require('@/assets/audio/sin.mp3'),
-  thick: require('@/assets/audio/thick.mp3'),
-  sick: require('@/assets/audio/sick.mp3'),
-  think: require('@/assets/audio/think.mp3'),
-  sink: require('@/assets/audio/sink.mp3'),
-  mouth: require('@/assets/audio/mouth.mp3'),
-  mouse: require('@/assets/audio/mouse.mp3'),
-
-  // h deletion
-  hat: require('@/assets/audio/hat.mp3'),
-  at: require('@/assets/audio/at.mp3'),
-  heat: require('@/assets/audio/heat.mp3'),
-  eat: require('@/assets/audio/eat.mp3'),
-  hill: require('@/assets/audio/hill.mp3'),
-  ill: require('@/assets/audio/ill.mp3'),
-  hair: require('@/assets/audio/hair.mp3'),
-  air: require('@/assets/audio/air.mp3'),
-};
 
 /* ---------- word lists ------------------------------------------ */
 const iVsI: Row[] = [

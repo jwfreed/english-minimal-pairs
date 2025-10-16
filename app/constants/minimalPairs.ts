@@ -15,8 +15,6 @@ export interface Pair {
   difficulty: Difficulty; // lexical/context tier
   group: string; // contrast ID (e.g. 'rL', 'bV')
   variantRate?: number; // optional custom speed override
-  audio1: any; // static require()
-  audio2: any;
 }
 
 export interface Category {

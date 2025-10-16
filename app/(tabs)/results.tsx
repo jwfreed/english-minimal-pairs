@@ -12,15 +12,6 @@ import { tKeys } from '@/app/constants/translationKeys';
 import PairItem from '@/app/components/PairItem';
 import { buildPairId } from '@/app/utils/idHelpers';
 
-interface FlattenedPair {
-  id: string;
-  word1: string;
-  word2: string;
-  audio1: string;
-  audio2: string;
-  category: string;
-}
-
 export default function ResultsScreen() {
   const progress = useProgress();
   const { translate } = useLanguage();
@@ -54,8 +45,6 @@ export default function ResultsScreen() {
         id,
         word1: pairObj.word1,
         word2: pairObj.word2,
-        audio1: pairObj.audio1,
-        audio2: pairObj.audio2,
         category: catObj.category,
       };
     });

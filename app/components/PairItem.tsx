@@ -24,8 +24,6 @@ interface FlattenedPair {
   id: string;
   word1: string;
   word2: string;
-  audio1: string;
-  audio2: string;
   category: string;
 }
 

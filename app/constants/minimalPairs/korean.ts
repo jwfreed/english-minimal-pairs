@@ -13,66 +13,7 @@ const make = ([w1, w2, diff, ipa1, ipa2, group]: Row) => ({
   ipa2,
   difficulty: diff,
   group,
-  audio1: audio[w1],
-  audio2: audio[w2],
 });
-
-/* ---------- static require map ----------------------------------- */
-const audio: Record<string, any> = {
-  // iː ~ ɪ
-  sheep: require('@/assets/audio/sheep.mp3'),
-  ship: require('@/assets/audio/ship.mp3'),
-  leave: require('@/assets/audio/leave.mp3'),
-  live: require('@/assets/audio/live.mp3'),
-  beat: require('@/assets/audio/beat.mp3'),
-  bit: require('@/assets/audio/bit.mp3'),
-  feet: require('@/assets/audio/feet.mp3'),
-  fit: require('@/assets/audio/fit.mp3'),
-
-  // æ ~ ʌ (bat/but etc.) – not used here
-
-  // w ~ v – not used here
-
-  // r ~ l
-  right: require('@/assets/audio/right.mp3'),
-  light: require('@/assets/audio/light.mp3'),
-  road: require('@/assets/audio/road.mp3'),
-  load: require('@/assets/audio/load.mp3'),
-  rip: require('@/assets/audio/rip.mp3'),
-  lip: require('@/assets/audio/lip.mp3'),
-  rake: require('@/assets/audio/rake.mp3'),
-  lake: require('@/assets/audio/lake.mp3'),
-
-  // f ~ p
-  fine: require('@/assets/audio/fine.mp3'),
-  pine: require('@/assets/audio/pine.mp3'),
-  fan: require('@/assets/audio/fan.mp3'),
-  pan: require('@/assets/audio/pan.mp3'),
-  ferry: require('@/assets/audio/ferry.mp3'),
-  perry: require('@/assets/audio/perry.mp3'),
-  fail: require('@/assets/audio/fail.mp3'),
-  pale: require('@/assets/audio/pale.mp3'),
-
-  // v ~ b
-  van: require('@/assets/audio/van.mp3'),
-  ban: require('@/assets/audio/ban.mp3'),
-  vest: require('@/assets/audio/vest.mp3'),
-  best: require('@/assets/audio/best.mp3'),
-  vow: require('@/assets/audio/vow.mp3'),
-  bow: require('@/assets/audio/bow.mp3'),
-  vase: require('@/assets/audio/vase.mp3'),
-  base: require('@/assets/audio/base.mp3'),
-
-  // θ ~ s
-  thin: require('@/assets/audio/thin.mp3'),
-  sin: require('@/assets/audio/sin.mp3'),
-  thick: require('@/assets/audio/thick.mp3'),
-  sick: require('@/assets/audio/sick.mp3'),
-  think: require('@/assets/audio/think.mp3'),
-  sink: require('@/assets/audio/sink.mp3'),
-  mouth: require('@/assets/audio/mouth.mp3'),
-  mouse: require('@/assets/audio/mouse.mp3'),
-};
 
 /* ---------- word lists ------------------------------------------- */
 const iVsI: Row[] = [

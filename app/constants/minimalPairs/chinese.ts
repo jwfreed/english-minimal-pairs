@@ -16,62 +16,7 @@ const make = ([w1, w2, diff, ipa1, ipa2, group]: Row) => ({
   ipa2,
   difficulty: diff,
   group,
-  audio1: audio[w1],
-  audio2: audio[w2],
 });
-
-/* ---------- static require map ----------------------------------- */
-const audio: Record<string, any> = {
-  // θ ~ s
-  thin: require('@/assets/audio/thin.mp3'),
-  sin: require('@/assets/audio/sin.mp3'),
-  thick: require('@/assets/audio/thick.mp3'),
-  sick: require('@/assets/audio/sick.mp3'),
-  think: require('@/assets/audio/think.mp3'),
-  sink: require('@/assets/audio/sink.mp3'),
-  mouth: require('@/assets/audio/mouth.mp3'),
-  mouse: require('@/assets/audio/mouse.mp3'),
-
-  // v ~ w
-  vine: require('@/assets/audio/vine.mp3'),
-  wine: require('@/assets/audio/wine.mp3'),
-  vest: require('@/assets/audio/vest.mp3'),
-  west: require('@/assets/audio/west.mp3'),
-  vow: require('@/assets/audio/vow.mp3'),
-  wow: require('@/assets/audio/wow.mp3'),
-  vane: require('@/assets/audio/vane.mp3'),
-  wane: require('@/assets/audio/wane.mp3'),
-
-  // r ~ l
-  right: require('@/assets/audio/right.mp3'),
-  light: require('@/assets/audio/light.mp3'),
-  road: require('@/assets/audio/road.mp3'),
-  load: require('@/assets/audio/load.mp3'),
-  rake: require('@/assets/audio/rake.mp3'),
-  lake: require('@/assets/audio/lake.mp3'),
-  rip: require('@/assets/audio/rip.mp3'),
-  lip: require('@/assets/audio/lip.mp3'),
-
-  // iː ~ ɪ
-  beat: require('@/assets/audio/beat.mp3'),
-  bit: require('@/assets/audio/bit.mp3'),
-  leave: require('@/assets/audio/leave.mp3'),
-  live: require('@/assets/audio/live.mp3'),
-  feet: require('@/assets/audio/feet.mp3'),
-  fit: require('@/assets/audio/fit.mp3'),
-  seat: require('@/assets/audio/seat.mp3'),
-  sit: require('@/assets/audio/sit.mp3'),
-
-  // uː ~ ʊ
-  pool: require('@/assets/audio/pool.mp3'),
-  pull: require('@/assets/audio/pull.mp3'),
-  boot: require('@/assets/audio/boot.mp3'),
-  book: require('@/assets/audio/book.mp3'),
-  fool: require('@/assets/audio/fool.mp3'),
-  full: require('@/assets/audio/full.mp3'),
-  Luke: require('@/assets/audio/Luke.mp3'),
-  look: require('@/assets/audio/look.mp3'),
-};
 
 /* ---------- word-lists with group IDs ---------------------------- */
 const thetaS: Row[] = [

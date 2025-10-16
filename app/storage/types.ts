@@ -6,8 +6,6 @@ export interface SimplePair {
   word2: string;
   ipa1: string;
   ipa2: string;
-  audio1: any; // require(...) or string for URI
-  audio2: any; // likewise
 }
 
 /** Represents a single L1 category with an array of minimal pairs */

@@ -50,12 +50,49 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsLoadingVoices(true);
       const voices = await Speech.getAvailableVoicesAsync();
       
-      // Filter to only English voices and sort by name
-      const englishVoices = voices
-        .filter((voice) => voice.language.startsWith('en'))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      // Filter to only US (en-US) and UK (en-GB) English voices
+      // Also filter by voice name patterns to identify male/female voices
+      const filteredVoices = voices.filter((voice) => {
+        const lang = voice.language.toLowerCase();
+        const name = voice.name.toLowerCase();
+        
+        // Only include US English (en-US) or UK English (en-GB)
+        const isUSorUK = lang.startsWith('en-us') || lang.startsWith('en-gb');
+        if (!isUSorUK) return false;
+        
+        // Filter out voices that are typically enhanced/premium variants
+        // Keep standard male and female voices
+        const excludePatterns = [
+          'enhanced',
+          'premium',
+          'compact',
+          'siri',
+          '(enhanced)',
+          '(premium)',
+        ];
+        
+        const shouldExclude = excludePatterns.some(pattern => 
+          name.includes(pattern.toLowerCase())
+        );
+        
+        return !shouldExclude;
+      });
       
-      setAvailableVoices(englishVoices);
+      // Sort voices by locale (US first, then UK) and then by name
+      const sortedVoices = filteredVoices.sort((a, b) => {
+        // Sort US voices before UK voices
+        const aIsUS = a.language.toLowerCase().startsWith('en-us');
+        const bIsUS = b.language.toLowerCase().startsWith('en-us');
+        
+        if (aIsUS && !bIsUS) return -1;
+        if (!aIsUS && bIsUS) return 1;
+        
+        // Within same locale, sort by name
+        return a.name.localeCompare(b.name);
+      });
+      
+      console.log(`✅ Loaded ${sortedVoices.length} US/UK English voices`);
+      setAvailableVoices(sortedVoices);
     } catch (error) {
       console.error('Failed to load voices:', error);
       setAvailableVoices([]);

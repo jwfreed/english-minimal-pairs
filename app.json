@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jfreed.englishminimalpairs",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
@@ -39,7 +40,8 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withAudioSession.js"
     ],
     "experiments": {
       "typedRoutes": true

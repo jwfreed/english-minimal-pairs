@@ -143,42 +143,42 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView
-      style={[localStyles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={localStyles.contentContainer}
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={styles.contentContainer}
     >
       {/* Header */}
-      <View style={localStyles.header}>
-        <Text style={[localStyles.headerTitle, { color: theme.text }]}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
           {translate(tKeys.settings)}
         </Text>
-        <Text style={[localStyles.headerSubtitle, { color: theme.textSecondary }]}>
+        <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
           {translate(tKeys.configureApp)}
         </Text>
       </View>
 
       {/* Language Selection Section */}
-      <View style={[localStyles.section, { backgroundColor: theme.cardBackground }]}>
+      <View style={styles.section}>
         <TouchableOpacity
-          style={localStyles.sectionHeader}
+          style={styles.sectionHeader}
           onPress={() => toggleSection('language')}
           activeOpacity={0.7}
         >
-          <View style={localStyles.sectionHeaderLeft}>
+          <View style={styles.sectionHeaderLeft}>
             <Ionicons
               name="language-outline"
               size={24}
               color={theme.primary}
-              style={localStyles.sectionIcon}
+              style={styles.sectionIcon}
             />
             <View style={localStyles.languageTextContainer}>
               {hasUserSelectedLanguage ? (
-                <Text style={[localStyles.sectionTitle, { color: theme.text }]}>
+                <Text style={styles.sectionTitle}>
                   {translate(tKeys.language)}
                 </Text>
               ) : (
                 <Animated.Text 
                   style={[
-                    localStyles.sectionTitle, 
+                    styles.sectionTitle, 
                     { 
                       color: theme.primary,
                       opacity: fadeAnim,
@@ -190,13 +190,13 @@ export default function SettingsScreen() {
                 </Animated.Text>
               )}
               {hasUserSelectedLanguage ? (
-                <Text style={[localStyles.sectionSubtitle, { color: theme.textSecondary }]}>
+                <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
                   {minimalPairs[categoryIndex].category}
                 </Text>
               ) : (
                 <Animated.Text 
                   style={[
-                    localStyles.sectionSubtitle, 
+                    styles.sectionSubtitle, 
                     { 
                       color: theme.primary,
                       opacity: fadeAnim,
@@ -217,7 +217,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         {expandedSection === 'language' && (
-          <View style={localStyles.sectionContent}>
+          <View style={styles.sectionContent}>
             {minimalPairs.map((cat, index) => {
               const isSelected = categoryIndex === index;
               
@@ -225,16 +225,15 @@ export default function SettingsScreen() {
                 <TouchableOpacity
                   key={cat.category}
                   style={[
-                    localStyles.voiceOption,
-                    isSelected && localStyles.selectedVoiceOption,
-                    index === minimalPairs.length - 1 && localStyles.lastVoiceOption,
-                    { borderBottomColor: theme.border },
+                    styles.listOption,
+                    isSelected && styles.selectedListOption,
+                    index === minimalPairs.length - 1 && styles.lastListOption,
                   ]}
                   onPress={() => handleLanguageSelect(index)}
                   activeOpacity={0.7}
                 >
-                  <View style={localStyles.voiceInfo}>
-                    <Text style={[localStyles.voiceName, { color: theme.text }]}>
+                  <View style={styles.listItemInfo}>
+                    <Text style={styles.listItemName}>
                       {cat.category}
                     </Text>
                   </View>
@@ -249,24 +248,24 @@ export default function SettingsScreen() {
       </View>
 
       {/* Voice Selection Section */}
-      <View style={[localStyles.section, { backgroundColor: theme.cardBackground }]}>
+      <View style={styles.section}>
         <TouchableOpacity
-          style={localStyles.sectionHeader}
+          style={styles.sectionHeader}
           onPress={() => toggleSection('voice')}
           activeOpacity={0.7}
         >
-          <View style={localStyles.sectionHeaderLeft}>
+          <View style={styles.sectionHeaderLeft}>
             <Ionicons
               name="mic-outline"
               size={24}
               color={theme.primary}
-              style={localStyles.sectionIcon}
+              style={styles.sectionIcon}
             />
             <View>
-              <Text style={[localStyles.sectionTitle, { color: theme.text }]}>
+              <Text style={styles.sectionTitle}>
                 {translate(tKeys.voiceSelection)}
               </Text>
-              <Text style={[localStyles.sectionSubtitle, { color: theme.textSecondary }]}>
+              <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
                 {getSelectedVoiceDisplay()}
               </Text>
             </View>
@@ -279,11 +278,11 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         {expandedSection === 'voice' && (
-          <View style={localStyles.sectionContent}>
+          <View style={styles.sectionContent}>
             {isLoadingVoices ? (
-              <View style={localStyles.loadingContainer}>
+              <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={theme.primary} />
-                <Text style={[localStyles.loadingText, { color: theme.textSecondary }]}>
+                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
                   {translate(tKeys.loadingVoices)}
                 </Text>
               </View>
@@ -291,16 +290,16 @@ export default function SettingsScreen() {
               <>
                 {/* Available Voices - Only 2 options */}
                 {availableVoices.length === 0 ? (
-                  <View style={localStyles.emptyContainer}>
-                    <Text style={[localStyles.emptyText, { color: theme.textSecondary }]}>
+                  <View style={styles.emptyContainer}>
+                    <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
                       {translate(tKeys.noVoicesAvailable)}
                     </Text>
                     <TouchableOpacity
-                      style={[localStyles.refreshButton, { borderColor: theme.primary }]}
+                      style={styles.refreshButton}
                       onPress={refreshVoices}
                     >
                       <Ionicons name="refresh" size={20} color={theme.primary} />
-                      <Text style={[localStyles.refreshButtonText, { color: theme.primary }]}>
+                      <Text style={styles.refreshButtonText}>
                         {translate(tKeys.refresh)}
                       </Text>
                     </TouchableOpacity>
@@ -315,19 +314,18 @@ export default function SettingsScreen() {
                       <TouchableOpacity
                         key={voice.identifier}
                         style={[
-                          localStyles.voiceOption,
-                          isSelected && localStyles.selectedVoiceOption,
-                          index === availableVoices.length - 1 && localStyles.lastVoiceOption,
-                          { borderBottomColor: theme.border },
+                          styles.listOption,
+                          isSelected && styles.selectedListOption,
+                          index === availableVoices.length - 1 && styles.lastListOption,
                         ]}
                         onPress={() => handleVoiceSelect(voice)}
                         activeOpacity={0.7}
                       >
-                        <View style={localStyles.voiceInfo}>
-                          <Text style={[localStyles.voiceName, { color: theme.text }]}>
+                        <View style={styles.listItemInfo}>
+                          <Text style={styles.listItemName}>
                             {displayName}
                           </Text>
-                          <Text style={[localStyles.voiceDetails, { color: theme.textSecondary }]}>
+                          <Text style={[styles.listItemDetails, { color: theme.textSecondary }]}>
                             {subtitle}
                           </Text>
                         </View>
@@ -345,128 +343,16 @@ export default function SettingsScreen() {
       </View>
 
       {/* Footer Spacer */}
-      <View style={localStyles.footer} />
+      <View style={styles.footer} />
     </ScrollView>
   );
 }
 
 const createLocalStyles = (theme: any) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    contentContainer: {
-      padding: 16,
-    },
-    header: {
-      marginBottom: 24,
-      paddingTop: 8,
-    },
-    headerTitle: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      marginBottom: 4,
-    },
-    headerSubtitle: {
-      fontSize: 16,
-    },
-    section: {
-      borderRadius: 12,
-      marginBottom: 16,
-      overflow: 'hidden',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    sectionHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: 16,
-    },
-    sectionHeaderLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-    },
     languageTextContainer: {
       minWidth: 200,
       minHeight: 60,
       justifyContent: 'center',
-    },
-    sectionIcon: {
-      marginRight: 12,
-    },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-    },
-    sectionSubtitle: {
-      fontSize: 14,
-      marginTop: 2,
-    },
-    sectionContent: {
-      borderTopWidth: 1,
-      borderTopColor: theme.border,
-    },
-    loadingContainer: {
-      padding: 32,
-      alignItems: 'center',
-    },
-    loadingText: {
-      marginTop: 12,
-      fontSize: 14,
-    },
-    voiceOption: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: 16,
-      borderBottomWidth: 1,
-    },
-    selectedVoiceOption: {
-      backgroundColor: theme.primaryLight || theme.primary + '15',
-    },
-    lastVoiceOption: {
-      borderBottomWidth: 0,
-    },
-    voiceInfo: {
-      flex: 1,
-      marginRight: 12,
-    },
-    voiceName: {
-      fontSize: 16,
-      fontWeight: '500',
-      marginBottom: 4,
-    },
-    voiceDetails: {
-      fontSize: 14,
-    },
-    emptyContainer: {
-      padding: 32,
-      alignItems: 'center',
-    },
-    emptyText: {
-      fontSize: 14,
-      textAlign: 'center',
-      marginBottom: 16,
-    },
-    refreshButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderWidth: 1,
-      borderRadius: 8,
-    },
-    refreshButtonText: {
-      marginLeft: 8,
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    footer: {
-      height: 32,
     },
   });

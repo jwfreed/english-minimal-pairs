@@ -259,6 +259,154 @@ const createStyles = (colors: ThemeColors) =>
       height: '100%',
       backgroundColor: '#3b82f6',
     },
+
+    // ========== Shared Section/Card Styles ==========
+    section: {
+      borderRadius: 12,
+      marginBottom: 16,
+      overflow: 'hidden',
+      backgroundColor: colors.cardBackground,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+    },
+    sectionHeaderLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    sectionIcon: {
+      marginRight: 12,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    sectionSubtitle: {
+      fontSize: 14,
+      marginTop: 2,
+      color: colors.text,
+    },
+    sectionContent: {
+      borderTopWidth: 1,
+      borderTopColor: colors.shadow,
+    },
+
+    // ========== Header Styles ==========
+    header: {
+      marginBottom: 24,
+      paddingTop: 8,
+    },
+    headerTitle: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      marginBottom: 4,
+      color: colors.text,
+    },
+    headerSubtitle: {
+      fontSize: 16,
+      color: colors.text,
+    },
+
+    // ========== List Item Styles ==========
+    listOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.shadow,
+    },
+    selectedListOption: {
+      backgroundColor: colors.primary + '15',
+    },
+    lastListOption: {
+      borderBottomWidth: 0,
+    },
+    listItemInfo: {
+      flex: 1,
+      marginRight: 12,
+    },
+    listItemName: {
+      fontSize: 16,
+      fontWeight: '500',
+      marginBottom: 4,
+      color: colors.text,
+    },
+    listItemDetails: {
+      fontSize: 14,
+      color: colors.text,
+    },
+
+    // ========== Loading & Empty States ==========
+    loadingContainer: {
+      padding: 32,
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 12,
+      fontSize: 14,
+      color: colors.text,
+    },
+    emptyContainer: {
+      padding: 32,
+      alignItems: 'center',
+    },
+    emptyText: {
+      fontSize: 14,
+      textAlign: 'center',
+      marginBottom: 16,
+      color: colors.text,
+    },
+
+    // ========== Button Variants ==========
+    refreshButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 8,
+    },
+    refreshButtonText: {
+      marginLeft: 8,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+
+    // ========== Layout Helpers ==========
+    contentContainer: {
+      padding: 16,
+    },
+    footer: {
+      height: 32,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 8,
+    },
+    infoLabel: {
+      fontSize: 16,
+      color: colors.text,
+    },
+    infoValue: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
   });
 
 export default createStyles;

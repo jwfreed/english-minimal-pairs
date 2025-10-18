@@ -1,6 +1,6 @@
 // app/(tabs)/infoScreen.tsx
 import React from 'react';
-import { ScrollView, Text, View, StyleSheet } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import Constants from 'expo-constants';
 import createStyles from '@/app/constants/styles';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -11,7 +11,6 @@ export default function InfoScreen() {
   const { translate } = useLanguage();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
-  const localStyles = createLocalStyles(themeColors);
 
   // Get app version
   const appVersion = Constants.expoConfig?.version || '1.0.0';
@@ -36,23 +35,23 @@ export default function InfoScreen() {
       <Text style={styles.infoList}>{translate(tKeys.infoThree)}</Text>
 
       {/* App Info Section */}
-      <View style={[localStyles.appInfoSection, { backgroundColor: themeColors.cardBackground }]}>
-        <Text style={[localStyles.appInfoTitle, { color: themeColors.text }]}>
+      <View style={[styles.section, { marginTop: 32 }]}>
+        <Text style={[styles.sectionTitle, { padding: 16, paddingBottom: 0 }]}>
           {translate(tKeys.appInfo)}
         </Text>
-        <View style={localStyles.infoRow}>
-          <Text style={[localStyles.infoLabel, { color: themeColors.textSecondary }]}>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>
             {translate(tKeys.version)}
           </Text>
-          <Text style={[localStyles.infoValue, { color: themeColors.text }]}>
+          <Text style={styles.infoValue}>
             {appVersion}
           </Text>
         </View>
-        <View style={localStyles.infoRow}>
-          <Text style={[localStyles.infoLabel, { color: themeColors.textSecondary }]}>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>
             {translate(tKeys.build)}
           </Text>
-          <Text style={[localStyles.infoValue, { color: themeColors.text }]}>
+          <Text style={styles.infoValue}>
             {buildNumber}
           </Text>
         </View>
@@ -60,35 +59,3 @@ export default function InfoScreen() {
     </ScrollView>
   );
 }
-
-const createLocalStyles = (theme: any) =>
-  StyleSheet.create({
-    appInfoSection: {
-      marginTop: 32,
-      padding: 16,
-      borderRadius: 12,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    appInfoTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      marginBottom: 16,
-    },
-    infoRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingVertical: 8,
-    },
-    infoLabel: {
-      fontSize: 16,
-    },
-    infoValue: {
-      fontSize: 16,
-      fontWeight: '600',
-    },
-  });

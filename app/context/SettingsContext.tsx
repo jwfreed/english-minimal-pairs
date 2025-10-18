@@ -36,8 +36,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-        if (settings.selectedVoice) {
-          setSelectedVoiceState(settings.selectedVoice);
+        if (settings.selectedVoiceIdentifier) {
+          // Find the voice by identifier from available voices
+          // This will be set after voices are loaded
+          console.log('📦 Found saved voice identifier:', settings.selectedVoiceIdentifier);
         }
       }
     } catch (error) {
@@ -50,49 +52,74 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsLoadingVoices(true);
       const voices = await Speech.getAvailableVoicesAsync();
       
-      // Filter to only US (en-US) and UK (en-GB) English voices
-      // Also filter by voice name patterns to identify male/female voices
-      const filteredVoices = voices.filter((voice) => {
-        const lang = voice.language.toLowerCase();
-        const name = voice.name.toLowerCase();
-        
-        // Only include US English (en-US) or UK English (en-GB)
-        const isUSorUK = lang.startsWith('en-us') || lang.startsWith('en-gb');
-        if (!isUSorUK) return false;
-        
-        // Filter out voices that are typically enhanced/premium variants
-        // Keep standard male and female voices
-        const excludePatterns = [
-          'enhanced',
-          'premium',
-          'compact',
-          'siri',
-          '(enhanced)',
-          '(premium)',
-        ];
-        
-        const shouldExclude = excludePatterns.some(pattern => 
-          name.includes(pattern.toLowerCase())
-        );
-        
-        return !shouldExclude;
-      });
+      console.log('🎤 All available voices:', voices.map(v => `${v.name} (${v.language})`));
       
-      // Sort voices by locale (US first, then UK) and then by name
-      const sortedVoices = filteredVoices.sort((a, b) => {
-        // Sort US voices before UK voices
-        const aIsUS = a.language.toLowerCase().startsWith('en-us');
-        const bIsUS = b.language.toLowerCase().startsWith('en-us');
-        
-        if (aIsUS && !bIsUS) return -1;
-        if (!aIsUS && bIsUS) return 1;
-        
-        // Within same locale, sort by name
-        return a.name.localeCompare(b.name);
-      });
+      // Only use 2 specific voices: Samantha (US Female) and Daniel (UK Male)
+      const selectedVoices: Speech.Voice[] = [];
       
-      console.log(`✅ Loaded ${sortedVoices.length} US/UK English voices`);
-      setAvailableVoices(sortedVoices);
+      // Find Samantha (US Female)
+      const samantha = voices.find(v => 
+        v.name === 'Samantha' && 
+        v.language.toLowerCase().startsWith('en-us')
+      );
+      
+      if (samantha) {
+        selectedVoices.push(samantha);
+        console.log('✅ Found US Female: Samantha');
+      } else {
+        console.warn('❌ Samantha (US Female) not found');
+        // Fallback to any US female voice
+        const usFemale = voices.find(v => v.language.toLowerCase().startsWith('en-us'));
+        if (usFemale) {
+          selectedVoices.push(usFemale);
+          console.log(`⚠️  Using fallback US voice: ${usFemale.name}`);
+        }
+      }
+      
+      // Find Daniel (UK Male)
+      const daniel = voices.find(v => 
+        v.name === 'Daniel' && 
+        v.language.toLowerCase().startsWith('en-gb')
+      );
+      
+      if (daniel) {
+        selectedVoices.push(daniel);
+        console.log('✅ Found UK Male: Daniel');
+      } else {
+        console.warn('❌ Daniel (UK Male) not found');
+        // Fallback to any UK voice
+        const ukVoice = voices.find(v => v.language.toLowerCase().startsWith('en-gb'));
+        if (ukVoice) {
+          selectedVoices.push(ukVoice);
+          console.log(`⚠️  Using fallback UK voice: ${ukVoice.name}`);
+        }
+      }
+      
+      console.log(`✅ Selected ${selectedVoices.length} voices:`, 
+        selectedVoices.map(v => `${v.name} (${v.language}) [${v.identifier}]`));
+      
+      setAvailableVoices(selectedVoices);
+      
+      // Restore previously selected voice if it exists
+      try {
+        const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings.selectedVoiceIdentifier) {
+            const savedVoice = selectedVoices.find(
+              v => v.identifier === settings.selectedVoiceIdentifier
+            );
+            if (savedVoice) {
+              setSelectedVoiceState(savedVoice);
+              console.log('✅ Restored saved voice:', savedVoice.name);
+            } else {
+              console.log('⚠️  Saved voice not available, using system default');
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to restore saved voice:', error);
+      }
     } catch (error) {
       console.error('Failed to load voices:', error);
       setAvailableVoices([]);
@@ -105,11 +132,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setSelectedVoiceState(voice);
       
+      // Only save the voice identifier, not the entire Voice object
+      // Voice objects contain complex data that doesn't serialize well
       const settings = {
-        selectedVoice: voice,
+        selectedVoiceIdentifier: voice?.identifier || null,
       };
       
       await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      console.log('✅ Saved voice preference:', voice ? voice.name : 'System Default');
     } catch (error) {
       console.error('Failed to save voice setting:', error);
     }

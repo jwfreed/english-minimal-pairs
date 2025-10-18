@@ -20,37 +20,24 @@ import createStyles from '@/app/constants/styles';
 import { tKeys } from '@/app/constants/translationKeys';
 
 /**
- * Helper function to format voice display name with gender and accent
+ * Helper function to format voice display name
+ * Simplified for just 2 voices: Samantha (US) and Daniel (UK)
  */
-const formatVoiceName = (voice: any): { name: string; accent: string; gender: string } => {
-  const name = voice.name;
+const formatVoiceName = (voice: any): { displayName: string; subtitle: string } => {
   const language = voice.language.toLowerCase();
+  const isUS = language.startsWith('en-us');
   
-  // Determine accent
-  let accent = '';
-  if (language.startsWith('en-us')) {
-    accent = 'US';
-  } else if (language.startsWith('en-gb')) {
-    accent = 'UK';
+  if (isUS) {
+    return {
+      displayName: '🇺🇸 US Accent (Female)',
+      subtitle: 'American English'
+    };
+  } else {
+    return {
+      displayName: '🇬🇧 UK Accent (Male)',
+      subtitle: 'British English'
+    };
   }
-  
-  // Attempt to determine gender from voice name patterns
-  // Common iOS voice naming patterns
-  const nameLower = name.toLowerCase();
-  let gender = '';
-  
-  // Common male voice names in iOS
-  const maleNames = ['aaron', 'arthur', 'daniel', 'fred', 'gordon', 'harry', 'james', 'oliver', 'reed', 'thomas'];
-  // Common female voice names in iOS  
-  const femaleNames = ['alice', 'allison', 'ava', 'catherine', 'karen', 'martha', 'moira', 'nicky', 'samantha', 'sara', 'serena', 'susan', 'tessa', 'victoria', 'zoe'];
-  
-  if (maleNames.some(n => nameLower.includes(n))) {
-    gender = 'Male';
-  } else if (femaleNames.some(n => nameLower.includes(n))) {
-    gender = 'Female';
-  }
-  
-  return { name, accent, gender };
 };
 
 export default function SettingsScreen() {
@@ -77,18 +64,24 @@ export default function SettingsScreen() {
     await setSelectedVoice(voice);
   };
 
-  const handleUseDefault = async () => {
-    await setSelectedVoice(null);
-  };
+  // Auto-select first voice if none selected
+  React.useEffect(() => {
+    if (!selectedVoice && availableVoices.length > 0 && !isLoadingVoices) {
+      handleVoiceSelect(availableVoices[0]);
+    }
+  }, [selectedVoice, availableVoices, isLoadingVoices]);
 
   // Format selected voice display
   const getSelectedVoiceDisplay = () => {
+    if (!selectedVoice && availableVoices.length > 0) {
+      const { displayName } = formatVoiceName(availableVoices[0]);
+      return displayName;
+    }
     if (!selectedVoice) {
       return translate(tKeys.systemDefault);
     }
-    const { name, accent, gender } = formatVoiceName(selectedVoice);
-    const details = [accent, gender].filter(Boolean).join(' • ');
-    return details ? `${name} (${details})` : name;
+    const { displayName } = formatVoiceName(selectedVoice);
+    return displayName;
   };
 
   // Get app version
@@ -152,30 +145,7 @@ export default function SettingsScreen() {
               </View>
             ) : (
               <>
-                {/* Default Option */}
-                <TouchableOpacity
-                  style={[
-                    localStyles.voiceOption,
-                    !selectedVoice && localStyles.selectedVoiceOption,
-                    { borderBottomColor: theme.border },
-                  ]}
-                  onPress={handleUseDefault}
-                  activeOpacity={0.7}
-                >
-                  <View style={localStyles.voiceInfo}>
-                    <Text style={[localStyles.voiceName, { color: theme.text }]}>
-                      {translate(tKeys.systemDefault)}
-                    </Text>
-                    <Text style={[localStyles.voiceDetails, { color: theme.textSecondary }]}>
-                      {translate(tKeys.systemDefaultDescription)}
-                    </Text>
-                  </View>
-                  {!selectedVoice && (
-                    <Ionicons name="checkmark-circle" size={24} color={theme.success} />
-                  )}
-                </TouchableOpacity>
-
-                {/* Available Voices */}
+                {/* Available Voices - Only 2 options */}
                 {availableVoices.length === 0 ? (
                   <View style={localStyles.emptyContainer}>
                     <Text style={[localStyles.emptyText, { color: theme.textSecondary }]}>
@@ -193,16 +163,16 @@ export default function SettingsScreen() {
                   </View>
                 ) : (
                   availableVoices.map((voice, index) => {
-                    const { name, accent, gender } = formatVoiceName(voice);
-                    const displayDetails = [accent, gender].filter(Boolean).join(' • ');
+                    const { displayName, subtitle } = formatVoiceName(voice);
+                    const isSelected = selectedVoice?.identifier === voice.identifier || 
+                                     (!selectedVoice && index === 0);
                     
                     return (
                       <TouchableOpacity
                         key={voice.identifier}
                         style={[
                           localStyles.voiceOption,
-                          selectedVoice?.identifier === voice.identifier &&
-                            localStyles.selectedVoiceOption,
+                          isSelected && localStyles.selectedVoiceOption,
                           index === availableVoices.length - 1 && localStyles.lastVoiceOption,
                           { borderBottomColor: theme.border },
                         ]}
@@ -211,13 +181,13 @@ export default function SettingsScreen() {
                       >
                         <View style={localStyles.voiceInfo}>
                           <Text style={[localStyles.voiceName, { color: theme.text }]}>
-                            {name}
+                            {displayName}
                           </Text>
                           <Text style={[localStyles.voiceDetails, { color: theme.textSecondary }]}>
-                            {displayDetails}
+                            {subtitle}
                           </Text>
                         </View>
-                        {selectedVoice?.identifier === voice.identifier && (
+                        {isSelected && (
                           <Ionicons name="checkmark-circle" size={24} color={theme.success} />
                         )}
                       </TouchableOpacity>

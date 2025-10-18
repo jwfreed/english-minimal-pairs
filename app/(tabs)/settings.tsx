@@ -12,7 +12,6 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import { useSettings } from '@/app/context/SettingsContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
@@ -94,11 +93,6 @@ export default function SettingsScreen() {
     const { displayName } = formatVoiceName(selectedVoice, translate);
     return displayName;
   };
-
-  // Get app version
-  const appVersion = Constants.expoConfig?.version || '1.0.0';
-  const buildNumber = Constants.expoConfig?.android?.versionCode ||
-    Constants.expoConfig?.ios?.buildNumber || '1';
 
   return (
     <ScrollView
@@ -273,53 +267,6 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      {/* App Info Section */}
-      <View style={[localStyles.section, { backgroundColor: theme.cardBackground }]}>
-        <TouchableOpacity
-          style={localStyles.sectionHeader}
-          onPress={() => toggleSection('info')}
-          activeOpacity={0.7}
-        >
-          <View style={localStyles.sectionHeaderLeft}>
-            <Ionicons
-              name="information-circle-outline"
-              size={24}
-              color={theme.primary}
-              style={localStyles.sectionIcon}
-            />
-            <Text style={[localStyles.sectionTitle, { color: theme.text }]}>
-              {translate(tKeys.appInfo)}
-            </Text>
-          </View>
-          <Ionicons
-            name={expandedSection === 'info' ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color={theme.textSecondary}
-          />
-        </TouchableOpacity>
-
-        {expandedSection === 'info' && (
-          <View style={localStyles.sectionContent}>
-            <View style={localStyles.infoRow}>
-              <Text style={[localStyles.infoLabel, { color: theme.textSecondary }]}>
-                {translate(tKeys.version)}
-              </Text>
-              <Text style={[localStyles.infoValue, { color: theme.text }]}>
-                {appVersion}
-              </Text>
-            </View>
-            <View style={[localStyles.infoRow, localStyles.lastInfoRow]}>
-              <Text style={[localStyles.infoLabel, { color: theme.textSecondary }]}>
-                {translate(tKeys.build)}
-              </Text>
-              <Text style={[localStyles.infoValue, { color: theme.text }]}>
-                {buildNumber}
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-
       {/* Footer Spacer */}
       <View style={localStyles.footer} />
     </ScrollView>
@@ -435,24 +382,6 @@ const createLocalStyles = (theme: any) =>
     refreshButtonText: {
       marginLeft: 8,
       fontSize: 14,
-      fontWeight: '600',
-    },
-    infoRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.border,
-    },
-    lastInfoRow: {
-      borderBottomWidth: 0,
-    },
-    infoLabel: {
-      fontSize: 16,
-    },
-    infoValue: {
-      fontSize: 16,
       fontWeight: '600',
     },
     footer: {

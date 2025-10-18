@@ -32,6 +32,10 @@ interface LanguageTranslations {
   appInfo?: string;
   version?: string;
   build?: string;
+  usAccentFemale?: string;
+  ukAccentMale?: string;
+  americanEnglish?: string;
+  britishEnglish?: string;
   
   [key: string]: string | undefined;
 }
@@ -63,6 +67,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     appInfo: 'アプリ情報',
     version: 'バージョン',
     build: 'ビルド',
+    usAccentFemale: '🇺🇸 米国アクセント（女性）',
+    ukAccentMale: '🇬🇧 英国アクセント（男性）',
+    americanEnglish: 'アメリカ英語',
+    britishEnglish: 'イギリス英語',
     titleOne: '👂 耳を鍛えて、リスニング力を変えよう！',
     infoOne:
       '多くの英語学習者は "ship" と "sheep"、"light" と "right" の違いを聞き取れません。このアプリは、そうした違いを聞き取れる耳を作るためのトレーニングを提供します。',
@@ -89,6 +97,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: '音频尚未准备好',
     audioErrorPlaybackFail: '播放失败',
     total: '总计',
+    usAccentFemale: '🇺🇸 美国口音（女性）',
+    ukAccentMale: '🇬🇧 英国口音（男性）',
+    americanEnglish: '美式英语',
+    britishEnglish: '英式英语',
     titleOne: '👂 训练你的耳朵，改善听力理解！',
     infoOne:
       '许多英语学习者分不清 "ship" 和 "sheep" 或 "light" 和 "right"。本应用帮助你训练听觉，分辨这些细微差别。',
@@ -138,6 +150,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'El audio aún no está listo',
     audioErrorPlaybackFail: 'Error al reproducir',
     total: 'Total',
+    usAccentFemale: '🇺🇸 Acento estadounidense (Mujer)',
+    ukAccentMale: '🇬🇧 Acento británico (Hombre)',
+    americanEnglish: 'Inglés americano',
+    britishEnglish: 'Inglés británico',
     titleOne: '👂 ¡Entrena tus oídos y mejora tu comprensión auditiva!',
     infoOne:
       'Muchos estudiantes no distinguen "ship" de "sheep" o "light" de "right". Esta app te entrena para reconocer esas diferencias.',
@@ -163,6 +179,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'الصوت غير جاهز بعد',
     audioErrorPlaybackFail: 'فشل في التشغيل',
     total: 'المجموع',
+    usAccentFemale: '🇺🇸 لهجة أمريكية (أنثى)',
+    ukAccentMale: '🇬🇧 لهجة بريطانية (ذكر)',
+    americanEnglish: 'الإنجليزية الأمريكية',
+    britishEnglish: 'الإنجليزية البريطانية',
     titleOne: '👂 درّب أذنيك وغيّر مهارات الاستماع!',
     infoOne:
       'الكثير من متعلمي اللغة الإنجليزية لا يميزون بين "ship" و "sheep" أو "light" و "right". هذا التطبيق يساعدك على تحسين تمييز هذه الأصوات.',
@@ -188,6 +208,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'Аудио ещё не готово',
     audioErrorPlaybackFail: 'Не удалось воспроизвести',
     total: 'Итого',
+    usAccentFemale: '🇺🇸 Американский акцент (Женский)',
+    ukAccentMale: '🇬🇧 Британский акцент (Мужской)',
+    americanEnglish: 'Американский английский',
+    britishEnglish: 'Британский английский',
     titleOne: '👂 Тренируй слух — улучшай понимание!',
     infoOne:
       'Многие изучающие английский не различают "ship" и "sheep" или "light" и "right". Это приложение поможет научиться их слышать.',
@@ -213,6 +237,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: '오디오가 아직 준비되지 않았습니다',
     audioErrorPlaybackFail: '재생에 실패했습니다',
     total: '총합',
+    usAccentFemale: '🇺🇸 미국 악센트 (여성)',
+    ukAccentMale: '🇬🇧 영국 악센트 (남성)',
+    americanEnglish: '미국 영어',
+    britishEnglish: '영국 영어',
     titleOne: '👂 귀를 훈련하여 듣기 능력을 향상시키세요!',
     infoOne:
       '많은 영어 학습자들이 "ship"과 "sheep", "light"과 "right"의 차이를 구별하지 못합니다. 이 앱은 그런 구별을 가능하게 도와줍니다.',
@@ -238,6 +266,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'ऑडियो अभी तैयार नहीं है',
     audioErrorPlaybackFail: 'प्लेबैक विफल हुआ',
     total: 'कुल/کل',
+    usAccentFemale: '🇺🇸 अमेरिकी उच्चारण (महिला)/امریکی لہجہ (خاتون)',
+    ukAccentMale: '🇬🇧 ब्रिटिश उच्चारण (पुरुष)/برطانوی لہجہ (مرد)',
+    americanEnglish: 'अमेरिकी अंग्रेज़ी/امریکی انگریزی',
+    britishEnglish: 'ब्रिटिश अंग्रेज़ी/برطانوی انگریزی',
     titleOne: '👂 अपने कानों को प्रशिक्षित करें, सुनने की क्षमता सुधारें!',
     infoOne:
       '"ship" और "sheep" या "light" और "right" जैसे शब्दों में फर्क करना कठिन हो सकता है। यह ऐप आपको वह फर्क सुनने में मदद करता है।',
@@ -263,6 +295,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'O áudio ainda não está pronto',
     audioErrorPlaybackFail: 'Falha na reprodução',
     total: 'Total',
+    usAccentFemale: '🇺🇸 Sotaque americano (Feminino)',
+    ukAccentMale: '🇬🇧 Sotaque britânico (Masculino)',
+    americanEnglish: 'Inglês americano',
+    britishEnglish: 'Inglês britânico',
     titleOne: '👂 Treine seus ouvidos, melhore sua escuta!',
     infoOne:
       'Muitos alunos de inglês não distinguem "ship" de "sheep" ou "light" de "right". Este app ajuda a treinar sua audição para perceber essas diferenças.',
@@ -288,6 +324,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'Âm thanh chưa sẵn sàng',
     audioErrorPlaybackFail: 'Phát lại thất bại',
     total: 'Tổng cộng',
+    usAccentFemale: '🇺🇸 Giọng Mỹ (Nữ)',
+    ukAccentMale: '🇬🇧 Giọng Anh (Nam)',
+    americanEnglish: 'Tiếng Anh Mỹ',
+    britishEnglish: 'Tiếng Anh Anh',
     titleOne: '👂 Luyện tai, cải thiện kỹ năng nghe!',
     infoOne:
       'Nhiều người học tiếng Anh không phân biệt được "ship" và "sheep", hoặc "light" và "right". Ứng dụng này giúp bạn luyện nghe các âm thanh khó phân biệt.',
@@ -313,6 +353,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'Ses henüz hazır değil',
     audioErrorPlaybackFail: 'Oynatma başarısız',
     total: 'Toplam',
+    usAccentFemale: '🇺🇸 Amerikan Aksanı (Kadın)',
+    ukAccentMale: '🇬🇧 İngiliz Aksanı (Erkek)',
+    americanEnglish: 'Amerikan İngilizcesi',
+    britishEnglish: 'İngiliz İngilizcesi',
     titleOne: '👂 Kulaklarınızı eğitin, dinleme becerinizi geliştirin!',
     infoOne:
       'Birçok İngilizce öğrenen kişi "ship" ve "sheep" ya da "light" ve "right" arasındaki farkı duyamaz. Bu uygulama size bu farkları duymayı öğretir.',
@@ -338,6 +382,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'صدا هنوز آماده نیست',
     audioErrorPlaybackFail: 'پخش ناموفق بود',
     total: 'مجموع',
+    usAccentFemale: '🇺🇸 لهجه آمریکایی (زن)',
+    ukAccentMale: '🇬🇧 لهجه بریتانیایی (مرد)',
+    americanEnglish: 'انگلیسی آمریکایی',
+    britishEnglish: 'انگلیسی بریتانیایی',
     titleOne: '👂 گوش‌های خود را آموزش دهید و مهارت شنیداری را بهبود دهید!',
     infoOne:
       'بسیاری از زبان‌آموزان تفاوت "ship" و "sheep" یا "light" و "right" را تشخیص نمی‌دهند. این اپ به شما کمک می‌کند تا این تفاوت‌ها را بشنوید.',
@@ -363,6 +411,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: '聲音尚未準備好',
     audioErrorPlaybackFail: '播放失敗',
     total: '總計',
+    usAccentFemale: '🇺🇸 美國口音（女性）',
+    ukAccentMale: '🇬🇧 英國口音（男性）',
+    americanEnglish: '美式英語',
+    britishEnglish: '英式英語',
     titleOne: '👂 訓練耳朵，改善聽力！',
     infoOne:
       '好多學英文嘅人都分唔清 "ship" 同 "sheep" 或 "light" 同 "right"。呢個應用程式幫你聽得出呢啲分別。',
@@ -387,6 +439,10 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: 'Audio belum siap',
     audioErrorPlaybackFail: 'Pemutaran gagal',
     total: 'Total',
+    usAccentFemale: '🇺🇸 Aksen Amerika (Perempuan)',
+    ukAccentMale: '🇬🇧 Aksen Inggris (Laki-laki)',
+    americanEnglish: 'Bahasa Inggris Amerika',
+    britishEnglish: 'Bahasa Inggris Inggris',
     titleOne: '👂 Latih pendengaranmu, tingkatkan kemampuan listening!',
     infoOne:
       'Banyak pelajar bingung membedakan "ship" dan "sheep" atau "light" dan "right". Aplikasi ini membantu kamu melatih pendengaran untuk membedakan bunyi tersebut.',

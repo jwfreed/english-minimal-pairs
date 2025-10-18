@@ -23,19 +23,22 @@ import { tKeys } from '@/app/constants/translationKeys';
  * Helper function to format voice display name
  * Simplified for just 2 voices: Samantha (US) and Daniel (UK)
  */
-const formatVoiceName = (voice: any): { displayName: string; subtitle: string } => {
+const formatVoiceName = (
+  voice: any,
+  translate: (key: string) => string
+): { displayName: string; subtitle: string } => {
   const language = voice.language.toLowerCase();
   const isUS = language.startsWith('en-us');
   
   if (isUS) {
     return {
-      displayName: '🇺🇸 US Accent (Female)',
-      subtitle: 'American English'
+      displayName: translate(tKeys.usAccentFemale),
+      subtitle: translate(tKeys.americanEnglish)
     };
   } else {
     return {
-      displayName: '🇬🇧 UK Accent (Male)',
-      subtitle: 'British English'
+      displayName: translate(tKeys.ukAccentMale),
+      subtitle: translate(tKeys.britishEnglish)
     };
   }
 };
@@ -74,13 +77,13 @@ export default function SettingsScreen() {
   // Format selected voice display
   const getSelectedVoiceDisplay = () => {
     if (!selectedVoice && availableVoices.length > 0) {
-      const { displayName } = formatVoiceName(availableVoices[0]);
+      const { displayName } = formatVoiceName(availableVoices[0], translate);
       return displayName;
     }
     if (!selectedVoice) {
       return translate(tKeys.systemDefault);
     }
-    const { displayName } = formatVoiceName(selectedVoice);
+    const { displayName } = formatVoiceName(selectedVoice, translate);
     return displayName;
   };
 
@@ -163,7 +166,7 @@ export default function SettingsScreen() {
                   </View>
                 ) : (
                   availableVoices.map((voice, index) => {
-                    const { displayName, subtitle } = formatVoiceName(voice);
+                    const { displayName, subtitle } = formatVoiceName(voice, translate);
                     const isSelected = selectedVoice?.identifier === voice.identifier || 
                                      (!selectedVoice && index === 0);
                     

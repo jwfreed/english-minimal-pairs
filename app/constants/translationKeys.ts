@@ -31,6 +31,10 @@ export const tKeys = {
   appInfo: 'appInfo',
   version: 'version',
   build: 'build',
+  usAccentFemale: 'usAccentFemale',
+  ukAccentMale: 'ukAccentMale',
+  americanEnglish: 'americanEnglish',
+  britishEnglish: 'britishEnglish',
 };
 
 export type TranslationKey = keyof typeof tKeys;

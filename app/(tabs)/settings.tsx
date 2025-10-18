@@ -15,9 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useSettings } from '@/app/context/SettingsContext';
 import { useLanguage } from '@/app/context/LanguageContext';
+import { useCategory } from '@/app/context/CategoryContext';
 import { useAllThemeColors } from '@/app/context/theme';
 import createStyles from '@/app/constants/styles';
 import { tKeys } from '@/app/constants/translationKeys';
+import { minimalPairs } from '@/app/constants/minimalPairs';
 
 /**
  * Helper function to format voice display name
@@ -44,7 +46,8 @@ const formatVoiceName = (
 };
 
 export default function SettingsScreen() {
-  const { translate } = useLanguage();
+  const { translate, setLanguage } = useLanguage();
+  const { categoryIndex, setCategoryIndex } = useCategory();
   const theme = useAllThemeColors();
   const styles = createStyles(theme);
   const localStyles = createLocalStyles(theme);
@@ -65,6 +68,11 @@ export default function SettingsScreen() {
 
   const handleVoiceSelect = async (voice: any) => {
     await setSelectedVoice(voice);
+  };
+
+  const handleLanguageSelect = (idx: number) => {
+    setCategoryIndex(idx);
+    setLanguage(minimalPairs[idx].category);
   };
 
   // Auto-select first voice if none selected
@@ -105,6 +113,68 @@ export default function SettingsScreen() {
         <Text style={[localStyles.headerSubtitle, { color: theme.textSecondary }]}>
           {translate(tKeys.configureApp)}
         </Text>
+      </View>
+
+      {/* Language Selection Section */}
+      <View style={[localStyles.section, { backgroundColor: theme.cardBackground }]}>
+        <TouchableOpacity
+          style={localStyles.sectionHeader}
+          onPress={() => toggleSection('language')}
+          activeOpacity={0.7}
+        >
+          <View style={localStyles.sectionHeaderLeft}>
+            <Ionicons
+              name="language-outline"
+              size={24}
+              color={theme.primary}
+              style={localStyles.sectionIcon}
+            />
+            <View>
+              <Text style={[localStyles.sectionTitle, { color: theme.text }]}>
+                {translate(tKeys.language)}
+              </Text>
+              <Text style={[localStyles.sectionSubtitle, { color: theme.textSecondary }]}>
+                {minimalPairs[categoryIndex].category}
+              </Text>
+            </View>
+          </View>
+          <Ionicons
+            name={expandedSection === 'language' ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={theme.textSecondary}
+          />
+        </TouchableOpacity>
+
+        {expandedSection === 'language' && (
+          <View style={localStyles.sectionContent}>
+            {minimalPairs.map((cat, index) => {
+              const isSelected = categoryIndex === index;
+              
+              return (
+                <TouchableOpacity
+                  key={cat.category}
+                  style={[
+                    localStyles.voiceOption,
+                    isSelected && localStyles.selectedVoiceOption,
+                    index === minimalPairs.length - 1 && localStyles.lastVoiceOption,
+                    { borderBottomColor: theme.border },
+                  ]}
+                  onPress={() => handleLanguageSelect(index)}
+                  activeOpacity={0.7}
+                >
+                  <View style={localStyles.voiceInfo}>
+                    <Text style={[localStyles.voiceName, { color: theme.text }]}>
+                      {cat.category}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={24} color={theme.success} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </View>
 
       {/* Voice Selection Section */}

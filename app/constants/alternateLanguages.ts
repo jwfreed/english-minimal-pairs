@@ -23,6 +23,7 @@ interface LanguageTranslations {
   audioErrorPlaybackFail?: string | undefined;
   
   configureApp?: string;
+  language?: string;
   voiceSelection?: string;
   systemDefault?: string;
   systemDefaultDescription?: string;
@@ -58,6 +59,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioErrorNotReady: '音声がまだ準備できていません',
     audioErrorPlaybackFail: '再生に失敗しました',
     configureApp: 'アプリを設定',
+    language: '言語',
     voiceSelection: '音声選択',
     systemDefault: 'システムデフォルト',
     systemDefaultDescription: 'デバイスのデフォルト音声を使用',

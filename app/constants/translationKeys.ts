@@ -22,6 +22,7 @@ export const tKeys = {
   audioErrorNotReady: 'audioErrorNotReady',
   audioErrorPlaybackFail: 'audioErrorPlaybackFail',
   configureApp: 'configureApp',
+  language: 'language',
   voiceSelection: 'voiceSelection',
   systemDefault: 'systemDefault',
   systemDefaultDescription: 'systemDefaultDescription',

@@ -11,7 +11,6 @@ import createStyles from '@/app/constants/styles';
 import { minimalPairs, Pair } from '@/app/constants/minimalPairs';
 import { tKeys } from '@/app/constants/translationKeys';
 
-import CategoryDropdown from '@/app/components/CategoryDropdown';
 import PairPicker from '@/app/components/PairPicker';
 import AnswerButtons from '@/app/components/AnswerButtons';
 
@@ -148,18 +147,6 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
-
-      <CategoryDropdown
-        categories={minimalPairs.map((c) => c.category)}
-        current={categoryIndex}
-        onSelect={(idx) => {
-          setCategoryIndex(idx);
-          setPairIndex(0);
-          setFeedback(null);
-          setPlayedIdx(null);
-          setLanguage(minimalPairs[idx].category);
-        }}
-      />
 
       <PairPicker
         pairs={visible}

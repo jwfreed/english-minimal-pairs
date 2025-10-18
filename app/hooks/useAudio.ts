@@ -3,6 +3,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import { Platform } from 'react-native';
 import * as Speech from 'expo-speech';
+import { Audio } from 'expo-av';
 import type { Pair } from '@/app/constants/minimalPairs';
 
 /**
@@ -23,6 +24,18 @@ export const useAudio = (
   useEffect(() => {
     const checkPlatform = async () => {
       if (Platform.OS === 'ios') {
+        // Configure audio session to play even when device is in silent mode
+        try {
+          await Audio.setAudioModeAsync({
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: false,
+          });
+          console.log('✅ Audio mode configured for silent mode playback');
+        } catch (error) {
+          console.error('❌ Error configuring audio mode:', error);
+        }
+
         // iOS Simulator doesn't support TTS - check if voices are available
         try {
           const voices = await Speech.getAvailableVoicesAsync();

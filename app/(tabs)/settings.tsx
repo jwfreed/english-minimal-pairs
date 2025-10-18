@@ -170,7 +170,7 @@ export default function SettingsScreen() {
               color={theme.primary}
               style={localStyles.sectionIcon}
             />
-            <View>
+            <View style={localStyles.languageTextContainer}>
               {hasUserSelectedLanguage ? (
                 <Text style={[localStyles.sectionTitle, { color: theme.text }]}>
                   {translate(tKeys.language)}
@@ -390,6 +390,11 @@ const createLocalStyles = (theme: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
+    },
+    languageTextContainer: {
+      minWidth: 200,
+      minHeight: 60,
+      justifyContent: 'center',
     },
     sectionIcon: {
       marginRight: 12,

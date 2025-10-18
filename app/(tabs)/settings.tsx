@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 // Settings screen for app configuration
 // -----------------------------------------------------------------------------
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -51,8 +51,8 @@ export default function SettingsScreen() {
   const { translate, setLanguage } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const theme = useAllThemeColors();
-  const styles = createStyles(theme);
-  const localStyles = createLocalStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const localStyles = useMemo(() => createLocalStyles(theme), [theme]);
 
   const {
     selectedVoice,
@@ -105,31 +105,31 @@ export default function SettingsScreen() {
     return () => clearInterval(cycleInterval);
   }, [hasUserSelectedLanguage, fadeAnim]);
 
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
+  const toggleSection = useCallback((section: string) => {
+    setExpandedSection((prev) => prev === section ? null : section);
+  }, []);
 
-  const handleVoiceSelect = async (voice: any) => {
+  const handleVoiceSelect = useCallback(async (voice: any) => {
     await setSelectedVoice(voice);
-  };
+  }, [setSelectedVoice]);
 
-  const handleLanguageSelect = async (idx: number) => {
+  const handleLanguageSelect = useCallback(async (idx: number) => {
     setCategoryIndex(idx);
     setLanguage(minimalPairs[idx].category);
     // Mark that user has selected a language
     setHasUserSelectedLanguage(true);
     await AsyncStorage.setItem('@hasSelectedLanguage', 'true');
-  };
+  }, [setCategoryIndex, setLanguage]);
 
   // Auto-select first voice if none selected
   React.useEffect(() => {
     if (!selectedVoice && availableVoices.length > 0 && !isLoadingVoices) {
       handleVoiceSelect(availableVoices[0]);
     }
-  }, [selectedVoice, availableVoices, isLoadingVoices]);
+  }, [selectedVoice, availableVoices, isLoadingVoices, handleVoiceSelect]);
 
   // Format selected voice display
-  const getSelectedVoiceDisplay = () => {
+  const selectedVoiceDisplay = useMemo(() => {
     if (!selectedVoice && availableVoices.length > 0) {
       const { displayName } = formatVoiceName(availableVoices[0], translate);
       return displayName;
@@ -139,7 +139,7 @@ export default function SettingsScreen() {
     }
     const { displayName } = formatVoiceName(selectedVoice, translate);
     return displayName;
-  };
+  }, [selectedVoice, availableVoices, translate]);
 
   return (
     <ScrollView
@@ -266,7 +266,7 @@ export default function SettingsScreen() {
                 {translate(tKeys.voiceSelection)}
               </Text>
               <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                {getSelectedVoiceDisplay()}
+                {selectedVoiceDisplay}
               </Text>
             </View>
           </View>

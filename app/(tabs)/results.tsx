@@ -1,5 +1,5 @@
 // app/(tabs)/results.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { minimalPairs } from '@/app/constants/minimalPairs';
@@ -17,7 +17,7 @@ export default function ResultsScreen() {
   const { translate } = useLanguage();
   const { categoryIndex } = useCategory();
   const themeColors = useAllThemeColors();
-  const styles = createStyles(themeColors);
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
 
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
@@ -50,6 +50,22 @@ export default function ResultsScreen() {
     });
   }, [catObj]);
 
+  const renderItem = useCallback(
+    ({ item }: { item: any }) => {
+      const stats = progress[item.id] || { attempts: [] };
+      return (
+        <PairItem
+          item={item}
+          stats={stats}
+          translate={translate}
+          themeColors={themeColors}
+          styles={styles}
+        />
+      );
+    },
+    [progress, translate, themeColors, styles]
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       <Text style={[styles.title, { color: themeColors.text, margin: 16 }]}>
@@ -58,21 +74,10 @@ export default function ResultsScreen() {
       <FlashList
         contentContainerStyle={{ padding: 16 }}
         data={flattenedPairs}
-        extraData={progress} // ← add this
+        extraData={progress}
         keyExtractor={(item) => item.id}
         estimatedItemSize={220}
-        renderItem={({ item }) => {
-          const stats = progress[item.id] || { attempts: [] };
-          return (
-            <PairItem
-              item={item}
-              stats={stats}
-              translate={translate}
-              themeColors={themeColors}
-              styles={styles}
-            />
-          );
-        }}
+        renderItem={renderItem}
       />
     </View>
   );

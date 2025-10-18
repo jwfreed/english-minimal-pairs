@@ -1,5 +1,5 @@
 // app/(tabs)/_layout.tsx  — unified imports
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,60 +16,60 @@ function TabLayout() {
   const { translate, language } = useLanguage();
   const deviceColorScheme = useColorScheme();
 
-  const activeTintColor =
-    deviceColorScheme === 'dark' ? Colors.dark.primary : Colors.light.primary;
-  const inactiveTintColor = '#888';
+  const { activeTintColor, inactiveTintColor } = useMemo(() => ({
+    activeTintColor: deviceColorScheme === 'dark' ? Colors.dark.primary : Colors.light.primary,
+    inactiveTintColor: '#888',
+  }), [deviceColorScheme]);
+
+  const getTabBarIcon = useCallback((route: any, focused: boolean, size: number) => {
+    const iconColor = focused ? activeTintColor : inactiveTintColor;
+
+    switch (route.name) {
+      case 'index':
+        return (
+          <Ionicons
+            name={focused ? 'home' : 'home-outline'}
+            size={size}
+            color={iconColor}
+          />
+        );
+      case 'results':
+        return (
+          <Ionicons
+            name={focused ? 'stats-chart' : 'stats-chart-outline'}
+            size={size}
+            color={iconColor}
+          />
+        );
+      case 'infoScreen':
+        return (
+          <Ionicons
+            name={focused ? 'help-circle' : 'help-circle-outline'}
+            size={size}
+            color={iconColor}
+          />
+        );
+      case 'settings':
+        return (
+          <Ionicons
+            name={focused ? 'settings' : 'settings-outline'}
+            size={size}
+            color={iconColor}
+          />
+        );
+      default:
+        return null;
+    }
+  }, [activeTintColor, inactiveTintColor]);
 
   return (
     <Tabs
       key={language}
-      screenOptions={({ route }) => {
-        const iconColor = (focused: boolean) =>
-          focused ? activeTintColor : inactiveTintColor;
-
-        return {
-          tabBarIcon: ({ focused, size }) => {
-            switch (route.name) {
-              case 'index':
-                return (
-                  <Ionicons
-                    name={focused ? 'home' : 'home-outline'}
-                    size={size}
-                    color={iconColor(focused)}
-                  />
-                );
-              case 'results':
-                return (
-                  <Ionicons
-                    name={focused ? 'stats-chart' : 'stats-chart-outline'}
-                    size={size}
-                    color={iconColor(focused)}
-                  />
-                );
-              case 'infoScreen':
-                return (
-                  <Ionicons
-                    name={focused ? 'help-circle' : 'help-circle-outline'}
-                    size={size}
-                    color={iconColor(focused)}
-                  />
-                );
-              case 'settings':
-                return (
-                  <Ionicons
-                    name={focused ? 'settings' : 'settings-outline'}
-                    size={size}
-                    color={iconColor(focused)}
-                  />
-                );
-              default:
-                return null;
-            }
-          },
-          tabBarActiveTintColor: activeTintColor,
-          tabBarInactiveTintColor: inactiveTintColor,
-        };
-      }}
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, size }) => getTabBarIcon(route, focused, size),
+        tabBarActiveTintColor: activeTintColor,
+        tabBarInactiveTintColor: inactiveTintColor,
+      })}
     >
       <Tabs.Screen name="index" options={{ title: translate(tKeys.home) }} />
       <Tabs.Screen

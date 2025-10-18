@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx – Home screen with language sync, adaptive difficulty & progress logging
 // -----------------------------------------------------------------------------
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
@@ -28,8 +28,8 @@ export default function HomeScreen() {
   const recordAttempt = useRecordAttempt();
   const { selectedVoice } = useSettings();
   const theme = useAllThemeColors();
-  const styles = createStyles(theme);
-  const playAudioText = translate(tKeys.playAudio);
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
 
   useEffect(() => {
     const catLabel = minimalPairs[categoryIndex].category;
@@ -138,11 +138,11 @@ export default function HomeScreen() {
     ]
   );
 
-  const handlePairChange = (i: number) => {
+  const handlePairChange = useCallback((i: number) => {
     setPairIndex(i);
     setFeedback(null);
     setPlayedIdx(null);
-  };
+  }, []);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>

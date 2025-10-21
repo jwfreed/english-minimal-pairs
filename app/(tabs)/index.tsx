@@ -61,7 +61,9 @@ export default function HomeScreen() {
   );
 
   const handlePlay = useCallback(async () => {
+    console.log('🎯 handlePlay called, audioModeReady:', audioModeReady);
     if (!audioModeReady) {
+      console.log('❌ Audio not ready - showing error alert');
       Alert.alert('Audio Error', 'Audio system is still initializing. Please try again.');
       return;
     }

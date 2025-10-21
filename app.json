@@ -13,7 +13,9 @@
       "bundleIdentifier": "com.jfreed.englishminimalpairs",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -41,7 +43,8 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "./plugins/withAudioSession.js"
+      "./plugins/withAudioSession.js",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

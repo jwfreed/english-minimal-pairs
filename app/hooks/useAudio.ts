@@ -22,22 +22,27 @@ export const useAudio = (
 
   // Check if we're on a real device vs simulator
   useEffect(() => {
+    console.log('🚀 useAudio useEffect triggered - starting initialization');
+    
     const checkPlatform = async () => {
-      if (Platform.OS === 'ios') {
-        // Configure audio session to play even when device is in silent mode
-        try {
+      try {
+        console.log('📱 Platform:', Platform.OS);
+        
+        if (Platform.OS === 'ios') {
+          // Configure audio session to play even when device is in silent mode
+          // This is critical for TTS to work when the phone is in silent mode
+          console.log('🔧 Configuring audio mode...');
           await Audio.setAudioModeAsync({
             playsInSilentModeIOS: true,
             staysActiveInBackground: false,
             shouldDuckAndroid: false,
+            interruptionModeIOS: 2, // INTERRUPTION_MODE_IOS_DUCK_OTHERS
+            allowsRecordingIOS: false,
           });
           console.log('✅ Audio mode configured for silent mode playback');
-        } catch (error) {
-          console.error('❌ Error configuring audio mode:', error);
-        }
 
-        // iOS Simulator doesn't support TTS - check if voices are available
-        try {
+          // iOS Simulator doesn't support TTS - check if voices are available
+          console.log('🔧 Checking available voices...');
           const voices = await Speech.getAvailableVoicesAsync();
           if (voices.length === 0) {
             console.warn('⚠️ No TTS voices available - you may be on iOS Simulator');
@@ -45,15 +50,34 @@ export const useAudio = (
           } else {
             console.log(`✅ Found ${voices.length} TTS voices available`);
           }
-        } catch (error) {
-          console.error('❌ Error checking TTS voices:', error);
+        } else {
+          // On Android, just configure audio mode
+          await Audio.setAudioModeAsync({
+            playsInSilentModeIOS: false,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: true,
+          });
+          console.log('✅ Audio mode configured for Android');
         }
+        
+        // Audio system is ready - the native audio session configuration
+        // in AppDelegate.swift handles silent mode playback
+        setAudioModeReady(true);
+        console.log('✅ Audio system fully initialized and ready');
+      } catch (error) {
+        console.error('❌ Error initializing audio system:', error);
+        if (error instanceof Error) {
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Error stack:', error.stack);
+        }
+        // audioModeReady stays false, user will see error message if they try to play
       }
-      setAudioModeReady(true);
     };
     
     checkPlatform();
-  }, []);
+
+    // No cleanup needed - audio session persists for app lifetime
+  }, []); // Empty array - only run once on mount
 
   /**
    * Plays the specified word using text-to-speech
@@ -70,6 +94,21 @@ export const useAudio = (
         const voices = await Speech.getAvailableVoicesAsync();
         if (voices.length === 0) {
           throw new Error('TTS not available on iOS Simulator. Please test on a physical device.');
+        }
+        
+        // Re-ensure audio mode is set before each playback to handle cases
+        // where the audio session might have been interrupted or reset
+        try {
+          await Audio.setAudioModeAsync({
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: false,
+            interruptionModeIOS: 2, // INTERRUPTION_MODE_IOS_DUCK_OTHERS
+            allowsRecordingIOS: false,
+          });
+          console.log('🔧 Audio mode re-confirmed before playback');
+        } catch (error) {
+          console.warn('⚠️ Error re-setting audio mode (continuing anyway):', error);
         }
       }
 

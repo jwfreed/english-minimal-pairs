@@ -2,9 +2,19 @@
 // -----------------------------------------------------------------------------
 import { useCallback, useState, useEffect } from 'react';
 import { Platform } from 'react-native';
-import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
+import Tts from 'react-native-tts';
 import type { Pair } from '@/app/constants/minimalPairs';
+
+// Type definition for react-native-tts Voice
+interface TtsVoice {
+  id: string;
+  name: string;
+  language: string;
+  quality: number;
+  latency: number;
+  networkConnectionRequired: boolean;
+  notInstalled: boolean;
+}
 
 /**
  * Custom hook for text-to-speech playback of minimal pairs
@@ -15,57 +25,58 @@ import type { Pair } from '@/app/constants/minimalPairs';
 export const useAudio = (
   selectedPair: Pair | undefined,
   rate: number,
-  voice?: Speech.Voice | null
+  voice?: TtsVoice | null
 ) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioModeReady, setAudioModeReady] = useState(false);
 
-  // Check if we're on a real device vs simulator
+  // Initialize TTS and configure for silent mode playback
   useEffect(() => {
     console.log('🚀 useAudio useEffect triggered - starting initialization');
     
-    const checkPlatform = async () => {
+    const initializeTts = async () => {
       try {
         console.log('📱 Platform:', Platform.OS);
         
         if (Platform.OS === 'ios') {
-          // Configure audio session to play even when device is in silent mode
-          // This is critical for TTS to work when the phone is in silent mode
-          console.log('🔧 Configuring audio mode...');
-          await Audio.setAudioModeAsync({
-            playsInSilentModeIOS: true,
-            staysActiveInBackground: false,
-            shouldDuckAndroid: false,
-            interruptionModeIOS: 2, // INTERRUPTION_MODE_IOS_DUCK_OTHERS
-            allowsRecordingIOS: false,
-          });
-          console.log('✅ Audio mode configured for silent mode playback');
-
+          // CRITICAL: This enables audio playback even when iPhone is in silent mode
+          Tts.setIgnoreSilentSwitch('ignore');
+          console.log('✅ TTS configured to ignore silent switch');
+          
           // iOS Simulator doesn't support TTS - check if voices are available
           console.log('🔧 Checking available voices...');
-          const voices = await Speech.getAvailableVoicesAsync();
+          const voices = await Tts.voices();
           if (voices.length === 0) {
             console.warn('⚠️ No TTS voices available - you may be on iOS Simulator');
             console.warn('⚠️ TTS only works on physical iOS devices');
           } else {
             console.log(`✅ Found ${voices.length} TTS voices available`);
           }
-        } else {
-          // On Android, just configure audio mode
-          await Audio.setAudioModeAsync({
-            playsInSilentModeIOS: false,
-            staysActiveInBackground: false,
-            shouldDuckAndroid: true,
-          });
-          console.log('✅ Audio mode configured for Android');
         }
         
-        // Audio system is ready - the native audio session configuration
-        // in AppDelegate.swift handles silent mode playback
+        // Set default speech rate
+        await Tts.setDefaultRate(rate);
+        
+        // Set up event listeners
+        Tts.addEventListener('tts-start', () => {
+          console.log('🔊 TTS started');
+          setIsSpeaking(true);
+        });
+        
+        Tts.addEventListener('tts-finish', () => {
+          console.log('✅ TTS finished');
+          setIsSpeaking(false);
+        });
+        
+        Tts.addEventListener('tts-cancel', () => {
+          console.log('⏸️ TTS cancelled');
+          setIsSpeaking(false);
+        });
+        
         setAudioModeReady(true);
-        console.log('✅ Audio system fully initialized and ready');
+        console.log('✅ TTS system fully initialized and ready');
       } catch (error) {
-        console.error('❌ Error initializing audio system:', error);
+        console.error('❌ Error initializing TTS system:', error);
         if (error instanceof Error) {
           console.error('❌ Error message:', error.message);
           console.error('❌ Error stack:', error.stack);
@@ -74,10 +85,24 @@ export const useAudio = (
       }
     };
     
-    checkPlatform();
+    initializeTts();
 
-    // No cleanup needed - audio session persists for app lifetime
+    // Cleanup: remove event listeners
+    return () => {
+      Tts.removeAllListeners('tts-start');
+      Tts.removeAllListeners('tts-finish');
+      Tts.removeAllListeners('tts-cancel');
+    };
   }, []); // Empty array - only run once on mount
+
+  // Update rate when it changes
+  useEffect(() => {
+    if (audioModeReady) {
+      Tts.setDefaultRate(rate).catch((error) => {
+        console.warn('⚠️ Error setting TTS rate:', error);
+      });
+    }
+  }, [rate, audioModeReady]);
 
   /**
    * Plays the specified word using text-to-speech
@@ -91,31 +116,16 @@ export const useAudio = (
 
       // Check if running on iOS Simulator
       if (Platform.OS === 'ios') {
-        const voices = await Speech.getAvailableVoicesAsync();
+        const voices = await Tts.voices();
         if (voices.length === 0) {
           throw new Error('TTS not available on iOS Simulator. Please test on a physical device.');
-        }
-        
-        // Re-ensure audio mode is set before each playback to handle cases
-        // where the audio session might have been interrupted or reset
-        try {
-          await Audio.setAudioModeAsync({
-            playsInSilentModeIOS: true,
-            staysActiveInBackground: false,
-            shouldDuckAndroid: false,
-            interruptionModeIOS: 2, // INTERRUPTION_MODE_IOS_DUCK_OTHERS
-            allowsRecordingIOS: false,
-          });
-          console.log('🔧 Audio mode re-confirmed before playback');
-        } catch (error) {
-          console.warn('⚠️ Error re-setting audio mode (continuing anyway):', error);
         }
       }
 
       // Stop any ongoing speech
       if (isSpeaking) {
         try {
-          await Speech.stop();
+          await Tts.stop();
         } catch (error) {
           console.warn('⚠️ Error stopping speech:', error);
         }
@@ -125,44 +135,28 @@ export const useAudio = (
       
       console.log(`🔊 Attempting to speak: "${word}" at rate ${rate}`);
       if (voice) {
-        console.log(`🎤 Using voice: ${voice.name} (${voice.identifier})`);
+        console.log(`🎤 Using voice: ${voice.name} (${voice.id})`);
       }
 
-      setIsSpeaking(true);
-
-      // Build speech options with volume explicitly set
-      const speechOptions: Speech.SpeechOptions = {
-        language: 'en-US', // American English
-        pitch: 1.0, // Normal pitch
-        rate: rate, // Use the provided rate
-        volume: 1.0, // Maximum volume
-        ...(voice ? { voice: voice.identifier } : {}),
-        onDone: () => {
-          setIsSpeaking(false);
-          console.log(`✅ Successfully spoke: "${word}"`);
-        },
-        onStopped: () => {
-          setIsSpeaking(false);
-          console.log(`⏸️ Speech stopped for: "${word}"`);
-        },
-        onError: (error) => {
-          setIsSpeaking(false);
-          console.error(`❌ TTS Error for "${word}":`, error);
-        },
-      };
-
       try {
+        // Set the voice if one is selected
+        if (voice) {
+          await Tts.setDefaultVoice(voice.id);
+          console.log(`✅ Voice set to: ${voice.name}`);
+        }
+        
+        // Set the rate (may have changed since last play)
+        await Tts.setDefaultRate(rate);
+        
         // Log speech attempt details
         console.log('📋 Speech options:', {
           word,
-          language: speechOptions.language,
-          rate: speechOptions.rate,
-          pitch: speechOptions.pitch,
-          volume: speechOptions.volume,
+          rate,
           voice: voice?.name || 'system default',
         });
         
-        Speech.speak(word, speechOptions);
+        // Speak the word
+        await Tts.speak(word);
       } catch (error) {
         setIsSpeaking(false);
         console.error(`❌ Exception during speech playback: "${word}"`, error);

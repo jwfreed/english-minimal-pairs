@@ -4,11 +4,22 @@
 // -----------------------------------------------------------------------------
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Speech from 'expo-speech';
+import Tts from 'react-native-tts';
 
 const SETTINGS_STORAGE_KEY = '@userSettings';
 
-type Voice = Speech.Voice;
+// Type definition for react-native-tts Voice
+interface TtsVoice {
+  id: string;
+  name: string;
+  language: string;
+  quality: number;
+  latency: number;
+  networkConnectionRequired: boolean;
+  notInstalled: boolean;
+}
+
+type Voice = TtsVoice;
 
 interface SettingsContextType {
   selectedVoice: Voice | null;
@@ -50,15 +61,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const loadAvailableVoices = async () => {
     try {
       setIsLoadingVoices(true);
-      const voices = await Speech.getAvailableVoicesAsync();
+      const voices = await Tts.voices();
       
-      console.log('🎤 All available voices:', voices.map(v => `${v.name} (${v.language})`));
+      console.log('🎤 All available voices:', voices.map((v: TtsVoice) => `${v.name} (${v.language})`));
       
       // Only use 2 specific voices: Samantha (US Female) and Daniel (UK Male)
-      const selectedVoices: Speech.Voice[] = [];
+      const selectedVoices: TtsVoice[] = [];
       
       // Find Samantha (US Female)
-      const samantha = voices.find(v => 
+      const samantha = voices.find((v: TtsVoice) => 
         v.name === 'Samantha' && 
         v.language.toLowerCase().startsWith('en-us')
       );
@@ -69,7 +80,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } else {
         console.warn('❌ Samantha (US Female) not found');
         // Fallback to any US female voice
-        const usFemale = voices.find(v => v.language.toLowerCase().startsWith('en-us'));
+        const usFemale = voices.find((v: TtsVoice) => v.language.toLowerCase().startsWith('en-us'));
         if (usFemale) {
           selectedVoices.push(usFemale);
           console.log(`⚠️  Using fallback US voice: ${usFemale.name}`);
@@ -77,7 +88,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       // Find Daniel (UK Male)
-      const daniel = voices.find(v => 
+      const daniel = voices.find((v: TtsVoice) => 
         v.name === 'Daniel' && 
         v.language.toLowerCase().startsWith('en-gb')
       );
@@ -88,7 +99,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } else {
         console.warn('❌ Daniel (UK Male) not found');
         // Fallback to any UK voice
-        const ukVoice = voices.find(v => v.language.toLowerCase().startsWith('en-gb'));
+        const ukVoice = voices.find((v: TtsVoice) => v.language.toLowerCase().startsWith('en-gb'));
         if (ukVoice) {
           selectedVoices.push(ukVoice);
           console.log(`⚠️  Using fallback UK voice: ${ukVoice.name}`);
@@ -96,7 +107,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       console.log(`✅ Selected ${selectedVoices.length} voices:`, 
-        selectedVoices.map(v => `${v.name} (${v.language}) [${v.identifier}]`));
+        selectedVoices.map((v: TtsVoice) => `${v.name} (${v.language}) [${v.id}]`));
       
       setAvailableVoices(selectedVoices);
       
@@ -105,9 +116,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (savedSettings) {
           const settings = JSON.parse(savedSettings);
-          if (settings.selectedVoiceIdentifier) {
+          if (settings.selectedVoiceId) {
             const savedVoice = selectedVoices.find(
-              v => v.identifier === settings.selectedVoiceIdentifier
+              (v: TtsVoice) => v.id === settings.selectedVoiceId
             );
             if (savedVoice) {
               setSelectedVoiceState(savedVoice);
@@ -132,10 +143,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setSelectedVoiceState(voice);
       
-      // Only save the voice identifier, not the entire Voice object
-      // Voice objects contain complex data that doesn't serialize well
+      // Save the voice id for react-native-tts
       const settings = {
-        selectedVoiceIdentifier: voice?.identifier || null,
+        selectedVoiceId: voice?.id || null,
       };
       
       await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));

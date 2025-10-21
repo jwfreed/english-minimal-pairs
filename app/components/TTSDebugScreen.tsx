@@ -3,11 +3,22 @@
 // -----------------------------------------------------------------------------
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native';
-import * as Speech from 'expo-speech';
+import Tts from 'react-native-tts';
+
+// Type definition for react-native-tts Voice
+interface TtsVoice {
+  id: string;
+  name: string;
+  language: string;
+  quality: number;
+  latency: number;
+  networkConnectionRequired: boolean;
+  notInstalled: boolean;
+}
 
 export default function TTSDebugScreen() {
   const [logs, setLogs] = useState<string[]>([]);
-  const [voices, setVoices] = useState<Speech.Voice[]>([]);
+  const [voices, setVoices] = useState<TtsVoice[]>([]);
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -18,30 +29,25 @@ export default function TTSDebugScreen() {
   const testBasicTTS = async () => {
     addLog('🧪 Testing basic TTS...');
     try {
-      Speech.speak('Hello world', {
-        language: 'en-US',
-        onStart: () => addLog('✅ Speech started'),
-        onDone: () => addLog('✅ Speech completed'),
-        onStopped: () => addLog('⏸️ Speech stopped'),
-        onError: (error) => addLog(`❌ Speech error: ${JSON.stringify(error)}`),
-      });
+      // Set up event listeners
+      Tts.addEventListener('tts-start', () => addLog('✅ Speech started'));
+      Tts.addEventListener('tts-finish', () => addLog('✅ Speech completed'));
+      Tts.addEventListener('tts-cancel', () => addLog('⏸️ Speech cancelled'));
+      
+      await Tts.speak('Hello world');
     } catch (error) {
       addLog(`❌ Exception: ${error}`);
     }
   };
 
   const testWithVolume = async () => {
-    addLog('🔊 Testing TTS with explicit volume...');
+    addLog('🔊 Testing TTS with explicit rate and volume...');
     try {
-      Speech.speak('Testing volume', {
-        language: 'en-US',
-        volume: 1.0,
-        pitch: 1.0,
-        rate: 1.0,
-        onStart: () => addLog('✅ Volume test started'),
-        onDone: () => addLog('✅ Volume test completed'),
-        onError: (error) => addLog(`❌ Volume test error: ${JSON.stringify(error)}`),
-      });
+      Tts.addEventListener('tts-start', () => addLog('✅ Volume test started'));
+      Tts.addEventListener('tts-finish', () => addLog('✅ Volume test completed'));
+      
+      await Tts.setDefaultRate(1.0);
+      await Tts.speak('Testing volume');
     } catch (error) {
       addLog(`❌ Exception: ${error}`);
     }
@@ -50,11 +56,11 @@ export default function TTSDebugScreen() {
   const checkVoices = async () => {
     addLog('🎤 Checking available voices...');
     try {
-      const availableVoices = await Speech.getAvailableVoicesAsync();
+      const availableVoices = await Tts.voices();
       setVoices(availableVoices);
       addLog(`✅ Found ${availableVoices.length} voices`);
       
-      const englishVoices = availableVoices.filter(v => v.language.startsWith('en'));
+      const englishVoices = availableVoices.filter((v: TtsVoice) => v.language.startsWith('en'));
       addLog(`   ${englishVoices.length} English voices`);
       
       if (availableVoices.length === 0) {
@@ -67,7 +73,7 @@ export default function TTSDebugScreen() {
   };
 
   const testWithVoice = async () => {
-    const englishVoices = voices.filter(v => v.language.startsWith('en'));
+    const englishVoices = voices.filter((v: TtsVoice) => v.language.startsWith('en'));
     if (englishVoices.length === 0) {
       addLog('❌ No English voices available to test');
       return;
@@ -76,13 +82,11 @@ export default function TTSDebugScreen() {
     const voice = englishVoices[0];
     addLog(`🎤 Testing with voice: ${voice.name}`);
     try {
-      Speech.speak('Testing custom voice', {
-        language: 'en-US',
-        voice: voice.identifier,
-        onStart: () => addLog(`✅ Custom voice started: ${voice.name}`),
-        onDone: () => addLog(`✅ Custom voice completed`),
-        onError: (error) => addLog(`❌ Custom voice error: ${JSON.stringify(error)}`),
-      });
+      Tts.addEventListener('tts-start', () => addLog(`✅ Custom voice started: ${voice.name}`));
+      Tts.addEventListener('tts-finish', () => addLog(`✅ Custom voice completed`));
+      
+      await Tts.setDefaultVoice(voice.id);
+      await Tts.speak('Testing custom voice');
     } catch (error) {
       addLog(`❌ Exception: ${error}`);
     }
@@ -96,17 +100,12 @@ export default function TTSDebugScreen() {
       try {
         addLog(`   Speaking: ${word}`);
         await new Promise<void>((resolve) => {
-          Speech.speak(word, {
-            language: 'en-US',
-            onDone: () => {
-              addLog(`   ✅ ${word} completed`);
-              resolve();
-            },
-            onError: (error) => {
-              addLog(`   ❌ ${word} failed: ${JSON.stringify(error)}`);
-              resolve();
-            },
+          Tts.addEventListener('tts-finish', () => {
+            addLog(`   ✅ ${word} completed`);
+            resolve();
           });
+          
+          Tts.speak(word);
         });
         // Wait 500ms between words
         await new Promise(resolve => setTimeout(resolve, 500));

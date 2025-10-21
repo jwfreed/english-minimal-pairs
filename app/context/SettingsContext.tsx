@@ -65,10 +65,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       console.log('🎤 All available voices:', voices.map((v: TtsVoice) => `${v.name} (${v.language})`));
       
-      // Only use 2 specific voices: Samantha (US Female) and Daniel (UK Male)
+      // Select 4 specific voices: US Female, US Male, UK Female, UK Male
       const selectedVoices: TtsVoice[] = [];
       
-      // Find Samantha (US Female)
+      // 1. Find Samantha (US Female)
       const samantha = voices.find((v: TtsVoice) => 
         v.name === 'Samantha' && 
         v.language.toLowerCase().startsWith('en-us')
@@ -79,15 +79,35 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log('✅ Found US Female: Samantha');
       } else {
         console.warn('❌ Samantha (US Female) not found');
-        // Fallback to any US female voice
-        const usFemale = voices.find((v: TtsVoice) => v.language.toLowerCase().startsWith('en-us'));
-        if (usFemale) {
-          selectedVoices.push(usFemale);
-          console.log(`⚠️  Using fallback US voice: ${usFemale.name}`);
-        }
       }
       
-      // Find Daniel (UK Male)
+      // 2. Find Tom or Aaron (US Male)
+      const usMale = voices.find((v: TtsVoice) => 
+        (v.name === 'Tom' || v.name === 'Aaron') && 
+        v.language.toLowerCase().startsWith('en-us')
+      );
+      
+      if (usMale) {
+        selectedVoices.push(usMale);
+        console.log(`✅ Found US Male: ${usMale.name}`);
+      } else {
+        console.warn('❌ US Male voice not found');
+      }
+      
+      // 3. Find Kate or Serena (UK Female)
+      const ukFemale = voices.find((v: TtsVoice) => 
+        (v.name === 'Kate' || v.name === 'Serena') && 
+        v.language.toLowerCase().startsWith('en-gb')
+      );
+      
+      if (ukFemale) {
+        selectedVoices.push(ukFemale);
+        console.log(`✅ Found UK Female: ${ukFemale.name}`);
+      } else {
+        console.warn('❌ UK Female voice not found');
+      }
+      
+      // 4. Find Daniel (UK Male)
       const daniel = voices.find((v: TtsVoice) => 
         v.name === 'Daniel' && 
         v.language.toLowerCase().startsWith('en-gb')
@@ -98,12 +118,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log('✅ Found UK Male: Daniel');
       } else {
         console.warn('❌ Daniel (UK Male) not found');
-        // Fallback to any UK voice
-        const ukVoice = voices.find((v: TtsVoice) => v.language.toLowerCase().startsWith('en-gb'));
-        if (ukVoice) {
-          selectedVoices.push(ukVoice);
-          console.log(`⚠️  Using fallback UK voice: ${ukVoice.name}`);
-        }
+      }
+      
+      // Fallback: if we have fewer than 2 voices, add any English voices we can find
+      if (selectedVoices.length < 2) {
+        console.warn('⚠️  Not enough specific voices found, adding fallbacks...');
+        const englishVoices = voices.filter((v: TtsVoice) => 
+          v.language.toLowerCase().startsWith('en') &&
+          !selectedVoices.find(sv => sv.id === v.id)
+        );
+        selectedVoices.push(...englishVoices.slice(0, 4 - selectedVoices.length));
       }
       
       console.log(`✅ Selected ${selectedVoices.length} voices:`, 

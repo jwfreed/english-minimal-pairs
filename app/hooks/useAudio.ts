@@ -38,28 +38,16 @@ export const useAudio = (
       try {
         console.log('📱 Platform:', Platform.OS);
         
+        // CRITICAL: This enables audio playback even when iPhone is in silent mode
+        // Do this synchronously first before any async operations
         if (Platform.OS === 'ios') {
-          // CRITICAL: This enables audio playback even when iPhone is in silent mode
           Tts.setIgnoreSilentSwitch('ignore');
           console.log('✅ TTS configured to ignore silent switch');
-          
-          // iOS Simulator doesn't support TTS - check if voices are available
-          console.log('🔧 Checking available voices...');
-          const voices = await Tts.voices();
-          if (voices.length === 0) {
-            console.warn('⚠️ No TTS voices available - you may be on iOS Simulator');
-            console.warn('⚠️ TTS only works on physical iOS devices');
-          } else {
-            console.log(`✅ Found ${voices.length} TTS voices available`);
-          }
         }
         
-        // Set default speech rate
-        await Tts.setDefaultRate(rate);
-        
-        // Set up event listeners
+        // Set up event listeners BEFORE checking voices
         Tts.addEventListener('tts-start', () => {
-          console.log('🔊 TTS started');
+          console.log('� TTS started');
           setIsSpeaking(true);
         });
         
@@ -73,15 +61,48 @@ export const useAudio = (
           setIsSpeaking(false);
         });
         
+        // Mark as ready immediately after essential setup
         setAudioModeReady(true);
-        console.log('✅ TTS system fully initialized and ready');
+        console.log('✅ TTS system marked as ready');
+        
+        // Set default speech rate (non-blocking)
+        try {
+          await Tts.setDefaultRate(rate);
+          console.log('✅ TTS rate set to:', rate);
+        } catch (rateError) {
+          console.warn('⚠️ Could not set default rate, will set per-call:', rateError);
+        }
+        
+        // Check if voices are available (optional check, doesn't block initialization)
+        if (Platform.OS === 'ios') {
+          console.log('🔧 Checking available voices...');
+          try {
+            const voices = await Tts.voices();
+            if (voices.length === 0) {
+              console.warn('⚠️ No TTS voices available - you may be on iOS Simulator');
+              console.warn('⚠️ TTS only works on physical iOS devices');
+            } else {
+              console.log(`✅ Found ${voices.length} TTS voices available`);
+            }
+          } catch (voiceError) {
+            console.warn('⚠️ Could not check voices, but TTS may still work:', voiceError);
+          }
+        }
+        
+        console.log('✅ TTS system fully initialized');
       } catch (error) {
         console.error('❌ Error initializing TTS system:', error);
         if (error instanceof Error) {
           console.error('❌ Error message:', error.message);
           console.error('❌ Error stack:', error.stack);
         }
-        // audioModeReady stays false, user will see error message if they try to play
+        // Even if there's an error, set ready = true so user can attempt playback
+        setAudioModeReady(true);
+        console.log('⚠️ TTS initialization had errors but marking as ready to allow retry');
+        // Even if there's an error, try to set ready = true so user can attempt playback
+        // The actual play() call will fail with a more specific error
+        setAudioModeReady(true);
+        console.log('⚠️ TTS initialization had errors but marking as ready to allow retry');
       }
     };
     

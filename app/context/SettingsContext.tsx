@@ -39,7 +39,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Load saved settings on mount
   useEffect(() => {
     loadSettings();
-    loadAvailableVoices();
+    // Delay voice loading to ensure TTS module is ready
+    const timer = setTimeout(() => {
+      loadAvailableVoices();
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const loadSettings = async () => {
@@ -59,11 +64,18 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const loadAvailableVoices = async () => {
-    try {
-      setIsLoadingVoices(true);
-      const voices = await Tts.voices();
-      
-      console.log('🎤 All available voices:', voices.map((v: TtsVoice) => `${v.name} (${v.language})`));
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        setIsLoadingVoices(true);
+        
+        // Add a small delay to ensure TTS module is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log(`🔧 Attempting to load voices (${4 - retries}/3)...`);
+        const voices = await Tts.voices();
+        
+        console.log('🎤 All available voices:', voices.map((v: TtsVoice) => `${v.name} (${v.language})`));
       
       // Select 4 specific voices: US Female, US Male, UK Female, UK Male
       const selectedVoices: TtsVoice[] = [];
@@ -152,14 +164,33 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
           }
         }
+        } catch (error) {
+          console.error('Failed to restore saved voice:', error);
+        }
+        
+        // Success - break out of retry loop
+        break;
+        
       } catch (error) {
-        console.error('Failed to restore saved voice:', error);
+        retries--;
+        console.error(`❌ Failed to load voices (${3 - retries}/3):`, error);
+        if (error instanceof Error) {
+          console.error('❌ Error details:', error.message, error.stack);
+        }
+        
+        if (retries > 0) {
+          console.log(`⏳ Retrying in 500ms... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+          // All retries failed - set empty array so app doesn't crash
+          setAvailableVoices([]);
+          console.log('⚠️ Voice loading failed after all retries, will use system default TTS voice');
+        }
+      } finally {
+        if (retries === 0) {
+          setIsLoadingVoices(false);
+        }
       }
-    } catch (error) {
-      console.error('Failed to load voices:', error);
-      setAvailableVoices([]);
-    } finally {
-      setIsLoadingVoices(false);
     }
   };
 

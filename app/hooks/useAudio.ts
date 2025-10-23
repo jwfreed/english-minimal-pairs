@@ -48,7 +48,7 @@ export const useAudio = (
           try {
             console.log('🔇 Loading silent audio file...');
             const { sound } = await Audio.Sound.createAsync(
-              require('@/assets/audio/silent.mp3')
+              require('../../assets/audio/silent.mp3')
             );
             setSilentSound(sound);
             await sound.playAsync();

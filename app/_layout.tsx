@@ -42,7 +42,7 @@ export default function RootLayout() {
     colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme;
 
   const [loaded] = useFonts({
-    SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {

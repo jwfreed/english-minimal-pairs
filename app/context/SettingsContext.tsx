@@ -4,22 +4,11 @@
 // -----------------------------------------------------------------------------
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Tts from 'react-native-tts';
+import * as Speech from 'expo-speech';
 
 const SETTINGS_STORAGE_KEY = '@userSettings';
 
-// Type definition for react-native-tts Voice
-interface TtsVoice {
-  id: string;
-  name: string;
-  language: string;
-  quality: number;
-  latency: number;
-  networkConnectionRequired: boolean;
-  notInstalled: boolean;
-}
-
-type Voice = TtsVoice;
+type Voice = Speech.Voice;
 
 interface SettingsContextType {
   selectedVoice: Voice | null;
@@ -39,12 +28,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Load saved settings on mount
   useEffect(() => {
     loadSettings();
-    // Delay voice loading to ensure TTS module is ready
-    const timer = setTimeout(() => {
-      loadAvailableVoices();
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    loadAvailableVoices();
   }, []);
 
   const loadSettings = async () => {
@@ -64,24 +48,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const loadAvailableVoices = async () => {
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        setIsLoadingVoices(true);
-        
-        // Add a small delay to ensure TTS module is fully initialized
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        console.log(`🔧 Attempting to load voices (${4 - retries}/3)...`);
-        const voices = await Tts.voices();
-        
-        console.log('🎤 All available voices:', voices.map((v: TtsVoice) => `${v.name} (${v.language})`));
+    try {
+      setIsLoadingVoices(true);
+      const voices = await Speech.getAvailableVoicesAsync();
       
-      // Select 4 specific voices: US Female, US Male, UK Female, UK Male
-      const selectedVoices: TtsVoice[] = [];
+      console.log('🎤 All available voices:', voices.map(v => `${v.name} (${v.language})`));
       
-      // 1. Find Samantha (US Female)
-      const samantha = voices.find((v: TtsVoice) => 
+      // Only use 2 specific voices: Samantha (US Female) and Daniel (UK Male)
+      const selectedVoices: Speech.Voice[] = [];
+      
+      // Find Samantha (US Female)
+      const samantha = voices.find(v => 
         v.name === 'Samantha' && 
         v.language.toLowerCase().startsWith('en-us')
       );
@@ -91,36 +68,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log('✅ Found US Female: Samantha');
       } else {
         console.warn('❌ Samantha (US Female) not found');
+        // Fallback to any US female voice
+        const usFemale = voices.find(v => v.language.toLowerCase().startsWith('en-us'));
+        if (usFemale) {
+          selectedVoices.push(usFemale);
+          console.log(`⚠️  Using fallback US voice: ${usFemale.name}`);
+        }
       }
       
-      // 2. Find Tom or Aaron (US Male)
-      const usMale = voices.find((v: TtsVoice) => 
-        (v.name === 'Tom' || v.name === 'Aaron') && 
-        v.language.toLowerCase().startsWith('en-us')
-      );
-      
-      if (usMale) {
-        selectedVoices.push(usMale);
-        console.log(`✅ Found US Male: ${usMale.name}`);
-      } else {
-        console.warn('❌ US Male voice not found');
-      }
-      
-      // 3. Find Kate or Serena (UK Female)
-      const ukFemale = voices.find((v: TtsVoice) => 
-        (v.name === 'Kate' || v.name === 'Serena') && 
-        v.language.toLowerCase().startsWith('en-gb')
-      );
-      
-      if (ukFemale) {
-        selectedVoices.push(ukFemale);
-        console.log(`✅ Found UK Female: ${ukFemale.name}`);
-      } else {
-        console.warn('❌ UK Female voice not found');
-      }
-      
-      // 4. Find Daniel (UK Male)
-      const daniel = voices.find((v: TtsVoice) => 
+      // Find Daniel (UK Male)
+      const daniel = voices.find(v => 
         v.name === 'Daniel' && 
         v.language.toLowerCase().startsWith('en-gb')
       );
@@ -130,20 +87,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.log('✅ Found UK Male: Daniel');
       } else {
         console.warn('❌ Daniel (UK Male) not found');
-      }
-      
-      // Fallback: if we have fewer than 2 voices, add any English voices we can find
-      if (selectedVoices.length < 2) {
-        console.warn('⚠️  Not enough specific voices found, adding fallbacks...');
-        const englishVoices = voices.filter((v: TtsVoice) => 
-          v.language.toLowerCase().startsWith('en') &&
-          !selectedVoices.find(sv => sv.id === v.id)
-        );
-        selectedVoices.push(...englishVoices.slice(0, 4 - selectedVoices.length));
+        // Fallback to any UK voice
+        const ukVoice = voices.find(v => v.language.toLowerCase().startsWith('en-gb'));
+        if (ukVoice) {
+          selectedVoices.push(ukVoice);
+          console.log(`⚠️  Using fallback UK voice: ${ukVoice.name}`);
+        }
       }
       
       console.log(`✅ Selected ${selectedVoices.length} voices:`, 
-        selectedVoices.map((v: TtsVoice) => `${v.name} (${v.language}) [${v.id}]`));
+        selectedVoices.map(v => `${v.name} (${v.language}) [${v.identifier}]`));
       
       setAvailableVoices(selectedVoices);
       
@@ -152,9 +105,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (savedSettings) {
           const settings = JSON.parse(savedSettings);
-          if (settings.selectedVoiceId) {
+          if (settings.selectedVoiceIdentifier) {
             const savedVoice = selectedVoices.find(
-              (v: TtsVoice) => v.id === settings.selectedVoiceId
+              v => v.identifier === settings.selectedVoiceIdentifier
             );
             if (savedVoice) {
               setSelectedVoiceState(savedVoice);
@@ -164,33 +117,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }
           }
         }
-        } catch (error) {
-          console.error('Failed to restore saved voice:', error);
-        }
-        
-        // Success - break out of retry loop
-        break;
-        
       } catch (error) {
-        retries--;
-        console.error(`❌ Failed to load voices (${3 - retries}/3):`, error);
-        if (error instanceof Error) {
-          console.error('❌ Error details:', error.message, error.stack);
-        }
-        
-        if (retries > 0) {
-          console.log(`⏳ Retrying in 500ms... (${retries} attempts left)`);
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } else {
-          // All retries failed - set empty array so app doesn't crash
-          setAvailableVoices([]);
-          console.log('⚠️ Voice loading failed after all retries, will use system default TTS voice');
-        }
-      } finally {
-        if (retries === 0) {
-          setIsLoadingVoices(false);
-        }
+        console.error('Failed to restore saved voice:', error);
       }
+    } catch (error) {
+      console.error('Failed to load voices:', error);
+      setAvailableVoices([]);
+    } finally {
+      setIsLoadingVoices(false);
     }
   };
 
@@ -198,9 +132,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setSelectedVoiceState(voice);
       
-      // Save the voice id for react-native-tts
+      // Only save the voice identifier, not the entire Voice object
+      // Voice objects contain complex data that doesn't serialize well
       const settings = {
-        selectedVoiceId: voice?.id || null,
+        selectedVoiceIdentifier: voice?.identifier || null,
       };
       
       await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));

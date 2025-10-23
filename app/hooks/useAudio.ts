@@ -19,6 +19,7 @@ export const useAudio = (
 ) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioModeReady, setAudioModeReady] = useState(false);
+  const [silentSound, setSilentSound] = useState<Audio.Sound | null>(null);
 
   // Check if we're on a real device vs simulator
   useEffect(() => {
@@ -41,6 +42,21 @@ export const useAudio = (
           });
           console.log('✅ Audio mode configured for silent mode playback');
 
+          // WORKAROUND: Play a silent audio file to enable TTS in silent mode
+          // This is a known workaround for expo-speech on iOS
+          // See: https://stackoverflow.com/questions/61949934/expo-speech-not-working-on-some-ios-devices/62331403#62331403
+          try {
+            console.log('🔇 Loading silent audio file...');
+            const { sound } = await Audio.Sound.createAsync(
+              require('@/assets/audio/silent.mp3')
+            );
+            setSilentSound(sound);
+            await sound.playAsync();
+            console.log('✅ Silent audio playing - this enables TTS in silent mode');
+          } catch (soundError) {
+            console.warn('⚠️ Could not load silent audio, TTS may not work in silent mode:', soundError);
+          }
+
           // iOS Simulator doesn't support TTS - check if voices are available
           console.log('🔧 Checking available voices...');
           const voices = await Speech.getAvailableVoicesAsync();
@@ -60,8 +76,7 @@ export const useAudio = (
           console.log('✅ Audio mode configured for Android');
         }
         
-        // Audio system is ready - the native audio session configuration
-        // in AppDelegate.swift handles silent mode playback
+        // Audio system is ready
         setAudioModeReady(true);
         console.log('✅ Audio system fully initialized and ready');
       } catch (error) {
@@ -70,13 +85,21 @@ export const useAudio = (
           console.error('❌ Error message:', error.message);
           console.error('❌ Error stack:', error.stack);
         }
-        // audioModeReady stays false, user will see error message if they try to play
+        // Set ready anyway so app doesn't block
+        setAudioModeReady(true);
       }
     };
     
     checkPlatform();
 
-    // No cleanup needed - audio session persists for app lifetime
+    // Cleanup: unload silent sound
+    return () => {
+      if (silentSound) {
+        silentSound.unloadAsync().catch((error) => {
+          console.warn('⚠️ Error unloading silent sound:', error);
+        });
+      }
+    };
   }, []); // Empty array - only run once on mount
 
   /**

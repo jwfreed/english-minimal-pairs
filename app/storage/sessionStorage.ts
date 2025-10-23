@@ -7,18 +7,28 @@ let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Initialize cachedHistory as an empty object
 let cachedHistory: PairSessionHistory = {};
+let hasLoadedHistory = false;
 
-async function getSessionHistory(): Promise<PairSessionHistory> {
-  // Optionally, you could check if the object is empty to load only once.
-  // For example, using Object.keys(cachedHistory).length === 0 might be enough.
+async function ensureHistoryLoaded(): Promise<PairSessionHistory> {
+  if (hasLoadedHistory) {
+    return cachedHistory;
+  }
+
   try {
     const data = await AsyncStorage.getItem(SESSION_HISTORY_KEY);
     cachedHistory = data ? JSON.parse(data) : {};
   } catch (error) {
     console.error('Error loading session history', error);
-    // Leave cachedHistory as {}
+    cachedHistory = {};
+  } finally {
+    hasLoadedHistory = true;
   }
+
   return cachedHistory;
+}
+
+async function getSessionHistory(): Promise<PairSessionHistory> {
+  return ensureHistoryLoaded();
 }
 
 function scheduleSave() {
@@ -38,7 +48,7 @@ function scheduleSave() {
 }
 
 export async function addPairSession(pairId: string, session: PairSession) {
-  const history = await getSessionHistory();
+  const history = await ensureHistoryLoaded();
   if (!history[pairId]) {
     history[pairId] = [];
   }
@@ -47,12 +57,13 @@ export async function addPairSession(pairId: string, session: PairSession) {
 }
 
 export async function getPairSessions(pairId: string): Promise<PairSession[]> {
-  const history = await getSessionHistory();
+  const history = await ensureHistoryLoaded();
   return history[pairId] || [];
 }
 
 export async function clearSessionHistory() {
   cachedHistory = {};
+  hasLoadedHistory = true;
   try {
     await AsyncStorage.removeItem(SESSION_HISTORY_KEY);
   } catch (error) {

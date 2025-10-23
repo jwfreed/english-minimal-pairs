@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { useLanguage } from '@/app/context/LanguageContext';
-import createStyles from '@/app/constants/styles';
 import { useThemeColor } from '@/app/hooks/useThemeColor';
+import { useLanguage } from '@/app/context/LanguageContext';
 import { tKeys } from '@/app/constants/translationKeys';
 
 interface PracticeData {
@@ -30,8 +29,6 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
     icon: useThemeColor({}, 'icon'),
   };
 
-  const styles = createStyles(themeColors);
-
   const smoothedData = useMemo(() => {
     return practiceData.map((point, i, arr) => {
       const window = arr.slice(Math.max(0, i - 2), i + 1);
@@ -39,7 +36,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         window.reduce((sum, p) => sum + p.accuracy, 0) / window.length;
       return avg;
     });
-  }, [JSON.stringify(practiceData)]);
+  }, [practiceData]);
 
   const chartData = useMemo(
     () => ({
@@ -52,7 +49,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         },
       ],
     }),
-    [JSON.stringify(practiceData), smoothedData, themeColors.primary]
+    [practiceData, smoothedData, themeColors.primary]
   );
 
   return (

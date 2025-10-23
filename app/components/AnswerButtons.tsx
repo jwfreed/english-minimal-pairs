@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
@@ -18,7 +18,7 @@ interface Props {
 
 export default function AnswerButtons({ pair, onAnswer, feedback }: Props) {
   const theme = useAllThemeColors();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.answerContainer}>

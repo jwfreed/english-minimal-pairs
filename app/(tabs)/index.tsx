@@ -30,6 +30,14 @@ export default function HomeScreen() {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
+  const debugLog = useCallback(
+    (...args: Parameters<typeof console.log>) => {
+      if (__DEV__) {
+        console.log(...args);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     const catLabel = minimalPairs[categoryIndex].category;
@@ -61,9 +69,9 @@ export default function HomeScreen() {
   );
 
   const handlePlay = useCallback(async () => {
-    console.log('🎯 handlePlay called, audioModeReady:', audioModeReady);
+    debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
     if (!audioModeReady) {
-      console.log('❌ Audio not ready - showing error alert');
+      debugLog('❌ Audio not ready - showing error alert');
       Alert.alert('Audio Error', 'Audio system is still initializing. Please try again.');
       return;
     }
@@ -79,7 +87,7 @@ export default function HomeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert('Audio Error', errorMessage);
     }
-  }, [play, audioModeReady]);
+  }, [audioModeReady, debugLog, play]);
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {

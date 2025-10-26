@@ -7,8 +7,12 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
-import { saveAttempt, getProgress } from '@/app/storage/progressStorage';
-import { PairStats, PairAttempt } from '@/app/storage/types';
+import {
+  saveAttempt,
+  getProgress,
+  PairStats,
+  PairAttempt,
+} from '@/app/storage/progressStorage';
 
 const ProgressContext = createContext<Record<string, PairStats>>({});
 const RecordAttemptContext = createContext<

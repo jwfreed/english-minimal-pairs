@@ -5,20 +5,11 @@ import {
   getWeightedAccuracy,
   getAccuracyAndTimeOverTime,
   estimateActivePracticeTime,
+  PairStats,
 } from '@/app/storage/progressStorage';
 
 // Maximum minutes to display in the progress bar
 const MAX_PRACTICE_MIN = 60;
-
-interface PairAttempt {
-  isCorrect: boolean;
-  timestamp: number;
-  durationMin?: number;
-}
-
-interface PairStats {
-  attempts: PairAttempt[];
-}
 
 interface FlattenedPair {
   id: string;

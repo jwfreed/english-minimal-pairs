@@ -76,7 +76,6 @@ export default function ResultsScreen() {
         data={flattenedPairs}
         extraData={progress}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={220}
         renderItem={renderItem}
       />
     </View>

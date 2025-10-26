@@ -37,6 +37,11 @@ interface LanguageTranslations {
   ukAccentMale?: string;
   americanEnglish?: string;
   britishEnglish?: string;
+  appearance?: string;
+  themeMode?: string;
+  lightMode?: string;
+  darkMode?: string;
+  systemMode?: string;
   
   [key: string]: string | undefined;
 }
@@ -73,6 +78,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 英国アクセント（男性）',
     americanEnglish: 'アメリカ英語',
     britishEnglish: 'イギリス英語',
+    appearance: '外観',
+    themeMode: 'テーマモード',
+    lightMode: 'ライトモード',
+    darkMode: 'ダークモード',
+    systemMode: 'システム設定',
     titleOne: '👂 耳を鍛えて、リスニング力を変えよう！',
     infoOne:
       '多くの英語学習者は "ship" と "sheep"、"light" と "right" の違いを聞き取れません。このアプリは、そうした違いを聞き取れる耳を作るためのトレーニングを提供します。',
@@ -110,6 +120,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 英国口音（男性）',
     americanEnglish: '美式英语',
     britishEnglish: '英式英语',
+    appearance: '外观',
+    themeMode: '主题模式',
+    lightMode: '浅色模式',
+    darkMode: '深色模式',
+    systemMode: '系统设置',
     titleOne: '👂 训练你的耳朵，改善听力理解！',
     infoOne:
       '许多英语学习者分不清 "ship" 和 "sheep" 或 "light" 和 "right"。本应用帮助你训练听觉，分辨这些细微差别。',
@@ -141,6 +156,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     appInfo: 'ข้อมูลแอป',
     version: 'เวอร์ชัน',
     build: 'บิลด์',
+    appearance: 'รูปลักษณ์',
+    themeMode: 'โหมดธีม',
+    lightMode: 'โหมดสว่าง',
+    darkMode: 'โหมดมืด',
+    systemMode: 'ตามระบบ',
     titleOne: '👂 ฝึกหูของคุณ เปลี่ยนการฟังของคุณ!',
     infoOne:
       'ผู้เรียนภาษาอังกฤษหลายคนแยกไม่ออกระหว่างคำว่า "ship" กับ "sheep" หรือ "light" กับ "right" แอปนี้ช่วยฝึกให้คุณได้ยินความแตกต่างนั้น',
@@ -177,6 +197,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 Acento británico (Hombre)',
     americanEnglish: 'Inglés americano',
     britishEnglish: 'Inglés británico',
+    appearance: 'Apariencia',
+    themeMode: 'Modo de tema',
+    lightMode: 'Modo claro',
+    darkMode: 'Modo oscuro',
+    systemMode: 'Configuración del sistema',
     titleOne: '👂 ¡Entrena tus oídos y mejora tu comprensión auditiva!',
     infoOne:
       'Muchos estudiantes no distinguen "ship" de "sheep" o "light" de "right". Esta app te entrena para reconocer esas diferencias.',
@@ -213,6 +238,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 لهجة بريطانية (ذكر)',
     americanEnglish: 'الإنجليزية الأمريكية',
     britishEnglish: 'الإنجليزية البريطانية',
+    appearance: 'المظهر',
+    themeMode: 'وضع المظهر',
+    lightMode: 'الوضع الفاتح',
+    darkMode: 'الوضع الداكن',
+    systemMode: 'إعداد النظام',
     titleOne: '👂 درّب أذنيك وغيّر مهارات الاستماع!',
     infoOne:
       'الكثير من متعلمي اللغة الإنجليزية لا يميزون بين "ship" و "sheep" أو "light" و "right". هذا التطبيق يساعدك على تحسين تمييز هذه الأصوات.',
@@ -249,6 +279,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 Британский акцент (Мужской)',
     americanEnglish: 'Американский английский',
     britishEnglish: 'Британский английский',
+    appearance: 'Внешний вид',
+    themeMode: 'Режим темы',
+    lightMode: 'Светлый режим',
+    darkMode: 'Тёмный режим',
+    systemMode: 'Настройки системы',
     titleOne: '👂 Тренируй слух — улучшай понимание!',
     infoOne:
       'Многие изучающие английский не различают "ship" и "sheep" или "light" и "right". Это приложение поможет научиться их слышать.',
@@ -285,6 +320,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 영국 악센트 (남성)',
     americanEnglish: '미국 영어',
     britishEnglish: '영국 영어',
+    appearance: '외관',
+    themeMode: '테마 모드',
+    lightMode: '라이트 모드',
+    darkMode: '다크 모드',
+    systemMode: '시스템 설정',
     titleOne: '👂 귀를 훈련하여 듣기 능력을 향상시키세요!',
     infoOne:
       '많은 영어 학습자들이 "ship"과 "sheep", "light"과 "right"의 차이를 구별하지 못합니다. 이 앱은 그런 구별을 가능하게 도와줍니다.',
@@ -321,6 +361,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 ब्रिटिश उच्चारण (पुरुष)/برطانوی لہجہ (مرد)',
     americanEnglish: 'अमेरिकी अंग्रेज़ी/امریکی انگریزی',
     britishEnglish: 'ब्रिटिश अंग्रेज़ी/برطانوی انگریزی',
+    appearance: 'दिखावट/ظہور',
+    themeMode: 'थीम मोड/تھیم موڈ',
+    lightMode: 'लाइट मोड/لائٹ موڈ',
+    darkMode: 'डार्क मोड/ڈارک موڈ',
+    systemMode: 'सिस्टम सेटिंग/سسٹم کی ترتیب',
     titleOne: '👂 अपने कानों को प्रशिक्षित करें, सुनने की क्षमता सुधारें!',
     infoOne:
       '"ship" और "sheep" या "light" और "right" जैसे शब्दों में फर्क करना कठिन हो सकता है। यह ऐप आपको वह फर्क सुनने में मदद करता है।',
@@ -357,6 +402,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 Sotaque britânico (Masculino)',
     americanEnglish: 'Inglês americano',
     britishEnglish: 'Inglês britânico',
+    appearance: 'Aparência',
+    themeMode: 'Modo de tema',
+    lightMode: 'Modo claro',
+    darkMode: 'Modo escuro',
+    systemMode: 'Configuração do sistema',
     titleOne: '👂 Treine seus ouvidos, melhore sua escuta!',
     infoOne:
       'Muitos alunos de inglês não distinguem "ship" de "sheep" ou "light" de "right". Este app ajuda a treinar sua audição para perceber essas diferenças.',
@@ -393,6 +443,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 Giọng Anh (Nam)',
     americanEnglish: 'Tiếng Anh Mỹ',
     britishEnglish: 'Tiếng Anh Anh',
+    appearance: 'Giao diện',
+    themeMode: 'Chế độ giao diện',
+    lightMode: 'Chế độ sáng',
+    darkMode: 'Chế độ tối',
+    systemMode: 'Cài đặt hệ thống',
     titleOne: '👂 Luyện tai, cải thiện kỹ năng nghe!',
     infoOne:
       'Nhiều người học tiếng Anh không phân biệt được "ship" và "sheep", hoặc "light" và "right". Ứng dụng này giúp bạn luyện nghe các âm thanh khó phân biệt.',
@@ -429,6 +484,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 İngiliz Aksanı (Erkek)',
     americanEnglish: 'Amerikan İngilizcesi',
     britishEnglish: 'İngiliz İngilizcesi',
+    appearance: 'Görünüm',
+    themeMode: 'Tema modu',
+    lightMode: 'Açık mod',
+    darkMode: 'Koyu mod',
+    systemMode: 'Sistem ayarı',
     titleOne: '👂 Kulaklarınızı eğitin, dinleme becerinizi geliştirin!',
     infoOne:
       'Birçok İngilizce öğrenen kişi "ship" ve "sheep" ya da "light" ve "right" arasındaki farkı duyamaz. Bu uygulama size bu farkları duymayı öğretir.',
@@ -465,6 +525,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 لهجه بریتانیایی (مرد)',
     americanEnglish: 'انگلیسی آمریکایی',
     britishEnglish: 'انگلیسی بریتانیایی',
+    appearance: 'ظاهر',
+    themeMode: 'حالت تم',
+    lightMode: 'حالت روشن',
+    darkMode: 'حالت تاریک',
+    systemMode: 'تنظیمات سیستم',
     titleOne: '👂 گوش‌های خود را آموزش دهید و مهارت شنیداری را بهبود دهید!',
     infoOne:
       'بسیاری از زبان‌آموزان تفاوت "ship" و "sheep" یا "light" و "right" را تشخیص نمی‌دهند. این اپ به شما کمک می‌کند تا این تفاوت‌ها را بشنوید.',
@@ -501,6 +566,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 英國口音（男性）',
     americanEnglish: '美式英語',
     britishEnglish: '英式英語',
+    appearance: '外觀',
+    themeMode: '主題模式',
+    lightMode: '淺色模式',
+    darkMode: '深色模式',
+    systemMode: '系統設定',
     titleOne: '👂 訓練耳朵，改善聽力！',
     infoOne:
       '好多學英文嘅人都分唔清 "ship" 同 "sheep" 或 "light" 同 "right"。呢個應用程式幫你聽得出呢啲分別。',
@@ -536,6 +606,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     ukAccentMale: '🇬🇧 Aksen Inggris (Laki-laki)',
     americanEnglish: 'Bahasa Inggris Amerika',
     britishEnglish: 'Bahasa Inggris Inggris',
+    appearance: 'Penampilan',
+    themeMode: 'Mode tema',
+    lightMode: 'Mode terang',
+    darkMode: 'Mode gelap',
+    systemMode: 'Pengaturan sistem',
     titleOne: '👂 Latih pendengaranmu, tingkatkan kemampuan listening!',
     infoOne:
       'Banyak pelajar bingung membedakan "ship" dan "sheep" atau "light" dan "right". Aplikasi ini membantu kamu melatih pendengaran untuk membedakan bunyi tersebut.',

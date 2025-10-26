@@ -6,8 +6,11 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useThemeColor } from '../hooks/useThemeColor';
 import { useColorScheme } from '../hooks/useColorScheme'; // Patched hook
+
+const THEME_STORAGE_KEY = '@userThemePreference';
 
 const lightTheme = {
   background: '#ffffff',
@@ -40,10 +43,13 @@ const darkTheme = {
 };
 
 export type Theme = typeof lightTheme;
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeContextData {
   theme: Theme;
+  themeMode: ThemeMode;
   setTheme: (theme: Theme) => void;
+  setThemeMode: (mode: ThemeMode) => void;
   toggleTheme: () => void;
   getColor: (key: keyof Theme) => string;
 }
@@ -52,15 +58,45 @@ const ThemeContext = createContext<ThemeContextData | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const deviceScheme = useColorScheme();
-
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [theme, setTheme] = useState<Theme>(
     deviceScheme === 'dark' ? darkTheme : lightTheme
   );
 
-  // Automatically update theme when system setting changes
+  // Load saved theme preference on mount
   useEffect(() => {
-    setTheme(deviceScheme === 'dark' ? darkTheme : lightTheme);
-  }, [deviceScheme]);
+    const loadThemePreference = async () => {
+      try {
+        const savedMode = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+        if (savedMode && (savedMode === 'light' || savedMode === 'dark' || savedMode === 'system')) {
+          setThemeModeState(savedMode as ThemeMode);
+        }
+      } catch (error) {
+        console.error('Error loading theme preference:', error);
+      }
+    };
+    loadThemePreference();
+  }, []);
+
+  // Update theme based on mode and device scheme
+  useEffect(() => {
+    if (themeMode === 'system') {
+      setTheme(deviceScheme === 'dark' ? darkTheme : lightTheme);
+    } else if (themeMode === 'dark') {
+      setTheme(darkTheme);
+    } else {
+      setTheme(lightTheme);
+    }
+  }, [themeMode, deviceScheme]);
+
+  const setThemeMode = async (mode: ThemeMode) => {
+    try {
+      setThemeModeState(mode);
+      await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
+    } catch (error) {
+      console.error('Error saving theme preference:', error);
+    }
+  };
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === lightTheme ? darkTheme : lightTheme));
@@ -69,7 +105,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const getColor = (key: keyof Theme) => theme[key];
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, getColor }}>
+    <ThemeContext.Provider value={{ theme, themeMode, setTheme, setThemeMode, toggleTheme, getColor }}>
       {children}
     </ThemeContext.Provider>
   );

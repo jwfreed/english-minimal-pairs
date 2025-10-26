@@ -36,6 +36,11 @@ export const tKeys = {
   ukAccentMale: 'ukAccentMale',
   americanEnglish: 'americanEnglish',
   britishEnglish: 'britishEnglish',
+  appearance: 'appearance',
+  themeMode: 'themeMode',
+  lightMode: 'lightMode',
+  darkMode: 'darkMode',
+  systemMode: 'systemMode',
 };
 
 export type TranslationKey = keyof typeof tKeys;

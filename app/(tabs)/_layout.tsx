@@ -7,6 +7,7 @@ import { PairProgressProvider } from '@/app/context/PairProgressContext';
 import { LanguageProvider, useLanguage } from '@/app/context/LanguageContext';
 import { CategoryProvider } from '@/app/context/CategoryContext';
 import { SettingsProvider } from '@/app/context/SettingsContext';
+import { ThemeProvider } from '@/app/context/theme';
 
 import { useColorScheme } from 'react-native';
 import { Colors } from '@/app/constants/Colors';
@@ -101,11 +102,13 @@ export default function Layout() {
   return (
     <PairProgressProvider>
       <LanguageProvider>
-        <SettingsProvider>
-          <CategoryProvider>
-            <TabLayout />
-          </CategoryProvider>
-        </SettingsProvider>
+        <ThemeProvider>
+          <SettingsProvider>
+            <CategoryProvider>
+              <TabLayout />
+            </CategoryProvider>
+          </SettingsProvider>
+        </ThemeProvider>
       </LanguageProvider>
     </PairProgressProvider>
   );

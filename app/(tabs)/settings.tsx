@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettings } from '@/app/context/SettingsContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
-import { useAllThemeColors } from '@/app/context/theme';
+import { useAllThemeColors, useTheme } from '@/app/context/theme';
 import createStyles from '@/app/constants/styles';
 import { tKeys } from '@/app/constants/translationKeys';
 import { minimalPairs } from '@/app/constants/minimalPairs';
@@ -51,6 +51,7 @@ export default function SettingsScreen() {
   const { translate, setLanguage } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const theme = useAllThemeColors();
+  const { themeMode, setThemeMode } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const localStyles = useMemo(() => createLocalStyles(theme), [theme]);
 
@@ -236,6 +237,89 @@ export default function SettingsScreen() {
                     <Text style={styles.listItemName}>
                       {cat.category}
                     </Text>
+                  </View>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={24} color={theme.success} />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* Appearance/Theme Section */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={() => toggleSection('theme')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.sectionHeaderLeft}>
+            <Ionicons
+              name={themeMode === 'dark' ? 'moon-outline' : themeMode === 'light' ? 'sunny-outline' : 'phone-portrait-outline'}
+              size={24}
+              color={theme.primary}
+              style={styles.sectionIcon}
+            />
+            <View>
+              <Text style={styles.sectionTitle}>
+                {translate(tKeys.appearance)}
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                {themeMode === 'system' 
+                  ? translate(tKeys.systemMode)
+                  : themeMode === 'light' 
+                  ? translate(tKeys.lightMode)
+                  : translate(tKeys.darkMode)}
+              </Text>
+            </View>
+          </View>
+          <Ionicons
+            name={expandedSection === 'theme' ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={theme.textSecondary}
+          />
+        </TouchableOpacity>
+
+        {expandedSection === 'theme' && (
+          <View style={styles.sectionContent}>
+            {(['system', 'light', 'dark'] as const).map((mode, index) => {
+              const isSelected = themeMode === mode;
+              const modeLabels = {
+                system: translate(tKeys.systemMode),
+                light: translate(tKeys.lightMode),
+                dark: translate(tKeys.darkMode),
+              };
+              const modeIcons = {
+                system: 'phone-portrait-outline' as const,
+                light: 'sunny-outline' as const,
+                dark: 'moon-outline' as const,
+              };
+              
+              return (
+                <TouchableOpacity
+                  key={mode}
+                  style={[
+                    styles.listOption,
+                    isSelected && styles.selectedListOption,
+                    index === 2 && styles.lastListOption,
+                  ]}
+                  onPress={() => setThemeMode(mode)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.listItemInfo}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Ionicons 
+                        name={modeIcons[mode]} 
+                        size={20} 
+                        color={theme.text} 
+                        style={{ marginRight: 12 }}
+                      />
+                      <Text style={styles.listItemName}>
+                        {modeLabels[mode]}
+                      </Text>
+                    </View>
                   </View>
                   {isSelected && (
                     <Ionicons name="checkmark-circle" size={24} color={theme.success} />

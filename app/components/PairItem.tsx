@@ -7,6 +7,7 @@ import {
   estimateActivePracticeTime,
   PairStats,
 } from '@/app/storage/progressStorage';
+import { tKeys } from '@/app/constants/translationKeys';
 
 // Maximum minutes to display in the progress bar
 const MAX_PRACTICE_MIN = 60;
@@ -68,10 +69,10 @@ const PairItem: React.FC<Props> = React.memo(
               {`${item.word1} - ${item.word2}`}
             </Text>
             <Text style={{ color: themeColors.text }}>
-              {`${translate('total')}: ${
+              {`${translate(tKeys.total)}: ${
                 attempts.filter((a) => a.isCorrect).length
               }/${attempts.length} (${rawAvg.toFixed(1)}%) — ${translate(
-                'weightedAverage'
+                tKeys.weightedAverage
               )}: ${weightedAvg.toFixed(1)}%`}
             </Text>
           </View>
@@ -88,9 +89,9 @@ const PairItem: React.FC<Props> = React.memo(
                     color: themeColors.text,
                   }}
                 >
-                  {`${translate('timePracticed')}: ${displayPracticeMin.toFixed(
+                  {`${translate(tKeys.timePracticed)}: ${displayPracticeMin.toFixed(
                     1
-                  )} / ${MAX_PRACTICE_MIN} ${translate('min')}`}
+                  )} / ${MAX_PRACTICE_MIN} ${translate(tKeys.min)}`}
                 </Text>
                 <View style={styles.progressBarOuter}>
                   <View

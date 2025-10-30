@@ -63,8 +63,6 @@ export default function SettingsScreen() {
     isLoadingVoices,
     setSelectedVoice,
     refreshVoices,
-    hapticsEnabled,
-    setHapticsEnabled,
   } = useSettings();
 
   const [expandedSection, setExpandedSection] = useState<string | null>('voice');
@@ -332,75 +330,6 @@ export default function SettingsScreen() {
                         {modeLabels[mode]}
                       </Text>
                     </View>
-                  </View>
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={24} color={theme.success} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </View>
-
-      {/* Haptics Section */}
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={styles.sectionHeader}
-          onPress={() => toggleSection('haptics')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.sectionHeaderLeft}>
-            <Ionicons
-              name="hand-left-outline"
-              size={24}
-              color={theme.primary}
-              style={styles.sectionIcon}
-            />
-            <View>
-              <Text style={styles.sectionTitle}>
-                Haptic Feedback
-              </Text>
-              <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                {hapticsEnabled ? 'Enabled' : 'Disabled'}
-              </Text>
-            </View>
-          </View>
-          <Ionicons
-            name={expandedSection === 'haptics' ? 'chevron-up' : 'chevron-down'}
-            size={20}
-            color={theme.textSecondary}
-          />
-        </TouchableOpacity>
-
-        {expandedSection === 'haptics' && (
-          <View style={styles.sectionContent}>
-            {[true, false].map((enabled, index) => {
-              const isSelected = hapticsEnabled === enabled;
-              
-              return (
-                <TouchableOpacity
-                  key={enabled ? 'enabled' : 'disabled'}
-                  style={[
-                    styles.listOption,
-                    isSelected && styles.selectedListOption,
-                    index === 1 && styles.lastListOption,
-                  ]}
-                  onPress={() => {
-                    if (enabled) {
-                      triggerHaptic('selection');
-                    }
-                    setHapticsEnabled(enabled);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.listItemInfo}>
-                    <Text style={styles.listItemName}>
-                      {enabled ? 'Enabled' : 'Disabled'}
-                    </Text>
-                    <Text style={[styles.listItemDetails, { color: theme.textSecondary }]}>
-                      {enabled ? 'Feel vibrations with each tap' : 'No haptic feedback'}
-                    </Text>
                   </View>
                   {isSelected && (
                     <Ionicons name="checkmark-circle" size={24} color={theme.success} />

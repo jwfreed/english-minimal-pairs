@@ -17,10 +17,12 @@ export default function PairPicker({ pairs, index, setIndex, color }: Props) {
 
   const handleValueChange = useCallback(
     (v: string) => {
+      const nextIndex = Number(v);
+      if (nextIndex === index) return;
       triggerHaptic('selection');
-      setIndex(Number(v));
+      setIndex(nextIndex);
     },
-    [setIndex, triggerHaptic]
+    [index, setIndex, triggerHaptic]
   );
 
   return (

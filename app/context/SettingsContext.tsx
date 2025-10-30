@@ -7,6 +7,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -227,7 +228,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [debugError, debugLog, hydrateVoices]);
 
-  const setSelectedVoice = async (voice: Voice | null) => {
+  const setSelectedVoice = useCallback(async (voice: Voice | null) => {
     try {
       setSelectedVoiceState(voice);
 
@@ -251,9 +252,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       debugError('Failed to save voice setting:', error);
     }
-  };
+  }, [debugLog, debugError]);
 
-  const setHapticsEnabled = async (enabled: boolean) => {
+  const setHapticsEnabled = useCallback(async (enabled: boolean) => {
     try {
       setHapticsEnabledState(enabled);
 
@@ -274,24 +275,32 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       debugError('Failed to save haptics setting:', error);
     }
-  };
+  }, [debugLog, debugError]);
 
-  const refreshVoices = async () => {
+  const refreshVoices = useCallback(async () => {
     await hydrateVoices(selectedVoice ? selectedVoice.identifier : null);
-  };
+  }, [hydrateVoices, selectedVoice]);
+
+  const value = useMemo(() => ({
+    selectedVoice,
+    availableVoices,
+    isLoadingVoices,
+    setSelectedVoice,
+    refreshVoices,
+    hapticsEnabled,
+    setHapticsEnabled,
+  }), [
+    selectedVoice,
+    availableVoices,
+    isLoadingVoices,
+    setSelectedVoice,
+    refreshVoices,
+    hapticsEnabled,
+    setHapticsEnabled,
+  ]);
 
   return (
-    <SettingsContext.Provider
-      value={{
-        selectedVoice,
-        availableVoices,
-        isLoadingVoices,
-        setSelectedVoice,
-        refreshVoices,
-        hapticsEnabled,
-        setHapticsEnabled,
-      }}
-    >
+    <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
   );

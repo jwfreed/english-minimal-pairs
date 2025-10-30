@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 // Custom hook for triggering haptic feedback throughout the app
 // -----------------------------------------------------------------------------
-import { useCallback } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 import { useSettings } from '@/app/context/SettingsContext';
@@ -18,11 +18,16 @@ export type HapticType =
 
 export const useHaptics = () => {
   const { hapticsEnabled } = useSettings();
+  const enabledRef = useRef(hapticsEnabled);
+
+  useEffect(() => {
+    enabledRef.current = hapticsEnabled;
+  }, [hapticsEnabled]);
 
   const triggerHaptic = useCallback(
     async (type: HapticType = 'light') => {
       // Only trigger haptics if enabled and on a supported platform
-      if (!hapticsEnabled || Platform.OS === 'web') {
+      if (!enabledRef.current || Platform.OS === 'web') {
         return;
       }
 
@@ -65,7 +70,7 @@ export const useHaptics = () => {
         }
       }
     },
-    [hapticsEnabled]
+    []
   );
 
   return { triggerHaptic, hapticsEnabled };

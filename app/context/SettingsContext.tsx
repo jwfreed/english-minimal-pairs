@@ -23,6 +23,8 @@ interface SettingsContextType {
   isLoadingVoices: boolean;
   setSelectedVoice: (voice: Voice | null) => Promise<void>;
   refreshVoices: () => Promise<void>;
+  hapticsEnabled: boolean;
+  setHapticsEnabled: (enabled: boolean) => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -31,6 +33,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [selectedVoice, setSelectedVoiceState] = useState<Voice | null>(null);
   const [availableVoices, setAvailableVoices] = useState<Voice[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState(true);
+  const [hapticsEnabled, setHapticsEnabledState] = useState(true);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -189,6 +192,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     let cancelled = false;
     const load = async () => {
       let savedIdentifier: string | null | undefined = undefined;
+      let savedHapticsEnabled = true; // default to enabled
       try {
         const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (savedSettings) {
@@ -200,12 +204,18 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (savedIdentifier) {
             debugLog('📦 Found saved voice identifier:', savedIdentifier);
           }
+          // Load haptics setting, default to true if not set
+          if (parsed?.hapticsEnabled !== undefined) {
+            savedHapticsEnabled = parsed.hapticsEnabled;
+            debugLog('📦 Found saved haptics setting:', savedHapticsEnabled);
+          }
         }
       } catch (error) {
         debugError('Failed to load settings:', error);
       }
 
       if (!cancelled) {
+        setHapticsEnabledState(savedHapticsEnabled);
         await hydrateVoices(savedIdentifier);
       }
     };
@@ -221,7 +231,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setSelectedVoiceState(voice);
 
+      // Load existing settings to preserve haptics preference
+      const existingSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+      const parsed = existingSettings ? JSON.parse(existingSettings) : {};
+
       const settings = {
+        ...parsed,
         selectedVoiceIdentifier: voice?.identifier ?? null,
       };
 
@@ -238,6 +253,29 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const setHapticsEnabled = async (enabled: boolean) => {
+    try {
+      setHapticsEnabledState(enabled);
+
+      // Load existing settings to preserve voice preference
+      const existingSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+      const parsed = existingSettings ? JSON.parse(existingSettings) : {};
+
+      const settings = {
+        ...parsed,
+        hapticsEnabled: enabled,
+      };
+
+      await AsyncStorage.setItem(
+        SETTINGS_STORAGE_KEY,
+        JSON.stringify(settings)
+      );
+      debugLog('✅ Saved haptics preference:', enabled);
+    } catch (error) {
+      debugError('Failed to save haptics setting:', error);
+    }
+  };
+
   const refreshVoices = async () => {
     await hydrateVoices(selectedVoice ? selectedVoice.identifier : null);
   };
@@ -250,6 +288,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isLoadingVoices,
         setSelectedVoice,
         refreshVoices,
+        hapticsEnabled,
+        setHapticsEnabled,
       }}
     >
       {children}

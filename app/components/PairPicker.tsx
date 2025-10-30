@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Picker } from '@react-native-picker/picker';
 import { Dimensions } from 'react-native';
+import { useHaptics } from '@/app/hooks/useHaptics';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -12,10 +13,20 @@ interface Props {
 }
 
 export default function PairPicker({ pairs, index, setIndex, color }: Props) {
+  const { triggerHaptic } = useHaptics();
+
+  const handleValueChange = useCallback(
+    (v: string) => {
+      triggerHaptic('selection');
+      setIndex(Number(v));
+    },
+    [setIndex, triggerHaptic]
+  );
+
   return (
     <Picker
       selectedValue={String(index)}
-      onValueChange={(v) => setIndex(Number(v))}
+      onValueChange={handleValueChange}
       style={{ width: screenWidth - 48, color, marginBottom: 10 }}
     >
       {pairs.map((p, i) => (

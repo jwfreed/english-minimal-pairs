@@ -8,6 +8,7 @@ import React, {
 import { TouchableOpacity, Text, Animated, Pressable } from 'react-native';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
+import { useHaptics } from '@/app/hooks/useHaptics';
 
 interface Props {
   /** List of category names shown in the dropdown */
@@ -28,9 +29,10 @@ interface Props {
  */
 const CategoryDropdown: React.FC<Props> = React.memo(
   ({ categories, current, onSelect }) => {
-    /* ─── THEME & MEMO STYLES ─────────────────────────────── */
+    /* ─── THEME & MEMO STYLES ─────────────────────────────── */
     const theme = useAllThemeColors();
     const styles = useMemo(() => createStyles(theme), [theme]);
+    const { triggerHaptic } = useHaptics();
 
     /* ─── STATE & ANIMATION ───────────────────────────────── */
     const [open, setOpen] = useState(false); // controls opacity target
@@ -54,14 +56,18 @@ const CategoryDropdown: React.FC<Props> = React.memo(
     }, [open, opacity]);
 
     /* ─── HANDLERS ────────────────────────────────────────── */
-    const toggle = useCallback(() => setOpen((prev) => !prev), []);
+    const toggle = useCallback(() => {
+      triggerHaptic('light');
+      setOpen((prev) => !prev);
+    }, [triggerHaptic]);
 
     const handleSelect = useCallback(
       (idx: number) => {
+        triggerHaptic('selection');
         if (idx !== current) onSelect(idx);
         setOpen(false); // triggers fade‑out via effect
       },
-      [current, onSelect]
+      [current, onSelect, triggerHaptic]
     );
 
     /* ─── RENDER ──────────────────────────────────────────── */

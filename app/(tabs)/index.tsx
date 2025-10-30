@@ -17,6 +17,7 @@ import AnswerButtons from '@/app/components/AnswerButtons';
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { useAudio } from '@/app/hooks/useAudio';
 import { buildPairId } from '@/app/utils/idHelpers';
+import { useHaptics } from '@/app/hooks/useHaptics';
 
 /* Playback-rate steps per acoustic tier (0–2) */
 const SPEED_TABLE: Record<0 | 1 | 2, number> = { 0: 1.0, 1: 1.1, 2: 1.2 };
@@ -30,6 +31,7 @@ export default function HomeScreen() {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
+  const { triggerHaptic } = useHaptics();
   const debugLog = useCallback(
     (...args: Parameters<typeof console.log>) => {
       if (__DEV__) {
@@ -75,6 +77,7 @@ export default function HomeScreen() {
       Alert.alert('Audio Error', 'Audio system is still initializing. Please try again.');
       return;
     }
+    triggerHaptic('light');
     setFeedback(null);
     setPlayedIdx(null);
     setStartTime(Date.now());
@@ -87,7 +90,7 @@ export default function HomeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert('Audio Error', errorMessage);
     }
-  }, [audioModeReady, debugLog, play]);
+  }, [audioModeReady, debugLog, play, triggerHaptic]);
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {

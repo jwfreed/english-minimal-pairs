@@ -142,10 +142,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsLoadingVoices(true);
       try {
         const voices = await Speech.getAvailableVoicesAsync();
-        debugLog(
-          '🎤 Available voices:',
-          voices.map((v) => `${v.name} (${v.language})`)
-        );
 
         const curatedVoices = selectPriorityVoices(voices);
 

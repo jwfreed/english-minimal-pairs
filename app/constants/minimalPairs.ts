@@ -23,6 +23,7 @@ export interface Category {
 }
 
 /* ─── Language datasets ──────────────────────────────────────────── */
+// import english from './minimalPairs/english'; // TODO: Add English pairs
 import japanese from './minimalPairs/japanese';
 import mandarin from './minimalPairs/mandarin';
 import thai from './minimalPairs/thai';
@@ -41,6 +42,7 @@ import hinduUrdu from './minimalPairs/hindu_urdu';
 
 /* ─── Aggregated export (keep ordering as preferred) ─────────────── */
 export const minimalPairs: Category[] = [
+  // english, // TODO: Uncomment when English pairs are added
   japanese,
   mandarin,
   thai,

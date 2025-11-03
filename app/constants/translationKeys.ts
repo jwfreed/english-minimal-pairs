@@ -36,6 +36,8 @@ export const tKeys = {
   lightMode: 'lightMode',
   darkMode: 'darkMode',
   systemMode: 'systemMode',
+  useEnglishUI: 'useEnglishUI',
+  englishUIDescription: 'englishUIDescription',
 };
 
 export type TranslationKey = keyof typeof tKeys;

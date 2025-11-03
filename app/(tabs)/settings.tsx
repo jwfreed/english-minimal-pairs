@@ -49,7 +49,7 @@ const formatVoiceName = (
 };
 
 export default function SettingsScreen() {
-  const { translate, setLanguage } = useLanguage();
+  const { translate, setLanguage, useEnglishUI, setUseEnglishUI } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const theme = useAllThemeColors();
   const { themeMode, setThemeMode } = useTheme();
@@ -131,6 +131,11 @@ export default function SettingsScreen() {
     triggerHaptic('selection');
     setThemeMode(mode);
   }, [setThemeMode, triggerHaptic]);
+
+  const handleEnglishUIToggle = useCallback(() => {
+    triggerHaptic('selection');
+    setUseEnglishUI(!useEnglishUI);
+  }, [useEnglishUI, setUseEnglishUI, triggerHaptic]);
 
   // Auto-select first voice if none selected
   React.useEffect(() => {
@@ -256,6 +261,41 @@ export default function SettingsScreen() {
             })}
           </View>
         )}
+      </View>
+
+      {/* English UI Toggle */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={handleEnglishUIToggle}
+          activeOpacity={0.7}
+        >
+          <View style={styles.sectionHeaderLeft}>
+            <Ionicons
+              name="globe-outline"
+              size={24}
+              color={theme.primary}
+              style={styles.sectionIcon}
+            />
+            <View>
+              <Text style={styles.sectionTitle}>
+                {translate(tKeys.useEnglishUI)}
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                {translate(tKeys.englishUIDescription)}
+              </Text>
+            </View>
+          </View>
+          <View style={[
+            localStyles.toggleSwitch,
+            useEnglishUI && { backgroundColor: theme.success }
+          ]}>
+            <View style={[
+              localStyles.toggleThumb,
+              useEnglishUI && localStyles.toggleThumbActive
+            ]} />
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* Appearance/Theme Section */}
@@ -448,5 +488,27 @@ const createLocalStyles = (theme: any) =>
       minWidth: 200,
       minHeight: 60,
       justifyContent: 'center',
+    },
+    toggleSwitch: {
+      width: 50,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: theme.border,
+      padding: 2,
+      justifyContent: 'center',
+    },
+    toggleThumb: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: theme.card,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    toggleThumbActive: {
+      transform: [{ translateX: 20 }],
     },
   });

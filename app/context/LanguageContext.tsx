@@ -13,6 +13,7 @@ import * as Localization from 'expo-localization';
 import { alternateLanguages } from '@/app/constants/alternateLanguages';
 
 const STORAGE_KEY = '@userLanguage';
+const ENGLISH_UI_OVERRIDE_KEY = '@useEnglishUI';
 const DEFAULT_LANGUAGE = Object.keys(alternateLanguages)[0];
 
 /**
@@ -22,6 +23,7 @@ const getLanguageFromLocale = (locale: string): string => {
   const languageCode = locale.split('-')[0].toLowerCase();
   
   const localeMap: Record<string, string> = {
+    'en': 'English',
     'ja': '日本語',
     'zh': '中文',
     'th': 'ภาษาไทย',
@@ -46,6 +48,8 @@ interface LanguageContextValue {
   language: string;
   setLanguage: (lang: string) => void;
   translate: (key: string) => string;
+  useEnglishUI: boolean;
+  setUseEnglishUI: (value: boolean) => void;
 }
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(
@@ -54,11 +58,17 @@ const LanguageContext = createContext<LanguageContextValue | undefined>(
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
+  const [useEnglishUI, setUseEnglishUIState] = useState(false);
 
   useEffect(() => {
     const initializeLanguage = async () => {
       // First check if user has previously set a language
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const englishUIOverride = await AsyncStorage.getItem(ENGLISH_UI_OVERRIDE_KEY);
+      
+      if (englishUIOverride === 'true') {
+        setUseEnglishUIState(true);
+      }
       
       if (stored && alternateLanguages[stored]) {
         // Use previously saved language
@@ -83,14 +93,23 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     AsyncStorage.setItem(STORAGE_KEY, lang);
   }, []);
 
+  const setUseEnglishUI = useCallback((value: boolean) => {
+    setUseEnglishUIState(value);
+    AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, value.toString());
+  }, []);
+
   const translate = useCallback(
-    (key: string) => alternateLanguages[language]?.[key] || key,
-    [language]
+    (key: string) => {
+      // If English UI override is enabled, always use English translations
+      const targetLanguage = useEnglishUI ? 'English' : language;
+      return alternateLanguages[targetLanguage]?.[key] || key;
+    },
+    [language, useEnglishUI]
   );
 
   const value = useMemo(
-    () => ({ language, setLanguage, translate }),
-    [language, setLanguage, translate]
+    () => ({ language, setLanguage, translate, useEnglishUI, setUseEnglishUI }),
+    [language, setLanguage, translate, useEnglishUI, setUseEnglishUI]
   );
 
   return (

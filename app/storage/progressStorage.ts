@@ -52,25 +52,18 @@ export async function saveAttempt(
 /* ─── analytics helpers used across the UI ────────────────────────────────── */
 
 /**
- * Simple recency‑weighted accuracy.
- * Newer attempts get exponentially more weight (half‑life = 10 minutes).
+ * Weighted accuracy based on the most recent N attempts.
+ * Shows user's recent performance (last 20 attempts or all if fewer).
  */
 export function getWeightedAccuracy(attempts: PairAttempt[]): number {
   if (attempts.length === 0) return 0;
-  const now = Date.now();
-  const HALF_LIFE_MIN = 10; // tweak as desired
-
-  let weightedCorrect = 0;
-  let totalWeight = 0;
-
-  attempts.forEach((a) => {
-    const ageMin = (now - a.timestamp) / 60000;
-    const w = Math.pow(0.5, ageMin / HALF_LIFE_MIN);
-    totalWeight += w;
-    if (a.isCorrect) weightedCorrect += w;
-  });
-
-  return weightedCorrect / totalWeight;
+  
+  // Use last 20 attempts, or all attempts if fewer than 20
+  const RECENT_ATTEMPT_COUNT = 20;
+  const recentAttempts = attempts.slice(-RECENT_ATTEMPT_COUNT);
+  
+  const correctCount = recentAttempts.filter(a => a.isCorrect).length;
+  return correctCount / recentAttempts.length;
 }
 
 /**

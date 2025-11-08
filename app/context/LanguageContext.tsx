@@ -87,6 +87,17 @@ const getLanguageFromRegion = (locale: string): string | null => {
   return regionMap[regionCode] || null;
 };
 
+/**
+ * Checks if the region is English-speaking
+ */
+const isEnglishSpeakingRegion = (locale: string): boolean => {
+  const regionCode = locale.split('-')[1]?.toUpperCase();
+  if (!regionCode) return false;
+  
+  const englishRegions = ['US', 'GB', 'CA', 'AU', 'NZ', 'IE', 'ZA', 'SG'];
+  return englishRegions.includes(regionCode);
+};
+
 interface LanguageContextValue {
   language: string;
   setLanguage: (lang: string) => void;
@@ -102,10 +113,16 @@ const LanguageContext = createContext<LanguageContextValue | undefined>(
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
   const [useEnglishUI, setUseEnglishUIState] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Prevent double initialization
+    if (isInitialized) {
+      return;
+    }
+    
     const initializeLanguage = async () => {
-      // First check if user has previously set a language
+      // Check if user has previously set a language
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       const englishUIOverride = await AsyncStorage.getItem(ENGLISH_UI_OVERRIDE_KEY);
       
@@ -125,25 +142,40 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         const languageCode = deviceLocale.split('-')[0].toLowerCase();
         const detectedLanguage = getLanguageFromLocale(deviceLocale);
         const regionLanguage = getLanguageFromRegion(deviceLocale);
+        const isEnglishRegion = isEnglishSpeakingRegion(deviceLocale);
         
-        // Case 1: System language is English but region supports another language
-        if (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage]) {
+        // Case 1: System language is one of our supported languages in an English-speaking region
+        // Example: ja-US (Japanese in US) → App: Japanese, UI: Japanese (native)
+        if (isEnglishRegion && 
+            languageCode !== 'en' && 
+            alternateLanguages[detectedLanguage]) {
+          setLanguageState(detectedLanguage);
+          if (!hasManualEnglishUIOverride) {
+            setUseEnglishUIState(false);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'false');
+          }
+        }
+        // Case 2: System language is English but region supports another language
+        // Example: en-JP (English in Japan) → App: Japanese, UI: English
+        else if (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage]) {
           setLanguageState(regionLanguage);
           if (!hasManualEnglishUIOverride) {
             setUseEnglishUIState(true);
             await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
           }
         }
-        // Case 2: System language matches region (or no specific region handling needed)
+        // Case 3: System language matches region (or no specific region handling needed)
+        // Example: ja-JP (Japanese in Japan) → App: Japanese, UI: Japanese
         else if (alternateLanguages[detectedLanguage]) {
           setLanguageState(detectedLanguage);
           // System language is supported and not English-with-region, use native UI
           if (!hasManualEnglishUIOverride && detectedLanguage !== 'English') {
             setUseEnglishUIState(false);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'false');
+            await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
           }
         }
-        // Case 3: Neither system language nor region is supported
+        // Case 4: Neither system language nor region is supported
+        // Example: fr-FR (French in France) → App: English, UI: English
         else {
           if (!hasManualEnglishUIOverride) {
             setUseEnglishUIState(true);
@@ -152,10 +184,12 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
           setLanguageState(DEFAULT_LANGUAGE);
         }
       }
+      
+      setIsInitialized(true);
     };
     
     initializeLanguage();
-  }, []);
+  }, [isInitialized]);
 
   const setLanguage = useCallback((lang: string) => {
     setLanguageState(lang);

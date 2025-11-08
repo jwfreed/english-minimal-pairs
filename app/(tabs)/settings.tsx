@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 // Settings screen for app configuration
 // -----------------------------------------------------------------------------
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
-  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,7 +20,6 @@ import { useAllThemeColors, useTheme } from '@/app/context/theme';
 import createStyles from '@/app/constants/styles';
 import { tKeys } from '@/app/constants/translationKeys';
 import { minimalPairs } from '@/app/constants/minimalPairs';
-import { alternateLanguages } from '@/app/constants/alternateLanguages';
 import { useHaptics } from '@/app/hooks/useHaptics';
 
 /**
@@ -66,47 +64,6 @@ export default function SettingsScreen() {
   } = useSettings();
 
   const [expandedSection, setExpandedSection] = useState<string | null>('voice');
-  const [hasUserSelectedLanguage, setHasUserSelectedLanguage] = useState(false);
-  const [cyclingLanguageIndex, setCyclingLanguageIndex] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-
-  // Check if user has ever selected a language
-  useEffect(() => {
-    const checkLanguageSelection = async () => {
-      const hasSelected = await AsyncStorage.getItem('@hasSelectedLanguage');
-      setHasUserSelectedLanguage(hasSelected === 'true');
-    };
-    checkLanguageSelection();
-  }, []);
-
-  // Cycle through languages if user hasn't selected one
-  useEffect(() => {
-    if (hasUserSelectedLanguage) return;
-
-    const cycleDuration = 2500; // 2.5 seconds per language
-    const fadeDuration = 400; // 400ms fade transition
-
-    const cycleInterval = setInterval(() => {
-      // Fade out
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: fadeDuration,
-        useNativeDriver: true,
-      }).start(() => {
-        // Change language
-        setCyclingLanguageIndex((prev) => (prev + 1) % minimalPairs.length);
-        
-        // Fade in
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: fadeDuration,
-          useNativeDriver: true,
-        }).start();
-      });
-    }, cycleDuration);
-
-    return () => clearInterval(cycleInterval);
-  }, [hasUserSelectedLanguage, fadeAnim]);
 
   const toggleSection = useCallback((section: string) => {
     triggerHaptic('light');
@@ -122,9 +79,6 @@ export default function SettingsScreen() {
     triggerHaptic('selection');
     setCategoryIndex(idx);
     setLanguage(minimalPairs[idx].category);
-    // Mark that user has selected a language
-    setHasUserSelectedLanguage(true);
-    await AsyncStorage.setItem('@hasSelectedLanguage', 'true');
   }, [setCategoryIndex, setLanguage, triggerHaptic]);
 
   const handleThemeChange = useCallback((mode: 'system' | 'light' | 'dark') => {
@@ -187,42 +141,12 @@ export default function SettingsScreen() {
               style={styles.sectionIcon}
             />
             <View style={localStyles.languageTextContainer}>
-              {hasUserSelectedLanguage ? (
-                <Text style={styles.sectionTitle}>
-                  {translate(tKeys.language)}
-                </Text>
-              ) : (
-                <Animated.Text 
-                  style={[
-                    styles.sectionTitle, 
-                    { 
-                      color: theme.primary,
-                      opacity: fadeAnim,
-                      fontWeight: '600',
-                    }
-                  ]}
-                >
-                  {alternateLanguages[minimalPairs[cyclingLanguageIndex].category]?.language || 'Language'}
-                </Animated.Text>
-              )}
-              {hasUserSelectedLanguage ? (
-                <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                  {minimalPairs[categoryIndex].category}
-                </Text>
-              ) : (
-                <Animated.Text 
-                  style={[
-                    styles.sectionSubtitle, 
-                    { 
-                      color: theme.primary,
-                      opacity: fadeAnim,
-                      fontWeight: '600',
-                    }
-                  ]}
-                >
-                  {minimalPairs[cyclingLanguageIndex].category}
-                </Animated.Text>
-              )}
+              <Text style={styles.sectionTitle}>
+                {translate(tKeys.language)}
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                {minimalPairs[categoryIndex].category}
+              </Text>
             </View>
           </View>
           <Ionicons

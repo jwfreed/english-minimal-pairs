@@ -1,5 +1,13 @@
 // src/context/CategoryContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
+import { useLanguage } from '@/app/context/LanguageContext';
+import { minimalPairs } from '@/app/constants/minimalPairs';
 
 interface CategoryContextValue {
   categoryIndex: number;
@@ -12,6 +20,16 @@ const CategoryContext = createContext<CategoryContextValue | undefined>(
 
 export const CategoryProvider = ({ children }: { children: ReactNode }) => {
   const [categoryIndex, setCategoryIndex] = useState(0);
+  const { language } = useLanguage();
+
+  useEffect(() => {
+    const nextIndex = minimalPairs.findIndex(
+      (cat) => cat.category === language
+    );
+    if (nextIndex !== -1 && nextIndex !== categoryIndex) {
+      setCategoryIndex(nextIndex);
+    }
+  }, [language, categoryIndex]);
 
   return (
     <CategoryContext.Provider value={{ categoryIndex, setCategoryIndex }}>

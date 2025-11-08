@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx – Home screen with language sync, adaptive difficulty & progress logging
 // -----------------------------------------------------------------------------
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
@@ -24,7 +24,7 @@ const SPEED_TABLE: Record<0 | 1 | 2, number> = { 0: 1.0, 1: 1.1, 2: 1.2 };
 const MAX_SPEED: 2 = 2; // promote lexical after reaching tier 2
 
 export default function HomeScreen() {
-  const { translate, setLanguage } = useLanguage();
+  const { translate } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const recordAttempt = useRecordAttempt();
   const { selectedVoice } = useSettings();
@@ -40,11 +40,6 @@ export default function HomeScreen() {
     },
     []
   );
-
-  useEffect(() => {
-    const catLabel = minimalPairs[categoryIndex].category;
-    setLanguage(catLabel);
-  }, [categoryIndex, setLanguage]);
 
   const [groupSpeed, setGroupSpeed] = useState<Record<string, 0 | 1 | 2>>({});
   const [groupStreak, setGroupStreak] = useState<Record<string, number>>({});

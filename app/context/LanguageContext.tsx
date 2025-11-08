@@ -66,6 +66,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       const englishUIOverride = await AsyncStorage.getItem(ENGLISH_UI_OVERRIDE_KEY);
       
+      // Check if user has manually set the English UI override
+      const hasManualEnglishUIOverride = englishUIOverride !== null;
+      
       if (englishUIOverride === 'true') {
         setUseEnglishUIState(true);
       }
@@ -79,8 +82,17 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         const detectedLanguage = getLanguageFromLocale(deviceLocale);
         
         if (alternateLanguages[detectedLanguage]) {
+          // Device language is supported - use it
           setLanguageState(detectedLanguage);
           // Don't save to storage yet - only save when user manually changes it
+        } else {
+          // Device language is NOT supported - enable English UI if not manually set
+          if (!hasManualEnglishUIOverride) {
+            setUseEnglishUIState(true);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
+          }
+          // Keep the default language
+          setLanguageState(DEFAULT_LANGUAGE);
         }
       }
     };

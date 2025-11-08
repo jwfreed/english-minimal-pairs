@@ -44,6 +44,49 @@ const getLanguageFromLocale = (locale: string): string => {
   return localeMap[languageCode] || DEFAULT_LANGUAGE;
 };
 
+/**
+ * Maps device region codes to app language names
+ * Used when system language is English but region supports another language
+ */
+const getLanguageFromRegion = (locale: string): string | null => {
+  const regionCode = locale.split('-')[1]?.toUpperCase();
+  if (!regionCode) return null;
+  
+  const regionMap: Record<string, string> = {
+    'JP': '日本語',
+    'CN': '中文',
+    'TW': '中文',
+    'HK': '廣東話',
+    'TH': 'ภาษาไทย',
+    'KR': '한국어',
+    'IN': 'हिंदी/اردو',
+    'PK': 'हिंदी/اردو',
+    'PT': 'Português',
+    'BR': 'Português',
+    'TR': 'Türkçe',
+    'ES': 'idioma español',
+    'MX': 'idioma español',
+    'AR': 'idioma español',
+    'CO': 'idioma español',
+    'CL': 'idioma español',
+    'PE': 'idioma español',
+    'VE': 'idioma español',
+    'SA': 'اللغة العربية',
+    'AE': 'اللغة العربية',
+    'EG': 'اللغة العربية',
+    'IQ': 'اللغة العربية',
+    'JO': 'اللغة العربية',
+    'KW': 'اللغة العربية',
+    'LB': 'اللغة العربية',
+    'RU': 'русский язык',
+    'VN': 'Tiếng Việt',
+    'IR': 'زبان فارسی',
+    'ID': 'bahasa Indo',
+  };
+  
+  return regionMap[regionCode] || null;
+};
+
 interface LanguageContextValue {
   language: string;
   setLanguage: (lang: string) => void;
@@ -69,8 +112,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       // Check if user has manually set the English UI override
       const hasManualEnglishUIOverride = englishUIOverride !== null;
       
-      if (englishUIOverride === 'true') {
-        setUseEnglishUIState(true);
+      if (hasManualEnglishUIOverride) {
+        setUseEnglishUIState(englishUIOverride === 'true');
       }
       
       if (stored && alternateLanguages[stored]) {
@@ -79,19 +122,33 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       } else {
         // Auto-detect from device locale
         const deviceLocale = Localization.getLocales()[0]?.languageTag || 'en';
+        const languageCode = deviceLocale.split('-')[0].toLowerCase();
         const detectedLanguage = getLanguageFromLocale(deviceLocale);
+        const regionLanguage = getLanguageFromRegion(deviceLocale);
         
-        if (alternateLanguages[detectedLanguage]) {
-          // Device language is supported - use it
-          setLanguageState(detectedLanguage);
-          // Don't save to storage yet - only save when user manually changes it
-        } else {
-          // Device language is NOT supported - enable English UI if not manually set
+        // Case 1: System language is English but region supports another language
+        if (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage]) {
+          setLanguageState(regionLanguage);
           if (!hasManualEnglishUIOverride) {
             setUseEnglishUIState(true);
             await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
           }
-          // Keep the default language
+        }
+        // Case 2: System language matches region (or no specific region handling needed)
+        else if (alternateLanguages[detectedLanguage]) {
+          setLanguageState(detectedLanguage);
+          // System language is supported and not English-with-region, use native UI
+          if (!hasManualEnglishUIOverride && detectedLanguage !== 'English') {
+            setUseEnglishUIState(false);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'false');
+          }
+        }
+        // Case 3: Neither system language nor region is supported
+        else {
+          if (!hasManualEnglishUIOverride) {
+            setUseEnglishUIState(true);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
+          }
           setLanguageState(DEFAULT_LANGUAGE);
         }
       }

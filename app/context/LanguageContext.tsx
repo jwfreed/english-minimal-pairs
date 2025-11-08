@@ -145,14 +145,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         const isEnglishRegion = isEnglishSpeakingRegion(deviceLocale);
         
         // Case 1: System language is one of our supported languages in an English-speaking region
-        // Example: ja-US (Japanese in US) → App: Japanese, UI: Japanese (native)
+        // Example: ja-US (Japanese in US) → App: Japanese, UI: English
         if (isEnglishRegion && 
             languageCode !== 'en' && 
             alternateLanguages[detectedLanguage]) {
           setLanguageState(detectedLanguage);
           if (!hasManualEnglishUIOverride) {
-            setUseEnglishUIState(false);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'false');
+            setUseEnglishUIState(true);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
           }
         }
         // Case 2: System language is English but region supports another language

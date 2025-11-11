@@ -47,7 +47,7 @@ const formatVoiceName = (
 };
 
 export default function SettingsScreen() {
-  const { translate, setLanguage, useEnglishUI, setUseEnglishUI } = useLanguage();
+  const { translate, setLanguage, useEnglishUI, setUseEnglishUI, language } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const theme = useAllThemeColors();
   const { themeMode, setThemeMode } = useTheme();
@@ -62,6 +62,10 @@ export default function SettingsScreen() {
     setSelectedVoice,
     refreshVoices,
   } = useSettings();
+
+  // Effective UI state: if the app language itself is English, the UI will appear English
+  // even when the explicit "useEnglishUI" flag is false. Reflect that in the toggle UI.
+  const effectiveUseEnglishUI = useEnglishUI || language === 'English';
 
   const [expandedSection, setExpandedSection] = useState<string | null>('voice');
 
@@ -212,11 +216,11 @@ export default function SettingsScreen() {
           </View>
           <View style={[
             localStyles.toggleSwitch,
-            useEnglishUI && { backgroundColor: theme.success }
+            effectiveUseEnglishUI && { backgroundColor: theme.success }
           ]}>
             <View style={[
               localStyles.toggleThumb,
-              useEnglishUI && localStyles.toggleThumbActive
+              effectiveUseEnglishUI && localStyles.toggleThumbActive
             ]} />
           </View>
         </TouchableOpacity>

@@ -14,14 +14,54 @@ import { alternateLanguages } from '@/app/constants/alternateLanguages';
 
 const STORAGE_KEY = '@userLanguage';
 const ENGLISH_UI_OVERRIDE_KEY = '@useEnglishUI';
+const MANUAL_ENGLISH_UI_KEY = '@manualEnglishUIToggle';
 const DEFAULT_LANGUAGE = Object.keys(alternateLanguages)[0];
+const DEFAULT_LANGUAGE_CODE = 'en';
+
+interface DeviceLocaleInfo {
+  languageCode: string;
+  regionCode?: string;
+}
+
+const findRegionFromTag = (tag?: string): string | undefined => {
+  if (!tag) {
+    return undefined;
+  }
+  const normalizedParts = tag.replace(/_/g, '-').split('-').filter(Boolean);
+  for (let i = normalizedParts.length - 1; i >= 1; i -= 1) {
+    const part = normalizedParts[i];
+    if (
+      part.length === 2 &&
+      /^[A-Za-z]+$/.test(part) &&
+      part === part.toUpperCase()
+    ) {
+      return part;
+    }
+  }
+  return undefined;
+};
+
+const getDeviceLocaleInfo = (): DeviceLocaleInfo => {
+  const [primaryLocale] = Localization.getLocales();
+  const languageCode =
+    primaryLocale?.languageCode?.toLowerCase() ||
+    primaryLocale?.languageTag?.split(/[-_]/)[0]?.toLowerCase() ||
+    DEFAULT_LANGUAGE_CODE;
+
+  const regionCode =
+    primaryLocale?.regionCode ||
+    findRegionFromTag(primaryLocale?.languageTag || undefined);
+
+  return {
+    languageCode,
+    regionCode: regionCode ? regionCode.toUpperCase() : undefined,
+  };
+};
 
 /**
  * Maps device locale codes to app language names
  */
-const getLanguageFromLocale = (locale: string): string => {
-  const languageCode = locale.split('-')[0].toLowerCase();
-  
+const getLanguageFromLocale = (languageCode: string): string => {
   const localeMap: Record<string, string> = {
     'en': 'English',
     'ja': '日本語',
@@ -48,8 +88,7 @@ const getLanguageFromLocale = (locale: string): string => {
  * Maps device region codes to app language names
  * Used when system language is English but region supports another language
  */
-const getLanguageFromRegion = (locale: string): string | null => {
-  const regionCode = locale.split('-')[1]?.toUpperCase();
+const getLanguageFromRegion = (regionCode?: string): string | null => {
   if (!regionCode) return null;
   
   const regionMap: Record<string, string> = {
@@ -90,8 +129,7 @@ const getLanguageFromRegion = (locale: string): string | null => {
 /**
  * Checks if the region is English-speaking
  */
-const isEnglishSpeakingRegion = (locale: string): boolean => {
-  const regionCode = locale.split('-')[1]?.toUpperCase();
+const isEnglishSpeakingRegion = (regionCode?: string): boolean => {
   if (!regionCode) return false;
   
   const englishRegions = ['US', 'GB', 'CA', 'AU', 'NZ', 'IE', 'ZA', 'SG'];
@@ -125,9 +163,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       // Check if user has previously set a language
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       const englishUIOverride = await AsyncStorage.getItem(ENGLISH_UI_OVERRIDE_KEY);
+      const manualToggle = await AsyncStorage.getItem(MANUAL_ENGLISH_UI_KEY);
       
-      // Check if user has manually set the English UI override
-      const hasManualEnglishUIOverride = englishUIOverride !== null;
+      // Check if user has MANUALLY toggled the English UI (not just auto-set)
+      const hasManualEnglishUIOverride = manualToggle === 'true';
       
       if (hasManualEnglishUIOverride) {
         setUseEnglishUIState(englishUIOverride === 'true');
@@ -140,10 +179,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         // If user has a stored language but NO manual UI override, infer the UI setting
         // based on their current locale (e.g., en-TH should have English UI even with Thai language)
         if (!hasManualEnglishUIOverride) {
-          const deviceLocale = Localization.getLocales()[0]?.languageTag || 'en';
-          const languageCode = deviceLocale.split('-')[0].toLowerCase();
-          const isEnglishRegion = isEnglishSpeakingRegion(deviceLocale);
-          const regionLanguage = getLanguageFromRegion(deviceLocale);
+          const { languageCode, regionCode } = getDeviceLocaleInfo();
+          const isEnglishRegion = isEnglishSpeakingRegion(regionCode);
+          const regionLanguage = getLanguageFromRegion(regionCode);
           
           // If in English-speaking region OR English language in non-English region → English UI
           if (isEnglishRegion || (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage])) {
@@ -157,11 +195,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         }
       } else {
         // Auto-detect from device locale
-        const deviceLocale = Localization.getLocales()[0]?.languageTag || 'en';
-        const languageCode = deviceLocale.split('-')[0].toLowerCase();
-        const detectedLanguage = getLanguageFromLocale(deviceLocale);
-        const regionLanguage = getLanguageFromRegion(deviceLocale);
-        const isEnglishRegion = isEnglishSpeakingRegion(deviceLocale);
+        const { languageCode, regionCode } = getDeviceLocaleInfo();
+        const detectedLanguage = getLanguageFromLocale(languageCode);
+        const regionLanguage = getLanguageFromRegion(regionCode);
+        const isEnglishRegion = isEnglishSpeakingRegion(regionCode);
         
         // Case 1: System language is one of our supported languages in an English-speaking region
         // Example: ja-US (Japanese in US) → App: Japanese, UI: English
@@ -218,6 +255,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const setUseEnglishUI = useCallback((value: boolean) => {
     setUseEnglishUIState(value);
     AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, value.toString());
+    // Mark this as a manual toggle so we don't override it with locale detection
+    AsyncStorage.setItem(MANUAL_ENGLISH_UI_KEY, 'true');
   }, []);
 
   const translate = useCallback(

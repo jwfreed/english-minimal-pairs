@@ -136,6 +136,25 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       if (stored && alternateLanguages[stored]) {
         // Use previously saved language
         setLanguageState(stored);
+        
+        // If user has a stored language but NO manual UI override, infer the UI setting
+        // based on their current locale (e.g., en-TH should have English UI even with Thai language)
+        if (!hasManualEnglishUIOverride) {
+          const deviceLocale = Localization.getLocales()[0]?.languageTag || 'en';
+          const languageCode = deviceLocale.split('-')[0].toLowerCase();
+          const isEnglishRegion = isEnglishSpeakingRegion(deviceLocale);
+          const regionLanguage = getLanguageFromRegion(deviceLocale);
+          
+          // If in English-speaking region OR English language in non-English region → English UI
+          if (isEnglishRegion || (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage])) {
+            setUseEnglishUIState(true);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
+          } else if (stored !== 'English') {
+            // Non-English language in native region → native UI
+            setUseEnglishUIState(false);
+            await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
+          }
+        }
       } else {
         // Auto-detect from device locale
         const deviceLocale = Localization.getLocales()[0]?.languageTag || 'en';

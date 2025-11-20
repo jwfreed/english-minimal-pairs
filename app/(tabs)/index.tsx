@@ -58,7 +58,12 @@ export default function HomeScreen() {
   const { visible, promote } = useContrastPairs(catObj.pairs);
   const selectedPair: Pair = visible[pairIndex];
 
-  const speedTier = groupSpeed[selectedPair.group] ?? 0;\n  const { play, audioModeReady, isSpeaking } = useAudio(\n    selectedPair,\n    SPEED_TABLE[speedTier],\n    selectedVoice\n  );
+  const speedTier = groupSpeed[selectedPair.group] ?? 0;
+  const { play, audioModeReady, isSpeaking } = useAudio(
+    selectedPair,
+    SPEED_TABLE[speedTier],
+    selectedVoice
+  );
 
   const handlePlay = useCallback(async () => {
     debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);

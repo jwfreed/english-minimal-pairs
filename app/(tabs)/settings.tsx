@@ -63,9 +63,10 @@ export default function SettingsScreen() {
     refreshVoices,
   } = useSettings();
 
-  // Effective UI state: if the app language itself is English, the UI will appear English
-  // even when the explicit "useEnglishUI" flag is false. Reflect that in the toggle UI.
+  // When language is English, the UI is always in English
   const effectiveUseEnglishUI = useEnglishUI || language === 'English';
+  // Disable toggle only when it would have no effect (language already English but flag false)
+  const isToggleDisabled = language === 'English' && !useEnglishUI;
 
   const [expandedSection, setExpandedSection] = useState<string | null>('voice');
 
@@ -197,16 +198,17 @@ export default function SettingsScreen() {
           style={styles.sectionHeader}
           onPress={handleEnglishUIToggle}
           activeOpacity={0.7}
+          disabled={isToggleDisabled}
         >
           <View style={styles.sectionHeaderLeft}>
             <Ionicons
               name="globe-outline"
               size={24}
-              color={theme.primary}
+              color={isToggleDisabled ? theme.textSecondary : theme.primary}
               style={styles.sectionIcon}
             />
             <View>
-              <Text style={styles.sectionTitle}>
+              <Text style={[styles.sectionTitle, isToggleDisabled && { color: theme.textSecondary }]}>
                 {translate(tKeys.useEnglishUI)}
               </Text>
               <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
@@ -216,7 +218,8 @@ export default function SettingsScreen() {
           </View>
           <View style={[
             localStyles.toggleSwitch,
-            effectiveUseEnglishUI && { backgroundColor: theme.success }
+            effectiveUseEnglishUI && { backgroundColor: theme.success },
+            isToggleDisabled && { opacity: 0.5 }
           ]}>
             <View style={[
               localStyles.toggleThumb,

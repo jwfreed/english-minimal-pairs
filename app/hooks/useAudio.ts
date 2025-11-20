@@ -251,5 +251,5 @@ export const useAudio = (
     [debugError, debugLog, debugWarn, isSpeaking, rate, selectedPair, voice]
   );
 
-  return { play, audioModeReady };
+  return { play, audioModeReady, isSpeaking };\n};
 };

@@ -15,9 +15,10 @@ interface Props {
   pair: Pair;
   onAnswer: (idx: 0 | 1) => void;
   feedback: 'correct' | 'incorrect' | null;
+  disabled?: boolean;
 }
 
-export default function AnswerButtons({ pair, onAnswer, feedback }: Props) {
+export default function AnswerButtons({ pair, onAnswer, feedback, disabled = false }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { triggerHaptic } = useHaptics();
@@ -32,6 +33,7 @@ export default function AnswerButtons({ pair, onAnswer, feedback }: Props) {
   }, [feedback, triggerHaptic]);
 
   const handlePress = (idx: 0 | 1) => {
+    if (disabled) return;
     triggerHaptic('light');
     onAnswer(idx);
   };
@@ -42,8 +44,9 @@ export default function AnswerButtons({ pair, onAnswer, feedback }: Props) {
         {[0, 1].map((idx) => (
           <TouchableOpacity
             key={idx}
-            style={styles.button}
+            style={[styles.button, disabled && { opacity: 0.5 }]}
             onPress={() => handlePress(idx as 0 | 1)}
+            disabled={disabled}
           >
             <Text style={styles.buttonText}>
               {idx ? pair.word2 : pair.word1}

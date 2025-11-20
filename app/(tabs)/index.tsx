@@ -58,12 +58,7 @@ export default function HomeScreen() {
   const { visible, promote } = useContrastPairs(catObj.pairs);
   const selectedPair: Pair = visible[pairIndex];
 
-  const speedTier = groupSpeed[selectedPair.group] ?? 0;
-  const { play, audioModeReady } = useAudio(
-    selectedPair,
-    SPEED_TABLE[speedTier],
-    selectedVoice
-  );
+  const speedTier = groupSpeed[selectedPair.group] ?? 0;\n  const { play, audioModeReady, isSpeaking } = useAudio(\n    selectedPair,\n    SPEED_TABLE[speedTier],\n    selectedVoice\n  );
 
   const handlePlay = useCallback(async () => {
     debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
@@ -166,7 +161,7 @@ export default function HomeScreen() {
       <TouchableOpacity
         style={styles.button}
         onPress={handlePlay}
-        disabled={playedIdx !== null && feedback === null}
+        disabled={!audioModeReady || isSpeaking}
       >
         <Text style={styles.buttonText}>{playAudioText}</Text>
       </TouchableOpacity>
@@ -175,6 +170,7 @@ export default function HomeScreen() {
         pair={selectedPair}
         onAnswer={handleAnswer}
         feedback={feedback}
+        disabled={playedIdx === null}
       />
     </View>
   );

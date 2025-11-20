@@ -1,6 +1,6 @@
 // useThemeColor.ts
-import { useColorScheme } from 'react-native';
 import { Colors } from '@/app/constants/Colors';
+import { useTheme } from '@/app/context/theme';
 
 // The keys in Colors.light & Colors.dark
 type ColorName = keyof typeof Colors.light & keyof typeof Colors.dark;
@@ -21,15 +21,15 @@ export function useThemeColor(
   props: ThemeOverrideProps,
   colorName: ColorName
 ): string {
-  // e.g. "light" | "dark" | "no-preference"
-  const theme = useColorScheme() || 'light';
+  const { theme } = useTheme();
+  const isDark = theme.background === '#000000'; // Check if using dark theme
 
   // If user provided overrides, use them
-  const override = theme === 'dark' ? props.dark : props.light;
+  const override = isDark ? props.dark : props.light;
   if (override) {
     return override;
   }
 
   // Otherwise fallback to Colors.ts
-  return theme === 'dark' ? Colors.dark[colorName] : Colors.light[colorName];
+  return isDark ? Colors.dark[colorName] : Colors.light[colorName];
 }

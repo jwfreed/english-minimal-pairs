@@ -19,13 +19,13 @@ export default function InfoScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        styles.infoCard,
-        { backgroundColor: themeColors.background },
-      ]}
+      style={{ flex: 1, backgroundColor: themeColors.background }}
+      contentContainerStyle={styles.contentContainer}
     >
-      <Text style={styles.infoTitle}>{translate(tKeys.titleOne)}</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{translate(tKeys.titleOne)}</Text>
+      </View>
+      
       <Text style={styles.infoText}>{translate(tKeys.infoOne)}</Text>
 
       <Text style={styles.infoTitle}>{translate(tKeys.titleTwo)}</Text>
@@ -36,10 +36,10 @@ export default function InfoScreen() {
 
       {/* App Info Section */}
       <View style={[styles.section, { marginTop: 32 }]}>
-        <Text style={[styles.sectionTitle, { padding: 16, paddingBottom: 0 }]}>
+        <Text style={[styles.sectionTitle, { padding: 16, paddingBottom: 8 }]}>
           {translate(tKeys.appInfo)}
         </Text>
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, { paddingHorizontal: 16 }]}>
           <Text style={styles.infoLabel}>
             {translate(tKeys.version)}
           </Text>
@@ -47,7 +47,7 @@ export default function InfoScreen() {
             {appVersion}
           </Text>
         </View>
-        <View style={styles.infoRow}>
+        <View style={[styles.infoRow, { paddingHorizontal: 16, paddingBottom: 8 }]}>
           <Text style={styles.infoLabel}>
             {translate(tKeys.build)}
           </Text>
@@ -56,6 +56,8 @@ export default function InfoScreen() {
           </Text>
         </View>
       </View>
+      
+      <View style={styles.footer} />
     </ScrollView>
   );
 }

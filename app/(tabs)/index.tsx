@@ -73,19 +73,28 @@ export default function HomeScreen() {
       return;
     }
     triggerHaptic('light');
-    setFeedback(null);
-    setPlayedIdx(null);
-    setStartTime(Date.now());
-    const idx: 0 | 1 = Math.random() < 0.5 ? 0 : 1;
-    setPlayedIdx(idx);
+    
+    let idxToPlay: 0 | 1;
+
+    // If we are in the middle of a round (played but not answered), replay the same word
+    if (playedIdx !== null && feedback === null) {
+      idxToPlay = playedIdx;
+    } else {
+      // Start new round
+      setFeedback(null);
+      setStartTime(Date.now());
+      idxToPlay = Math.random() < 0.5 ? 0 : 1;
+      setPlayedIdx(idxToPlay);
+    }
+
     try {
-      await play(idx);
+      await play(idxToPlay);
     } catch (error) {
       console.error('Audio playback error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert('Audio Error', errorMessage);
     }
-  }, [audioModeReady, debugLog, play, triggerHaptic]);
+  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback]);
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {
@@ -175,7 +184,7 @@ export default function HomeScreen() {
         pair={selectedPair}
         onAnswer={handleAnswer}
         feedback={feedback}
-        disabled={playedIdx === null}
+        disabled={playedIdx === null || feedback !== null}
       />
     </View>
   );

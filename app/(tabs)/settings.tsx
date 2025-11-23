@@ -64,10 +64,9 @@ export default function SettingsScreen() {
   } = useSettings();
 
   // When language is English, the UI is always in English
-  const effectiveUseEnglishUI = useEnglishUI || language === 'English';
-  // Disable toggle only when it would have no effect (language already English but flag false)
-  const isToggleDisabled = language === 'English' && !useEnglishUI;
-
+  // We use the raw preference for the toggle so users can set it even when in English
+  // const effectiveUseEnglishUI = useEnglishUI || language === 'English';
+  
   const [expandedSection, setExpandedSection] = useState<string | null>('voice');
 
   const toggleSection = useCallback((section: string) => {
@@ -198,17 +197,16 @@ export default function SettingsScreen() {
           style={styles.sectionHeader}
           onPress={handleEnglishUIToggle}
           activeOpacity={0.7}
-          disabled={isToggleDisabled}
         >
           <View style={styles.sectionHeaderLeft}>
             <Ionicons
               name="globe-outline"
               size={24}
-              color={isToggleDisabled ? theme.textSecondary : theme.primary}
+              color={theme.primary}
               style={styles.sectionIcon}
             />
             <View>
-              <Text style={[styles.sectionTitle, isToggleDisabled && { color: theme.textSecondary }]}>
+              <Text style={styles.sectionTitle}>
                 {translate(tKeys.useEnglishUI)}
               </Text>
               <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
@@ -218,12 +216,11 @@ export default function SettingsScreen() {
           </View>
           <View style={[
             localStyles.toggleSwitch,
-            effectiveUseEnglishUI && { backgroundColor: theme.success },
-            isToggleDisabled && { opacity: 0.5 }
+            useEnglishUI && { backgroundColor: theme.success }
           ]}>
             <View style={[
               localStyles.toggleThumb,
-              effectiveUseEnglishUI && localStyles.toggleThumbActive
+              useEnglishUI && localStyles.toggleThumbActive
             ]} />
           </View>
         </TouchableOpacity>

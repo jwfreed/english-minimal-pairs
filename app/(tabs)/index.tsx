@@ -165,27 +165,29 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
 
-      <PairPicker
-        pairs={visible}
-        index={pairIndex}
-        setIndex={handlePairChange}
-        color={theme.text}
-      />
+      <View style={styles.mainCard}>
+        <PairPicker
+          pairs={visible}
+          index={pairIndex}
+          setIndex={handlePairChange}
+          color={theme.text}
+        />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handlePlay}
-        disabled={!audioModeReady || isSpeaking}
-      >
-        <Text style={styles.buttonText}>{playAudioText}</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handlePlay}
+          disabled={!audioModeReady || isSpeaking}
+        >
+          <Text style={styles.buttonText}>{playAudioText}</Text>
+        </TouchableOpacity>
 
-      <AnswerButtons
-        pair={selectedPair}
-        onAnswer={handleAnswer}
-        feedback={feedback}
-        disabled={playedIdx === null || feedback !== null}
-      />
+        <AnswerButtons
+          pair={selectedPair}
+          onAnswer={handleAnswer}
+          feedback={feedback}
+          disabled={playedIdx === null || feedback !== null}
+        />
+      </View>
     </View>
   );
 }

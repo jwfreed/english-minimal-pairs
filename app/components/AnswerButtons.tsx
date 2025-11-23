@@ -44,7 +44,11 @@ export default function AnswerButtons({ pair, onAnswer, feedback, disabled = fal
         {[0, 1].map((idx) => (
           <TouchableOpacity
             key={idx}
-            style={[styles.button, disabled && { opacity: 0.5 }]}
+            style={[
+              styles.button, 
+              { flex: 1, marginTop: 0 }, // Override button styles for row layout
+              disabled && { opacity: 0.5 }
+            ]}
             onPress={() => handlePress(idx as 0 | 1)}
             disabled={disabled}
           >

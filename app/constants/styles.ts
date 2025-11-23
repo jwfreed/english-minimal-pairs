@@ -57,18 +57,21 @@ const createStyles = (colors: ThemeColors) =>
     container: {
       flex: 1,
       alignItems: 'center',
-      paddingTop: 20,
+      paddingTop: 40, // More top padding
+      paddingHorizontal: 20,
       backgroundColor: colors.background,
     },
     title: {
-      fontSize: 24,
-      fontWeight: '600',
-      marginBottom: 10,
+      fontSize: 28, // Larger title
+      fontWeight: '700',
+      marginBottom: 24,
       color: colors.text,
+      textAlign: 'center',
     },
     paragraph: {
       ...baseFont(colors.text),
       textAlign: 'center',
+      lineHeight: 24, // Better line height
     },
     chartTitle: {
       fontSize: 16,
@@ -145,18 +148,21 @@ const createStyles = (colors: ThemeColors) =>
     },
     button: {
       backgroundColor: colors.primary,
-      paddingVertical: padding.vertical,
-      paddingHorizontal: padding.horizontal,
-      borderRadius: 12,
+      paddingVertical: 16, // Taller buttons
+      paddingHorizontal: 32,
+      borderRadius: 16, // More rounded
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 8,
+      marginTop: 16,
+      width: '100%', // Full width buttons in their container
+      maxWidth: 340,
       ...getShadowStyles(),
     },
     buttonText: {
       color: colors.buttonText,
-      fontSize: 16,
-      fontWeight: 'bold',
+      fontSize: 18, // Larger text
+      fontWeight: '700',
+      letterSpacing: 0.5,
     },
     buttonPressed: {
       backgroundColor: '#D76D1F',
@@ -171,17 +177,19 @@ const createStyles = (colors: ThemeColors) =>
 
     answerContainer: {
       position: 'relative',
-      width: '80%',
-      height: 100,
+      width: '100%',
+      maxWidth: 340,
+      height: 140, // Taller container
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 16,
+      marginTop: 24,
     },
     buttonRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       width: '100%',
       alignItems: 'center',
+      gap: 16, // Add gap between buttons
     },
     feedbackOverlay: {
       position: 'absolute',
@@ -261,6 +269,16 @@ const createStyles = (colors: ThemeColors) =>
     },
 
     // ========== Shared Section/Card Styles ==========
+    mainCard: {
+      width: '100%',
+      maxWidth: 400,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 24,
+      padding: 24,
+      alignItems: 'center',
+      ...getShadowStyles(),
+      marginTop: 10,
+    },
     section: {
       borderRadius: 12,
       marginBottom: 16,

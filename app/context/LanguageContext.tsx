@@ -212,22 +212,27 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         // Case 2: System language is English but region supports another language
-        // Example: en-JP (English in Japan) → App: Japanese, UI: English
+        // Example: en-JP (English in Japan) → App: Japanese, UI: Japanese (English UI disabled)
         else if (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage]) {
           setLanguageState(regionLanguage);
           if (!hasManualEnglishUIOverride) {
-            setUseEnglishUIState(true);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
+            setUseEnglishUIState(false);
+            await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
           }
         }
         // Case 3: System language matches region (or no specific region handling needed)
         // Example: ja-JP (Japanese in Japan) → App: Japanese, UI: Japanese
+        // Example: en-US (English in US) → App: English, UI: English
         else if (alternateLanguages[detectedLanguage]) {
           setLanguageState(detectedLanguage);
-          // System language is supported and not English-with-region, use native UI
-          if (!hasManualEnglishUIOverride && detectedLanguage !== 'English') {
-            setUseEnglishUIState(false);
-            await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
+          if (!hasManualEnglishUIOverride) {
+            if (detectedLanguage === 'English') {
+              setUseEnglishUIState(true);
+              await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
+            } else {
+              setUseEnglishUIState(false);
+              await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
+            }
           }
         }
         // Case 4: Neither system language nor region is supported

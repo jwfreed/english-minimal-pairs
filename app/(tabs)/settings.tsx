@@ -63,9 +63,9 @@ export default function SettingsScreen() {
     refreshVoices,
   } = useSettings();
 
-  // When language is English, the UI is always in English
-  // We use the raw preference for the toggle so users can set it even when in English
-  // const effectiveUseEnglishUI = useEnglishUI || language === 'English';
+  // When language is English, the UI is always in English. We still allow users
+  // to toggle the stored preference so it takes effect when they switch languages.
+  const effectiveUseEnglishUI = useEnglishUI || language === 'English';
   
   const [expandedSection, setExpandedSection] = useState<string | null>('voice');
 
@@ -216,11 +216,11 @@ export default function SettingsScreen() {
           </View>
           <View style={[
             localStyles.toggleSwitch,
-            useEnglishUI && { backgroundColor: theme.success }
+            effectiveUseEnglishUI && { backgroundColor: theme.success }
           ]}>
             <View style={[
               localStyles.toggleThumb,
-              useEnglishUI && localStyles.toggleThumbActive
+              effectiveUseEnglishUI && localStyles.toggleThumbActive
             ]} />
           </View>
         </TouchableOpacity>

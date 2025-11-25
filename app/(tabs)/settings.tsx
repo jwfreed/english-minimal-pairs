@@ -216,11 +216,11 @@ export default function SettingsScreen() {
           </View>
           <View style={[
             localStyles.toggleSwitch,
-            effectiveUseEnglishUI && { backgroundColor: theme.success }
+            useEnglishUI && { backgroundColor: theme.success }
           ]}>
             <View style={[
               localStyles.toggleThumb,
-              effectiveUseEnglishUI && localStyles.toggleThumbActive
+              useEnglishUI && localStyles.toggleThumbActive
             ]} />
           </View>
         </TouchableOpacity>

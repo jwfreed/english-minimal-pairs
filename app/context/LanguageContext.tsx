@@ -200,49 +200,53 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         const regionLanguage = getLanguageFromRegion(regionCode);
         const isEnglishRegion = isEnglishSpeakingRegion(regionCode);
         
-        // Case 1: System language is one of our supported languages in an English-speaking region
-        // Example: ja-US (Japanese in US) → App: Japanese, UI: English
-        if (isEnglishRegion && 
-            languageCode !== 'en' && 
-            alternateLanguages[detectedLanguage]) {
+        // Scenario 1: Locale English, System English
+        // Example: en-US -> App: Japanese (top language), UI: English (Enabled)
+        if (isEnglishRegion && languageCode === 'en') {
+          // Default to Japanese (first non-English language) if system is English
+          // This encourages learning a new language for native English speakers
+          const topLanguage = '日本語'; 
+          setLanguageState(topLanguage);
+          if (!hasManualEnglishUIOverride) {
+            setUseEnglishUIState(true);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
+          }
+        }
+        // Scenario 2: Locale English, System Supported (non-English)
+        // Example: ja-US -> App: Japanese, UI: English (Enabled)
+        else if (isEnglishRegion && alternateLanguages[detectedLanguage] && detectedLanguage !== 'English') {
           setLanguageState(detectedLanguage);
           if (!hasManualEnglishUIOverride) {
             setUseEnglishUIState(true);
             await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
           }
         }
-        // Case 2: System language is English but region supports another language
-        // Example: en-JP (English in Japan) → App: Japanese, UI: Japanese (English UI disabled)
-        else if (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage]) {
-          setLanguageState(regionLanguage);
+        // Scenario 3: Locale Supported, System Supported
+        // Example: ja-JP -> App: Japanese, UI: Native (Disabled)
+        else if (!isEnglishRegion && alternateLanguages[detectedLanguage] && detectedLanguage !== 'English') {
+          setLanguageState(detectedLanguage);
           if (!hasManualEnglishUIOverride) {
             setUseEnglishUIState(false);
             await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
           }
         }
-        // Case 3: System language matches region (or no specific region handling needed)
-        // Example: ja-JP (Japanese in Japan) → App: Japanese, UI: Japanese
-        // Example: en-US (English in US) → App: English, UI: English
-        else if (alternateLanguages[detectedLanguage]) {
-          setLanguageState(detectedLanguage);
-          if (!hasManualEnglishUIOverride) {
-            if (detectedLanguage === 'English') {
-              setUseEnglishUIState(true);
-              await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
-            } else {
-              setUseEnglishUIState(false);
-              await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
-            }
-          }
-        }
-        // Case 4: Neither system language nor region is supported
-        // Example: fr-FR (French in France) → App: English, UI: English
-        else {
+        // Scenario 4: Locale Supported, System English
+        // Example: en-JP -> App: Japanese (from region), UI: English (Enabled)
+        else if (!isEnglishRegion && languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage]) {
+          setLanguageState(regionLanguage);
           if (!hasManualEnglishUIOverride) {
             setUseEnglishUIState(true);
             await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
           }
+        }
+        // Fallback: Unsupported locale/system
+        // Example: fr-FR -> App: English, UI: English (Enabled)
+        else {
           setLanguageState(DEFAULT_LANGUAGE);
+          if (!hasManualEnglishUIOverride) {
+            setUseEnglishUIState(true);
+            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
+          }
         }
       }
       

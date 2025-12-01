@@ -26,7 +26,7 @@ export default function InfoScreen() {
         <View style={styles.header}>
           <Image 
             source={require('@/assets/images/info-intro.png')} 
-            style={{ width: 60, height: 60, marginBottom: 16, alignSelf: 'center' }}
+            style={{ width: 60, height: 60, marginBottom: 16, alignSelf: 'center', borderRadius: 12 }}
             resizeMode="contain"
           />
           <Text style={styles.headerTitle}>{translate(tKeys.titleOne)}</Text>
@@ -38,7 +38,7 @@ export default function InfoScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 12 }}>
             <Image 
               source={require('@/assets/images/info-goal.png')} 
-              style={{ width: 32, height: 32, marginRight: 12 }}
+              style={{ width: 32, height: 32, marginRight: 12, borderRadius: 8 }}
               resizeMode="contain"
             />
             <Text style={[styles.infoTitle, { marginTop: 0, marginBottom: 0 }]}>{translate(tKeys.titleTwo)}</Text>
@@ -48,7 +48,7 @@ export default function InfoScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 12 }}>
             <Image 
               source={require('@/assets/images/info-howto.png')} 
-              style={{ width: 32, height: 32, marginRight: 12 }}
+              style={{ width: 32, height: 32, marginRight: 12, borderRadius: 8 }}
               resizeMode="contain"
             />
             <Text style={[styles.infoTitle, { marginTop: 0, marginBottom: 0 }]}>{translate(tKeys.titleThree)}</Text>

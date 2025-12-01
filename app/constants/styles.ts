@@ -155,7 +155,7 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
       marginTop: 16,
       width: '100%', // Full width buttons in their container
-      maxWidth: 340,
+      maxWidth: 500,
       ...getShadowStyles(),
     },
     buttonText: {
@@ -178,7 +178,7 @@ const createStyles = (colors: ThemeColors) =>
     answerContainer: {
       position: 'relative',
       width: '100%',
-      maxWidth: 340,
+      maxWidth: 500,
       height: 140, // Taller container
       alignItems: 'center',
       justifyContent: 'center',
@@ -271,7 +271,7 @@ const createStyles = (colors: ThemeColors) =>
     // ========== Shared Section/Card Styles ==========
     mainCard: {
       width: '100%',
-      maxWidth: 400,
+      maxWidth: 600,
       backgroundColor: colors.cardBackground,
       borderRadius: 24,
       padding: 24,

@@ -1,6 +1,6 @@
 // app/(tabs)/results.tsx
 import React, { useMemo, useCallback } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { minimalPairs } from '@/app/constants/minimalPairs';
 import { useProgress } from '@/app/context/PairProgressContext';
@@ -18,6 +18,10 @@ export default function ResultsScreen() {
   const { categoryIndex } = useCategory();
   const themeColors = useAllThemeColors();
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
+  const { width } = useWindowDimensions();
+
+  const numColumns = width > 700 ? 2 : 1;
+  const gap = 16;
 
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
@@ -51,19 +55,30 @@ export default function ResultsScreen() {
   }, [catObj]);
 
   const renderItem = useCallback(
-    ({ item }: { item: any }) => {
+    ({ item, index }: { item: any; index: number }) => {
       const stats = progress[item.id] || { attempts: [] };
+      
+      // Add spacing for grid layout
+      const isLeftColumn = index % numColumns === 0;
+      const itemStyle = numColumns > 1 ? {
+        flex: 1,
+        marginRight: isLeftColumn ? gap / 2 : 0,
+        marginLeft: !isLeftColumn ? gap / 2 : 0,
+      } : {};
+
       return (
-        <PairItem
-          item={item}
-          stats={stats}
-          translate={translate}
-          themeColors={themeColors}
-          styles={styles}
-        />
+        <View style={itemStyle}>
+          <PairItem
+            item={item}
+            stats={stats}
+            translate={translate}
+            themeColors={themeColors}
+            styles={styles}
+          />
+        </View>
       );
     },
-    [progress, translate, themeColors, styles]
+    [progress, translate, themeColors, styles, numColumns]
   );
 
   return (
@@ -71,13 +86,18 @@ export default function ResultsScreen() {
       <Text style={[styles.title, { color: themeColors.text, margin: 16 }]}>
         {translate(tKeys.accuracyTrend)}
       </Text>
-      <FlashList
-        contentContainerStyle={{ padding: 16 }}
-        data={flattenedPairs}
-        extraData={progress}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-      />
+      <View style={{ flex: 1, paddingHorizontal: 16 }}>
+        <FlashList
+          data={flattenedPairs}
+          extraData={[progress, numColumns]}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          numColumns={numColumns}
+          key={numColumns.toString()} // Force re-render when columns change
+          estimatedItemSize={200}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      </View>
     </View>
   );
 }

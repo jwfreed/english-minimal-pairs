@@ -75,13 +75,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'System Settings',
     useEnglishUI: 'Use English UI',
     englishUIDescription: 'Display interface in English',
-    titleOne: '👂 Train Your Ears, Transform Your Listening!',
+    titleOne: 'Train Your Ears, Transform Your Listening!',
     infoOne:
       'Many English learners struggle to distinguish between "ship" and "sheep" or "light" and "right". This app helps you train your ears to hear these subtle differences.',
-    titleTwo: '🎯 Goal',
+    titleTwo: 'Goal',
     infoTwo:
       'Aim to practice each pair for at least 60 minutes total. It may seem difficult at first, but your brain will adapt with practice!',
-    titleThree: '✅ How It Works',
+    titleThree: 'How It Works',
     infoThree:
       '• Tap "Play Audio" to hear a word\n• Select the word you heard\n• Get immediate feedback\n• Track your progress over time',
   },
@@ -117,13 +117,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'システム設定',
     useEnglishUI: '英語UIを使用',
     englishUIDescription: 'インターフェースを英語で表示',
-    titleOne: '👂 耳を鍛えて、リスニング力を変えよう！',
+    titleOne: '耳を鍛えて、リスニング力を変えよう！',
     infoOne:
       '多くの英語学習者は "ship" と "sheep"、"light" と "right" の違いを聞き取れません。このアプリは、そうした違いを聞き取れる耳を作るためのトレーニングを提供します。',
-    titleTwo: '🎯 目標',
+    titleTwo: '目標',
     infoTwo:
       '各ペアを合計60分以上練習することを目指しましょう。最初は難しく感じるかもしれませんが、練習を重ねることで脳が適応してきます！',
-    titleThree: '✅ アプリの使い方',
+    titleThree: 'アプリの使い方',
     infoThree:
       '•「オーディオを再生」をタップして単語を聞く\n• 聞こえた単語を選択\n• 正解・不正解がすぐに表示\n• 練習履歴が保存され、進捗が確認できます',
   },
@@ -156,12 +156,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: '系统设置',
     useEnglishUI: '使用英文界面',
     englishUIDescription: '以英文显示界面',
-    titleOne: '👂 训练你的耳朵，改善听力理解！',
+    titleOne: '训练你的耳朵，改善听力理解！',
     infoOne:
       '许多英语学习者分不清 "ship" 和 "sheep" 或 "light" 和 "right"。本应用帮助你训练听觉，分辨这些细微差别。',
-    titleTwo: '🎯 目标',
+    titleTwo: '目标',
     infoTwo: '每对词至少练习60分钟。起初可能很难，但练习多了，大脑会适应！',
-    titleThree: '✅ 使用方法',
+    titleThree: '使用方法',
     infoThree:
       '• 点击“播放音频”听单词\n• 选择你听到的单词\n• 立即获得反馈\n• 记录练习进度，查看成长',
   },
@@ -193,13 +193,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'ตามระบบ',
     useEnglishUI: 'ใช้ภาษาอังกฤษ',
     englishUIDescription: 'แสดงหน้าจอเป็นภาษาอังกฤษ',
-    titleOne: '👂 ฝึกหูของคุณ เปลี่ยนการฟังของคุณ!',
+    titleOne: 'ฝึกหูของคุณ เปลี่ยนการฟังของคุณ!',
     infoOne:
       'ผู้เรียนภาษาอังกฤษหลายคนแยกไม่ออกระหว่างคำว่า "ship" กับ "sheep" หรือ "light" กับ "right" แอปนี้ช่วยฝึกให้คุณได้ยินความแตกต่างนั้น',
-    titleTwo: '🎯 เป้าหมาย',
+    titleTwo: 'เป้าหมาย',
     infoTwo:
       'ฝึกแต่ละคู่ให้ครบอย่างน้อย 60 นาที ไม่ต้องกังวลถ้ายังยากในตอนแรก สมองจะค่อยๆ ปรับตัว',
-    titleThree: '✅ วิธีใช้งาน',
+    titleThree: 'วิธีใช้งาน',
     infoThree:
       '• แตะ “เล่นเสียง” เพื่อฟัง\n• เลือกคำที่คุณได้ยิน\n• รับคำตอบถูก/ผิดทันที\n• ติดตามความก้าวหน้าของคุณ',
   },
@@ -231,13 +231,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'Configuración del sistema',
     useEnglishUI: 'Usar interfaz en inglés',
     englishUIDescription: 'Mostrar interfaz en inglés',
-    titleOne: '👂 ¡Entrena tus oídos y mejora tu comprensión auditiva!',
+    titleOne: '¡Entrena tus oídos y mejora tu comprensión auditiva!',
     infoOne:
       'Muchos estudiantes no distinguen "ship" de "sheep" o "light" de "right". Esta app te entrena para reconocer esas diferencias.',
-    titleTwo: '🎯 Meta',
+    titleTwo: 'Meta',
     infoTwo:
       'Practica al menos 60 minutos por cada pareja. ¡Tu oído mejorará con el tiempo!',
-    titleThree: '✅ Cómo funciona',
+    titleThree: 'Cómo funciona',
     infoThree:
       '• Toca "Reproducir Audio" para escuchar\n• Elige la palabra que crees haber oído\n• Recibe retroalimentación inmediata\n• Tu progreso se guarda automáticamente',
   },
@@ -269,13 +269,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'إعداد النظام',
     useEnglishUI: 'استخدام الواجهة الإنجليزية',
     englishUIDescription: 'عرض الواجهة باللغة الإنجليزية',
-    titleOne: '👂 درّب أذنيك وغيّر مهارات الاستماع!',
+    titleOne: 'درّب أذنيك وغيّر مهارات الاستماع!',
     infoOne:
       'الكثير من متعلمي اللغة الإنجليزية لا يميزون بين "ship" و "sheep" أو "light" و "right". هذا التطبيق يساعدك على تحسين تمييز هذه الأصوات.',
-    titleTwo: '🎯 الهدف',
+    titleTwo: 'الهدف',
     infoTwo:
       'خصص 60 دقيقة على الأقل لكل زوج كلمات. لا تقلق إذا بدا الأمر صعبًا في البداية — سيتكيف دماغك مع الوقت.',
-    titleThree: '✅ طريقة الاستخدام',
+    titleThree: 'طريقة الاستخدام',
     infoThree:
       '• اضغط على "تشغيل الصوت" للاستماع\n• اختر الكلمة التي سمعتها\n• ستحصل على نتيجة فورية\n• يتم حفظ تقدمك تلقائيًا',
   },
@@ -307,13 +307,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'Настройки системы',
     useEnglishUI: 'Использовать английский интерфейс',
     englishUIDescription: 'Отображать интерфейс на английском',
-    titleOne: '👂 Тренируй слух — улучшай понимание!',
+    titleOne: 'Тренируй слух — улучшай понимание!',
     infoOne:
       'Многие изучающие английский не различают "ship" и "sheep" или "light" и "right". Это приложение поможет научиться их слышать.',
-    titleTwo: '🎯 Цель',
+    titleTwo: 'Цель',
     infoTwo:
       'Практикуй каждую пару минимум 60 минут. Сложно сначала — но мозг привыкнет!',
-    titleThree: '✅ Как это работает',
+    titleThree: 'Как это работает',
     infoThree:
       '• Нажми “Воспроизвести аудио”\n• Выбери слово, которое услышал\n• Мгновенная обратная связь\n• Прогресс сохраняется',
   },
@@ -345,13 +345,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: '시스템 설정',
     useEnglishUI: '영어 UI 사용',
     englishUIDescription: '인터페이스를 영어로 표시',
-    titleOne: '👂 귀를 훈련하여 듣기 능력을 향상시키세요!',
+    titleOne: '귀를 훈련하여 듣기 능력을 향상시키세요!',
     infoOne:
       '많은 영어 학습자들이 "ship"과 "sheep", "light"과 "right"의 차이를 구별하지 못합니다. 이 앱은 그런 구별을 가능하게 도와줍니다.',
-    titleTwo: '🎯 목표',
+    titleTwo: '목표',
     infoTwo:
       '각 단어 쌍을 최소 60분 이상 연습하세요. 처음에는 어려워도 점점 더 잘 들릴 거예요!',
-    titleThree: '✅ 사용 방법',
+    titleThree: '사용 방법',
     infoThree:
       '• "오디오 재생"을 눌러 단어 듣기\n• 들은 단어 선택하기\n• 즉시 피드백 받기\n• 진행 상황 자동 저장',
   },
@@ -383,13 +383,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'सिस्टम सेटिंग/سسٹم کی ترتیب',
     useEnglishUI: 'अंग्रेज़ी UI उपयोग करें/انگریزی UI استعمال کریں',
     englishUIDescription: 'इंटरफ़ेस अंग्रेज़ी में दिखाएं/انٹرفیس انگریزی میں دکھائیں',
-    titleOne: '👂 अपने कानों को प्रशिक्षित करें, सुनने की क्षमता सुधारें!',
+    titleOne: 'अपने कानों को प्रशिक्षित करें, सुनने की क्षमता सुधारें!',
     infoOne:
       '"ship" और "sheep" या "light" और "right" जैसे शब्दों में फर्क करना कठिन हो सकता है। यह ऐप आपको वह फर्क सुनने में मदद करता है।',
-    titleTwo: '🎯 लक्ष्य',
+    titleTwo: 'लक्ष्य',
     infoTwo:
       'हर जोड़ी पर कम से कम 60 मिनट अभ्यास करें। शुरुआत में कठिन लग सकता है, लेकिन अभ्यास से सुधार होगा!',
-    titleThree: '✅ यह कैसे काम करता है',
+    titleThree: 'यह कैसे काम करता है',
     infoThree:
       '• "ऑडियो चलाएँ" पर टैप करें\n• सुनी हुई शब्द चुनें\n• तुरंत प्रतिक्रिया पाएं\n• आपकी प्रगति सहेजी जाती है',
   },
@@ -421,13 +421,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'Configuração do sistema',
     useEnglishUI: 'Usar interface em inglês',
     englishUIDescription: 'Exibir interface em inglês',
-    titleOne: '👂 Treine seus ouvidos, melhore sua escuta!',
+    titleOne: 'Treine seus ouvidos, melhore sua escuta!',
     infoOne:
       'Muitos alunos de inglês não distinguem "ship" de "sheep" ou "light" de "right". Este app ajuda a treinar sua audição para perceber essas diferenças.',
-    titleTwo: '🎯 Objetivo',
+    titleTwo: 'Objetivo',
     infoTwo:
       'Pratique pelo menos 60 minutos com cada par. No início pode ser difícil, mas seu cérebro vai se adaptar!',
-    titleThree: '✅ Como funciona',
+    titleThree: 'Como funciona',
     infoThree:
       '• Toque em "Reproduzir áudio" para ouvir\n• Escolha a palavra que você ouviu\n• Receba feedback imediato\n• Acompanhe seu progresso automaticamente',
   },
@@ -459,13 +459,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'Cài đặt hệ thống',
     useEnglishUI: 'Sử dụng giao diện tiếng Anh',
     englishUIDescription: 'Hiển thị giao diện bằng tiếng Anh',
-    titleOne: '👂 Luyện tai, cải thiện kỹ năng nghe!',
+    titleOne: 'Luyện tai, cải thiện kỹ năng nghe!',
     infoOne:
       'Nhiều người học tiếng Anh không phân biệt được "ship" và "sheep", hoặc "light" và "right". Ứng dụng này giúp bạn luyện nghe các âm thanh khó phân biệt.',
-    titleTwo: '🎯 Mục tiêu',
+    titleTwo: 'Mục tiêu',
     infoTwo:
       'Dành ít nhất 60 phút luyện tập mỗi cặp. Ban đầu có thể khó, nhưng não bạn sẽ thích nghi dần!',
-    titleThree: '✅ Cách sử dụng',
+    titleThree: 'Cách sử dụng',
     infoThree:
       '• Nhấn "Phát âm thanh" để nghe\n• Chọn từ bạn nghe thấy\n• Nhận phản hồi ngay lập tức\n• Tiến độ luyện tập sẽ được lưu lại',
   },
@@ -497,13 +497,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'Sistem ayarı',
     useEnglishUI: 'İngilizce arayüz kullan',
     englishUIDescription: 'Arayüzü İngilizce göster',
-    titleOne: '👂 Kulaklarınızı eğitin, dinleme becerinizi geliştirin!',
+    titleOne: 'Kulaklarınızı eğitin, dinleme becerinizi geliştirin!',
     infoOne:
       'Birçok İngilizce öğrenen kişi "ship" ve "sheep" ya da "light" ve "right" arasındaki farkı duyamaz. Bu uygulama size bu farkları duymayı öğretir.',
-    titleTwo: '🎯 Hedef',
+    titleTwo: 'Hedef',
     infoTwo:
       'Her eşleşme için en az 60 dakika pratik yapın. Başta zor olabilir ama zamanla beyniniz alışır!',
-    titleThree: '✅ Nasıl çalışır',
+    titleThree: 'Nasıl çalışır',
     infoThree:
       '• Kelimeyi duymak için "Ses çal" tuşuna basın\n• Duyduğunuz kelimeyi seçin\n• Anında geri bildirim alın\n• İlerlemeniz kaydedilir',
   },
@@ -535,13 +535,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'تنظیمات سیستم',
     useEnglishUI: 'استفاده از رابط انگلیسی',
     englishUIDescription: 'نمایش رابط به زبان انگلیسی',
-    titleOne: '👂 گوش‌های خود را آموزش دهید و مهارت شنیداری را بهبود دهید!',
+    titleOne: 'گوش‌های خود را آموزش دهید و مهارت شنیداری را بهبود دهید!',
     infoOne:
       'بسیاری از زبان‌آموزان تفاوت "ship" و "sheep" یا "light" و "right" را تشخیص نمی‌دهند. این اپ به شما کمک می‌کند تا این تفاوت‌ها را بشنوید.',
-    titleTwo: '🎯 هدف',
+    titleTwo: 'هدف',
     infoTwo:
       'برای هر جفت کلمه، حداقل ۶۰ دقیقه تمرین کنید. در ابتدا ممکن است سخت باشد، اما ذهن شما با تمرین سازگار می‌شود.',
-    titleThree: '✅ نحوه استفاده',
+    titleThree: 'نحوه استفاده',
     infoThree:
       '• برای شنیدن کلمه، "پخش صدا" را بزنید\n• کلمه‌ای که شنیدید را انتخاب کنید\n• بلافاصله بازخورد بگیرید\n• پیشرفت شما ذخیره می‌شود',
   },
@@ -573,12 +573,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: '系統設定',
     useEnglishUI: '使用英文介面',
     englishUIDescription: '以英文顯示介面',
-    titleOne: '👂 訓練耳朵，改善聽力！',
+    titleOne: '訓練耳朵，改善聽力！',
     infoOne:
       '好多學英文嘅人都分唔清 "ship" 同 "sheep" 或 "light" 同 "right"。呢個應用程式幫你聽得出呢啲分別。',
-    titleTwo: '🎯 目標',
+    titleTwo: '目標',
     infoTwo: '每對最少練習60分鐘。剛開始可能會難，但你嘅腦會習慣嘅！',
-    titleThree: '✅ 使用方法',
+    titleThree: '使用方法',
     infoThree:
       '• 撳「播放音頻」去聽一個字\n• 揀返你聽到嘅字\n• 即時睇答啱定唔啱\n• 系統會自動記錄你嘅進度',
   },
@@ -610,13 +610,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     systemMode: 'Pengaturan sistem',
     useEnglishUI: 'Gunakan UI Bahasa Inggris',
     englishUIDescription: 'Tampilkan antarmuka dalam Bahasa Inggris',
-    titleOne: '👂 Latih pendengaranmu, tingkatkan kemampuan listening!',
+    titleOne: 'Latih pendengaranmu, tingkatkan kemampuan listening!',
     infoOne:
       'Banyak pelajar bingung membedakan "ship" dan "sheep" atau "light" dan "right". Aplikasi ini membantu kamu melatih pendengaran untuk membedakan bunyi tersebut.',
-    titleTwo: '🎯 Tujuan',
+    titleTwo: 'Tujuan',
     infoTwo:
       'Latih setiap pasangan kata selama minimal 60 menit. Awalnya mungkin sulit, tapi otakmu akan terbiasa.',
-    titleThree: '✅ Cara penggunaan',
+    titleThree: 'Cara penggunaan',
     infoThree:
       '• Tekan "Putar Audio" untuk mendengarkan\n• Pilih kata yang kamu dengar\n• Dapatkan umpan balik langsung\n• Kemajuanmu akan tersimpan secara otomatis',
   },

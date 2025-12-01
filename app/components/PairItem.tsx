@@ -68,7 +68,7 @@ const PairItem: React.FC<Props> = React.memo(
             <Text style={[styles.title, { color: themeColors.text }]}>
               {`${item.word1} - ${item.word2}`}
             </Text>
-            <Text style={{ color: themeColors.text }}>
+            <Text style={styles.pairItemStatsText}>
               {`${translate(tKeys.total)}: ${
                 attempts.filter((a) => a.isCorrect).length
               }/${attempts.length} (${rawAvg.toFixed(1)}%) — ${translate(
@@ -81,14 +81,7 @@ const PairItem: React.FC<Props> = React.memo(
             <View style={styles.pairItemRightColumn}>
               <AccuracyTimeChart practiceData={trendData} />
               <View style={{ marginTop: 10 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    marginBottom: 6,
-                    fontWeight: '600',
-                    color: themeColors.text,
-                  }}
-                >
+                <Text style={styles.timePracticedText}>
                   {`${translate(tKeys.timePracticed)}: ${displayPracticeMin.toFixed(
                     1
                   )} / ${MAX_PRACTICE_MIN} ${translate(tKeys.min)}`}

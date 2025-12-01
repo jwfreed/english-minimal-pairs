@@ -1,7 +1,8 @@
 // app/(tabs)/infoScreen.tsx
 import React from 'react';
-import { ScrollView, Text, View, Image } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
+import { Ionicons } from '@expo/vector-icons';
 import createStyles from '@/app/constants/styles';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useAllThemeColors } from '@/app/context/theme';
@@ -11,6 +12,8 @@ export default function InfoScreen() {
   const { translate } = useLanguage();
   const themeColors = useAllThemeColors();
   const styles = createStyles(themeColors);
+  const { width } = useWindowDimensions();
+  const isTablet = width > 700;
 
   // Get app version
   const appVersion = Constants.expoConfig?.version || '1.0.0';
@@ -22,35 +25,54 @@ export default function InfoScreen() {
       style={{ flex: 1, backgroundColor: themeColors.background }}
       contentContainerStyle={styles.contentContainer}
     >
-      <View style={{ width: '100%', maxWidth: 600, alignSelf: 'center' }}>
+      <View style={{ width: '100%', maxWidth: isTablet ? 800 : 600, alignSelf: 'center' }}>
         <View style={styles.header}>
-          <Image 
-            source={require('@/assets/images/info-intro.png')} 
-            style={{ width: 60, height: 60, marginBottom: 16, alignSelf: 'center', borderRadius: 12 }}
-            resizeMode="contain"
-          />
+          <View style={{
+            width: isTablet ? 100 : 60,
+            height: isTablet ? 100 : 60,
+            marginBottom: 16,
+            alignSelf: 'center',
+            borderRadius: isTablet ? 20 : 12,
+            backgroundColor: themeColors.primary,
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Ionicons name="ear-outline" size={isTablet ? 60 : 36} color="white" />
+          </View>
           <Text style={styles.headerTitle}>{translate(tKeys.titleOne)}</Text>
         </View>
         
-        <View style={[styles.section, { padding: 20 }]}>
+        <View style={[styles.section, { padding: isTablet ? 32 : 20 }]}>
           <Text style={styles.infoText}>{translate(tKeys.infoOne)}</Text>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 12 }}>
-            <Image 
-              source={require('@/assets/images/info-goal.png')} 
-              style={{ width: 32, height: 32, marginRight: 12, borderRadius: 8 }}
-              resizeMode="contain"
-            />
+            <View style={{
+              width: isTablet ? 64 : 32,
+              height: isTablet ? 64 : 32,
+              marginRight: 12,
+              borderRadius: isTablet ? 16 : 8,
+              backgroundColor: themeColors.primary,
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Ionicons name="flag-outline" size={isTablet ? 36 : 20} color="white" />
+            </View>
             <Text style={[styles.infoTitle, { marginTop: 0, marginBottom: 0 }]}>{translate(tKeys.titleTwo)}</Text>
           </View>
           <Text style={styles.infoText}>{translate(tKeys.infoTwo)}</Text>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 12 }}>
-            <Image 
-              source={require('@/assets/images/info-howto.png')} 
-              style={{ width: 32, height: 32, marginRight: 12, borderRadius: 8 }}
-              resizeMode="contain"
-            />
+            <View style={{
+              width: isTablet ? 64 : 32,
+              height: isTablet ? 64 : 32,
+              marginRight: 12,
+              borderRadius: isTablet ? 16 : 8,
+              backgroundColor: themeColors.primary,
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Ionicons name="list-outline" size={isTablet ? 36 : 20} color="white" />
+            </View>
             <Text style={[styles.infoTitle, { marginTop: 0, marginBottom: 0 }]}>{translate(tKeys.titleThree)}</Text>
           </View>
           <Text style={styles.infoList}>{translate(tKeys.infoThree)}</Text>

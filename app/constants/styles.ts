@@ -1,6 +1,9 @@
 // styles.ts
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, Dimensions } from 'react-native';
 import { Colors } from './Colors';
+
+const { width } = Dimensions.get('window');
+const isTablet = width > 700;
 
 export type ThemeColors = {
   background: string;
@@ -62,7 +65,7 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.background,
     },
     title: {
-      fontSize: 28, // Larger title
+      fontSize: isTablet ? 42 : 28, // Larger title
       fontWeight: '700',
       marginBottom: 24,
       color: colors.text,
@@ -92,7 +95,7 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: 16,
     },
     infoTitle: {
-      fontSize: 22,
+      fontSize: isTablet ? 32 : 22,
       fontWeight: '800',
       marginTop: 28,
       marginBottom: 10,
@@ -100,12 +103,14 @@ const createStyles = (colors: ThemeColors) =>
     },
     infoText: {
       ...baseFont(colors.text),
-      lineHeight: 26,
+      fontSize: isTablet ? 24 : 16,
+      lineHeight: isTablet ? 36 : 26,
       marginBottom: 12,
     },
     infoList: {
       ...baseFont(colors.text),
-      lineHeight: 28,
+      fontSize: isTablet ? 24 : 16,
+      lineHeight: isTablet ? 36 : 28,
       marginBottom: 12,
       paddingLeft: 12,
     },
@@ -148,19 +153,19 @@ const createStyles = (colors: ThemeColors) =>
     },
     button: {
       backgroundColor: colors.primary,
-      paddingVertical: 16, // Taller buttons
+      paddingVertical: isTablet ? 24 : 16, // Taller buttons
       paddingHorizontal: 32,
       borderRadius: 16, // More rounded
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 16,
       width: '100%', // Full width buttons in their container
-      maxWidth: 500,
+      maxWidth: isTablet ? 700 : 500,
       ...getShadowStyles(),
     },
     buttonText: {
       color: colors.buttonText,
-      fontSize: 18, // Larger text
+      fontSize: isTablet ? 32 : 18, // Larger text
       fontWeight: '700',
       letterSpacing: 0.5,
     },
@@ -168,7 +173,7 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: '#D76D1F',
     },
     ipaText: {
-      fontSize: 14,
+      fontSize: isTablet ? 24 : 14,
       fontStyle: 'italic',
       color: colors.text,
       textAlign: 'center',
@@ -178,8 +183,8 @@ const createStyles = (colors: ThemeColors) =>
     answerContainer: {
       position: 'relative',
       width: '100%',
-      maxWidth: 500,
-      height: 140, // Taller container
+      maxWidth: isTablet ? 700 : 500,
+      height: isTablet ? 180 : 140, // Taller container
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 24,
@@ -196,12 +201,19 @@ const createStyles = (colors: ThemeColors) =>
       top: 0,
       left: 0,
       right: 0,
+      bottom: 0,
       zIndex: Z_INDEX.feedback,
       alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.6)',
+      borderRadius: 16,
     },
     feedbackSymbol: {
-      fontSize: 64,
+      fontSize: isTablet ? 100 : 80,
       fontWeight: 'bold',
+      textShadowColor: 'rgba(0,0,0,0.2)',
+      textShadowOffset: { width: 0, height: 4 },
+      textShadowRadius: 8,
     },
     correctFeedback: {
       color: colors.success,
@@ -236,7 +248,7 @@ const createStyles = (colors: ThemeColors) =>
     pairItemContainer: {
       marginBottom: 24,
       borderRadius: 12,
-      padding: 12,
+      padding: isTablet ? 20 : 12,
       backgroundColor: 'rgba(255, 255, 255, 0.125)',
     },
     pairItemRow: {
@@ -256,6 +268,17 @@ const createStyles = (colors: ThemeColors) =>
       minWidth: 180,
       maxWidth: '100%',
     },
+    pairItemStatsText: {
+      fontSize: isTablet ? 18 : 14,
+      color: colors.text,
+      marginTop: 4,
+    },
+    timePracticedText: {
+      fontSize: isTablet ? 18 : 14,
+      marginBottom: 6,
+      fontWeight: '600',
+      color: colors.text,
+    },
     progressBarOuter: {
       height: 12,
       width: '100%',
@@ -271,10 +294,10 @@ const createStyles = (colors: ThemeColors) =>
     // ========== Shared Section/Card Styles ==========
     mainCard: {
       width: '100%',
-      maxWidth: 600,
+      maxWidth: isTablet ? 800 : 600,
       backgroundColor: colors.cardBackground,
       borderRadius: 24,
-      padding: 24,
+      padding: isTablet ? 40 : 24,
       alignItems: 'center',
       ...getShadowStyles(),
       marginTop: 10,
@@ -294,7 +317,7 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: 16,
+      padding: isTablet ? 24 : 16,
     },
     sectionHeaderLeft: {
       flexDirection: 'row',
@@ -305,12 +328,12 @@ const createStyles = (colors: ThemeColors) =>
       marginRight: 12,
     },
     sectionTitle: {
-      fontSize: 18,
+      fontSize: isTablet ? 24 : 18,
       fontWeight: '600',
       color: colors.text,
     },
     sectionSubtitle: {
-      fontSize: 14,
+      fontSize: isTablet ? 18 : 14,
       marginTop: 2,
       color: colors.text,
     },
@@ -323,16 +346,19 @@ const createStyles = (colors: ThemeColors) =>
     header: {
       marginBottom: 24,
       paddingTop: 8,
+      alignItems: 'center',
     },
     headerTitle: {
-      fontSize: 32,
+      fontSize: isTablet ? 48 : 32,
       fontWeight: 'bold',
       marginBottom: 4,
       color: colors.text,
+      textAlign: 'center',
     },
     headerSubtitle: {
-      fontSize: 16,
+      fontSize: isTablet ? 24 : 16,
       color: colors.text,
+      textAlign: 'center',
     },
 
     // ========== List Item Styles ==========
@@ -340,7 +366,7 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: 16,
+      padding: isTablet ? 24 : 16,
       borderBottomWidth: 1,
       borderBottomColor: colors.shadow,
     },
@@ -355,13 +381,13 @@ const createStyles = (colors: ThemeColors) =>
       marginRight: 12,
     },
     listItemName: {
-      fontSize: 16,
+      fontSize: isTablet ? 24 : 16,
       fontWeight: '500',
       marginBottom: 4,
       color: colors.text,
     },
     listItemDetails: {
-      fontSize: 14,
+      fontSize: isTablet ? 18 : 14,
       color: colors.text,
     },
 
@@ -417,11 +443,11 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: 8,
     },
     infoLabel: {
-      fontSize: 16,
+      fontSize: isTablet ? 24 : 16,
       color: colors.text,
     },
     infoValue: {
-      fontSize: 16,
+      fontSize: isTablet ? 24 : 16,
       fontWeight: '600',
       color: colors.text,
     },

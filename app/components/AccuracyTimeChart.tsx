@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, LayoutChangeEvent } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useThemeColor } from '@/app/hooks/useThemeColor';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -16,6 +16,7 @@ interface Props {
 
 export default function AccuracyTimeChart({ practiceData }: Props) {
   const { translate } = useLanguage();
+  const [chartWidth, setChartWidth] = useState(0);
 
   const themeColors = {
     background: useThemeColor({}, 'background'),
@@ -53,7 +54,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
   );
 
   return (
-    <View>
+    <View onLayout={(event: LayoutChangeEvent) => setChartWidth(event.nativeEvent.layout.width)}>
       <Text
         style={{
           fontSize: 14,
@@ -64,35 +65,37 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
       >
         {translate(tKeys.accuracyTrend)}
       </Text>
-      <LineChart
-        data={chartData}
-        width={Dimensions.get('window').width - 64}
-        height={160}
-        chartConfig={{
-          backgroundGradientFrom: themeColors.background,
-          backgroundGradientTo: themeColors.background,
-          color: () => themeColors.primary,
-          labelColor: () => themeColors.text,
-          propsForDots: {
-            r: '1',
-            strokeWidth: '1',
-            stroke: themeColors.primary,
-          },
-          propsForBackgroundLines: { stroke: '#ddd' },
-          decimalPlaces: 0,
-        }}
-        yAxisSuffix=""
-        withDots={true}
-        withShadow={true}
-        withInnerLines={true}
-        withOuterLines={false}
-        bezier
-        fromZero
-        yLabelsOffset={10}
-        yAxisInterval={0.1}
-        segments={5}
-        style={{ marginVertical: 8, borderRadius: 8 }}
-      />
+      {chartWidth > 0 && (
+        <LineChart
+          data={chartData}
+          width={chartWidth}
+          height={160}
+          chartConfig={{
+            backgroundGradientFrom: themeColors.background,
+            backgroundGradientTo: themeColors.background,
+            color: () => themeColors.primary,
+            labelColor: () => themeColors.text,
+            propsForDots: {
+              r: '1',
+              strokeWidth: '1',
+              stroke: themeColors.primary,
+            },
+            propsForBackgroundLines: { stroke: '#ddd' },
+            decimalPlaces: 0,
+          }}
+          yAxisSuffix=""
+          withDots={true}
+          withShadow={true}
+          withInnerLines={true}
+          withOuterLines={false}
+          bezier
+          fromZero
+          yLabelsOffset={10}
+          yAxisInterval={0.1}
+          segments={5}
+          style={{ marginVertical: 8, borderRadius: 8 }}
+        />
+      )}
     </View>
   );
 }

@@ -4,6 +4,7 @@ import { Dimensions } from 'react-native';
 import { useHaptics } from '@/app/hooks/useHaptics';
 
 const screenWidth = Dimensions.get('window').width;
+const isTablet = screenWidth > 700;
 
 interface Props {
   pairs: { word1: string; word2: string; ipa1: string; ipa2: string }[];
@@ -30,6 +31,7 @@ export default function PairPicker({ pairs, index, setIndex, color }: Props) {
       selectedValue={String(index)}
       onValueChange={handleValueChange}
       style={{ width: '100%', color, marginBottom: 10 }}
+      itemStyle={{ fontSize: isTablet ? 32 : 16, height: isTablet ? 180 : undefined }}
     >
       {pairs.map((p, i) => (
         <Picker.Item

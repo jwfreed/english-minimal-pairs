@@ -19,8 +19,9 @@ export default function ResultsScreen() {
   const themeColors = useAllThemeColors();
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const { width } = useWindowDimensions();
+  const isTablet = width > 700;
 
-  const numColumns = width > 700 ? 2 : 1;
+  const numColumns = isTablet ? 2 : 1;
   const gap = 16;
 
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
@@ -83,20 +84,22 @@ export default function ResultsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
-      <Text style={[styles.title, { color: themeColors.text, margin: 16 }]}>
-        {translate(tKeys.accuracyTrend)}
-      </Text>
-      <View style={{ flex: 1, paddingHorizontal: 16 }}>
-        <FlashList
-          data={flattenedPairs}
-          extraData={[progress, numColumns]}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          numColumns={numColumns}
-          key={numColumns.toString()} // Force re-render when columns change
-          estimatedItemSize={200}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
+      <View style={{ width: '100%', maxWidth: isTablet ? 800 : 600, alignSelf: 'center', flex: 1 }}>
+        <Text style={[styles.headerTitle, { marginTop: 16, marginBottom: 16 }]}>
+          {translate(tKeys.accuracyTrend)}
+        </Text>
+        <View style={{ flex: 1, paddingHorizontal: 16 }}>
+          <FlashList
+            data={flattenedPairs}
+            extraData={[progress, numColumns]}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            numColumns={numColumns}
+            key={numColumns.toString()} // Force re-render when columns change
+            estimatedItemSize={200}
+            contentContainerStyle={{ paddingBottom: 20 }}
+          />
+        </View>
       </View>
     </View>
   );

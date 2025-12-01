@@ -46,7 +46,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const debugLog = useCallback(
     (...args: Parameters<typeof console.log>) => {
       if (__DEV__) {
-        console.log(...args);
+        // console.log(...args);
       }
     },
     []

@@ -49,6 +49,10 @@ export async function saveAttempt(
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
 }
 
+export async function clearProgress() {
+  await AsyncStorage.removeItem(STORAGE_KEY);
+}
+
 /* ─── analytics helpers used across the UI ────────────────────────────────── */
 
 /**

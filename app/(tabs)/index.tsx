@@ -4,7 +4,7 @@ import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
-import { useRecordAttempt } from '@/app/context/PairProgressContext';
+import { usePairProgress } from '@/app/context/PairProgressContext';
 import { useSettings } from '@/app/context/SettingsContext';
 import { useAllThemeColors } from '@/app/context/theme';
 import createStyles from '@/app/constants/styles';
@@ -26,7 +26,7 @@ const MAX_SPEED: 2 = 2; // promote lexical after reaching tier 2
 export default function HomeScreen() {
   const { translate } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
-  const recordAttempt = useRecordAttempt();
+  const { recordAttempt } = usePairProgress();
   const { selectedVoice } = useSettings();
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);

@@ -5,27 +5,43 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
 import {
   saveAttempt,
   getProgress,
+  clearProgress,
   PairStats,
   PairAttempt,
 } from '@/app/storage/progressStorage';
 
-const ProgressContext = createContext<Record<string, PairStats>>({});
-const RecordAttemptContext = createContext<
-  (pairId: string, isCorrect: boolean, durationMin?: number) => void
->(() => {});
+interface PairProgressContextType {
+  progress: Record<string, PairStats>;
+  recordAttempt: (pairId: string, isCorrect: boolean, durationMin?: number) => void;
+  resetProgress: () => Promise<void>;
+  isLoading: boolean;
+}
+
+const PairProgressContext = createContext<PairProgressContextType | undefined>(undefined);
 
 export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getProgress()
-      .then(setProgress)
-      .catch((err) => console.error('Failed to load progress', err));
+    loadProgress();
+  }, []);
+
+  const loadProgress = useCallback(async () => {
+    try {
+      const storedProgress = await getProgress();
+      setProgress(storedProgress);
+    } catch (err) {
+      console.error('Failed to load progress', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const recordAttempt = useCallback(
@@ -53,14 +69,47 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
     []
   );
 
+  const resetProgress = useCallback(async () => {
+    try {
+      await clearProgress();
+      setProgress({});
+    } catch (error) {
+      console.error('Failed to reset progress:', error);
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      progress,
+      recordAttempt,
+      resetProgress,
+      isLoading,
+    }),
+    [progress, recordAttempt, resetProgress, isLoading]
+  );
+
   return (
-    <ProgressContext.Provider value={progress}>
-      <RecordAttemptContext.Provider value={recordAttempt}>
-        {children}
-      </RecordAttemptContext.Provider>
-    </ProgressContext.Provider>
+    <PairProgressContext.Provider value={value}>
+      {children}
+    </PairProgressContext.Provider>
   );
 };
 
-export const useProgress = () => useContext(ProgressContext);
-export const useRecordAttempt = () => useContext(RecordAttemptContext);
+export const usePairProgress = () => {
+  const context = useContext(PairProgressContext);
+  if (context === undefined) {
+    throw new Error('usePairProgress must be used within a PairProgressProvider');
+  }
+  return context;
+};
+
+// Deprecated hooks for backward compatibility (optional, but cleaner to update consumers)
+export const useProgress = () => {
+  const { progress } = usePairProgress();
+  return progress;
+};
+
+export const useRecordAttempt = () => {
+  const { recordAttempt } = usePairProgress();
+  return recordAttempt;
+};

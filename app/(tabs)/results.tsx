@@ -3,7 +3,7 @@ import React, { useMemo, useCallback } from 'react';
 import { View, Text, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { minimalPairs } from '@/app/constants/minimalPairs';
-import { useProgress } from '@/app/context/PairProgressContext';
+import { usePairProgress } from '@/app/context/PairProgressContext';
 import { useAllThemeColors } from '@/app/context/theme';
 import createStyles from '@/app/constants/styles';
 import { useLanguage } from '@/app/context/LanguageContext';
@@ -13,7 +13,7 @@ import PairItem from '@/app/components/PairItem';
 import { buildPairId } from '@/app/utils/idHelpers';
 
 export default function ResultsScreen() {
-  const progress = useProgress();
+  const { progress } = usePairProgress();
   const { translate } = useLanguage();
   const { categoryIndex } = useCategory();
   const themeColors = useAllThemeColors();

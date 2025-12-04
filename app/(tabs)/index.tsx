@@ -87,6 +87,9 @@ export default function HomeScreen() {
       setPlayedIdx(idxToPlay);
     }
 
+    const wordToPlay = idxToPlay === 0 ? selectedPair.word1 : selectedPair.word2;
+    console.log('🔊 Playing word:', wordToPlay);
+
     try {
       await play(idxToPlay);
     } catch (error) {

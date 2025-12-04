@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "English Minimal Pairs",
+    "name": "Soundwise English",
     "slug": "english-minimal-pairs",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,10 +12,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.jfreed.englishminimalpairs",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": [
-          "audio"
-        ]
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

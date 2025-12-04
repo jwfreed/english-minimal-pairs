@@ -44,7 +44,7 @@ export default function ResultsScreen() {
   }
 
   const flattenedPairs = useMemo(() => {
-    return catObj.pairs.map((pairObj) => {
+    const pairs = catObj.pairs.map((pairObj) => {
       const id = buildPairId(pairObj, catObj.category);
       return {
         id,
@@ -53,7 +53,18 @@ export default function ResultsScreen() {
         category: catObj.category,
       };
     });
-  }, [catObj]);
+
+    return pairs.sort((a, b) => {
+      const statsA = progress[a.id];
+      const statsB = progress[b.id];
+      const hasAttemptsA = statsA?.attempts?.length > 0;
+      const hasAttemptsB = statsB?.attempts?.length > 0;
+
+      if (hasAttemptsA && !hasAttemptsB) return -1;
+      if (!hasAttemptsA && hasAttemptsB) return 1;
+      return 0;
+    });
+  }, [catObj, progress]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: any; index: number }) => {

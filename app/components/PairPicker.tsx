@@ -30,8 +30,8 @@ export default function PairPicker({ pairs, index, setIndex, color }: Props) {
     <Picker
       selectedValue={String(index)}
       onValueChange={handleValueChange}
-      style={{ width: '100%', color, marginBottom: 10 }}
-      itemStyle={{ fontSize: isTablet ? 32 : 16, height: isTablet ? 180 : undefined }}
+      style={{ width: '100%', color, marginBottom: 10, height: isTablet ? 300 : 220 }}
+      itemStyle={{ fontSize: isTablet ? 32 : 16 }}
     >
       {pairs.map((p, i) => (
         <Picker.Item

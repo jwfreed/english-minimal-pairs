@@ -53,7 +53,7 @@ const iVsI: Row[] = [
 
 /* ---------- export ---------------------------------------------- */
 const farsi: Category = {
-  category: 'زبان فارسی',
+  category: 'فارسی',
   pairs: [
     ...thetaT.map(make),
     ...ethD.map(make),

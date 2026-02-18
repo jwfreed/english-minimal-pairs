@@ -18,6 +18,18 @@ const MANUAL_ENGLISH_UI_KEY = '@manualEnglishUIToggle';
 const DEFAULT_LANGUAGE = Object.keys(alternateLanguages)[0];
 const DEFAULT_LANGUAGE_CODE = 'en';
 
+/**
+ * Migration map for renamed language keys.
+ * Maps old stored values to new key names so existing users don't lose their preference.
+ */
+const LANGUAGE_KEY_MIGRATION: Record<string, string> = {
+  'idioma español': 'Español',
+  'اللغة العربية': 'العربية',
+  'русский язык': 'Русский',
+  'زبان فارسی': 'فارسی',
+  'bahasa Indo': 'Bahasa Indonesia',
+};
+
 interface DeviceLocaleInfo {
   languageCode: string;
   regionCode?: string;
@@ -73,12 +85,12 @@ const getLanguageFromLocale = (languageCode: string): string => {
     'pt': 'Português',
     'tr': 'Türkçe',
     'yue': '廣東話',
-    'es': 'idioma español',
-    'ar': 'اللغة العربية',
-    'ru': 'русский язык',
+    'es': 'Español',
+    'ar': 'العربية',
+    'ru': 'Русский',
     'vi': 'Tiếng Việt',
-    'fa': 'زبان فارسی',
-    'id': 'bahasa Indo',
+    'fa': 'فارسی',
+    'id': 'Bahasa Indonesia',
   };
   
   return localeMap[languageCode] || DEFAULT_LANGUAGE;
@@ -103,24 +115,24 @@ const getLanguageFromRegion = (regionCode?: string): string | null => {
     'PT': 'Português',
     'BR': 'Português',
     'TR': 'Türkçe',
-    'ES': 'idioma español',
-    'MX': 'idioma español',
-    'AR': 'idioma español',
-    'CO': 'idioma español',
-    'CL': 'idioma español',
-    'PE': 'idioma español',
-    'VE': 'idioma español',
-    'SA': 'اللغة العربية',
-    'AE': 'اللغة العربية',
-    'EG': 'اللغة العربية',
-    'IQ': 'اللغة العربية',
-    'JO': 'اللغة العربية',
-    'KW': 'اللغة العربية',
-    'LB': 'اللغة العربية',
-    'RU': 'русский язык',
+    'ES': 'Español',
+    'MX': 'Español',
+    'AR': 'Español',
+    'CO': 'Español',
+    'CL': 'Español',
+    'PE': 'Español',
+    'VE': 'Español',
+    'SA': 'العربية',
+    'AE': 'العربية',
+    'EG': 'العربية',
+    'IQ': 'العربية',
+    'JO': 'العربية',
+    'KW': 'العربية',
+    'LB': 'العربية',
+    'RU': 'Русский',
     'VN': 'Tiếng Việt',
-    'IR': 'زبان فارسی',
-    'ID': 'bahasa Indo',
+    'IR': 'فارسی',
+    'ID': 'Bahasa Indonesia',
   };
   
   return regionMap[regionCode] || null;
@@ -161,9 +173,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     
     const initializeLanguage = async () => {
       // Check if user has previously set a language
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      let stored = await AsyncStorage.getItem(STORAGE_KEY);
       const englishUIOverride = await AsyncStorage.getItem(ENGLISH_UI_OVERRIDE_KEY);
       const manualToggle = await AsyncStorage.getItem(MANUAL_ENGLISH_UI_KEY);
+      
+      // Migrate old language key names to new ones
+      if (stored && LANGUAGE_KEY_MIGRATION[stored]) {
+        stored = LANGUAGE_KEY_MIGRATION[stored];
+        await AsyncStorage.setItem(STORAGE_KEY, stored);
+      }
       
       // Check if user has MANUALLY toggled the English UI (not just auto-set)
       const hasManualEnglishUIOverride = manualToggle === 'true';

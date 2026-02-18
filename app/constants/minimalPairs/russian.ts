@@ -53,7 +53,7 @@ const hZero: Row[] = [
 
 /* ---------- export --------------------------------------------- */
 const russian: Category = {
-  category: 'русский язык',
+  category: 'Русский',
   pairs: [
     ...iVsI.map(make),
     ...aVsUh.map(make),

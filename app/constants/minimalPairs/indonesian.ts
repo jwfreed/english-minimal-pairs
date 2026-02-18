@@ -53,7 +53,7 @@ const aVsE: Row[] = [
 
 /* ---------- export ---------------------------------------------- */
 const indonesian: Category = {
-  category: 'bahasa Indo',
+  category: 'Bahasa Indonesia',
   pairs: [
     ...thetaT.map(make),
     ...ethD.map(make),

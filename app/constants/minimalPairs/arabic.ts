@@ -54,7 +54,7 @@ const iVsI: Row[] = [
 
 /* ---------- export ------------------------------------------------ */
 const arabic: Category = {
-  category: 'اللغة العربية',
+  category: 'العربية',
   pairs: [
     ...pB.map(make),
     ...vF.map(make),

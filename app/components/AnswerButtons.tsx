@@ -3,22 +3,42 @@ import { View, TouchableOpacity, Text } from 'react-native';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
 import { useHaptics } from '@/app/hooks/useHaptics';
-
-interface Pair {
-  word1: string;
-  word2: string;
-  ipa1: string;
-  ipa2: string;
-}
+import type { Pair } from '@/app/constants/minimalPairs';
 
 interface Props {
   pair: Pair;
   onAnswer: (idx: 0 | 1) => void;
   feedback: 'correct' | 'incorrect' | null;
   disabled?: boolean;
+  /** Index of the word that was played (0 = word1, 1 = word2) */
+  playedIdx?: 0 | 1 | null;
+  /** Replay the played word */
+  onReplay?: () => void;
 }
 
-export default function AnswerButtons({ pair, onAnswer, feedback, disabled = false }: Props) {
+/**
+ * Highlight the contrasting phoneme inside an IPA string.
+ * Returns an array of {text, highlight} segments.
+ */
+function highlightPhoneme(ipa: string, phoneme: string): { text: string; highlight: boolean }[] {
+  if (!phoneme) return [{ text: ipa, highlight: false }];
+  const idx = ipa.indexOf(phoneme);
+  if (idx === -1) return [{ text: ipa, highlight: false }];
+  return [
+    { text: ipa.slice(0, idx), highlight: false },
+    { text: phoneme, highlight: true },
+    { text: ipa.slice(idx + phoneme.length), highlight: false },
+  ].filter((s) => s.text.length > 0);
+}
+
+export default function AnswerButtons({
+  pair,
+  onAnswer,
+  feedback,
+  disabled = false,
+  playedIdx,
+  onReplay,
+}: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { triggerHaptic } = useHaptics();
@@ -38,6 +58,12 @@ export default function AnswerButtons({ pair, onAnswer, feedback, disabled = fal
     onAnswer(idx);
   };
 
+  // Determine the correct word info for the feedback panel
+  const correctWord = playedIdx === 0 ? pair.word1 : pair.word2;
+  const correctIpa = playedIdx === 0 ? pair.ipa1 : pair.ipa2;
+  const correctPhoneme = playedIdx === 0 ? pair.contrastPhoneme1 : pair.contrastPhoneme2;
+  const ipaSegments = highlightPhoneme(correctIpa, correctPhoneme);
+
   return (
     <View style={styles.answerContainer}>
       <View style={styles.buttonRow}>
@@ -45,9 +71,9 @@ export default function AnswerButtons({ pair, onAnswer, feedback, disabled = fal
           <TouchableOpacity
             key={idx}
             style={[
-              styles.button, 
-              { flex: 1, marginTop: 0 }, // Override button styles for row layout
-              disabled && { opacity: 0.5 }
+              styles.button,
+              { flex: 1, marginTop: 0 },
+              disabled && { opacity: 0.5 },
             ]}
             onPress={() => handlePress(idx as 0 | 1)}
             disabled={disabled}
@@ -72,6 +98,29 @@ export default function AnswerButtons({ pair, onAnswer, feedback, disabled = fal
           >
             {feedback === 'correct' ? '✓' : '✗'}
           </Text>
+        </View>
+      )}
+
+      {/* Rich feedback panel — shown after answering */}
+      {feedback !== null && playedIdx !== null && (
+        <View style={styles.feedbackPanel}>
+          <Text style={styles.feedbackWord}>{correctWord}</Text>
+          <Text style={styles.feedbackIPA}>
+            {ipaSegments.map((seg, i) =>
+              seg.highlight ? (
+                <Text key={i} style={styles.feedbackHighlight}>
+                  {seg.text}
+                </Text>
+              ) : (
+                <Text key={i}>{seg.text}</Text>
+              )
+            )}
+          </Text>
+          {onReplay && (
+            <TouchableOpacity style={styles.replayButton} onPress={onReplay}>
+              <Text style={styles.replayButtonText}>🔊 Listen Again</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>

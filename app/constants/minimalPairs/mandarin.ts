@@ -1,68 +1,75 @@
-// constants/minimalPairs/chinese.ts
-import type { Category, Difficulty } from '../minimalPairs';
+// constants/minimalPairs/mandarin.ts
+import type { Category, Difficulty, Position } from '../minimalPairs';
 
-/** ------------------------------------------------------------------
- *  Row tuple:  [word1, word2, difficulty, ipa1, ipa2, groupID]
- *  `group` ties all tiers of the SAME contrast together so that all
- *  /θ–s/ rows share 'thetaS', /v–w/ share 'vW', etc.
- * ----------------------------------------------------------------- */
-type Row = [string, string, Difficulty, string, string, string];
+type Row = [string, string, Difficulty, string, string, string, Position];
 
-/* helper: tuple → Pair object */
-const make = ([w1, w2, diff, ipa1, ipa2, group]: Row) => ({
+const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2: string) => ({
   word1: w1,
   word2: w2,
   ipa1,
   ipa2,
   difficulty: diff,
   group,
+  position,
+  contrastPhoneme1: cp1,
+  contrastPhoneme2: cp2,
 });
 
 /* ---------- word-lists with group IDs ---------------------------- */
 const thetaS: Row[] = [
-  ['thin', 'sin', 1, '/θɪn/', '/sɪn/', 'thetaS'],
-  ['thick', 'sick', 2, '/θɪk/', '/sɪk/', 'thetaS'],
-  ['think', 'sink', 3, '/θɪŋk/', '/sɪŋk/', 'thetaS'],
-  ['mouth', 'mouse', 4, '/maʊθ/', '/maʊs/', 'thetaS'],
+  ['thin', 'sin', 1, '/θɪn/', '/sɪn/', 'thetaS', 'initial'],
+  ['thick', 'sick', 2, '/θɪk/', '/sɪk/', 'thetaS', 'initial'],
+  ['think', 'sink', 3, '/θɪŋk/', '/sɪŋk/', 'thetaS', 'initial'],
+  ['mouth', 'mouse', 4, '/maʊθ/', '/maʊs/', 'thetaS', 'final'],
+  ['mouth', 'mouse', 5, '/maʊθ/', '/maʊs/', 'thetaS', 'final'],
+  ['path', 'pass', 6, '/pæθ/', '/pæs/', 'thetaS', 'final'],
 ];
 
 const vW: Row[] = [
-  ['vine', 'wine', 1, '/vaɪn/', '/waɪn/', 'vW'],
-  ['vest', 'west', 2, '/vɛst/', '/wɛst/', 'vW'],
-  ['vow', 'wow', 3, '/vaʊ/', '/waʊ/', 'vW'],
-  ['vane', 'wane', 4, '/veɪn/', '/weɪn/', 'vW'],
+  ['vine', 'wine', 1, '/vaɪn/', '/waɪn/', 'vW', 'initial'],
+  ['vest', 'west', 2, '/vɛst/', '/wɛst/', 'vW', 'initial'],
+  ['vow', 'wow', 3, '/vaʊ/', '/waʊ/', 'vW', 'initial'],
+  ['vane', 'wane', 4, '/veɪn/', '/weɪn/', 'vW', 'initial'],
+  ['wheel', 'veal', 5, '/wiːl/', '/viːl/', 'vW', 'initial'],
+  ['wiper', 'viper', 6, '/ˈwaɪpər/', '/ˈvaɪpər/', 'vW', 'initial'],
 ];
 
 const rL: Row[] = [
-  ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL'],
-  ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL'],
-  ['rake', 'lake', 3, '/reɪk/', '/leɪk/', 'rL'],
-  ['rip', 'lip', 4, '/rɪp/', '/lɪp/', 'rL'],
+  ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
+  ['rake', 'lake', 3, '/reɪk/', '/leɪk/', 'rL', 'initial'],
+  ['rip', 'lip', 4, '/rɪp/', '/lɪp/', 'rL', 'initial'],
+  ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],
+  ['crowd', 'cloud', 6, '/kraʊd/', '/klaʊd/', 'rL', 'initial'],
 ];
 
 const iVsI: Row[] = [
-  ['beat', 'bit', 1, '/biːt/', '/bɪt/', 'iVsI'],
-  ['leave', 'live', 2, '/liːv/', '/lɪv/', 'iVsI'],
-  ['feet', 'fit', 3, '/fiːt/', '/fɪt/', 'iVsI'],
-  ['seat', 'sit', 4, '/siːt/', '/sɪt/', 'iVsI'],
+  ['beat', 'bit', 1, '/biːt/', '/bɪt/', 'iVsI', 'medial'],
+  ['leave', 'live', 2, '/liːv/', '/lɪv/', 'iVsI', 'medial'],
+  ['feet', 'fit', 3, '/fiːt/', '/fɪt/', 'iVsI', 'medial'],
+  ['seat', 'sit', 4, '/siːt/', '/sɪt/', 'iVsI', 'medial'],
+  ['neat', 'knit', 5, '/niːt/', '/nɪt/', 'iVsI', 'medial'],
+  ['peach', 'pitch', 6, '/piːtʃ/', '/pɪtʃ/', 'iVsI', 'medial'],
 ];
 
 const uVsU: Row[] = [
-  ['pool', 'pull', 1, '/puːl/', '/pʊl/', 'uVsU'],
-  ['boot', 'book', 2, '/buːt/', '/bʊk/', 'uVsU'],
-  ['fool', 'full', 3, '/fuːl/', '/fʊl/', 'uVsU'],
-  ['Luke', 'look', 4, '/luːk/', '/lʊk/', 'uVsU'],
+  ['pool', 'pull', 1, '/puːl/', '/pʊl/', 'uVsU', 'medial'],
+  ['suit', 'soot', 2, '/suːt/', '/sʊt/', 'uVsU', 'medial'],
+  ['fool', 'full', 3, '/fuːl/', '/fʊl/', 'uVsU', 'medial'],
+  ['Luke', 'look', 4, '/luːk/', '/lʊk/', 'uVsU', 'medial'],
+  ['cooed', 'could', 5, '/kuːd/', '/kʊd/', 'uVsU', 'medial'],
+  ['stewed', 'stood', 6, '/stuːd/', '/stʊd/', 'uVsU', 'medial'],
 ];
 
 /* ---------- export category object ------------------------------- */
 const chinese: Category = {
   category: '中文',
   pairs: [
-    ...thetaS.map(make),
-    ...vW.map(make),
-    ...rL.map(make),
-    ...iVsI.map(make),
-    ...uVsU.map(make),
+    ...thetaS.map(r => make(r, 'θ', 's')),
+    ...vW.map(r => make(r, 'v', 'w')),
+    ...rL.map(r => make(r, 'r', 'l')),
+    ...iVsI.map(r => make(r, 'iː', 'ɪ')),
+    ...uVsU.map(r => make(r, 'uː', 'ʊ')),
   ],
 };
 

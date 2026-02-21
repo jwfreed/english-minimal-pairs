@@ -38,6 +38,15 @@ export const tKeys = {
   systemMode: 'systemMode',
   useEnglishUI: 'useEnglishUI',
   englishUIDescription: 'englishUIDescription',
+  // New keys for HVPT overhaul
+  voicesAvailable: 'voicesAvailable',
+  theWordWas: 'theWordWas',
+  listenAgain: 'listenAgain',
+  placementTest: 'placementTest',
+  retakePlacement: 'retakePlacement',
+  skip: 'skip',
+  todaySession: 'todaySession',
+  dailyGoal: 'dailyGoal',
 };
 
 export type TranslationKey = keyof typeof tKeys;

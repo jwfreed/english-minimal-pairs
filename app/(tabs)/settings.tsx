@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 // Settings screen for app configuration
 // -----------------------------------------------------------------------------
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,29 +23,7 @@ import { tKeys } from '@/app/constants/translationKeys';
 import { minimalPairs } from '@/app/constants/minimalPairs';
 import { useHaptics } from '@/app/hooks/useHaptics';
 
-/**
- * Helper function to format voice display name
- * Simplified for just 2 voices: Samantha (US) and Daniel (UK)
- */
-const formatVoiceName = (
-  voice: any,
-  translate: (key: string) => string
-): { displayName: string; subtitle: string } => {
-  const language = voice.language.toLowerCase();
-  const isUS = language.startsWith('en-us');
-  
-  if (isUS) {
-    return {
-      displayName: translate(tKeys.usAccentFemale),
-      subtitle: translate(tKeys.americanEnglish)
-    };
-  } else {
-    return {
-      displayName: translate(tKeys.ukAccentMale),
-      subtitle: translate(tKeys.britishEnglish)
-    };
-  }
-};
+const PLACEMENT_DONE_KEY = '@placementDone';
 
 export default function SettingsScreen() {
   const { translate, setLanguage, useEnglishUI, setUseEnglishUI, language } = useLanguage();
@@ -59,10 +37,8 @@ export default function SettingsScreen() {
   const { triggerHaptic } = useHaptics();
 
   const {
-    selectedVoice,
-    availableVoices,
+    voiceCount,
     isLoadingVoices,
-    setSelectedVoice,
     refreshVoices,
   } = useSettings();
 
@@ -76,11 +52,6 @@ export default function SettingsScreen() {
     triggerHaptic('light');
     setExpandedSection((prev) => prev === section ? null : section);
   }, [triggerHaptic]);
-
-  const handleVoiceSelect = useCallback(async (voice: any) => {
-    triggerHaptic('selection');
-    await setSelectedVoice(voice);
-  }, [setSelectedVoice, triggerHaptic]);
 
   const handleLanguageSelect = useCallback(async (idx: number) => {
     triggerHaptic('selection');
@@ -98,25 +69,11 @@ export default function SettingsScreen() {
     setUseEnglishUI(!useEnglishUI);
   }, [useEnglishUI, setUseEnglishUI, triggerHaptic]);
 
-  // Auto-select first voice if none selected
-  React.useEffect(() => {
-    if (!selectedVoice && availableVoices.length > 0 && !isLoadingVoices) {
-      handleVoiceSelect(availableVoices[0]);
-    }
-  }, [selectedVoice, availableVoices, isLoadingVoices, handleVoiceSelect]);
-
-  // Format selected voice display
-  const selectedVoiceDisplay = useMemo(() => {
-    if (!selectedVoice && availableVoices.length > 0) {
-      const { displayName } = formatVoiceName(availableVoices[0], translate);
-      return displayName;
-    }
-    if (!selectedVoice) {
-      return translate(tKeys.systemDefault);
-    }
-    const { displayName } = formatVoiceName(selectedVoice, translate);
-    return displayName;
-  }, [selectedVoice, availableVoices, translate]);
+  const handleRetakePlacement = useCallback(async () => {
+    triggerHaptic('selection');
+    await AsyncStorage.removeItem(PLACEMENT_DONE_KEY).catch(() => {});
+    // The placement test will show again on the next visit to the practice screen
+  }, [triggerHaptic]);
 
   return (
     <ScrollView
@@ -313,13 +270,9 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Voice Selection Section */}
+        {/* Voice Info Section (read-only count + refresh) */}
         <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection('voice')}
-            activeOpacity={0.7}
-          >
+          <View style={styles.sectionHeader}>
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
                 name="mic-outline"
@@ -332,80 +285,47 @@ export default function SettingsScreen() {
                   {translate(tKeys.voiceSelection)}
                 </Text>
                 <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                  {selectedVoiceDisplay}
+                  {isLoadingVoices
+                    ? translate(tKeys.loadingVoices)
+                    : `${voiceCount} ${translate(tKeys.voicesAvailable) || 'voices available'}`}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={refreshVoices} style={{ padding: 8 }}>
+              <Ionicons name="refresh" size={isTablet ? 28 : 20} color={theme.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Placement Test Section */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={handleRetakePlacement}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons
+                name="school-outline"
+                size={isTablet ? 32 : 24}
+                color={theme.primary}
+                style={styles.sectionIcon}
+              />
+              <View>
+                <Text style={styles.sectionTitle}>
+                  {translate(tKeys.placementTest) || 'Placement Test'}
+                </Text>
+                <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                  {translate(tKeys.retakePlacement) || 'Retake on next practice session'}
                 </Text>
               </View>
             </View>
             <Ionicons
-              name={expandedSection === 'voice' ? 'chevron-up' : 'chevron-down'}
+              name="refresh-circle-outline"
               size={isTablet ? 28 : 20}
               color={theme.textSecondary}
             />
           </TouchableOpacity>
-
-          {expandedSection === 'voice' && (
-            <View style={styles.sectionContent}>
-              {isLoadingVoices ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={theme.primary} />
-                  <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-                    {translate(tKeys.loadingVoices)}
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  {/* Available Voices - Only 2 options */}
-                  {availableVoices.length === 0 ? (
-                    <View style={styles.emptyContainer}>
-                      <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                        {translate(tKeys.noVoicesAvailable)}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.refreshButton}
-                        onPress={refreshVoices}
-                      >
-                        <Ionicons name="refresh" size={20} color={theme.primary} />
-                        <Text style={styles.refreshButtonText}>
-                          {translate(tKeys.refresh)}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    availableVoices.map((voice, index) => {
-                      const { displayName, subtitle } = formatVoiceName(voice, translate);
-                      const isSelected = selectedVoice?.identifier === voice.identifier || 
-                                      (!selectedVoice && index === 0);
-                      
-                      return (
-                        <TouchableOpacity
-                          key={voice.identifier}
-                          style={[
-                            styles.listOption,
-                            isSelected && styles.selectedListOption,
-                            index === availableVoices.length - 1 && styles.lastListOption,
-                          ]}
-                          onPress={() => handleVoiceSelect(voice)}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.listItemInfo}>
-                            <Text style={styles.listItemName}>
-                              {displayName}
-                            </Text>
-                            <Text style={[styles.listItemDetails, { color: theme.textSecondary }]}>
-                              {subtitle}
-                            </Text>
-                          </View>
-                          {isSelected && (
-                            <Ionicons name="checkmark-circle" size={isTablet ? 32 : 24} color={theme.success} />
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })
-                  )}
-                </>
-              )}
-            </View>
-          )}
         </View>
 
         {/* Footer Spacer */}

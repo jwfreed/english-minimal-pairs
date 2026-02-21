@@ -84,6 +84,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'How It Works',
     infoThree:
       '• Tap "Play Audio" to hear a word\n• Select the word you heard\n• Get immediate feedback\n• Track your progress over time',
+    voicesAvailable: 'voices available',
+    theWordWas: 'The word was',
+    listenAgain: 'Listen Again',
+    placementTest: 'Placement Test',
+    retakePlacement: 'Retake on next practice session',
+    skip: 'Skip',
+    todaySession: "Today's session",
+    dailyGoal: 'Daily goal',
   },
   日本語: {
     home: 'ホーム',
@@ -126,6 +134,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'アプリの使い方',
     infoThree:
       '•「音声を再生」をタップして単語を聞く\n• 聞こえた単語を選択\n• 正解・不正解がすぐに表示\n• 練習履歴が保存され、進捗が確認できます',
+    voicesAvailable: '利用可能な音声',
+    theWordWas: 'その単語は',
+    listenAgain: 'もう一度聞く',
+    placementTest: 'レベルテスト',
+    retakePlacement: '次の練習セッションで再受験',
+    skip: 'スキップ',
+    todaySession: '今日のセッション',
+    dailyGoal: '1日の目標',
   },
 
   中文: {
@@ -168,6 +184,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: '使用方法',
     infoThree:
       '• 点击“播放音频”听单词\n• 选择你听到的单词\n• 立即获得反馈\n• 记录练习进度，查看成长',
+    voicesAvailable: '可用语音',
+    theWordWas: '那个词是',
+    listenAgain: '再听一次',
+    placementTest: '水平测试',
+    retakePlacement: '下次练习时重新测试',
+    skip: '跳过',
+    todaySession: '今日练习',
+    dailyGoal: '每日目标',
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
@@ -209,8 +233,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
       'ฝึกแต่ละคู่ให้ครบอย่างน้อย 60 นาที ไม่ต้องกังวลถ้ายังยากในตอนแรก สมองจะค่อยๆ ปรับตัว',
     titleThree: 'วิธีใช้งาน',
     infoThree:
-      '• แตะ “เล่นเสียง” เพื่อฟัง\n• เลือกคำที่คุณได้ยิน\n• รับคำตอบถูก/ผิดทันที\n• ติดตามความก้าวหน้าของคุณ',
-  },
+      '• แตะ “เล่นเสียง” เพื่อฟัง\n• เลือกคำที่คุณได้ยิน\n• รับคำตอบถูก/ผิดทันที\n• ติดตามความก้าวหน้าของคุณ',    voicesAvailable: 'เสียงที่ใช้ได้',
+    theWordWas: 'คำนั้นคือ',
+    listenAgain: 'ฟังอีกครั้ง',
+    placementTest: 'แบบทดสอบจัดระดับ',
+    retakePlacement: 'ทำแบบทดสอบใหม่ในเซสชันถัดไป',
+    skip: 'ข้าม',
+    todaySession: 'เซสชันวันนี้',
+    dailyGoal: 'เป้าหมายรายวัน',  },
   Español: {
     home: 'Inicio',
     results: 'Resultados',
@@ -252,6 +282,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'Cómo funciona',
     infoThree:
       '• Toca "Reproducir Audio" para escuchar\n• Elige la palabra que crees haber oído\n• Recibe retroalimentación inmediata\n• Tu progreso se guarda automáticamente',
+    voicesAvailable: 'voces disponibles',
+    theWordWas: 'La palabra era',
+    listenAgain: 'Escuchar de nuevo',
+    placementTest: 'Prueba de nivel',
+    retakePlacement: 'Repetir en la próxima sesión',
+    skip: 'Omitir',
+    todaySession: 'Sesión de hoy',
+    dailyGoal: 'Meta diaria',
   },
   العربية: {
     home: 'الرئيسية',
@@ -294,6 +332,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'طريقة الاستخدام',
     infoThree:
       '• اضغط على "تشغيل الصوت" للاستماع\n• اختر الكلمة التي سمعتها\n• ستحصل على نتيجة فورية\n• يتم حفظ تقدمك تلقائيًا',
+    voicesAvailable: 'أصوات متاحة',
+    theWordWas: 'الكلمة كانت',
+    listenAgain: 'استمع مرة أخرى',
+    placementTest: 'اختبار تحديد المستوى',
+    retakePlacement: 'إعادة الاختبار في الجلسة القادمة',
+    skip: 'تخطي',
+    todaySession: 'جلسة اليوم',
+    dailyGoal: 'الهدف اليومي',
   },
   Русский: {
     home: 'Главная',
@@ -336,6 +382,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'Как это работает',
     infoThree:
       '• Нажми “Воспроизвести аудио”\n• Выбери слово, которое услышал\n• Мгновенная обратная связь\n• Прогресс сохраняется',
+    voicesAvailable: 'доступных голосов',
+    theWordWas: 'Слово было',
+    listenAgain: 'Послушать снова',
+    placementTest: 'Тест на уровень',
+    retakePlacement: 'Пройти заново в следующей сессии',
+    skip: 'Пропустить',
+    todaySession: 'Сегодняшняя сессия',
+    dailyGoal: 'Дневная цель',
   },
   한국어: {
     home: '홈',
@@ -378,6 +432,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: '사용 방법',
     infoThree:
       '• "오디오 재생"을 눌러 단어 듣기\n• 들은 단어 선택하기\n• 즉시 피드백 받기\n• 진행 상황 자동 저장',
+    voicesAvailable: '사용 가능한 음성',
+    theWordWas: '그 단어는',
+    listenAgain: '다시 듣기',
+    placementTest: '배치 테스트',
+    retakePlacement: '다음 연습 세션에서 다시 테스트',
+    skip: '건너뛰기',
+    todaySession: '오늘의 세션',
+    dailyGoal: '일일 목표',
   },
   'हिंदी/اردو': {
     home: 'होम/ہوم',
@@ -420,6 +482,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'यह कैसे काम करता है/یہ کیسے کام کرتا ہے',
     infoThree:
       '• "ऑडियो चलाएँ" पर टैप करें\n• सुनी हुई शब्द चुनें\n• तुरंत प्रतिक्रिया पाएं\n• आपकी प्रगति सहेजी जाती है/• "آڈیو چلائیں" پر ٹیپ کریں\n• سنا ہوا لفظ چنیں\n• فوری ردعمل حاصل کریں\n• آپ کی پیشرفت خود بخود محفوظ ہوتی ہے',
+    voicesAvailable: 'उपलब्ध आवाज़ें',
+    theWordWas: 'वह शब्द था',
+    listenAgain: 'फिर से सुनें',
+    placementTest: 'प्लेसमेंट टेस्ट',
+    retakePlacement: 'अगले सत्र में फिर से लें',
+    skip: 'छोड़ें',
+    todaySession: 'आज का सत्र',
+    dailyGoal: 'दैनिक लक्ष्य',
   },
   Português: {
     home: 'Início',
@@ -462,6 +532,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'Como funciona',
     infoThree:
       '• Toque em "Reproduzir áudio" para ouvir\n• Escolha a palavra que você ouviu\n• Receba feedback imediato\n• Acompanhe seu progresso automaticamente',
+    voicesAvailable: 'vozes disponíveis',
+    theWordWas: 'A palavra era',
+    listenAgain: 'Ouvir novamente',
+    placementTest: 'Teste de nível',
+    retakePlacement: 'Refazer na próxima sessão',
+    skip: 'Pular',
+    todaySession: 'Sessão de hoje',
+    dailyGoal: 'Meta diária',
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
@@ -504,6 +582,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'Cách sử dụng',
     infoThree:
       '• Nhấn "Phát âm thanh" để nghe\n• Chọn từ bạn nghe thấy\n• Nhận phản hồi ngay lập tức\n• Tiến độ luyện tập sẽ được lưu lại',
+    voicesAvailable: 'giọng có sẵn',
+    theWordWas: 'Từ đó là',
+    listenAgain: 'Nghe lại',
+    placementTest: 'Bài kiểm tra xếp lớp',
+    retakePlacement: 'Làm lại ở phiên tiếp theo',
+    skip: 'Bỏ qua',
+    todaySession: 'Phiên hôm nay',
+    dailyGoal: 'Mục tiêu hàng ngày',
   },
   Türkçe: {
     home: 'Ana Sayfa',
@@ -546,6 +632,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'Nasıl çalışır',
     infoThree:
       '• Kelimeyi duymak için "Ses çal" tuşuna basın\n• Duyduğunuz kelimeyi seçin\n• Anında geri bildirim alın\n• İlerlemeniz kaydedilir',
+    voicesAvailable: 'mevcut ses',
+    theWordWas: 'Kelime şuydu',
+    listenAgain: 'Tekrar dinle',
+    placementTest: 'Seviye testi',
+    retakePlacement: 'Sonraki oturumda yeniden test et',
+    skip: 'Atla',
+    todaySession: 'Bugünkü oturum',
+    dailyGoal: 'Günlük hedef',
   },
   فارسی: {
     home: 'خانه',
@@ -588,6 +682,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'نحوه استفاده',
     infoThree:
       '• برای شنیدن کلمه، "پخش صدا" را بزنید\n• کلمه‌ای که شنیدید را انتخاب کنید\n• بلافاصله بازخورد بگیرید\n• پیشرفت شما ذخیره می‌شود',
+    voicesAvailable: 'صدای موجود',
+    theWordWas: 'کلمه بود',
+    listenAgain: 'دوباره گوش کن',
+    placementTest: 'آزمون تعیین سطح',
+    retakePlacement: 'تکرار در جلسه بعدی',
+    skip: 'رد شدن',
+    todaySession: 'جلسه امروز',
+    dailyGoal: 'هدف روزانه',
   },
   廣東話: {
     home: '首頁',
@@ -629,6 +731,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: '使用方法',
     infoThree:
       '• 撳「播放音頻」去聽一個字\n• 揀返你聽到嘅字\n• 即時睇答啱定唔啱\n• 系統會自動記錄你嘅進度',
+    voicesAvailable: '可用嘅聲音',
+    theWordWas: '嗰個字係',
+    listenAgain: '再聽一次',
+    placementTest: '程度測試',
+    retakePlacement: '下次練習時重新測試',
+    skip: '跳過',
+    todaySession: '今日練習',
+    dailyGoal: '每日目標',
   },
   'Bahasa Indonesia': {
     home: 'Beranda',
@@ -671,5 +781,13 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'Cara penggunaan',
     infoThree:
       '• Tekan "Putar Audio" untuk mendengarkan\n• Pilih kata yang kamu dengar\n• Dapatkan umpan balik langsung\n• Kemajuanmu akan tersimpan secara otomatis',
+    voicesAvailable: 'suara tersedia',
+    theWordWas: 'Kata itu adalah',
+    listenAgain: 'Dengar lagi',
+    placementTest: 'Tes penempatan',
+    retakePlacement: 'Ulangi di sesi berikutnya',
+    skip: 'Lewati',
+    todaySession: 'Sesi hari ini',
+    dailyGoal: 'Target harian',
   },
 };

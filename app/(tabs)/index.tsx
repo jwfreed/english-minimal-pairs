@@ -1,4 +1,4 @@
-// app/(tabs)/index.tsx – Home screen with language sync, adaptive difficulty & progress logging
+// app/(tabs)/index.tsx – Home screen with adaptive difficulty, voice rotation & session timer
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
@@ -13,21 +13,29 @@ import { tKeys } from '@/app/constants/translationKeys';
 
 import PairPicker from '@/app/components/PairPicker';
 import AnswerButtons from '@/app/components/AnswerButtons';
+import SessionTimer from '@/app/components/SessionTimer';
 
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { useAudio } from '@/app/hooks/useAudio';
 import { buildPairId } from '@/app/utils/idHelpers';
 import { useHaptics } from '@/app/hooks/useHaptics';
 
-/* Playback-rate steps per acoustic tier (0–2) */
-const SPEED_TABLE: Record<0 | 1 | 2, number> = { 0: 1.0, 1: 1.1, 2: 1.2 };
-const MAX_SPEED: 2 = 2; // promote lexical after reaching tier 2
+/* Playback-rate steps per acoustic tier (0–4) */
+type SpeedTier = 0 | 1 | 2 | 3 | 4;
+const SPEED_TABLE: Record<SpeedTier, number> = {
+  0: 0.8,
+  1: 1.0,
+  2: 1.1,
+  3: 1.2,
+  4: 1.3,
+};
+const MAX_SPEED: SpeedTier = 4;
 
 export default function HomeScreen() {
   const { translate } = useLanguage();
   const { categoryIndex, setCategoryIndex } = useCategory();
   const { recordAttempt } = usePairProgress();
-  const { selectedVoice } = useSettings();
+  const { getNextVoice } = useSettings();
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
@@ -41,7 +49,7 @@ export default function HomeScreen() {
     []
   );
 
-  const [groupSpeed, setGroupSpeed] = useState<Record<string, 0 | 1 | 2>>({});
+  const [groupSpeed, setGroupSpeed] = useState<Record<string, SpeedTier>>({});
   const [groupStreak, setGroupStreak] = useState<Record<string, number>>({});
   const [groupLongStreak, setGroupLongStreak] = useState<
     Record<string, number>
@@ -55,14 +63,14 @@ export default function HomeScreen() {
   const [startTime, setStartTime] = useState<number | null>(null);
 
   const catObj = minimalPairs[categoryIndex];
-  const { visible, promote } = useContrastPairs(catObj.pairs);
+  const { visible, promote } = useContrastPairs(catObj.pairs, catObj.category);
   const selectedPair: Pair = visible[pairIndex];
 
-  const speedTier = groupSpeed[selectedPair.group] ?? 0;
+  const speedTier: SpeedTier = groupSpeed[selectedPair.group] ?? 0;
   const { play, audioModeReady, isSpeaking } = useAudio(
     selectedPair,
     SPEED_TABLE[speedTier],
-    selectedVoice
+    getNextVoice
   );
 
   const handlePlay = useCallback(async () => {
@@ -73,7 +81,7 @@ export default function HomeScreen() {
       return;
     }
     triggerHaptic('light');
-    
+
     let idxToPlay: 0 | 1;
 
     // If we are in the middle of a round (played but not answered), replay the same word
@@ -97,7 +105,17 @@ export default function HomeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert('Audio Error', errorMessage);
     }
-  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback]);
+  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, selectedPair]);
+
+  /** Replay the same word after feedback (used by AnswerButtons "Listen Again") */
+  const handleReplay = useCallback(async () => {
+    if (playedIdx === null || !audioModeReady) return;
+    try {
+      await play(playedIdx);
+    } catch (error) {
+      console.error('Replay error:', error);
+    }
+  }, [play, playedIdx, audioModeReady]);
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {
@@ -110,7 +128,7 @@ export default function HomeScreen() {
       recordAttempt(pairId, correct, rtMs / 60000);
 
       const g = selectedPair.group;
-      const curSpeed = groupSpeed[g] ?? 0;
+      const curSpeed: SpeedTier = groupSpeed[g] ?? 0;
       const fastStreak = groupStreak[g] ?? 0;
       const longStreak = groupLongStreak[g] ?? 0;
 
@@ -129,13 +147,13 @@ export default function HomeScreen() {
 
       if (!promoteNeeded) {
         if (!correct && curSpeed > 0) {
-          setGroupSpeed({ ...groupSpeed, [g]: (curSpeed - 1) as 0 | 1 });
+          setGroupSpeed({ ...groupSpeed, [g]: (curSpeed - 1) as SpeedTier });
         }
         return;
       }
 
       if (curSpeed < MAX_SPEED) {
-        setGroupSpeed({ ...groupSpeed, [g]: (curSpeed + 1) as 0 | 1 | 2 });
+        setGroupSpeed({ ...groupSpeed, [g]: (curSpeed + 1) as SpeedTier });
       } else {
         promote(g);
         setGroupSpeed({ ...groupSpeed, [g]: 0 });
@@ -168,6 +186,8 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
 
+      <SessionTimer />
+
       <View style={styles.mainCard}>
         <PairPicker
           pairs={visible}
@@ -189,6 +209,8 @@ export default function HomeScreen() {
           onAnswer={handleAnswer}
           feedback={feedback}
           disabled={playedIdx === null || feedback !== null}
+          playedIdx={playedIdx}
+          onReplay={handleReplay}
         />
       </View>
     </View>

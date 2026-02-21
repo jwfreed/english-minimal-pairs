@@ -5,7 +5,8 @@
 // -----------------------------------------------------------------------------
 
 /* ─── Shared TS types ─────────────────────────────────────────────── */
-export type Difficulty = 1 | 2 | 3 | 4;
+export type Difficulty = 1 | 2 | 3 | 4 | 5 | 6;
+export type Position = 'initial' | 'medial' | 'final';
 
 export interface Pair {
   word1: string;
@@ -14,6 +15,9 @@ export interface Pair {
   ipa2: string;
   difficulty: Difficulty; // lexical/context tier
   group: string; // contrast ID (e.g. 'rL', 'bV')
+  position: Position; // phonetic position of the contrast
+  contrastPhoneme1: string; // e.g. 'r' for rake in rL group
+  contrastPhoneme2: string; // e.g. 'l' for lake in rL group
   variantRate?: number; // optional custom speed override
 }
 

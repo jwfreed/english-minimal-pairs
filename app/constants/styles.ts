@@ -8,13 +8,16 @@ const isTablet = width > 700;
 export type ThemeColors = {
   background: string;
   text: string;
+  textSecondary: string;
   success: string;
   error: string;
   primary: string;
+  primaryLight: string;
   buttonText: string;
   cardBackground: string;
   shadow: string;
   icon: string;
+  border: string;
 };
 
 // We define constants for repeated values
@@ -450,6 +453,77 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: isTablet ? 24 : 16,
       fontWeight: '600',
       color: colors.text,
+    },
+
+    // ========== Rich Feedback Panel ==========
+    feedbackPanel: {
+      marginTop: 16,
+      padding: 16,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 12,
+      alignItems: 'center' as const,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    feedbackWord: {
+      fontSize: isTablet ? 28 : 22,
+      fontWeight: '700' as const,
+      color: colors.text,
+      marginBottom: 4,
+    },
+    feedbackIPA: {
+      fontSize: isTablet ? 22 : 17,
+      color: colors.textSecondary,
+      marginBottom: 12,
+    },
+    feedbackHighlight: {
+      color: colors.primary,
+      fontWeight: '700' as const,
+    },
+    replayButton: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      backgroundColor: colors.primary + '22',
+    },
+    replayButtonText: {
+      fontSize: isTablet ? 18 : 14,
+      fontWeight: '600' as const,
+      color: colors.primary,
+    },
+
+    // ========== Session Timer ==========
+    sessionTimerContainer: {
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    sessionTimerRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'baseline' as const,
+      marginBottom: 4,
+    },
+    sessionTimerText: {
+      fontSize: isTablet ? 18 : 14,
+      fontWeight: '600' as const,
+      color: colors.text,
+    },
+    sessionTimerGoal: {
+      fontSize: isTablet ? 14 : 11,
+      color: colors.textSecondary,
+      marginLeft: 4,
+    },
+    sessionTimerBarBg: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+      overflow: 'hidden' as const,
+    },
+    sessionTimerBarFill: {
+      height: '100%' as const,
+      borderRadius: 3,
+      backgroundColor: colors.success,
     },
   });
 

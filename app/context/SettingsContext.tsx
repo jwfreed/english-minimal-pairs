@@ -1,6 +1,6 @@
 // context/SettingsContext.tsx
 // -----------------------------------------------------------------------------
-// Manages user settings including TTS voice selection
+// Manages user settings including TTS voice pool (auto-rotation) and haptics
 // -----------------------------------------------------------------------------
 import React, {
   createContext,
@@ -19,10 +19,13 @@ const SETTINGS_STORAGE_KEY = '@userSettings';
 type Voice = Speech.Voice;
 
 interface SettingsContextType {
-  selectedVoice: Voice | null;
-  availableVoices: Voice[];
+  /** All available en-* voices (auto-collected) */
+  voicePool: Voice[];
+  /** Convenience count of available voices */
+  voiceCount: number;
+  /** Round-robin: returns the next voice from the pool */
+  getNextVoice: () => Voice | null;
   isLoadingVoices: boolean;
-  setSelectedVoice: (voice: Voice | null) => Promise<void>;
   refreshVoices: () => Promise<void>;
   hapticsEnabled: boolean;
   setHapticsEnabled: (enabled: boolean) => Promise<void>;
@@ -31,11 +34,11 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [selectedVoice, setSelectedVoiceState] = useState<Voice | null>(null);
-  const [availableVoices, setAvailableVoices] = useState<Voice[]>([]);
+  const [voicePool, setVoicePool] = useState<Voice[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState(true);
   const [hapticsEnabled, setHapticsEnabledState] = useState(true);
   const isMountedRef = useRef(true);
+  const rotationIndexRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -70,138 +73,75 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     []
   );
 
-  const selectPriorityVoices = useCallback((voices: Speech.Voice[]) => {
-    const selectedVoices: Speech.Voice[] = [];
-
-    const samantha = voices.find(
-      (v) =>
-        v.name === 'Samantha' && v.language.toLowerCase().startsWith('en-us')
+  /**
+   * Collect ALL en-* voices from the device TTS engine.
+   * Prefer "enhanced" / "premium" quality voices first, then sort by locale
+   * so we get good variety (en-US, en-GB, en-AU, en-IN, …).
+   */
+  const collectEnVoices = useCallback((voices: Speech.Voice[]) => {
+    const enVoices = voices.filter((v) =>
+      v.language.toLowerCase().startsWith('en')
     );
-    if (samantha) {
-      selectedVoices.push(samantha);
-      debugLog('✅ Found US Female: Samantha');
-    } else {
-      debugWarn('❌ Samantha (US Female) not found');
-      const usFallback = voices.find((v) =>
-        v.language.toLowerCase().startsWith('en-us')
-      );
-      if (usFallback) {
-        selectedVoices.push(usFallback);
-        debugWarn(`⚠️  Using fallback US voice: ${usFallback.name}`);
+
+    // Sort: enhanced quality first, then alphabetical by locale + name
+    enVoices.sort((a, b) => {
+      const aq = (a.quality ?? '').toLowerCase().includes('enhanced') ? 0 : 1;
+      const bq = (b.quality ?? '').toLowerCase().includes('enhanced') ? 0 : 1;
+      if (aq !== bq) return aq - bq;
+      const locCmp = a.language.localeCompare(b.language);
+      if (locCmp !== 0) return locCmp;
+      return a.name.localeCompare(b.name);
+    });
+
+    debugLog(`✅ Collected ${enVoices.length} en-* voices from device`);
+    return enVoices;
+  }, [debugLog]);
+
+  const hydrateVoices = useCallback(async () => {
+    setIsLoadingVoices(true);
+    try {
+      const voices = await Speech.getAvailableVoicesAsync();
+      const pool = collectEnVoices(voices);
+
+      if (!isMountedRef.current) return;
+
+      setVoicePool(pool);
+      rotationIndexRef.current = 0;
+
+      if (pool.length === 0) {
+        debugWarn('⚠️ No en-* TTS voices found on device');
+      } else {
+        debugLog(`✅ Voice pool ready: ${pool.length} voices`);
+      }
+    } catch (error) {
+      debugError('Failed to load voices:', error);
+      if (isMountedRef.current) {
+        setVoicePool([]);
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoadingVoices(false);
       }
     }
+  }, [collectEnVoices, debugError, debugLog, debugWarn]);
 
-    const daniel = voices.find(
-      (v) =>
-        v.name === 'Daniel' && v.language.toLowerCase().startsWith('en-gb')
-    );
-    if (daniel) {
-      selectedVoices.push(daniel);
-      debugLog('✅ Found UK Male: Daniel');
-    } else {
-      debugWarn('❌ Daniel (UK Male) not found');
-      const ukFallback = voices.find((v) =>
-        v.language.toLowerCase().startsWith('en-gb')
-      );
-      if (ukFallback) {
-        selectedVoices.push(ukFallback);
-        debugWarn(`⚠️  Using fallback UK voice: ${ukFallback.name}`);
-      }
-    }
-
-    return selectedVoices;
-  }, [debugLog, debugWarn]);
-
-  const resolvePreferredVoice = useCallback(
-    (voices: Voice[], preferredIdentifier: string | null | undefined) => {
-      if (voices.length === 0) {
-        return null;
-      }
-
-      if (preferredIdentifier === null) {
-        // Explicit request for system default
-        return null;
-      }
-
-      if (preferredIdentifier) {
-        const match = voices.find(
-          (voice) => voice.identifier === preferredIdentifier
-        );
-        if (match) {
-          return match;
-        }
-      }
-
-      return voices[0] ?? null;
-    },
-    []
-  );
-
-  const hydrateVoices = useCallback(
-    async (preferredIdentifier?: string | null) => {
-      setIsLoadingVoices(true);
-      try {
-        const voices = await Speech.getAvailableVoicesAsync();
-
-        const curatedVoices = selectPriorityVoices(voices);
-
-        if (!isMountedRef.current) {
-          return;
-        }
-
-        setAvailableVoices(curatedVoices);
-
-        const nextVoice = resolvePreferredVoice(
-          curatedVoices,
-          preferredIdentifier
-        );
-        setSelectedVoiceState(nextVoice);
-
-        if (preferredIdentifier && !nextVoice) {
-          debugWarn('⚠️ Saved voice not available, using fallback voice');
-        }
-
-        if (nextVoice) {
-          debugLog('✅ Active voice:', nextVoice.name);
-        } else {
-          debugLog('✅ Using system default voice');
-        }
-      } catch (error) {
-        debugError('Failed to load voices:', error);
-        if (isMountedRef.current) {
-          setAvailableVoices([]);
-          // Only reset selection if the preference was not explicitly system default (null)
-          if (preferredIdentifier !== null) {
-            setSelectedVoiceState(null);
-          }
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setIsLoadingVoices(false);
-        }
-      }
-    },
-    [debugError, debugLog, debugWarn, resolvePreferredVoice, selectPriorityVoices]
-  );
+  /** Round-robin voice selection — cycles through the pool */
+  const getNextVoice = useCallback((): Voice | null => {
+    if (voicePool.length === 0) return null;
+    const voice = voicePool[rotationIndexRef.current % voicePool.length];
+    rotationIndexRef.current = (rotationIndexRef.current + 1) % voicePool.length;
+    return voice;
+  }, [voicePool]);
 
   // Load saved settings on mount
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      let savedIdentifier: string | null | undefined = undefined;
-      let savedHapticsEnabled = true; // default to enabled
+      let savedHapticsEnabled = true;
       try {
         const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
         if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
-          savedIdentifier =
-            parsed?.selectedVoiceIdentifier !== undefined
-              ? parsed.selectedVoiceIdentifier
-              : undefined;
-          if (savedIdentifier) {
-            debugLog('📦 Found saved voice identifier:', savedIdentifier);
-          }
-          // Load haptics setting, default to true if not set
           if (parsed?.hapticsEnabled !== undefined) {
             savedHapticsEnabled = parsed.hapticsEnabled;
             debugLog('📦 Found saved haptics setting:', savedHapticsEnabled);
@@ -213,7 +153,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (!cancelled) {
         setHapticsEnabledState(savedHapticsEnabled);
-        await hydrateVoices(savedIdentifier);
+        await hydrateVoices();
       }
     };
 
@@ -224,37 +164,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [debugError, debugLog, hydrateVoices]);
 
-  const setSelectedVoice = useCallback(async (voice: Voice | null) => {
-    try {
-      setSelectedVoiceState(voice);
-
-      // Load existing settings to preserve haptics preference
-      const existingSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
-      const parsed = existingSettings ? JSON.parse(existingSettings) : {};
-
-      const settings = {
-        ...parsed,
-        selectedVoiceIdentifier: voice?.identifier ?? null,
-      };
-
-      await AsyncStorage.setItem(
-        SETTINGS_STORAGE_KEY,
-        JSON.stringify(settings)
-      );
-      debugLog(
-        '✅ Saved voice preference:',
-        voice ? voice.name : 'System Default'
-      );
-    } catch (error) {
-      debugError('Failed to save voice setting:', error);
-    }
-  }, [debugLog, debugError]);
-
   const setHapticsEnabled = useCallback(async (enabled: boolean) => {
     try {
       setHapticsEnabledState(enabled);
 
-      // Load existing settings to preserve voice preference
       const existingSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
       const parsed = existingSettings ? JSON.parse(existingSettings) : {};
 
@@ -263,10 +176,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         hapticsEnabled: enabled,
       };
 
-      await AsyncStorage.setItem(
-        SETTINGS_STORAGE_KEY,
-        JSON.stringify(settings)
-      );
+      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
       debugLog('✅ Saved haptics preference:', enabled);
     } catch (error) {
       debugError('Failed to save haptics setting:', error);
@@ -274,22 +184,21 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [debugLog, debugError]);
 
   const refreshVoices = useCallback(async () => {
-    await hydrateVoices(selectedVoice ? selectedVoice.identifier : null);
-  }, [hydrateVoices, selectedVoice]);
+    await hydrateVoices();
+  }, [hydrateVoices]);
 
   const value = useMemo(() => ({
-    selectedVoice,
-    availableVoices,
+    voicePool,
+    voiceCount: voicePool.length,
+    getNextVoice,
     isLoadingVoices,
-    setSelectedVoice,
     refreshVoices,
     hapticsEnabled,
     setHapticsEnabled,
   }), [
-    selectedVoice,
-    availableVoices,
+    voicePool,
+    getNextVoice,
     isLoadingVoices,
-    setSelectedVoice,
     refreshVoices,
     hapticsEnabled,
     setHapticsEnabled,

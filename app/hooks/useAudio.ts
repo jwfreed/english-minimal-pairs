@@ -10,12 +10,12 @@ import type { Pair } from '@/app/constants/minimalPairs';
  * Custom hook for text-to-speech playback of minimal pairs
  * @param selectedPair  The currently displayed minimal‑pair object (may be undefined on first render)
  * @param rate          Playback‑rate multiplier (e.g. 0.8, 1.0, 1.1)
- * @param voice         Optional voice to use for speech (from SettingsContext)
+ * @param getNextVoice  Optional function that returns the next voice from the rotation pool
  */
 export const useAudio = (
   selectedPair: Pair | undefined,
   rate: number,
-  voice?: Speech.Voice | null
+  getNextVoice?: () => Speech.Voice | null
 ) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioModeReady, setAudioModeReady] = useState(false);
@@ -202,6 +202,9 @@ export const useAudio = (
 
       const word = idx === 0 ? selectedPair.word1 : selectedPair.word2;
 
+      // Pick the next voice from the rotation pool for this utterance
+      const voice = getNextVoice ? getNextVoice() : null;
+
       debugLog(`🔊 Attempting to speak: "${word}" at rate ${rate}`);
       if (voice) {
         debugLog(`🎤 Using voice: ${voice.name} (${voice.identifier})`);
@@ -248,7 +251,7 @@ export const useAudio = (
         throw error;
       }
     },
-    [debugError, debugLog, debugWarn, isSpeaking, rate, selectedPair, voice]
+    [debugError, debugLog, debugWarn, isSpeaking, rate, selectedPair, getNextVoice]
   );
 
   return { play, audioModeReady, isSpeaking };

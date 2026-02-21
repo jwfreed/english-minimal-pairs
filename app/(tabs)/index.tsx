@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx – Home screen with adaptive difficulty, voice rotation & session timer
 // -----------------------------------------------------------------------------
-import React, { useCallback, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
@@ -63,10 +63,22 @@ export default function HomeScreen() {
   const [startTime, setStartTime] = useState<number | null>(null);
 
   const catObj = minimalPairs[categoryIndex];
-  const { visible, promote } = useContrastPairs(catObj.pairs, catObj.category);
-  const selectedPair: Pair = visible[pairIndex];
+  const { visible, promote, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
 
-  const speedTier: SpeedTier = groupSpeed[selectedPair.group] ?? 0;
+  // Clamp pairIndex when visible list shrinks
+  const safePairIndex = visible.length > 0 ? Math.min(pairIndex, visible.length - 1) : 0;
+  const selectedPair: Pair | undefined = visible[safePairIndex];
+
+  // Keep a stable snapshot of items — only update when the picker is NOT being scrolled
+  const [stableVisible, setStableVisible] = useState<Pair[]>(visible);
+  const scrollingRef = useRef(false);
+  useEffect(() => {
+    if (!scrollingRef.current && !isLoading) {
+      setStableVisible(visible);
+    }
+  }, [visible, isLoading]);
+
+  const speedTier: SpeedTier = selectedPair ? (groupSpeed[selectedPair.group] ?? 0) : 0;
   const { play, audioModeReady, isSpeaking } = useAudio(
     selectedPair,
     SPEED_TABLE[speedTier],
@@ -182,6 +194,16 @@ export default function HomeScreen() {
     setPlayedIdx(null);
   }, []);
 
+  /** Tell us when the user starts / stops scrolling the picker */
+  const handlePickerScrollStart = useCallback(() => {
+    scrollingRef.current = true;
+  }, []);
+  const handlePickerScrollEnd = useCallback(() => {
+    scrollingRef.current = false;
+    // Flush any pending visible update
+    setStableVisible(visible);
+  }, [visible]);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
@@ -189,12 +211,20 @@ export default function HomeScreen() {
       <SessionTimer />
 
       <View style={styles.mainCard}>
-        <PairPicker
-          pairs={visible}
-          index={pairIndex}
-          setIndex={handlePairChange}
-          color={theme.text}
-        />
+        {isLoading || !selectedPair ? (
+          <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ color: theme.textSecondary }}>Loading…</Text>
+          </View>
+        ) : (
+          <PairPicker
+            pairs={stableVisible}
+            index={safePairIndex}
+            setIndex={handlePairChange}
+            color={theme.text}
+            onScrollStart={handlePickerScrollStart}
+            onScrollEnd={handlePickerScrollEnd}
+          />
+        )}
 
         <TouchableOpacity
           style={styles.button}
@@ -204,14 +234,16 @@ export default function HomeScreen() {
           <Text style={styles.buttonText}>{playAudioText}</Text>
         </TouchableOpacity>
 
-        <AnswerButtons
-          pair={selectedPair}
-          onAnswer={handleAnswer}
-          feedback={feedback}
-          disabled={playedIdx === null || feedback !== null}
-          playedIdx={playedIdx}
-          onReplay={handleReplay}
-        />
+        {selectedPair && (
+          <AnswerButtons
+            pair={selectedPair}
+            onAnswer={handleAnswer}
+            feedback={feedback}
+            disabled={playedIdx === null || feedback !== null}
+            playedIdx={playedIdx}
+            onReplay={handleReplay}
+          />
+        )}
       </View>
     </View>
   );

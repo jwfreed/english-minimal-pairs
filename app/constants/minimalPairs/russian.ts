@@ -48,7 +48,7 @@ const thetaS: Row[] = [
   ['thick', 'sick', 2, '/θɪk/', '/sɪk/', 'thetaS', 'initial'],
   ['think', 'sink', 3, '/θɪŋk/', '/sɪŋk/', 'thetaS', 'initial'],
   ['mouth', 'mouse', 4, '/maʊθ/', '/maʊs/', 'thetaS', 'final'],
-  ['mouth', 'mouse', 5, '/maʊθ/', '/maʊs/', 'thetaS', 'final'],
+  ['both', 'boss', 5, '/boʊθ/', '/bɒs/', 'thetaS', 'final'],
   ['path', 'pass', 6, '/pæθ/', '/pæs/', 'thetaS', 'final'],
 ];
 

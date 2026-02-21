@@ -14,6 +14,9 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   // Load persisted mastery on mount / category change
   useEffect(() => {
     let cancelled = false;
+    // Reset to loading state so the UI doesn't render stale data
+    setIsLoading(true);
+    setMastery({});
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(storageKey);

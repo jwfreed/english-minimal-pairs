@@ -11,9 +11,11 @@ interface Props {
   index: number;
   setIndex: (i: number) => void;
   color: string;
+  onScrollStart?: () => void;
+  onScrollEnd?: () => void;
 }
 
-export default function PairPicker({ pairs, index, setIndex, color }: Props) {
+function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrollEnd }: Props) {
   const { triggerHaptic } = useHaptics();
 
   const handleValueChange = useCallback(
@@ -26,10 +28,25 @@ export default function PairPicker({ pairs, index, setIndex, color }: Props) {
     [index, setIndex, triggerHaptic]
   );
 
+  // Notify parent when scrolling starts/stops so it can freeze the items list
+  const handleScrollStart = useCallback(() => {
+    onScrollStart?.();
+  }, [onScrollStart]);
+
+  // After the value settles, signal scroll end
+  const handleValueSettled = useCallback(
+    (v: string) => {
+      handleValueChange(v);
+      // Small delay to let the native animation finish
+      setTimeout(() => onScrollEnd?.(), 150);
+    },
+    [handleValueChange, onScrollEnd]
+  );
+
   return (
     <Picker
       selectedValue={String(index)}
-      onValueChange={handleValueChange}
+      onValueChange={Platform.OS === 'ios' ? handleValueSettled : handleValueChange}
       style={{
         width: '100%',
         color,
@@ -37,10 +54,11 @@ export default function PairPicker({ pairs, index, setIndex, color }: Props) {
         height: Platform.OS === 'ios' ? (isTablet ? 300 : 220) : undefined,
       }}
       itemStyle={{ fontSize: isTablet ? 32 : 16 }}
+      {...(Platform.OS === 'ios' ? { onFocus: handleScrollStart } : {})}
     >
       {pairs.map((p, i) => (
         <Picker.Item
-          key={i}
+          key={`${p.word1}-${p.word2}-${i}`}
           label={`${p.word1} (${p.ipa1}) - ${p.word2} (${p.ipa2})`}
           value={String(i)}
         />
@@ -48,3 +66,6 @@ export default function PairPicker({ pairs, index, setIndex, color }: Props) {
     </Picker>
   );
 }
+
+const PairPicker = React.memo(PairPickerInner);
+export default PairPicker;

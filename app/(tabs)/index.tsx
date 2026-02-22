@@ -54,11 +54,11 @@ export default function HomeScreen() {
     []
   );
 
-  const [groupSpeed, setGroupSpeed] = useState<Record<string, SpeedTier>>({});
-  const [groupStreak, setGroupStreak] = useState<Record<string, number>>({});
-  const [groupLongStreak, setGroupLongStreak] = useState<
-    Record<string, number>
-  >({});
+  /* ── Speed & streak tracking via refs (always-current, no stale closures) ── */
+  const groupSpeedRef = useRef<Record<string, SpeedTier>>({});
+  const groupStreakRef = useRef<Record<string, number>>({});
+  const groupLongStreakRef = useRef<Record<string, number>>({});
+  const [, forceRender] = useState(0);
 
   // Placement test state
   const [showPlacement, setShowPlacement] = useState<boolean | null>(null); // null = loading
@@ -107,7 +107,9 @@ export default function HomeScreen() {
     }
   }, [visible, isLoading]);
 
-  const speedTier: SpeedTier = selectedPair ? (groupSpeed[selectedPair.group] ?? 0) : 0;
+  const speedTier: SpeedTier = selectedPair
+    ? (groupSpeedRef.current[selectedPair.group] ?? 0)
+    : 0;
   const { play, audioModeReady, isSpeaking } = useAudio(
     selectedPair,
     SPEED_TABLE[speedTier],
@@ -161,7 +163,7 @@ export default function HomeScreen() {
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {
-      if (playedIdx === null) return;
+      if (playedIdx === null || !selectedPair) return;
       timerRef.current?.poke();
       const rtMs = startTime ? Date.now() - startTime : 0;
       const correct = idx === playedIdx;
@@ -171,52 +173,47 @@ export default function HomeScreen() {
       recordAttempt(pairId, correct, rtMs / 60000);
 
       const g = selectedPair.group;
-      const curSpeed: SpeedTier = groupSpeed[g] ?? 0;
-      const fastStreak = groupStreak[g] ?? 0;
-      const longStreak = groupLongStreak[g] ?? 0;
+      const curSpeed: SpeedTier = groupSpeedRef.current[g] ?? 0;
 
+      // ── Update streaks (refs — always current) ──
+      const longStreak = groupLongStreakRef.current[g] ?? 0;
       const nextLongStreak = correct ? longStreak + 1 : 0;
-      setGroupLongStreak({ ...groupLongStreak, [g]: nextLongStreak });
+      groupLongStreakRef.current[g] = nextLongStreak;
 
-      if (correct && rtMs < 2000) {
-        const nextFast = fastStreak + 1;
-        setGroupStreak({ ...groupStreak, [g]: nextFast });
-      } else {
-        setGroupStreak({ ...groupStreak, [g]: 0 });
-      }
+      const fastStreak = groupStreakRef.current[g] ?? 0;
+      const nextFastStreak = correct && rtMs < 2000 ? fastStreak + 1 : 0;
+      groupStreakRef.current[g] = nextFastStreak;
 
+      // ── Check promotion criteria ──
       const promoteNeeded =
-        (correct && rtMs < 2000 && fastStreak + 1 >= 3) || nextLongStreak >= 10;
+        (correct && rtMs < 2000 && nextFastStreak >= 3) || nextLongStreak >= 10;
 
       if (!promoteNeeded) {
         if (!correct && curSpeed > 0) {
-          setGroupSpeed({ ...groupSpeed, [g]: (curSpeed - 1) as SpeedTier });
+          groupSpeedRef.current[g] = (curSpeed - 1) as SpeedTier;
+          forceRender((v) => v + 1);
+          if (__DEV__) console.log(`⬇ Speed ${g}: ${curSpeed} → ${curSpeed - 1}`);
         }
         return;
       }
 
+      // ── Promote speed or mastery ──
       if (curSpeed < MAX_SPEED) {
-        setGroupSpeed({ ...groupSpeed, [g]: (curSpeed + 1) as SpeedTier });
+        groupSpeedRef.current[g] = (curSpeed + 1) as SpeedTier;
+        if (__DEV__) console.log(`⬆ Speed ${g}: ${curSpeed} → ${curSpeed + 1}`);
       } else {
+        groupSpeedRef.current[g] = 0;
         promote(g);
-        setGroupSpeed({ ...groupSpeed, [g]: 0 });
         setPairIndex(0);
+        if (__DEV__) console.log(`🎓 Mastery up for ${g}! Speed reset to 0`);
       }
 
-      setGroupStreak({ ...groupStreak, [g]: 0 });
-      setGroupLongStreak({ ...groupLongStreak, [g]: 0 });
+      // Reset streaks after promotion
+      groupStreakRef.current[g] = 0;
+      groupLongStreakRef.current[g] = 0;
+      forceRender((v) => v + 1);
     },
-    [
-      playedIdx,
-      startTime,
-      selectedPair,
-      groupSpeed,
-      groupStreak,
-      groupLongStreak,
-      promote,
-      recordAttempt,
-      catObj.category,
-    ]
+    [playedIdx, startTime, selectedPair, promote, recordAttempt, catObj.category]
   );
 
   const handlePairChange = useCallback((i: number) => {

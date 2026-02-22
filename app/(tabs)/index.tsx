@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import type { SessionTimerHandle } from '@/app/components/SessionTimer';
-import { View, Text, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, Alert, TouchableOpacity, ScrollView } from 'react-native';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
 import { usePairProgress } from '@/app/context/PairProgressContext';
@@ -211,7 +211,11 @@ export default function HomeScreen() {
   }, [visible]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.background }}
+      contentContainerStyle={[styles.container, { flex: undefined, paddingBottom: 40 }]}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
 
       <SessionTimer timerRef={timerRef} />
@@ -233,7 +237,7 @@ export default function HomeScreen() {
         )}
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { zIndex: 10 }]}
           onPress={handlePlay}
           disabled={!audioModeReady || isSpeaking}
         >
@@ -251,6 +255,6 @@ export default function HomeScreen() {
           />
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 }

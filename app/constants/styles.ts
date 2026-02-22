@@ -184,13 +184,10 @@ const createStyles = (colors: ThemeColors) =>
     },
 
     answerContainer: {
-      position: 'relative',
       width: '100%',
       maxWidth: isTablet ? 700 : 500,
-      height: isTablet ? 180 : 140, // Taller container
       alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 24,
+      marginTop: 8,
     },
     buttonRow: {
       flexDirection: 'row',
@@ -200,7 +197,7 @@ const createStyles = (colors: ThemeColors) =>
       gap: 16, // Add gap between buttons
     },
     feedbackSymbol: {
-      fontSize: isTablet ? 48 : 36,
+      fontSize: isTablet ? 42 : 32,
       fontWeight: 'bold',
       marginBottom: 2,
     },
@@ -443,9 +440,9 @@ const createStyles = (colors: ThemeColors) =>
 
     // ========== Rich Feedback Panel ==========
     feedbackPanel: {
-      marginTop: 12,
-      paddingVertical: 14,
-      paddingHorizontal: 20,
+      marginTop: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
       backgroundColor: colors.cardBackground,
       borderRadius: 12,
       alignItems: 'center' as const,
@@ -453,15 +450,15 @@ const createStyles = (colors: ThemeColors) =>
       borderColor: colors.border,
     },
     feedbackWord: {
-      fontSize: isTablet ? 28 : 22,
+      fontSize: isTablet ? 24 : 18,
       fontWeight: '700' as const,
       color: colors.text,
-      marginBottom: 4,
+      marginBottom: 2,
     },
     feedbackIPA: {
-      fontSize: isTablet ? 22 : 17,
+      fontSize: isTablet ? 20 : 15,
       color: colors.textSecondary,
-      marginBottom: 12,
+      marginBottom: 8,
     },
     feedbackHighlight: {
       color: colors.primary,

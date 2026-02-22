@@ -19,6 +19,18 @@ import * as Speech from 'expo-speech';
 const SETTINGS_STORAGE_KEY = '@userSettings';
 const EXCLUDED_VOICES_KEY = '@excludedVoices';
 
+/** Novelty / low-quality voice name substrings to exclude by default */
+const DEFAULT_EXCLUDED_NAMES = [
+  'zarvox', 'wobble', 'whisper', 'trinoids', 'superstar', 'organ',
+  'kathy', 'jester', 'good news', 'cellos', 'bubbles', 'boing',
+  'bells', 'bahh', 'bad news', 'albert',
+];
+
+/** Also exclude specific locale+name combos */
+const DEFAULT_EXCLUDED_LOCALE_NAMES: [string, string][] = [
+  ['en-GB', 'sandy'],
+];
+
 type Voice = Speech.Voice;
 
 interface SettingsContextType {
@@ -118,18 +130,47 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       // Load excluded list first
       const storedExcluded = await AsyncStorage.getItem(EXCLUDED_VOICES_KEY);
+      let excludedSet: Set<string>;
       if (storedExcluded) {
         try {
           const arr: string[] = JSON.parse(storedExcluded);
-          setExcludedVoiceIds(new Set(arr));
-        } catch { /* ignore bad data */ }
+          excludedSet = new Set(arr);
+        } catch {
+          excludedSet = new Set();
+        }
+      } else {
+        excludedSet = new Set(); // will be populated with defaults below
       }
 
       const voices = await Speech.getAvailableVoicesAsync();
       const pool = collectEnVoices(voices);
 
+      // If no stored prefs yet, apply default exclusions
+      if (!storedExcluded && pool.length > 0) {
+        for (const v of pool) {
+          const lowerName = v.name.toLowerCase();
+          if (DEFAULT_EXCLUDED_NAMES.some((n) => lowerName.includes(n))) {
+            excludedSet.add(v.identifier);
+          }
+          for (const [locale, name] of DEFAULT_EXCLUDED_LOCALE_NAMES) {
+            if (
+              v.language.toLowerCase() === locale.toLowerCase() &&
+              lowerName.includes(name.toLowerCase())
+            ) {
+              excludedSet.add(v.identifier);
+            }
+          }
+        }
+        // Persist defaults so they're treated as user prefs going forward
+        await AsyncStorage.setItem(
+          EXCLUDED_VOICES_KEY,
+          JSON.stringify([...excludedSet])
+        ).catch(() => {});
+      }
+
       if (!isMountedRef.current) return;
 
+      setExcludedVoiceIds(excludedSet);
       setAllVoices(pool);
       rotationIndexRef.current = 0;
 

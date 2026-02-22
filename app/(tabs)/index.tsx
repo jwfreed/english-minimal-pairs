@@ -25,16 +25,23 @@ import { useHaptics } from '@/app/hooks/useHaptics';
 
 const PLACEMENT_DONE_KEY = '@placementDone';
 
-/* Playback-rate steps per acoustic tier (0–4) */
-type SpeedTier = 0 | 1 | 2 | 3 | 4;
+/* Playback-rate steps per acoustic tier (0–2)
+ * 3 tiers keeps the path to mastery promotion short:
+ *   fast path  → 3 correct per tier × 3 tiers = 9 answers
+ *   long path  → 6 correct per tier × 3 tiers = 18 answers */
+type SpeedTier = 0 | 1 | 2;
 const SPEED_TABLE: Record<SpeedTier, number> = {
-  0: 0.8,
+  0: 0.85,
   1: 1.0,
-  2: 1.1,
-  3: 1.2,
-  4: 1.3,
+  2: 1.15,
 };
-const MAX_SPEED: SpeedTier = 4;
+const MAX_SPEED: SpeedTier = 2;
+
+/** Response-time ceiling for a "fast" answer.  Must account for TTS
+ * playback (~0.5-1 s) plus reaction time, so 2 s is unrealistic. */
+const FAST_THRESHOLD_MS = 5000;
+const FAST_STREAK_NEEDED = 3;
+const LONG_STREAK_NEEDED = 6;
 
 export default function HomeScreen() {
   const { translate } = useLanguage();
@@ -181,12 +188,13 @@ export default function HomeScreen() {
       groupLongStreakRef.current[g] = nextLongStreak;
 
       const fastStreak = groupStreakRef.current[g] ?? 0;
-      const nextFastStreak = correct && rtMs < 2000 ? fastStreak + 1 : 0;
+      const nextFastStreak = correct && rtMs < FAST_THRESHOLD_MS ? fastStreak + 1 : 0;
       groupStreakRef.current[g] = nextFastStreak;
 
       // ── Check promotion criteria ──
       const promoteNeeded =
-        (correct && rtMs < 2000 && nextFastStreak >= 3) || nextLongStreak >= 10;
+        (correct && rtMs < FAST_THRESHOLD_MS && nextFastStreak >= FAST_STREAK_NEEDED)
+        || nextLongStreak >= LONG_STREAK_NEEDED;
 
       if (!promoteNeeded) {
         if (!correct && curSpeed > 0) {

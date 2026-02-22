@@ -1,6 +1,8 @@
 // context/SettingsContext.tsx
 // -----------------------------------------------------------------------------
-// Manages user settings including TTS voice pool (auto-rotation) and haptics
+// Manages user settings including TTS voice pool (auto-rotation) and haptics.
+// Users can exclude specific voices via the Settings UI; excluded identifiers
+// are persisted so they survive restarts.
 // -----------------------------------------------------------------------------
 import React, {
   createContext,
@@ -15,15 +17,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
 
 const SETTINGS_STORAGE_KEY = '@userSettings';
+const EXCLUDED_VOICES_KEY = '@excludedVoices';
 
 type Voice = Speech.Voice;
 
 interface SettingsContextType {
-  /** All available en-* voices (auto-collected) */
+  /** All available en-* voices (auto-collected, sorted) */
+  allVoices: Voice[];
+  /** Active voice pool (allVoices minus excluded) */
   voicePool: Voice[];
-  /** Convenience count of available voices */
+  /** Convenience count of active voices */
   voiceCount: number;
-  /** Round-robin: returns the next voice from the pool */
+  /** Set of excluded voice identifiers */
+  excludedVoiceIds: Set<string>;
+  /** Toggle a voice in/out of the pool */
+  toggleVoice: (identifier: string) => void;
+  /** Round-robin: returns the next voice from the active pool */
   getNextVoice: () => Voice | null;
   isLoadingVoices: boolean;
   refreshVoices: () => Promise<void>;
@@ -34,11 +43,18 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [voicePool, setVoicePool] = useState<Voice[]>([]);
+  const [allVoices, setAllVoices] = useState<Voice[]>([]);
+  const [excludedVoiceIds, setExcludedVoiceIds] = useState<Set<string>>(new Set());
   const [isLoadingVoices, setIsLoadingVoices] = useState(true);
   const [hapticsEnabled, setHapticsEnabledState] = useState(true);
   const isMountedRef = useRef(true);
   const rotationIndexRef = useRef(0);
+
+  // Derive active pool from allVoices - excludedVoiceIds
+  const voicePool = useMemo(
+    () => allVoices.filter((v) => !excludedVoiceIds.has(v.identifier)),
+    [allVoices, excludedVoiceIds]
+  );
 
   useEffect(() => {
     return () => {
@@ -100,12 +116,21 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const hydrateVoices = useCallback(async () => {
     setIsLoadingVoices(true);
     try {
+      // Load excluded list first
+      const storedExcluded = await AsyncStorage.getItem(EXCLUDED_VOICES_KEY);
+      if (storedExcluded) {
+        try {
+          const arr: string[] = JSON.parse(storedExcluded);
+          setExcludedVoiceIds(new Set(arr));
+        } catch { /* ignore bad data */ }
+      }
+
       const voices = await Speech.getAvailableVoicesAsync();
       const pool = collectEnVoices(voices);
 
       if (!isMountedRef.current) return;
 
-      setVoicePool(pool);
+      setAllVoices(pool);
       rotationIndexRef.current = 0;
 
       if (pool.length === 0) {
@@ -116,7 +141,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       debugError('Failed to load voices:', error);
       if (isMountedRef.current) {
-        setVoicePool([]);
+        setAllVoices([]);
       }
     } finally {
       if (isMountedRef.current) {
@@ -187,16 +212,38 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await hydrateVoices();
   }, [hydrateVoices]);
 
+  /** Toggle a voice's excluded status and persist the change */
+  const toggleVoice = useCallback((identifier: string) => {
+    setExcludedVoiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(identifier)) {
+        next.delete(identifier);
+      } else {
+        next.add(identifier);
+      }
+      // Persist
+      AsyncStorage.setItem(EXCLUDED_VOICES_KEY, JSON.stringify([...next])).catch(() => {});
+      return next;
+    });
+    rotationIndexRef.current = 0;
+  }, []);
+
   const value = useMemo(() => ({
+    allVoices,
     voicePool,
     voiceCount: voicePool.length,
+    excludedVoiceIds,
+    toggleVoice,
     getNextVoice,
     isLoadingVoices,
     refreshVoices,
     hapticsEnabled,
     setHapticsEnabled,
   }), [
+    allVoices,
     voicePool,
+    excludedVoiceIds,
+    toggleVoice,
     getNextVoice,
     isLoadingVoices,
     refreshVoices,

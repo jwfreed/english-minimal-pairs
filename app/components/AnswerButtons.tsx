@@ -73,7 +73,7 @@ export default function AnswerButtons({
             style={[
               styles.button,
               { flex: 1, marginTop: 0 },
-              disabled && { opacity: 0.5 },
+              feedback !== null && { opacity: 0.5 },
             ]}
             onPress={() => handlePress(idx as 0 | 1)}
             disabled={disabled}
@@ -86,8 +86,9 @@ export default function AnswerButtons({
         ))}
       </View>
 
-      {feedback && (
-        <View style={styles.feedbackOverlay}>
+      {/* Rich feedback panel — shown after answering */}
+      {feedback !== null && playedIdx !== null && (
+        <View style={styles.feedbackPanel}>
           <Text
             style={[
               styles.feedbackSymbol,
@@ -98,12 +99,6 @@ export default function AnswerButtons({
           >
             {feedback === 'correct' ? '✓' : '✗'}
           </Text>
-        </View>
-      )}
-
-      {/* Rich feedback panel — shown after answering */}
-      {feedback !== null && playedIdx !== null && (
-        <View style={styles.feedbackPanel}>
           <Text style={styles.feedbackWord}>{correctWord}</Text>
           <Text style={styles.feedbackIPA}>
             {ipaSegments.map((seg, i) =>

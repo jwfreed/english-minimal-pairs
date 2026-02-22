@@ -199,24 +199,10 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       gap: 16, // Add gap between buttons
     },
-    feedbackOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: Z_INDEX.feedback,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.6)',
-      borderRadius: 16,
-    },
     feedbackSymbol: {
-      fontSize: isTablet ? 100 : 80,
+      fontSize: isTablet ? 48 : 36,
       fontWeight: 'bold',
-      textShadowColor: 'rgba(0,0,0,0.2)',
-      textShadowOffset: { width: 0, height: 4 },
-      textShadowRadius: 8,
+      marginBottom: 2,
     },
     correctFeedback: {
       color: colors.success,
@@ -457,8 +443,9 @@ const createStyles = (colors: ThemeColors) =>
 
     // ========== Rich Feedback Panel ==========
     feedbackPanel: {
-      marginTop: 16,
-      padding: 16,
+      marginTop: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 20,
       backgroundColor: colors.cardBackground,
       borderRadius: 12,
       alignItems: 'center' as const,

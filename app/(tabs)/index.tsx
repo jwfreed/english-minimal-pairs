@@ -1,6 +1,7 @@
 // app/(tabs)/index.tsx – Home screen with adaptive difficulty, voice rotation & session timer
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
+import type { SessionTimerHandle } from '@/app/components/SessionTimer';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
@@ -55,6 +56,8 @@ export default function HomeScreen() {
     Record<string, number>
   >({});
 
+  const timerRef = useRef<SessionTimerHandle | null>(null);
+
   const [pairIndex, setPairIndex] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
@@ -86,6 +89,7 @@ export default function HomeScreen() {
   );
 
   const handlePlay = useCallback(async () => {
+    timerRef.current?.poke();
     debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
     if (!audioModeReady) {
       debugLog('❌ Audio not ready - showing error alert');
@@ -132,6 +136,7 @@ export default function HomeScreen() {
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {
       if (playedIdx === null) return;
+      timerRef.current?.poke();
       const rtMs = startTime ? Date.now() - startTime : 0;
       const correct = idx === playedIdx;
       setFeedback(correct ? 'correct' : 'incorrect');
@@ -189,6 +194,7 @@ export default function HomeScreen() {
   );
 
   const handlePairChange = useCallback((i: number) => {
+    timerRef.current?.poke();
     setPairIndex(i);
     setFeedback(null);
     setPlayedIdx(null);
@@ -208,7 +214,7 @@ export default function HomeScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
 
-      <SessionTimer />
+      <SessionTimer timerRef={timerRef} />
 
       <View style={styles.mainCard}>
         {isLoading || !selectedPair ? (

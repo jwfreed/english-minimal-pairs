@@ -37,7 +37,10 @@ export default function SettingsScreen() {
   const { triggerHaptic } = useHaptics();
 
   const {
+    allVoices,
     voiceCount,
+    excludedVoiceIds,
+    toggleVoice,
     isLoadingVoices,
     refreshVoices,
   } = useSettings();
@@ -270,9 +273,13 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Voice Info Section (read-only count + refresh) */}
+        {/* Voice Management Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('voice')}
+            activeOpacity={0.7}
+          >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
                 name="mic-outline"
@@ -287,14 +294,75 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
                   {isLoadingVoices
                     ? translate(tKeys.loadingVoices)
-                    : `${voiceCount} ${translate(tKeys.voicesAvailable) || 'voices available'}`}
+                    : `${voiceCount} active / ${allVoices.length} total`}
                 </Text>
               </View>
             </View>
-            <TouchableOpacity onPress={refreshVoices} style={{ padding: 8 }}>
-              <Ionicons name="refresh" size={isTablet ? 28 : 20} color={theme.primary} />
-            </TouchableOpacity>
-          </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity onPress={refreshVoices} style={{ padding: 8 }}>
+                <Ionicons name="refresh" size={isTablet ? 24 : 18} color={theme.primary} />
+              </TouchableOpacity>
+              <Ionicons
+                name={expandedSection === 'voice' ? 'chevron-up' : 'chevron-down'}
+                size={isTablet ? 28 : 20}
+                color={theme.textSecondary}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {expandedSection === 'voice' && (
+            <View style={styles.sectionContent}>
+              {allVoices.length === 0 && !isLoadingVoices && (
+                <Text style={[styles.sectionSubtitle, { padding: 12, color: theme.textSecondary }]}>
+                  No English voices found on this device.
+                </Text>
+              )}
+              {isLoadingVoices && (
+                <ActivityIndicator style={{ padding: 12 }} color={theme.primary} />
+              )}
+              {allVoices.map((voice, index) => {
+                const excluded = excludedVoiceIds.has(voice.identifier);
+                const qualityLabel = (voice.quality ?? '').toLowerCase().includes('enhanced')
+                  ? ' ★'
+                  : '';
+                return (
+                  <TouchableOpacity
+                    key={voice.identifier}
+                    style={[
+                      styles.listOption,
+                      !excluded && styles.selectedListOption,
+                      index === allVoices.length - 1 && styles.lastListOption,
+                    ]}
+                    onPress={() => {
+                      triggerHaptic('selection');
+                      toggleVoice(voice.identifier);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.listItemInfo}>
+                      <Text
+                        style={[
+                          styles.listItemName,
+                          excluded && { color: theme.textSecondary, textDecorationLine: 'line-through' },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {voice.name}{qualityLabel}
+                      </Text>
+                      <Text style={[styles.sectionSubtitle, { color: theme.textSecondary, fontSize: isTablet ? 13 : 11 }]}>
+                        {voice.language}  ·  {voice.identifier.length > 40 ? voice.identifier.slice(0, 40) + '…' : voice.identifier}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name={excluded ? 'close-circle' : 'checkmark-circle'}
+                      size={isTablet ? 28 : 22}
+                      color={excluded ? theme.error : theme.success}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* Placement Test Section */}

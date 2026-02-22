@@ -50,7 +50,7 @@ export default function SettingsScreen() {
   // to toggle the stored preference so it takes effect when they switch languages.
   const effectiveUseEnglishUI = useEnglishUI || language === 'English';
   
-  const [expandedSection, setExpandedSection] = useState<string | null>('voice');
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   const toggleSection = useCallback((section: string) => {
     triggerHaptic('light');

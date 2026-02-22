@@ -68,16 +68,12 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     });
   }, [currentPair, getNextVoice]);
 
-  // Auto-play when question changes
+  // Pick a random word when the question changes (user must press Play Audio)
   useEffect(() => {
     if (!currentPair) return;
     const idx: 0 | 1 = Math.random() < 0.5 ? 0 : 1;
     setPlayedIdx(idx);
     setAnswered(false);
-    // Small delay to let UI transition
-    const t = setTimeout(() => playWord(idx), 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qIndex, currentPair]);
 
   const handleAnswer = useCallback((idx: 0 | 1) => {

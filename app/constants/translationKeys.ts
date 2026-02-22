@@ -43,6 +43,7 @@ export const tKeys = {
   theWordWas: 'theWordWas',
   listenAgain: 'listenAgain',
   placementTest: 'placementTest',
+  placementResetConfirm: 'placementResetConfirm',
   retakePlacement: 'retakePlacement',
   skip: 'skip',
   todaySession: 'todaySession',

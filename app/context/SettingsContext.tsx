@@ -102,14 +102,26 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 
   /**
-   * Collect ALL en-* voices from the device TTS engine.
+   * Collect ALL en-* voices from the device TTS engine, excluding known
+   * novelty / low-quality voices entirely so they never appear in the UI.
    * Prefer "enhanced" / "premium" quality voices first, then sort by locale
    * so we get good variety (en-US, en-GB, en-AU, en-IN, …).
    */
   const collectEnVoices = useCallback((voices: Speech.Voice[]) => {
-    const enVoices = voices.filter((v) =>
-      v.language.toLowerCase().startsWith('en')
-    );
+    const enVoices = voices.filter((v) => {
+      if (!v.language.toLowerCase().startsWith('en')) return false;
+
+      // Strip out novelty voices entirely
+      const lowerName = v.name.toLowerCase();
+      if (DEFAULT_EXCLUDED_NAMES.some((n) => lowerName.includes(n))) return false;
+      for (const [locale, name] of DEFAULT_EXCLUDED_LOCALE_NAMES) {
+        if (
+          v.language.toLowerCase() === locale.toLowerCase() &&
+          lowerName.includes(name.toLowerCase())
+        ) return false;
+      }
+      return true;
+    });
 
     // Sort: enhanced quality first, then alphabetical by locale + name
     enVoices.sort((a, b) => {
@@ -128,7 +140,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const hydrateVoices = useCallback(async () => {
     setIsLoadingVoices(true);
     try {
-      // Load excluded list first
+      // Load any user-excluded voices
       const storedExcluded = await AsyncStorage.getItem(EXCLUDED_VOICES_KEY);
       let excludedSet: Set<string>;
       if (storedExcluded) {
@@ -139,33 +151,22 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           excludedSet = new Set();
         }
       } else {
-        excludedSet = new Set(); // will be populated with defaults below
+        excludedSet = new Set();
       }
 
       const voices = await Speech.getAvailableVoicesAsync();
       const pool = collectEnVoices(voices);
 
-      // If no stored prefs yet, apply default exclusions
-      if (!storedExcluded && pool.length > 0) {
-        for (const v of pool) {
-          const lowerName = v.name.toLowerCase();
-          if (DEFAULT_EXCLUDED_NAMES.some((n) => lowerName.includes(n))) {
-            excludedSet.add(v.identifier);
-          }
-          for (const [locale, name] of DEFAULT_EXCLUDED_LOCALE_NAMES) {
-            if (
-              v.language.toLowerCase() === locale.toLowerCase() &&
-              lowerName.includes(name.toLowerCase())
-            ) {
-              excludedSet.add(v.identifier);
-            }
-          }
-        }
-        // Persist defaults so they're treated as user prefs going forward
+      // Remove any stale exclusions that reference voices no longer in the pool
+      // (e.g. novelty voices that are now filtered out at collection time)
+      const poolIds = new Set(pool.map((v) => v.identifier));
+      const cleaned = new Set([...excludedSet].filter((id) => poolIds.has(id)));
+      if (cleaned.size !== excludedSet.size) {
         await AsyncStorage.setItem(
           EXCLUDED_VOICES_KEY,
-          JSON.stringify([...excludedSet])
+          JSON.stringify([...cleaned])
         ).catch(() => {});
+        excludedSet = cleaned;
       }
 
       if (!isMountedRef.current) return;

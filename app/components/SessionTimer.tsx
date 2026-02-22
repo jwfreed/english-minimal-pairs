@@ -12,6 +12,7 @@ import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
 
 const SESSION_KEY = '@sessionTimer';
+const CUMULATIVE_KEY = '@sessionTimerCumulative';
 const DAILY_GOAL_MINUTES = 15;
 /** Pause the timer after this many seconds of inactivity */
 const IDLE_TIMEOUT_SEC = 120; // 2 minutes
@@ -29,6 +30,17 @@ function formatTime(seconds: number): string {
 export interface SessionTimerHandle {
   /** Call this from the parent whenever the user does something (play, answer, scroll). */
   poke: () => void;
+}
+
+/** Read the cumulative all-time practice seconds from AsyncStorage. */
+export async function getCumulativeSeconds(): Promise<number> {
+  try {
+    const raw = await AsyncStorage.getItem(CUMULATIVE_KEY);
+    if (raw) return JSON.parse(raw) ?? 0;
+  } catch {
+    // ignore
+  }
+  return 0;
 }
 
 interface Props {
@@ -62,6 +74,10 @@ export default function SessionTimer({ timerRef }: Props) {
     if (timerRef) timerRef.current = { poke };
   }, [timerRef, poke]);
 
+  // Track cumulative total loaded at mount
+  const cumulativeBaseRef = useRef(0);
+  const lastPersistedTodayRef = useRef(0);
+
   // Load persisted time for today on mount
   useEffect(() => {
     (async () => {
@@ -71,10 +87,14 @@ export default function SessionTimer({ timerRef }: Props) {
           const data = JSON.parse(raw);
           if (data.date === todayKey()) {
             savedBaseRef.current = data.seconds ?? 0;
+            lastPersistedTodayRef.current = data.seconds ?? 0;
             accumulatedRef.current = 0;
             setElapsedToday(data.seconds ?? 0);
           }
         }
+        // Load cumulative total
+        const cumRaw = await AsyncStorage.getItem(CUMULATIVE_KEY);
+        cumulativeBaseRef.current = cumRaw ? (JSON.parse(cumRaw) ?? 0) : 0;
       } catch {
         // ignore
       }
@@ -119,10 +139,19 @@ export default function SessionTimer({ timerRef }: Props) {
       total = savedBaseRef.current + accumulatedRef.current + sessionSec;
     }
     try {
+      // Daily
       await AsyncStorage.setItem(
         SESSION_KEY,
         JSON.stringify({ date: todayKey(), seconds: total })
       );
+      // Cumulative: base + delta since last persist
+      const delta = total - lastPersistedTodayRef.current;
+      if (delta > 0) {
+        const newCumulative = cumulativeBaseRef.current + delta;
+        cumulativeBaseRef.current = newCumulative;
+        lastPersistedTodayRef.current = total;
+        await AsyncStorage.setItem(CUMULATIVE_KEY, JSON.stringify(newCumulative));
+      }
     } catch {
       // ignore
     }

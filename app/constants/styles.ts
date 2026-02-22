@@ -63,14 +63,14 @@ const createStyles = (colors: ThemeColors) =>
     container: {
       flex: 1,
       alignItems: 'center',
-      paddingTop: 40, // More top padding
+      paddingTop: 20,
       paddingHorizontal: 20,
       backgroundColor: colors.background,
     },
     title: {
-      fontSize: isTablet ? 42 : 28, // Larger title
+      fontSize: isTablet ? 42 : 28,
       fontWeight: '700',
-      marginBottom: 24,
+      marginBottom: 8,
       color: colors.text,
       textAlign: 'center',
     },
@@ -161,8 +161,8 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 16, // More rounded
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 16,
-      width: '100%', // Full width buttons in their container
+      marginTop: 8,
+      width: '100%',
       maxWidth: isTablet ? 700 : 500,
       ...getShadowStyles(),
     },
@@ -283,10 +283,10 @@ const createStyles = (colors: ThemeColors) =>
       maxWidth: isTablet ? 800 : 600,
       backgroundColor: colors.cardBackground,
       borderRadius: 24,
-      padding: isTablet ? 40 : 24,
+      padding: isTablet ? 32 : 16,
       alignItems: 'center',
       ...getShadowStyles(),
-      marginTop: 10,
+      marginTop: 6,
     },
     section: {
       borderRadius: 12,
@@ -440,8 +440,8 @@ const createStyles = (colors: ThemeColors) =>
 
     // ========== Rich Feedback Panel ==========
     feedbackPanel: {
-      marginTop: 10,
-      paddingVertical: 10,
+      marginTop: 6,
+      paddingVertical: 6,
       paddingHorizontal: 16,
       backgroundColor: colors.cardBackground,
       borderRadius: 12,
@@ -480,7 +480,7 @@ const createStyles = (colors: ThemeColors) =>
 
     // ========== Session Timer ==========
     sessionTimerContainer: {
-      marginBottom: 12,
+      marginBottom: 4,
       paddingHorizontal: 4,
     },
     sessionTimerRow: {

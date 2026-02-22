@@ -2,7 +2,8 @@
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import type { SessionTimerHandle } from '@/app/components/SessionTimer';
-import { View, Text, Alert, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Alert, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
 import { usePairProgress } from '@/app/context/PairProgressContext';
@@ -15,11 +16,14 @@ import { tKeys } from '@/app/constants/translationKeys';
 import PairPicker from '@/app/components/PairPicker';
 import AnswerButtons from '@/app/components/AnswerButtons';
 import SessionTimer from '@/app/components/SessionTimer';
+import PlacementTest from '@/app/components/PlacementTest';
 
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { useAudio } from '@/app/hooks/useAudio';
 import { buildPairId } from '@/app/utils/idHelpers';
 import { useHaptics } from '@/app/hooks/useHaptics';
+
+const PLACEMENT_DONE_KEY = '@placementDone';
 
 /* Playback-rate steps per acoustic tier (0–4) */
 type SpeedTier = 0 | 1 | 2 | 3 | 4;
@@ -55,6 +59,28 @@ export default function HomeScreen() {
   const [groupLongStreak, setGroupLongStreak] = useState<
     Record<string, number>
   >({});
+
+  // Placement test state
+  const [showPlacement, setShowPlacement] = useState<boolean | null>(null); // null = loading
+
+  useEffect(() => {
+    AsyncStorage.getItem(PLACEMENT_DONE_KEY).then((val) => {
+      setShowPlacement(val == null); // show if not done yet
+    }).catch(() => setShowPlacement(false));
+  }, []);
+
+  // Re-check when the category changes (a different language might warrant a new test)
+  // This is intentionally not re-triggering — placement applies globally.
+
+  const handlePlacementComplete = useCallback(async (_startTier: number) => {
+    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
+    setShowPlacement(false);
+  }, []);
+
+  const handlePlacementSkip = useCallback(async () => {
+    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
+    setShowPlacement(false);
+  }, []);
 
   const timerRef = useRef<SessionTimerHandle | null>(null);
 
@@ -210,12 +236,28 @@ export default function HomeScreen() {
     setStableVisible(visible);
   }, [visible]);
 
+  // Show PlacementTest if the user hasn't completed it yet
+  if (showPlacement === null) {
+    // Still checking AsyncStorage
+    return (
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <Text style={{ color: theme.textSecondary }}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (showPlacement) {
+    return (
+      <PlacementTest
+        pairs={catObj.pairs}
+        onComplete={handlePlacementComplete}
+        onSkip={handlePlacementSkip}
+      />
+    );
+  }
+
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={[styles.container, { flex: undefined, paddingBottom: 40 }]}
-      keyboardShouldPersistTaps="handled"
-    >
+    <View style={styles.container}>
       <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
 
       <SessionTimer timerRef={timerRef} />
@@ -255,6 +297,6 @@ export default function HomeScreen() {
           />
         )}
       </View>
-    </ScrollView>
+    </View>
   );
 }

@@ -1,5 +1,5 @@
 // app/(tabs)/results.tsx
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { minimalPairs } from '@/app/constants/minimalPairs';
@@ -11,6 +11,7 @@ import { useCategory } from '@/app/context/CategoryContext';
 import { tKeys } from '@/app/constants/translationKeys';
 import PairItem from '@/app/components/PairItem';
 import { buildPairId } from '@/app/utils/idHelpers';
+import { getCumulativeSeconds } from '@/app/components/SessionTimer';
 
 export default function ResultsScreen() {
   const { progress } = usePairProgress();
@@ -23,6 +24,12 @@ export default function ResultsScreen() {
 
   const numColumns = isTablet ? 2 : 1;
   const gap = 16;
+
+  // Load cumulative practice time
+  const [cumulativeMin, setCumulativeMin] = useState(0);
+  useEffect(() => {
+    getCumulativeSeconds().then((sec) => setCumulativeMin(sec / 60));
+  }, [progress]); // re-read whenever progress changes (proxy for "user practiced")
 
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
@@ -96,8 +103,13 @@ export default function ResultsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       <View style={{ width: '100%', maxWidth: isTablet ? 800 : 600, alignSelf: 'center', flex: 1 }}>
-        <Text style={[styles.headerTitle, { marginTop: 16, marginBottom: 16 }]}>
+        <Text style={[styles.headerTitle, { marginTop: 16, marginBottom: 8 }]}>
           {translate(tKeys.accuracyTrend)}
+        </Text>
+        <Text style={[styles.timePracticedText, { textAlign: 'center', marginBottom: 12, paddingHorizontal: 16 }]}>
+          {`${translate(tKeys.timePracticed)}: ${cumulativeMin < 60
+            ? `${cumulativeMin.toFixed(1)} ${translate(tKeys.min)}`
+            : `${(cumulativeMin / 60).toFixed(1)} hr`}`}
         </Text>
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <FlashList

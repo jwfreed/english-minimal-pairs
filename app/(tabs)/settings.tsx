@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -75,8 +76,11 @@ export default function SettingsScreen() {
   const handleRetakePlacement = useCallback(async () => {
     triggerHaptic('selection');
     await AsyncStorage.removeItem(PLACEMENT_DONE_KEY).catch(() => {});
-    // The placement test will show again on the next visit to the practice screen
-  }, [triggerHaptic]);
+    Alert.alert(
+      translate(tKeys.placementTest) || 'Placement Test',
+      translate(tKeys.placementResetConfirm) || 'The placement test will run when you return to the Practice tab.',
+    );
+  }, [triggerHaptic, translate]);
 
   return (
     <ScrollView

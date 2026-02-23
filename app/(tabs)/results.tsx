@@ -2,6 +2,7 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useNavigation } from 'expo-router';
 import { minimalPairs } from '@/app/constants/minimalPairs';
 import { usePairProgress } from '@/app/context/PairProgressContext';
 import { useAllThemeColors } from '@/app/context/theme';
@@ -11,7 +12,7 @@ import { useCategory } from '@/app/context/CategoryContext';
 import { tKeys } from '@/app/constants/translationKeys';
 import PairItem from '@/app/components/PairItem';
 import { buildPairId } from '@/app/utils/idHelpers';
-import { getCumulativeSeconds } from '@/app/components/SessionTimer';
+import { estimateActivePracticeTime } from '@/app/storage/progressStorage';
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 
 export default function ResultsScreen() {
@@ -26,11 +27,15 @@ export default function ResultsScreen() {
   const numColumns = isTablet ? 2 : 1;
   const gap = 16;
 
-  // Load cumulative practice time
-  const [cumulativeMin, setCumulativeMin] = useState(0);
-  useEffect(() => {
-    getCumulativeSeconds().then((sec) => setCumulativeMin(sec / 60));
-  }, [progress]); // re-read whenever progress changes (proxy for "user practiced")
+  // Compute total practice time from per-pair response durations (consistent
+  // with the per-pair "Time Practiced" shown on each card).
+  const totalPracticeMin = useMemo(() => {
+    let totalMs = 0;
+    for (const stats of Object.values(progress)) {
+      totalMs += estimateActivePracticeTime(stats.attempts ?? []);
+    }
+    return totalMs / 60000;
+  }, [progress]);
 
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
   const selectedCategoryName = categories[categoryIndex];
@@ -40,7 +45,41 @@ export default function ResultsScreen() {
   );
 
   // Get mastery data for the current category
-  const { mastery } = useContrastPairs(catObj?.pairs ?? [], catObj?.category ?? '');
+  const { mastery, refresh: refreshMastery } = useContrastPairs(catObj?.pairs ?? [], catObj?.category ?? '');
+
+  // Compute mastery summary stats
+  const masterySummary = useMemo(() => {
+    if (!catObj) return { totalGroups: 0, masteredGroups: 0, totalLevels: 0, completedLevels: 0 };
+    const groups = new Set<string>();
+    catObj.pairs.forEach((p) => groups.add(p.group));
+    const totalGroups = groups.size;
+    const TOTAL_TIERS = 6;
+    let masteredGroups = 0;
+    let completedLevels = 0;
+    for (const g of groups) {
+      const tier = mastery[g] ?? 1;
+      // Tiers start at 1; completed levels = tier - 1 (levels already passed)
+      // But tier itself represents current level, so mastered means tier >= 6
+      completedLevels += Math.min(tier, TOTAL_TIERS);
+      if (tier >= TOTAL_TIERS) masteredGroups++;
+    }
+    return {
+      totalGroups,
+      masteredGroups,
+      totalLevels: totalGroups * TOTAL_TIERS,
+      completedLevels,
+    };
+  }, [catObj, mastery]);
+
+  // Refresh mastery from AsyncStorage whenever this tab gains focus,
+  // so it stays in sync with promotions made on the practice screen.
+  const navigation = useNavigation();
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      refreshMastery();
+    });
+    return unsubscribe;
+  }, [navigation, refreshMastery]);
 
   if (!catObj || catObj.pairs.length === 0) {
     return (
@@ -113,10 +152,30 @@ export default function ResultsScreen() {
           {translate(tKeys.accuracyTrend)}
         </Text>
         <Text style={[styles.timePracticedText, { textAlign: 'center', marginBottom: 12, paddingHorizontal: 16 }]}>
-          {`${translate(tKeys.timePracticed)}: ${cumulativeMin < 60
-            ? `${cumulativeMin.toFixed(1)} ${translate(tKeys.min)}`
-            : `${(cumulativeMin / 60).toFixed(1)} hr`}`}
+          {`${translate(tKeys.timePracticed)}: ${totalPracticeMin < 60
+            ? `${totalPracticeMin.toFixed(1)} ${translate(tKeys.min)}`
+            : `${(totalPracticeMin / 60).toFixed(1)} hr`}`}
         </Text>
+
+        {/* Mastery Summary Card */}
+        <View style={[styles.masterySummaryCard, { marginHorizontal: 16 }]}>    
+          <View style={styles.masterySummaryItem}>
+            <Text style={styles.masterySummaryValue}>
+              {masterySummary.masteredGroups} / {masterySummary.totalGroups}
+            </Text>
+            <Text style={styles.masterySummaryLabel}>
+              {translate(tKeys.pairsMastered)}
+            </Text>
+          </View>
+          <View style={styles.masterySummaryItem}>
+            <Text style={styles.masterySummaryValue}>
+              {masterySummary.completedLevels} / {masterySummary.totalLevels}
+            </Text>
+            <Text style={styles.masterySummaryLabel}>
+              {translate(tKeys.levelsCompleted)}
+            </Text>
+          </View>
+        </View>
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <FlashList
             data={flattenedPairs}

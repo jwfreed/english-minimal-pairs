@@ -74,5 +74,15 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     await AsyncStorage.removeItem(storageKey).catch(() => {});
   }, [storageKey]);
 
-  return { visible, promote, mastery, resetMastery, setAllGroupsToTier, isLoading };
+  /** Re-read mastery from AsyncStorage (e.g. when the tab gains focus). */
+  const refresh = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem(storageKey);
+      if (raw) setMastery(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, [storageKey]);
+
+  return { visible, promote, mastery, resetMastery, setAllGroupsToTier, refresh, isLoading };
 };

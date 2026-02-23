@@ -311,7 +311,17 @@ export default function HomeScreen() {
         )}
 
         {selectedPair && (
-          <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} />
+          <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} showCriteria />
+        )}
+
+        {/* Level-up celebration — shown above the play button for visibility */}
+        {promotedTier != null && (
+          <View style={styles.levelUpContainer}>
+            <Text style={styles.levelUpText}>
+              🎉 {translate(tKeys.levelUnlocked)}
+            </Text>
+            <LevelIndicator currentTier={promotedTier} compact />
+          </View>
         )}
 
         <TouchableOpacity
@@ -330,7 +340,6 @@ export default function HomeScreen() {
             disabled={playedIdx === null || feedback !== null}
             playedIdx={playedIdx}
             onReplay={handleReplay}
-            levelUpTier={promotedTier}
           />
         )}
       </View>

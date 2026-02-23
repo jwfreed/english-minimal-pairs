@@ -2,6 +2,7 @@
 // -----------------------------------------------------------------------------
 // Visual indicator showing the current mastery tier (1–6) as a row of dots
 // with a text label. Used on both the practice and results screens.
+// Optionally shows leveling criteria text (practice screen only).
 // -----------------------------------------------------------------------------
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
@@ -17,9 +18,11 @@ interface Props {
   currentTier: number;
   /** Compact mode for results list items */
   compact?: boolean;
+  /** Show leveling-criteria hint below the dots (practice screen only) */
+  showCriteria?: boolean;
 }
 
-export default function LevelIndicator({ currentTier, compact = false }: Props) {
+export default function LevelIndicator({ currentTier, compact = false, showCriteria = false }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { translate } = useLanguage();
@@ -58,6 +61,11 @@ export default function LevelIndicator({ currentTier, compact = false }: Props) 
           );
         })}
       </View>
+      {showCriteria && !isMastered && (
+        <Text style={styles.levelCriteriaText}>
+          {translate(tKeys.levelCriteria)}
+        </Text>
+      )}
     </View>
   );
 }

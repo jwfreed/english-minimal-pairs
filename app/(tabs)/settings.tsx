@@ -2,7 +2,7 @@
 // -----------------------------------------------------------------------------
 // Settings screen for app configuration
 // -----------------------------------------------------------------------------
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -52,6 +52,14 @@ export default function SettingsScreen() {
   
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
+  // Track whether the placement test has been completed
+  const [placementDone, setPlacementDone] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(PLACEMENT_DONE_KEY).then((val) => {
+      setPlacementDone(val != null);
+    }).catch(() => {});
+  }, []);
+
   const toggleSection = useCallback((section: string) => {
     triggerHaptic('light');
     setExpandedSection((prev) => prev === section ? null : section);
@@ -76,6 +84,7 @@ export default function SettingsScreen() {
   const handleRetakePlacement = useCallback(async () => {
     triggerHaptic('selection');
     await AsyncStorage.removeItem(PLACEMENT_DONE_KEY).catch(() => {});
+    setPlacementDone(false);
     Alert.alert(
       translate(tKeys.placementTest) || 'Placement Test',
       translate(tKeys.placementResetConfirm) || 'The placement test will run when you return to the Practice tab.',
@@ -388,8 +397,25 @@ export default function SettingsScreen() {
                   {translate(tKeys.placementTest) || 'Placement Test'}
                 </Text>
                 <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                  {translate(tKeys.retakePlacement) || 'Retake on next practice session'}
+                  {translate(tKeys.placementDescription) || 'Determine your starting level'}
                 </Text>
+                <View style={styles.placementStatusRow}>
+                  {placementDone ? (
+                    <>
+                      <Ionicons name="checkmark-circle" size={isTablet ? 18 : 14} color={theme.success} />
+                      <Text style={[styles.placementStatusText, { color: theme.success }]}>
+                        {translate(tKeys.placementCompleted) || 'Completed'}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="ellipse-outline" size={isTablet ? 18 : 14} color={theme.textSecondary} />
+                      <Text style={[styles.placementStatusText, { color: theme.textSecondary }]}>
+                        {translate(tKeys.retakePlacement) || 'Retake on next practice session'}
+                      </Text>
+                    </>
+                  )}
+                </View>
               </View>
             </View>
             <Ionicons

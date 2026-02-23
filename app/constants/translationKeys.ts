@@ -52,6 +52,11 @@ export const tKeys = {
   levelOf: 'levelOf',
   mastered: 'mastered',
   levelUnlocked: 'levelUnlocked',
+  levelCriteria: 'levelCriteria',
+  pairsMastered: 'pairsMastered',
+  levelsCompleted: 'levelsCompleted',
+  placementDescription: 'placementDescription',
+  placementCompleted: 'placementCompleted',
 };
 
 export type TranslationKey = keyof typeof tKeys;

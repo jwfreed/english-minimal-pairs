@@ -42,19 +42,19 @@ const padding = {
 function getShadowStyles() {
   if (Platform.OS === 'android') {
     return {
-      elevation: 2,
+      elevation: 3,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
-      shadowRadius: 2,
+      shadowOpacity: 0.22,
+      shadowRadius: 3,
     };
   }
   return {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 4,
+    elevation: 3,
   };
 }
 
@@ -512,11 +512,11 @@ const createStyles = (colors: ThemeColors) =>
 
     // ========== Level Indicator ==========
     levelIndicatorRow: {
-      flexDirection: 'row' as const,
+      flexDirection: 'column' as const,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
-      gap: 8,
-      marginBottom: 8,
+      gap: 4,
+      marginBottom: 4,
     },
     levelDotsRow: {
       flexDirection: 'row' as const,
@@ -535,6 +535,12 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: isTablet ? 14 : 11,
       fontWeight: '600' as const,
       color: colors.textSecondary,
+    },
+    levelCriteriaText: {
+      fontSize: isTablet ? 13 : 11,
+      color: colors.textSecondary,
+      marginTop: 2,
+      textAlign: 'center' as const,
     },
 
     // ========== Level-Up Celebration ==========
@@ -558,6 +564,44 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
       marginTop: 4,
+    },
+
+    // ========== Mastery Summary Card (Results) ==========
+    masterySummaryCard: {
+      flexDirection: 'row' as const,
+      justifyContent: 'space-around' as const,
+      alignItems: 'center' as const,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 16,
+      paddingVertical: isTablet ? 16 : 12,
+      paddingHorizontal: isTablet ? 24 : 16,
+      marginBottom: 12,
+      ...getShadowStyles(),
+    },
+    masterySummaryItem: {
+      alignItems: 'center' as const,
+    },
+    masterySummaryValue: {
+      fontSize: isTablet ? 28 : 22,
+      fontWeight: '700' as const,
+      color: colors.primary,
+    },
+    masterySummaryLabel: {
+      fontSize: isTablet ? 14 : 12,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+
+    // ========== Placement Status Chip ==========
+    placementStatusRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      marginTop: 4,
+      gap: 4,
+    },
+    placementStatusText: {
+      fontSize: isTablet ? 13 : 11,
+      fontWeight: '600' as const,
     },
   });
 

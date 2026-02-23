@@ -3,9 +3,6 @@ import { View, TouchableOpacity, Text } from 'react-native';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
 import { useHaptics } from '@/app/hooks/useHaptics';
-import { useLanguage } from '@/app/context/LanguageContext';
-import { tKeys } from '@/app/constants/translationKeys';
-import LevelIndicator from '@/app/components/LevelIndicator';
 import type { Pair } from '@/app/constants/minimalPairs';
 
 interface Props {
@@ -17,8 +14,6 @@ interface Props {
   playedIdx?: 0 | 1 | null;
   /** Replay the played word */
   onReplay?: () => void;
-  /** If set, shows a level-up celebration for this tier */
-  levelUpTier?: number | null;
 }
 
 /**
@@ -43,12 +38,10 @@ export default function AnswerButtons({
   disabled = false,
   playedIdx,
   onReplay,
-  levelUpTier,
 }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { triggerHaptic } = useHaptics();
-  const { translate } = useLanguage();
 
   // Trigger haptic feedback when feedback changes
   useEffect(() => {
@@ -122,16 +115,6 @@ export default function AnswerButtons({
             <TouchableOpacity style={styles.replayButton} onPress={onReplay}>
               <Text style={styles.replayButtonText}>🔊 Listen Again</Text>
             </TouchableOpacity>
-          )}
-
-          {/* Inline level-up celebration */}
-          {levelUpTier != null && (
-            <View style={styles.levelUpContainer}>
-              <Text style={styles.levelUpText}>
-                🎉 {translate(tKeys.levelUnlocked)}
-              </Text>
-              <LevelIndicator currentTier={levelUpTier} compact />
-            </View>
           )}
         </View>
       )}

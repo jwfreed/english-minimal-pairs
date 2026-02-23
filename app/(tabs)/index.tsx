@@ -28,7 +28,9 @@ const PLACEMENT_DONE_KEY = '@placementDone';
 /* Playback-rate steps per acoustic tier (0–2)
  * 3 tiers keeps the path to mastery promotion short:
  *   fast path  → 3 correct per tier × 3 tiers = 9 answers
- *   long path  → 6 correct per tier × 3 tiers = 18 answers */
+ *   long path  → 6 correct per tier × 3 tiers = 18 answers
+ * Wrong answers reset the current streak but do NOT demote speed,
+ * so worst case with 1 wrong = 24 correct + 1 wrong = 25 total. */
 type SpeedTier = 0 | 1 | 2;
 const SPEED_TABLE: Record<SpeedTier, number> = {
   0: 0.85,
@@ -79,10 +81,11 @@ export default function HomeScreen() {
   // Re-check when the category changes (a different language might warrant a new test)
   // This is intentionally not re-triggering — placement applies globally.
 
-  const handlePlacementComplete = useCallback(async (_startTier: number) => {
+  const handlePlacementComplete = useCallback(async (startTier: number) => {
+    setAllGroupsToTier(startTier);
     await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
     setShowPlacement(false);
-  }, []);
+  }, [setAllGroupsToTier]);
 
   const handlePlacementSkip = useCallback(async () => {
     await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
@@ -99,7 +102,16 @@ export default function HomeScreen() {
   const [startTime, setStartTime] = useState<number | null>(null);
 
   const catObj = minimalPairs[categoryIndex];
-  const { visible, promote, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
+  const { visible, promote, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
+
+  // Reset round state when the category changes so stale startTime / playedIdx
+  // from a previous category can't bleed into a new one.
+  useEffect(() => {
+    setPairIndex(0);
+    setFeedback(null);
+    setPlayedIdx(null);
+    setStartTime(null);
+  }, [categoryIndex]);
 
   // Clamp pairIndex when visible list shrinks
   const safePairIndex = visible.length > 0 ? Math.min(pairIndex, visible.length - 1) : 0;
@@ -191,17 +203,25 @@ export default function HomeScreen() {
       const nextFastStreak = correct && rtMs < FAST_THRESHOLD_MS ? fastStreak + 1 : 0;
       groupStreakRef.current[g] = nextFastStreak;
 
+      if (__DEV__) {
+        const isFast = rtMs < FAST_THRESHOLD_MS;
+        console.log(
+          `📊 ${g} | ${correct ? '✓' : '✗'} | rt=${rtMs}ms (${isFast ? 'fast' : 'slow'})` +
+          ` | speed=${curSpeed} | fastStreak=${nextFastStreak}/${FAST_STREAK_NEEDED}` +
+          ` | longStreak=${nextLongStreak}/${LONG_STREAK_NEEDED}`
+        );
+      }
+
       // ── Check promotion criteria ──
       const promoteNeeded =
         (correct && rtMs < FAST_THRESHOLD_MS && nextFastStreak >= FAST_STREAK_NEEDED)
         || nextLongStreak >= LONG_STREAK_NEEDED;
 
       if (!promoteNeeded) {
-        if (!correct && curSpeed > 0) {
-          groupSpeedRef.current[g] = (curSpeed - 1) as SpeedTier;
-          forceRender((v) => v + 1);
-          if (__DEV__) console.log(`⬇ Speed ${g}: ${curSpeed} → ${curSpeed - 1}`);
-        }
+        // Wrong answers reset streaks (above) but do NOT demote speed.
+        // Demoting speed was double-punishment that made mastery promotion
+        // unreachable within a reasonable session (~30 answers needed for
+        // long-streak path + 1 wrong answer).
         return;
       }
 
@@ -229,6 +249,7 @@ export default function HomeScreen() {
     setPairIndex(i);
     setFeedback(null);
     setPlayedIdx(null);
+    setStartTime(null);
   }, []);
 
   /** Tell us when the user starts / stops scrolling the picker */

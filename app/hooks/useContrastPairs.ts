@@ -54,10 +54,25 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     []
   );
 
+  /** Set every group to the given tier (clamped 1-6). Used by the placement test. */
+  const setAllGroupsToTier = useCallback(
+    (tier: number) => {
+      const clamped = Math.max(1, Math.min(tier, 6));
+      const byGroup: Record<string, Pair[]> = {};
+      pairs.forEach((p) => (byGroup[p.group] ??= []).push(p));
+      const next: Record<string, number> = {};
+      for (const group of Object.keys(byGroup)) {
+        next[group] = clamped;
+      }
+      setMastery(next);
+    },
+    [pairs]
+  );
+
   const resetMastery = useCallback(async () => {
     setMastery({});
     await AsyncStorage.removeItem(storageKey).catch(() => {});
   }, [storageKey]);
 
-  return { visible, promote, mastery, resetMastery, isLoading };
+  return { visible, promote, mastery, resetMastery, setAllGroupsToTier, isLoading };
 };

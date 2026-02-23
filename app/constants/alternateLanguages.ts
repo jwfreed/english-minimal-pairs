@@ -92,6 +92,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'Skip',
     todaySession: "Today's session",
     dailyGoal: 'Daily goal',
+    levelOf: 'Level',
+    mastered: 'Mastered',
+    levelUnlocked: 'Level Up!',
   },
   日本語: {
     home: 'ホーム',
@@ -142,6 +145,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'スキップ',
     todaySession: '今日のセッション',
     dailyGoal: '1日の目標',
+    levelOf: 'レベル',
+    mastered: 'マスター済み',
+    levelUnlocked: 'レベルアップ！',
   },
 
   中文: {
@@ -192,6 +198,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: '跳过',
     todaySession: '今日练习',
     dailyGoal: '每日目标',
+    levelOf: '等级',
+    mastered: '已掌握',
+    levelUnlocked: '升级了！',
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
@@ -240,7 +249,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     retakePlacement: 'ทำแบบทดสอบใหม่ในเซสชันถัดไป',
     skip: 'ข้าม',
     todaySession: 'เซสชันวันนี้',
-    dailyGoal: 'เป้าหมายรายวัน',  },
+    dailyGoal: 'เป้าหมายรายวัน',
+    levelOf: 'ระดับ',
+    mastered: 'เชี่ยวชาญแล้ว',
+    levelUnlocked: 'เลื่อนระดับ!',
+  },
   Español: {
     home: 'Inicio',
     results: 'Resultados',
@@ -290,6 +303,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'Omitir',
     todaySession: 'Sesión de hoy',
     dailyGoal: 'Meta diaria',
+    levelOf: 'Nivel',
+    mastered: 'Dominado',
+    levelUnlocked: '¡Subiste de nivel!',
   },
   العربية: {
     home: 'الرئيسية',
@@ -340,6 +356,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'تخطي',
     todaySession: 'جلسة اليوم',
     dailyGoal: 'الهدف اليومي',
+    levelOf: 'المستوى',
+    mastered: 'متقن',
+    levelUnlocked: 'ترقية المستوى!',
   },
   Русский: {
     home: 'Главная',
@@ -390,6 +409,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'Пропустить',
     todaySession: 'Сегодняшняя сессия',
     dailyGoal: 'Дневная цель',
+    levelOf: 'Уровень',
+    mastered: 'Освоено',
+    levelUnlocked: 'Уровень повышен!',
   },
   한국어: {
     home: '홈',
@@ -440,6 +462,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: '건너뛰기',
     todaySession: '오늘의 세션',
     dailyGoal: '일일 목표',
+    levelOf: '레벨',
+    mastered: '마스터 완료',
+    levelUnlocked: '레벨 업!',
   },
   'हिंदी/اردو': {
     home: 'होम/ہوم',
@@ -490,6 +515,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'छोड़ें',
     todaySession: 'आज का सत्र',
     dailyGoal: 'दैनिक लक्ष्य',
+    levelOf: 'स्तर',
+    mastered: 'महारत हासिल',
+    levelUnlocked: 'स्तर बढ़ा!',
   },
   Português: {
     home: 'Início',
@@ -540,6 +568,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'Pular',
     todaySession: 'Sessão de hoje',
     dailyGoal: 'Meta diária',
+    levelOf: 'Nível',
+    mastered: 'Dominado',
+    levelUnlocked: 'Subiu de nível!',
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
@@ -590,6 +621,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'Bỏ qua',
     todaySession: 'Phiên hôm nay',
     dailyGoal: 'Mục tiêu hàng ngày',
+    levelOf: 'Cấp',
+    mastered: 'Thành thạo',
+    levelUnlocked: 'Lên cấp!',
   },
   Türkçe: {
     home: 'Ana Sayfa',
@@ -640,6 +674,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'Atla',
     todaySession: 'Bugünkü oturum',
     dailyGoal: 'Günlük hedef',
+    levelOf: 'Seviye',
+    mastered: 'Tamamlandı',
+    levelUnlocked: 'Seviye atladın!',
   },
   فارسی: {
     home: 'خانه',
@@ -690,6 +727,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'رد شدن',
     todaySession: 'جلسه امروز',
     dailyGoal: 'هدف روزانه',
+    levelOf: 'سطح',
+    mastered: 'تسلط یافته',
+    levelUnlocked: 'ارتقا سطح!',
   },
   廣東話: {
     home: '首頁',
@@ -739,6 +779,9 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: '跳過',
     todaySession: '今日練習',
     dailyGoal: '每日目標',
+    levelOf: '等級',
+    mastered: '已掌握',
+    levelUnlocked: '升級了！',
   },
   'Bahasa Indonesia': {
     home: 'Beranda',
@@ -789,5 +832,8 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     skip: 'Lewati',
     todaySession: 'Sesi hari ini',
     dailyGoal: 'Target harian',
+    levelOf: 'Level',
+    mastered: 'Dikuasai',
+    levelUnlocked: 'Naik level!',
   },
 };

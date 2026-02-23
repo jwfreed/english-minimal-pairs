@@ -509,6 +509,56 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 3,
       backgroundColor: colors.success,
     },
+
+    // ========== Level Indicator ==========
+    levelIndicatorRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      gap: 8,
+      marginBottom: 8,
+    },
+    levelDotsRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 4,
+    },
+    levelDot: {
+      borderWidth: 1.5,
+    },
+    levelLabel: {
+      fontSize: isTablet ? 16 : 13,
+      fontWeight: '600' as const,
+      color: colors.textSecondary,
+    },
+    levelLabelCompact: {
+      fontSize: isTablet ? 14 : 11,
+      fontWeight: '600' as const,
+      color: colors.textSecondary,
+    },
+
+    // ========== Level-Up Celebration ==========
+    levelUpContainer: {
+      marginTop: 8,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      backgroundColor: colors.primary + '18',
+      alignItems: 'center' as const,
+    },
+    levelUpText: {
+      fontSize: isTablet ? 18 : 15,
+      fontWeight: '700' as const,
+      color: colors.primary,
+      marginBottom: 4,
+    },
+
+    // ========== Mastery Badge (Results) ==========
+    masteryBadge: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      marginTop: 4,
+    },
   });
 
 export default createStyles;

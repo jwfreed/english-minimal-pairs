@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import AccuracyTimeChart from './AccuracyTimeChart';
+import LevelIndicator from './LevelIndicator';
 import {
   getWeightedAccuracy,
   getAccuracyAndTimeOverTime,
@@ -17,18 +18,21 @@ interface FlattenedPair {
   word1: string;
   word2: string;
   category: string;
+  group?: string;
 }
 
 interface Props {
   item: FlattenedPair;
   stats: PairStats;
+  /** Mastery tier (1–6) for this pair’s group */
+  tier?: number;
   translate: (key: string) => string;
   themeColors: Record<string, string>;
   styles: any;
 }
 
 const PairItem: React.FC<Props> = React.memo(
-  ({ item, stats, translate, themeColors, styles }) => {
+  ({ item, stats, tier, translate, themeColors, styles }) => {
     const attempts = stats.attempts || [];
 
     // Compute averages and trend data
@@ -68,6 +72,11 @@ const PairItem: React.FC<Props> = React.memo(
             <Text style={[styles.title, { color: themeColors.text }]}>
               {`${item.word1} - ${item.word2}`}
             </Text>
+            {tier != null && attempts.length > 0 && (
+              <View style={styles.masteryBadge}>
+                <LevelIndicator currentTier={tier} compact />
+              </View>
+            )}
             <Text style={styles.pairItemStatsText}>
               {`${translate(tKeys.total)}: ${
                 attempts.filter((a) => a.isCorrect).length

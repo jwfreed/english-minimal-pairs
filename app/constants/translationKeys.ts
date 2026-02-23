@@ -48,6 +48,10 @@ export const tKeys = {
   skip: 'skip',
   todaySession: 'todaySession',
   dailyGoal: 'dailyGoal',
+  // Mastery progression
+  levelOf: 'levelOf',
+  mastered: 'mastered',
+  levelUnlocked: 'levelUnlocked',
 };
 
 export type TranslationKey = keyof typeof tKeys;

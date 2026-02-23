@@ -12,6 +12,7 @@ import { tKeys } from '@/app/constants/translationKeys';
 import PairItem from '@/app/components/PairItem';
 import { buildPairId } from '@/app/utils/idHelpers';
 import { getCumulativeSeconds } from '@/app/components/SessionTimer';
+import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 
 export default function ResultsScreen() {
   const { progress } = usePairProgress();
@@ -38,6 +39,9 @@ export default function ResultsScreen() {
     [selectedCategoryName]
   );
 
+  // Get mastery data for the current category
+  const { mastery } = useContrastPairs(catObj?.pairs ?? [], catObj?.category ?? '');
+
   if (!catObj || catObj.pairs.length === 0) {
     return (
       <View
@@ -58,6 +62,7 @@ export default function ResultsScreen() {
         word1: pairObj.word1,
         word2: pairObj.word2,
         category: catObj.category,
+        group: pairObj.group,
       };
     });
 
@@ -90,6 +95,7 @@ export default function ResultsScreen() {
           <PairItem
             item={item}
             stats={stats}
+            tier={mastery[item.group] ?? 1}
             translate={translate}
             themeColors={themeColors}
             styles={styles}
@@ -97,7 +103,7 @@ export default function ResultsScreen() {
         </View>
       );
     },
-    [progress, translate, themeColors, styles, numColumns]
+    [progress, mastery, translate, themeColors, styles, numColumns]
   );
 
   return (

@@ -52,6 +52,7 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   const [correctCount, setCorrectCount] = useState(0);
   const [playedIdx, setPlayedIdx] = useState<0 | 1 | null>(null);
   const [answered, setAnswered] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
 
   const currentPair = testItems[qIndex];
 
@@ -74,6 +75,7 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     const idx: 0 | 1 = Math.random() < 0.5 ? 0 : 1;
     setPlayedIdx(idx);
     setAnswered(false);
+    setHasPlayed(false);
   }, [qIndex, currentPair]);
 
   const handleAnswer = useCallback((idx: 0 | 1) => {
@@ -115,7 +117,12 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
 
       <TouchableOpacity
         style={[styles.button, { marginBottom: 20 }]}
-        onPress={() => playedIdx !== null && playWord(playedIdx)}
+        onPress={() => {
+          if (playedIdx !== null) {
+            setHasPlayed(true);
+            playWord(playedIdx);
+          }
+        }}
       >
         <Text style={styles.buttonText}>🔊 {translate(tKeys.playAudio)}</Text>
       </TouchableOpacity>
@@ -127,10 +134,10 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
             style={[
               styles.button,
               { flex: 1, marginTop: 0 },
-              answered && { opacity: 0.5 },
+              (!hasPlayed || answered) && { opacity: 0.5 },
             ]}
             onPress={() => handleAnswer(idx as 0 | 1)}
-            disabled={answered}
+            disabled={!hasPlayed || answered}
           >
             <Text style={styles.buttonText}>
               {idx === 0 ? currentPair.word1 : currentPair.word2}

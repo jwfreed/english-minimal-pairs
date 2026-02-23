@@ -17,6 +17,7 @@ import PairPicker from '@/app/components/PairPicker';
 import AnswerButtons from '@/app/components/AnswerButtons';
 import SessionTimer from '@/app/components/SessionTimer';
 import PlacementTest from '@/app/components/PlacementTest';
+import LevelIndicator from '@/app/components/LevelIndicator';
 
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { useAudio } from '@/app/hooks/useAudio';
@@ -100,9 +101,11 @@ export default function HomeScreen() {
   );
   const [playedIdx, setPlayedIdx] = useState<0 | 1 | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
+  /** Tier the user just promoted to — drives inline celebration in AnswerButtons */
+  const [promotedTier, setPromotedTier] = useState<number | null>(null);
 
   const catObj = minimalPairs[categoryIndex];
-  const { visible, promote, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
+  const { visible, promote, mastery, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
 
   // Reset round state when the category changes so stale startTime / playedIdx
   // from a previous category can't bleed into a new one.
@@ -153,6 +156,7 @@ export default function HomeScreen() {
     } else {
       // Start new round
       setFeedback(null);
+      setPromotedTier(null);
       setStartTime(Date.now());
       idxToPlay = Math.random() < 0.5 ? 0 : 1;
       setPlayedIdx(idxToPlay);
@@ -232,8 +236,10 @@ export default function HomeScreen() {
       } else {
         groupSpeedRef.current[g] = 0;
         promote(g);
+        const newTier = Math.min((mastery[g] ?? 1) + 1, 6);
+        setPromotedTier(newTier);
         setPairIndex(0);
-        if (__DEV__) console.log(`🎓 Mastery up for ${g}! Speed reset to 0`);
+        if (__DEV__) console.log(`🎓 Mastery up for ${g}! Speed reset to 0 → tier ${newTier}`);
       }
 
       // Reset streaks after promotion
@@ -241,7 +247,7 @@ export default function HomeScreen() {
       groupLongStreakRef.current[g] = 0;
       forceRender((v) => v + 1);
     },
-    [playedIdx, startTime, selectedPair, promote, recordAttempt, catObj.category]
+    [playedIdx, startTime, selectedPair, promote, mastery, recordAttempt, catObj.category]
   );
 
   const handlePairChange = useCallback((i: number) => {
@@ -304,6 +310,10 @@ export default function HomeScreen() {
           />
         )}
 
+        {selectedPair && (
+          <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} />
+        )}
+
         <TouchableOpacity
           style={[styles.button, { zIndex: 10 }]}
           onPress={handlePlay}
@@ -320,6 +330,7 @@ export default function HomeScreen() {
             disabled={playedIdx === null || feedback !== null}
             playedIdx={playedIdx}
             onReplay={handleReplay}
+            levelUpTier={promotedTier}
           />
         )}
       </View>

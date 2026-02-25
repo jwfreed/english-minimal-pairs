@@ -82,6 +82,9 @@ export default function HomeScreen() {
   // Re-check when the category changes (a different language might warrant a new test)
   // This is intentionally not re-triggering — placement applies globally.
 
+  const catObj = minimalPairs[categoryIndex];
+  const { visible, promote, mastery, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
+
   const handlePlacementComplete = useCallback(async (startTier: number) => {
     setAllGroupsToTier(startTier);
     await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
@@ -103,9 +106,6 @@ export default function HomeScreen() {
   const [startTime, setStartTime] = useState<number | null>(null);
   /** Tier the user just promoted to — drives inline celebration in AnswerButtons */
   const [promotedTier, setPromotedTier] = useState<number | null>(null);
-
-  const catObj = minimalPairs[categoryIndex];
-  const { visible, promote, mastery, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
 
   // Reset round state when the category changes so stale startTime / playedIdx
   // from a previous category can't bleed into a new one.
@@ -143,7 +143,7 @@ export default function HomeScreen() {
     debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
     if (!audioModeReady) {
       debugLog('❌ Audio not ready - showing error alert');
-      Alert.alert('Audio Error', 'Audio system is still initializing. Please try again.');
+      Alert.alert(translate(tKeys.audioError) || 'Audio Error', translate(tKeys.audioInitializing) || 'Audio system is still initializing. Please try again.');
       return;
     }
     triggerHaptic('light');
@@ -170,7 +170,7 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Audio playback error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
-      Alert.alert('Audio Error', errorMessage);
+      Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
     }
   }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, selectedPair]);
 

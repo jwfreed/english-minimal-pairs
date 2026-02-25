@@ -57,6 +57,10 @@ export const tKeys = {
   levelsCompleted: 'levelsCompleted',
   placementDescription: 'placementDescription',
   placementCompleted: 'placementCompleted',
+  // Audio & time
+  audioError: 'audioError',
+  audioInitializing: 'audioInitializing',
+  hr: 'hr',
 };
 
 export type TranslationKey = keyof typeof tKeys;

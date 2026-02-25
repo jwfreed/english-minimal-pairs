@@ -18,10 +18,17 @@ const withAudioSession = (config) => {
 
     // Add AVFoundation import after other imports
     if (!contents.includes('import AVFoundation')) {
-      contents = contents.replace(
-        /(import\s+React\s*\n)/,
-        '$1import AVFoundation\n'
-      );
+      // Match any 'import <Something>' line to anchor the insertion
+      const importMatch = contents.match(/^(import\s+\w+.*\n)/m);
+      if (importMatch) {
+        contents = contents.replace(
+          importMatch[0],
+          importMatch[0] + 'import AVFoundation\n'
+        );
+      } else {
+        // Fallback: prepend at the top of the file
+        contents = 'import AVFoundation\n\n' + contents;
+      }
     }
 
     // Add the configureAudioSession method before the last closing brace
@@ -68,10 +75,15 @@ const withAudioSession = (config) => {
 
     // Add call to configureAudioSession in didFinishLaunchingWithOptions
     if (!contents.includes('configureAudioSession()')) {
-      contents = contents.replace(
-        /(didFinishLaunchingWithOptions[^{]*{\s*)/,
-        '$1\n    // Configure audio session for speech synthesis\n    configureAudioSession()\n    '
-      );
+      const dlMatch = contents.match(/(didFinishLaunchingWithOptions[^{]*\{[ \t]*\n?)/);
+      if (dlMatch) {
+        contents = contents.replace(
+          dlMatch[0],
+          dlMatch[0] + '    // Configure audio session for speech synthesis\n    configureAudioSession()\n\n'
+        );
+      } else {
+        console.warn('⚠️  withAudioSession: could not find didFinishLaunchingWithOptions — skipping configureAudioSession() injection');
+      }
     }
 
     modResults.contents = contents;

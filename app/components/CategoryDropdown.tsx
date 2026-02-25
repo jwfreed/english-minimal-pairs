@@ -107,4 +107,6 @@ const CategoryDropdown: React.FC<Props> = React.memo(
   }
 );
 
+CategoryDropdown.displayName = 'CategoryDropdown';
+
 export default CategoryDropdown;

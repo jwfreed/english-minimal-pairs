@@ -1,5 +1,5 @@
 // app/(tabs)/infoScreen.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import { tKeys } from '@/app/constants/translationKeys';
 export default function InfoScreen() {
   const { translate } = useLanguage();
   const themeColors = useAllThemeColors();
-  const styles = createStyles(themeColors);
+  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const { width } = useWindowDimensions();
   const isTablet = width > 700;
 

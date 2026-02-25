@@ -59,8 +59,7 @@ export default function ResultsScreen() {
     for (const g of groups) {
       const tier = mastery[g] ?? 1;
       // Tiers start at 1; completed levels = tier - 1 (levels already passed)
-      // But tier itself represents current level, so mastered means tier >= 6
-      completedLevels += Math.min(tier, TOTAL_TIERS);
+      completedLevels += Math.min(tier - 1, TOTAL_TIERS);
       if (tier >= TOTAL_TIERS) masteredGroups++;
     }
     return {
@@ -81,19 +80,8 @@ export default function ResultsScreen() {
     return unsubscribe;
   }, [navigation, refreshMastery]);
 
-  if (!catObj || catObj.pairs.length === 0) {
-    return (
-      <View
-        style={[styles.container, { backgroundColor: themeColors.background }]}
-      >
-        <Text style={[styles.title, { color: themeColors.text }]}>
-          {`No pairs found for ${selectedCategoryName}`}
-        </Text>
-      </View>
-    );
-  }
-
   const flattenedPairs = useMemo(() => {
+    if (!catObj || catObj.pairs.length === 0) return [];
     const pairs = catObj.pairs.map((pairObj) => {
       const id = buildPairId(pairObj, catObj.category);
       return {
@@ -145,6 +133,18 @@ export default function ResultsScreen() {
     [progress, mastery, translate, themeColors, styles, numColumns]
   );
 
+  if (!catObj || catObj.pairs.length === 0) {
+    return (
+      <View
+        style={[styles.container, { backgroundColor: themeColors.background }]}
+      >
+        <Text style={[styles.title, { color: themeColors.text }]}>
+          {`No pairs found for ${selectedCategoryName}`}
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       <View style={{ width: '100%', maxWidth: isTablet ? 800 : 600, alignSelf: 'center', flex: 1 }}>
@@ -154,7 +154,7 @@ export default function ResultsScreen() {
         <Text style={[styles.timePracticedText, { textAlign: 'center', marginBottom: 12, paddingHorizontal: 16 }]}>
           {`${translate(tKeys.timePracticed)}: ${totalPracticeMin < 60
             ? `${totalPracticeMin.toFixed(1)} ${translate(tKeys.min)}`
-            : `${(totalPracticeMin / 60).toFixed(1)} hr`}`}
+            : `${(totalPracticeMin / 60).toFixed(1)} ${translate(tKeys.hr) || 'hr'}`}`}
         </Text>
 
         {/* Mastery Summary Card */}

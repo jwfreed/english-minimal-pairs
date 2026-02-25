@@ -41,11 +41,30 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   const { getNextVoice } = useSettings();
   const { translate } = useLanguage();
 
-  // Build the test items: sample across tiers
+  // Build the test items: sample one pair from each difficulty tier (1-6),
+  // then fill remaining slots with random extras for variety.
   const testItems = useMemo(() => {
-    const shuffled = shuffle(pairs);
-    // Take up to TOTAL_QUESTIONS, prefer higher variety
-    return shuffled.slice(0, TOTAL_QUESTIONS);
+    const byTier = new Map<number, Pair[]>();
+    for (const p of pairs) {
+      if (!byTier.has(p.difficulty)) byTier.set(p.difficulty, []);
+      byTier.get(p.difficulty)!.push(p);
+    }
+
+    const sampled: Pair[] = [];
+    const seen = new Set<Pair>();
+
+    // One random pair per available tier
+    for (const [, tierPairs] of byTier) {
+      const pick = tierPairs[Math.floor(Math.random() * tierPairs.length)];
+      sampled.push(pick);
+      seen.add(pick);
+    }
+
+    // Fill remaining slots from unused pairs
+    const remaining = pairs.filter(p => !seen.has(p));
+    const extras = shuffle(remaining).slice(0, TOTAL_QUESTIONS - sampled.length);
+
+    return shuffle([...sampled, ...extras]).slice(0, TOTAL_QUESTIONS);
   }, [pairs]);
 
   const [qIndex, setQIndex] = useState(0);

@@ -40,7 +40,6 @@ const PairItem: React.FC<Props> = React.memo(
       rawAvg,
       weightedAvg,
       trendData,
-      rawPracticeMin,
       displayPracticeMin,
     } = useMemo(() => {
       const total = attempts.length;
@@ -58,7 +57,6 @@ const PairItem: React.FC<Props> = React.memo(
         rawAvg: rawAvgValue,
         weightedAvg: weightedAvgValue,
         trendData: trend,
-        rawPracticeMin: rawMin,
         displayPracticeMin: cappedMin,
       };
     }, [attempts]);
@@ -117,5 +115,7 @@ const PairItem: React.FC<Props> = React.memo(
     );
   }
 );
+
+PairItem.displayName = 'PairItem';
 
 export default PairItem;

@@ -173,7 +173,7 @@ const createStyles = (colors: ThemeColors) =>
       letterSpacing: 0.5,
     },
     buttonPressed: {
-      backgroundColor: '#D76D1F',
+      backgroundColor: colors.primaryLight,
     },
     ipaText: {
       fontSize: isTablet ? 24 : 14,
@@ -268,13 +268,13 @@ const createStyles = (colors: ThemeColors) =>
     progressBarOuter: {
       height: 12,
       width: '100%',
-      backgroundColor: '#e5e7eb',
+      backgroundColor: colors.border,
       borderRadius: 6,
       overflow: 'hidden',
     },
     progressBarInner: {
       height: '100%',
-      backgroundColor: '#3b82f6',
+      backgroundColor: colors.primary,
     },
 
     // ========== Shared Section/Card Styles ==========
@@ -293,7 +293,7 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: 16,
       overflow: 'hidden',
       backgroundColor: colors.cardBackground,
-      shadowColor: '#000',
+      shadowColor: colors.shadow,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 4,

@@ -5,6 +5,7 @@ import { useHaptics } from '@/app/hooks/useHaptics';
 
 const screenWidth = Dimensions.get('window').width;
 const isTablet = screenWidth > 700;
+const IOS_PICKER_HEIGHT = isTablet ? 280 : 180;
 
 interface Props {
   pairs: { word1: string; word2: string; ipa1: string; ipa2: string }[];
@@ -51,7 +52,7 @@ function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrol
         width: '100%',
         color,
         marginBottom: 10,
-        height: Platform.OS === 'ios' ? (isTablet ? 300 : 220) : undefined,
+        height: Platform.OS === 'ios' ? IOS_PICKER_HEIGHT : undefined,
       }}
       itemStyle={{ fontSize: isTablet ? 36 : 20, fontWeight: '600' }}
       {...(Platform.OS === 'ios' ? { onFocus: handleScrollStart } : {})}

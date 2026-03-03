@@ -307,7 +307,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
                   {isLoadingVoices
                     ? translate(tKeys.loadingVoices)
-                    : `${voiceCount} active / ${allVoices.length} total`}
+                    : `${voiceCount} ${translate(tKeys.voiceActive) || 'active'} / ${allVoices.length} ${translate(tKeys.total)}`}
                 </Text>
               </View>
             </View>

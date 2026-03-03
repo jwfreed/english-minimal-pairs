@@ -85,6 +85,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• Tap "Play Audio" to hear a word\n• Select the word you heard\n• Get immediate feedback\n• Track your progress over time',
     voicesAvailable: 'voices available',
+    voiceActive: 'active',
     theWordWas: 'The word was',
     listenAgain: 'Listen Again',
     placementTest: 'Placement Test',
@@ -147,6 +148,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '•「音声を再生」をタップして単語を聞く\n• 聞こえた単語を選択\n• 正解・不正解がすぐに表示\n• 練習履歴が保存され、進捗が確認できます',
     voicesAvailable: '利用可能な音声',
+    voiceActive: '有効',
     theWordWas: 'その単語は',
     listenAgain: 'もう一度聞く',
     placementTest: 'レベルテスト',
@@ -209,6 +211,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• 点击“播放音频”听单词\n• 选择你听到的单词\n• 立即获得反馈\n• 记录练习进度，查看成长',
     voicesAvailable: '可用语音',
+    voiceActive: '已启用',
     theWordWas: '那个词是',
     listenAgain: '再听一次',
     placementTest: '水平测试',
@@ -270,6 +273,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     titleThree: 'วิธีใช้งาน',
     infoThree:
       '• แตะ “เล่นเสียง” เพื่อฟัง\n• เลือกคำที่คุณได้ยิน\n• รับคำตอบถูก/ผิดทันที\n• ติดตามความก้าวหน้าของคุณ',    voicesAvailable: 'เสียงที่ใช้ได้',
+    voiceActive: 'ใช้งาน',
     theWordWas: 'คำนั้นคือ',
     listenAgain: 'ฟังอีกครั้ง',
     placementTest: 'แบบทดสอบจัดระดับ',
@@ -332,6 +336,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• Toca "Reproducir Audio" para escuchar\n• Elige la palabra que crees haber oído\n• Recibe retroalimentación inmediata\n• Tu progreso se guarda automáticamente',
     voicesAvailable: 'voces disponibles',
+    voiceActive: 'activas',
     theWordWas: 'La palabra era',
     listenAgain: 'Escuchar de nuevo',
     placementTest: 'Prueba de nivel',
@@ -394,6 +399,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• اضغط على "تشغيل الصوت" للاستماع\n• اختر الكلمة التي سمعتها\n• ستحصل على نتيجة فورية\n• يتم حفظ تقدمك تلقائيًا',
     voicesAvailable: 'أصوات متاحة',
+    voiceActive: 'نشط',
     theWordWas: 'الكلمة كانت',
     listenAgain: 'استمع مرة أخرى',
     placementTest: 'اختبار تحديد المستوى',
@@ -456,6 +462,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• Нажми “Воспроизвести аудио”\n• Выбери слово, которое услышал\n• Мгновенная обратная связь\n• Прогресс сохраняется',
     voicesAvailable: 'доступных голосов',
+    voiceActive: 'активных',
     theWordWas: 'Слово было',
     listenAgain: 'Послушать снова',
     placementTest: 'Тест на уровень',
@@ -518,6 +525,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• "오디오 재생"을 눌러 단어 듣기\n• 들은 단어 선택하기\n• 즉시 피드백 받기\n• 진행 상황 자동 저장',
     voicesAvailable: '사용 가능한 음성',
+    voiceActive: '활성',
     theWordWas: '그 단어는',
     listenAgain: '다시 듣기',
     placementTest: '배치 테스트',
@@ -580,6 +588,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• "ऑडियो चलाएँ" पर टैप करें\n• सुनी हुई शब्द चुनें\n• तुरंत प्रतिक्रिया पाएं\n• आपकी प्रगति सहेजी जाती है/• "آڈیو چلائیں" پر ٹیپ کریں\n• سنا ہوا لفظ چنیں\n• فوری ردعمل حاصل کریں\n• آپ کی پیشرفت خود بخود محفوظ ہوتی ہے',
     voicesAvailable: 'उपलब्ध आवाज़ें',
+    voiceActive: 'सक्रिय/فعال',
     theWordWas: 'वह शब्द था',
     listenAgain: 'फिर से सुनें',
     placementTest: 'प्लेसमेंट टेस्ट',
@@ -642,6 +651,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• Toque em "Reproduzir áudio" para ouvir\n• Escolha a palavra que você ouviu\n• Receba feedback imediato\n• Acompanhe seu progresso automaticamente',
     voicesAvailable: 'vozes disponíveis',
+    voiceActive: 'ativas',
     theWordWas: 'A palavra era',
     listenAgain: 'Ouvir novamente',
     placementTest: 'Teste de nível',
@@ -704,6 +714,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• Nhấn "Phát âm thanh" để nghe\n• Chọn từ bạn nghe thấy\n• Nhận phản hồi ngay lập tức\n• Tiến độ luyện tập sẽ được lưu lại',
     voicesAvailable: 'giọng có sẵn',
+    voiceActive: 'đang dùng',
     theWordWas: 'Từ đó là',
     listenAgain: 'Nghe lại',
     placementTest: 'Bài kiểm tra xếp lớp',
@@ -766,6 +777,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• Kelimeyi duymak için "Ses çal" tuşuna basın\n• Duyduğunuz kelimeyi seçin\n• Anında geri bildirim alın\n• İlerlemeniz kaydedilir',
     voicesAvailable: 'mevcut ses',
+    voiceActive: 'aktif',
     theWordWas: 'Kelime şuydu',
     listenAgain: 'Tekrar dinle',
     placementTest: 'Seviye testi',
@@ -828,6 +840,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• برای شنیدن کلمه، "پخش صدا" را بزنید\n• کلمه‌ای که شنیدید را انتخاب کنید\n• بلافاصله بازخورد بگیرید\n• پیشرفت شما ذخیره می‌شود',
     voicesAvailable: 'صدای موجود',
+    voiceActive: 'فعال',
     theWordWas: 'کلمه بود',
     listenAgain: 'دوباره گوش کن',
     placementTest: 'آزمون تعیین سطح',
@@ -889,6 +902,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• 撳「播放音頻」去聽一個字\n• 揀返你聽到嘅字\n• 即時睇答啱定唔啱\n• 系統會自動記錄你嘅進度',
     voicesAvailable: '可用嘅聲音',
+    voiceActive: '已啟用',
     theWordWas: '嗰個字係',
     listenAgain: '再聽一次',
     placementTest: '程度測試',
@@ -949,6 +963,7 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     infoThree:
       '• Tekan "Putar Audio" untuk mendengarkan\n• Pilih kata yang kamu dengar\n• Dapatkan umpan balik langsung\n• Kemajuanmu akan tersimpan secara otomatis',
     voicesAvailable: 'suara tersedia',
+    voiceActive: 'aktif',
     theWordWas: 'Kata itu adalah',
     listenAgain: 'Dengar lagi',
     placementTest: 'Tes penempatan',

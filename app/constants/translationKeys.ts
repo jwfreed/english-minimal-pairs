@@ -61,6 +61,8 @@ export const tKeys = {
   audioError: 'audioError',
   audioInitializing: 'audioInitializing',
   hr: 'hr',
+  // Voice selection
+  voiceActive: 'voiceActive',
 };
 
 export type TranslationKey = keyof typeof tKeys;

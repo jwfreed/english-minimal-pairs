@@ -29,10 +29,6 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadProgress();
-  }, []);
-
   const loadProgress = useCallback(async () => {
     try {
       const storedProgress = await getProgress();
@@ -43,6 +39,10 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
 
   const recordAttempt = useCallback(
     (pairId: string, isCorrect: boolean, durationMin: number = 0) => {

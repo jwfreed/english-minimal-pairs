@@ -3,6 +3,7 @@
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import type { SessionTimerHandle } from '@/app/components/SessionTimer';
 import { View, Text, Alert, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
@@ -15,6 +16,7 @@ import { tKeys } from '@/app/constants/translationKeys';
 
 import PairPicker from '@/app/components/PairPicker';
 import AnswerButtons from '@/app/components/AnswerButtons';
+import HelpOverlay from '@/app/components/HelpOverlay';
 import SessionTimer from '@/app/components/SessionTimer';
 import PlacementTest from '@/app/components/PlacementTest';
 import LevelIndicator from '@/app/components/LevelIndicator';
@@ -48,7 +50,7 @@ const LONG_STREAK_NEEDED = 6;
 
 export default function HomeScreen() {
   const { translate } = useLanguage();
-  const { categoryIndex, setCategoryIndex } = useCategory();
+  const { categoryIndex } = useCategory();
   const { recordAttempt } = usePairProgress();
   const { getNextVoice } = useSettings();
   const theme = useAllThemeColors();
@@ -99,6 +101,7 @@ export default function HomeScreen() {
   const timerRef = useRef<SessionTimerHandle | null>(null);
 
   const [pairIndex, setPairIndex] = useState(0);
+  const [isHelpVisible, setIsHelpVisible] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
@@ -172,7 +175,7 @@ export default function HomeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
     }
-  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, selectedPair]);
+  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, selectedPair, translate]);
 
   /** Replay the same word after feedback (used by AnswerButtons "Listen Again") */
   const handleReplay = useCallback(async () => {
@@ -290,7 +293,20 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{translate(tKeys.practicePairs)}</Text>
+      <View style={styles.practiceHeader}>
+        <View style={styles.practiceHeaderSpacer} />
+        <Text style={styles.practiceTitle}>{translate(tKeys.practicePairs)}</Text>
+        <TouchableOpacity
+          accessibilityLabel="Help"
+          accessibilityRole="button"
+          activeOpacity={0.8}
+          hitSlop={8}
+          onPress={() => setIsHelpVisible(true)}
+          style={styles.helpButton}
+        >
+          <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
+        </TouchableOpacity>
+      </View>
 
       <SessionTimer timerRef={timerRef} />
 
@@ -343,6 +359,11 @@ export default function HomeScreen() {
           />
         )}
       </View>
+
+      <HelpOverlay
+        visible={isHelpVisible}
+        onClose={() => setIsHelpVisible(false)}
+      />
     </View>
   );
 }

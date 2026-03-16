@@ -1,5 +1,5 @@
 // app/(tabs)/results.tsx
-import React, { useMemo, useCallback, useEffect, useState } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { View, Text, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from 'expo-router';
@@ -184,7 +184,6 @@ export default function ResultsScreen() {
             renderItem={renderItem}
             numColumns={numColumns}
             key={numColumns.toString()} // Force re-render when columns change
-            estimatedItemSize={200}
             contentContainerStyle={{ paddingBottom: 20 }}
           />
         </View>

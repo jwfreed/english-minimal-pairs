@@ -1,6 +1,5 @@
 // styles.ts
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { Colors } from './Colors';
 
 const { width } = Dimensions.get('window');
 const isTablet = width > 700;
@@ -33,11 +32,6 @@ function baseFont(color: string) {
     color,
   };
 }
-
-const padding = {
-  vertical: 10,
-  horizontal: 20,
-};
 
 function getShadowStyles() {
   if (Platform.OS === 'android') {
@@ -73,6 +67,35 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: 8,
       color: colors.text,
       textAlign: 'center',
+    },
+    practiceHeader: {
+      width: '100%',
+      maxWidth: isTablet ? 800 : 600,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    practiceHeaderSpacer: {
+      width: isTablet ? 52 : 44,
+      height: isTablet ? 52 : 44,
+    },
+    practiceTitle: {
+      flex: 1,
+      fontSize: isTablet ? 42 : 28,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+    },
+    helpButton: {
+      width: isTablet ? 52 : 44,
+      height: isTablet ? 52 : 44,
+      borderRadius: isTablet ? 26 : 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.cardBackground,
+      borderWidth: 1,
+      borderColor: colors.border,
     },
     paragraph: {
       ...baseFont(colors.text),

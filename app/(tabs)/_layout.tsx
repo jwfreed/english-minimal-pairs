@@ -42,14 +42,6 @@ function TabLayout() {
             color={iconColor}
           />
         );
-      case 'infoScreen':
-        return (
-          <Ionicons
-            name={focused ? 'help-circle' : 'help-circle-outline'}
-            size={size}
-            color={iconColor}
-          />
-        );
       case 'settings':
         return (
           <Ionicons
@@ -85,13 +77,6 @@ function TabLayout() {
         options={{
           title: translate(tKeys.settings),
           tabBarLabel: translate(tKeys.settings),
-        }}
-      />
-      <Tabs.Screen
-        name="infoScreen"
-        options={{
-          title: translate(tKeys.info),
-          tabBarLabel: translate(tKeys.info),
         }}
       />
     </Tabs>

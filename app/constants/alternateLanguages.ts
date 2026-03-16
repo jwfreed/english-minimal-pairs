@@ -1,7 +1,6 @@
 interface LanguageTranslations {
   home: string;
   results: string;
-  info: string;
   settings?: string;
   practicePairs: string;
   playAudio: string;
@@ -10,13 +9,6 @@ interface LanguageTranslations {
   min: string;
   weightedAverage: string;
   total: string;
-
-  titleOne: string;
-  infoOne: string;
-  titleTwo: string;
-  infoTwo: string;
-  titleThree: string;
-  infoThree: string;
   
   configureApp?: string;
   language?: string;
@@ -25,9 +17,6 @@ interface LanguageTranslations {
   loadingVoices?: string;
   noVoicesAvailable?: string;
   refresh?: string;
-  appInfo?: string;
-  version?: string;
-  build?: string;
   usAccentFemale?: string;
   ukAccentMale?: string;
   americanEnglish?: string;

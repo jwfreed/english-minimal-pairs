@@ -33,7 +33,7 @@ interface Props {
 
 const PairItem: React.FC<Props> = React.memo(
   ({ item, stats, tier, translate, themeColors, styles }) => {
-    const attempts = stats.attempts || [];
+    const attempts = useMemo(() => stats.attempts ?? [], [stats.attempts]);
 
     // Compute averages and trend data
     const {

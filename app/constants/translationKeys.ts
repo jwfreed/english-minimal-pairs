@@ -53,6 +53,13 @@ export const tKeys = {
   hr: 'hr',
   // Voice selection
   voiceActive: 'voiceActive',
+  // Help overlay
+  helpTitle: 'helpTitle',
+  helpBody: 'helpBody',
+  helpTipPracticeTime: 'helpTipPracticeTime',
+  helpTipSpeedIncrease: 'helpTipSpeedIncrease',
+  helpTipFocusSounds: 'helpTipFocusSounds',
+  helpButton: 'helpButton',
 };
 
 export type TranslationKey = keyof typeof tKeys;

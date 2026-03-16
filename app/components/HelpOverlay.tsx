@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 
 import createStyles from '@/app/constants/styles';
+import { tKeys } from '@/app/constants/translationKeys';
 import { useAllThemeColors } from '@/app/context/theme';
+import { useLanguage } from '@/app/context/LanguageContext';
 import { ThemedText } from '@/app/components/ThemedText';
 import { ThemedView } from '@/app/components/ThemedView';
 
@@ -18,16 +20,17 @@ interface HelpOverlayProps {
   onClose: () => void;
 }
 
-const TIPS = [
-  'Practice each pair for about 60 minutes',
-  'Speed increases as you level up',
-  'Focus on hearing the sound difference',
-];
-
 export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
   const theme = useAllThemeColors();
+  const { translate: t } = useLanguage();
   const sharedStyles = useMemo(() => createStyles(theme), [theme]);
   const styles = useMemo(() => createHelpOverlayStyles(theme), [theme]);
+
+  const TIPS = [
+    t(tKeys.helpTipPracticeTime),
+    t(tKeys.helpTipSpeedIncrease),
+    t(tKeys.helpTipFocusSounds),
+  ];
 
   return (
     <Modal
@@ -55,11 +58,11 @@ export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
             style={styles.card}
           >
             <ThemedText style={styles.title} type="subtitle">
-              How to practice
+              {t(tKeys.helpTitle)}
             </ThemedText>
 
             <ThemedText style={styles.body}>
-              Listen to the word and tap what you hear.
+              {t(tKeys.helpBody)}
             </ThemedText>
 
             <View style={styles.tipsSection}>
@@ -67,8 +70,8 @@ export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
                 Tips
               </ThemedText>
 
-              {TIPS.map((tip) => (
-                <View key={tip} style={styles.tipRow}>
+              {TIPS.map((tip, index) => (
+                <View key={index} style={styles.tipRow}>
                   <ThemedText style={styles.bullet}>•</ThemedText>
                   <ThemedText style={styles.tipText}>{tip}</ThemedText>
                 </View>
@@ -76,13 +79,13 @@ export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
             </View>
 
             <TouchableOpacity
-              accessibilityLabel="Got it"
+              accessibilityLabel={t(tKeys.helpButton)}
               accessibilityRole="button"
               activeOpacity={0.85}
               onPress={onClose}
               style={[sharedStyles.button, styles.button]}
             >
-              <Text style={sharedStyles.buttonText}>Got it</Text>
+              <Text style={sharedStyles.buttonText}>{t(tKeys.helpButton)}</Text>
             </TouchableOpacity>
           </ThemedView>
         </View>

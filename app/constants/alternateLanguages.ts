@@ -1,38 +1,4 @@
-interface LanguageTranslations {
-  home: string;
-  results: string;
-  settings?: string;
-  practicePairs: string;
-  playAudio: string;
-  accuracyTrend: string;
-  timePracticed: string;
-  min: string;
-  weightedAverage: string;
-  total: string;
-  
-  configureApp?: string;
-  language?: string;
-  voiceSelection?: string;
-  systemDefault?: string;
-  loadingVoices?: string;
-  noVoicesAvailable?: string;
-  refresh?: string;
-  usAccentFemale?: string;
-  ukAccentMale?: string;
-  americanEnglish?: string;
-  britishEnglish?: string;
-  appearance?: string;
-  lightMode?: string;
-  darkMode?: string;
-  systemMode?: string;
-  useEnglishUI?: string;
-  englishUIDescription?: string;
-  
-  [key: string]: string | undefined;
-}
-
-export const alternateLanguages: Record<string, LanguageTranslations> = {
-  English: {
+export const englishTranslations = {
     home: 'Home',
     results: 'Results',
     info: 'Info',
@@ -94,7 +60,18 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'Audio Error',
     audioInitializing: 'Audio system is still initializing. Please try again.',
     hr: 'hr',
-  },
+    helpTitle: 'How to practice',
+    helpBody: 'Listen to the word and tap what you hear.',
+    helpTipPracticeTime: 'Practice each pair for about 60 minutes',
+    helpTipSpeedIncrease: 'Speed increases as you level up',
+    helpTipFocusSounds: 'Focus on hearing the sound difference',
+    helpButton: 'Got it',
+  } as const;
+
+export type TranslationSchema = Record<keyof typeof englishTranslations, string>;
+
+export const alternateLanguages: Record<string, TranslationSchema> = {
+  English: englishTranslations,
   日本語: {
     home: 'ホーム',
     results: '結果',
@@ -157,6 +134,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'オーディオエラー',
     audioInitializing: 'オーディオシステムがまだ初期化中です。もう一度お試しください。',
     hr: '時間',
+    helpTitle: '練習方法',
+    helpBody: '単語を聞いて、聞こえた方をタップしてください。',
+    helpTipPracticeTime: '各ペアを約60分間練習しましょう',
+    helpTipSpeedIncrease: 'レベルアップすると速度が上がります',
+    helpTipFocusSounds: '音の違いを聞くことに集中しましょう',
+    helpButton: 'わかりました',
   },
 
   中文: {
@@ -220,6 +203,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: '音频错误',
     audioInitializing: '音频系统仍在初始化中，请稍后再试。',
     hr: '小时',
+    helpTitle: '如何练习',
+    helpBody: '听单词，然后点击你听到的。',
+    helpTipPracticeTime: '每对练习约60分钟',
+    helpTipSpeedIncrease: '随着等级提升速度会加快',
+    helpTipFocusSounds: '专注于听出声音的区别',
+    helpButton: '知道了',
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
@@ -282,6 +271,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'ข้อผิดพลาดเสียง',
     audioInitializing: 'ระบบเสียงกำลังเริ่มต้น กรุณาลองอีกครั้ง',
     hr: 'ชม.',
+    helpTitle: 'วิธีฝึก',
+    helpBody: 'ฟังคำแล้วแตะคำที่คุณได้ยิน',
+    helpTipPracticeTime: 'ฝึกแต่ละคู่ประมาณ 60 นาที',
+    helpTipSpeedIncrease: 'ความเร็วจะเพิ่มขึ้นเมื่อเลื่อนระดับ',
+    helpTipFocusSounds: 'จดจ่อกับการฟังความแตกต่างของเสียง',
+    helpButton: 'เข้าใจแล้ว',
   },
   Español: {
     home: 'Inicio',
@@ -345,6 +340,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'Error de audio',
     audioInitializing: 'El sistema de audio aún se está inicializando. Inténtelo de nuevo.',
     hr: 'h',
+    helpTitle: 'Cómo practicar',
+    helpBody: 'Escucha la palabra y toca lo que oigas.',
+    helpTipPracticeTime: 'Practica cada par durante unos 60 minutos',
+    helpTipSpeedIncrease: 'La velocidad aumenta al subir de nivel',
+    helpTipFocusSounds: 'Concéntrate en escuchar la diferencia de sonido',
+    helpButton: 'Entendido',
   },
   العربية: {
     home: 'الرئيسية',
@@ -408,6 +409,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'خطأ في الصوت',
     audioInitializing: 'نظام الصوت لا يزال جارٍ تهيئته. يرجى المحاولة مجددًا.',
     hr: 'س',
+    helpTitle: 'كيف تتدرب',
+    helpBody: 'استمع إلى الكلمة ثم اضغط على ما سمعته.',
+    helpTipPracticeTime: 'تدرّب على كل زوج لمدة 60 دقيقة تقريبًا',
+    helpTipSpeedIncrease: 'تزداد السرعة كلما ارتقيت في المستوى',
+    helpTipFocusSounds: 'ركّز على سماع الفرق بين الأصوات',
+    helpButton: 'فهمت',
   },
   Русский: {
     home: 'Главная',
@@ -471,6 +478,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'Ошибка аудио',
     audioInitializing: 'Аудиосистема ещё инициализируется. Попробуйте снова.',
     hr: 'ч',
+    helpTitle: 'Как практиковаться',
+    helpBody: 'Прослушайте слово и нажмите на то, что услышали.',
+    helpTipPracticeTime: 'Практикуйте каждую пару около 60 минут',
+    helpTipSpeedIncrease: 'Скорость увеличивается с повышением уровня',
+    helpTipFocusSounds: 'Сосредоточьтесь на различии звуков',
+    helpButton: 'Понятно',
   },
   한국어: {
     home: '홈',
@@ -534,6 +547,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: '오디오 오류',
     audioInitializing: '오디오 시스템이 아직 초기화 중입니다. 다시 시도해 주세요.',
     hr: '시간',
+    helpTitle: '연습 방법',
+    helpBody: '단어를 듣고 들린 것을 탭하세요.',
+    helpTipPracticeTime: '각 쌍을 약 60분 동안 연습하세요',
+    helpTipSpeedIncrease: '레벨이 올라가면 속도가 빨라집니다',
+    helpTipFocusSounds: '소리 차이를 듣는 데 집중하세요',
+    helpButton: '알겠습니다',
   },
   'हिंदी/اردو': {
     home: 'होम/ہوم',
@@ -597,6 +616,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'ऑडियो त्रुटि/آڈیو نقص',
     audioInitializing: 'ऑडियो सिस्टम अभी शुरू हो रहा है। कृपया पुनः प्रयास करें।/آڈیو سسٹم ابھی شروع ہو رہا ہے۔ دوبارہ کوشش کریں۔',
     hr: 'घंटे/گھنٹے',
+    helpTitle: 'अभ्यास कैसे करें/مشق کیسے کریں',
+    helpBody: 'शब्द सुनें और जो सुना उसे टैप करें।/لفظ سنیں اور جو سنا اسے ٹیپ کریں۔',
+    helpTipPracticeTime: 'प्रत्येक जोड़ी को लगभग 60 मिनट तक अभ्यास करें/ہر جوڑے کی تقریباً 60 منٹ مشق کریں',
+    helpTipSpeedIncrease: 'स्तर बढ़ने पर गति बढ़ती है/سطح بڑھنے پر رفتار بڑھتی ہے',
+    helpTipFocusSounds: 'ध्वनि के अंतर को सुनने पर ध्यान दें/آواز کے فرق کو سننے پر توجہ دیں',
+    helpButton: 'समझ गया/سمجھ گیا',
   },
   Português: {
     home: 'Início',
@@ -660,6 +685,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'Erro de áudio',
     audioInitializing: 'O sistema de áudio ainda está inicializando. Tente novamente.',
     hr: 'h',
+    helpTitle: 'Como praticar',
+    helpBody: 'Ouça a palavra e toque no que você ouviu.',
+    helpTipPracticeTime: 'Pratique cada par por cerca de 60 minutos',
+    helpTipSpeedIncrease: 'A velocidade aumenta conforme você sobe de nível',
+    helpTipFocusSounds: 'Concentre-se em ouvir a diferença dos sons',
+    helpButton: 'Entendi',
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
@@ -723,6 +754,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'Lỗi âm thanh',
     audioInitializing: 'Hệ thống âm thanh vẫn đang khởi tạo. Vui lòng thử lại.',
     hr: 'giờ',
+    helpTitle: 'Cách luyện tập',
+    helpBody: 'Nghe từ và nhấn vào từ bạn nghe được.',
+    helpTipPracticeTime: 'Luyện tập mỗi cặp khoảng 60 phút',
+    helpTipSpeedIncrease: 'Tốc độ tăng khi bạn lên cấp',
+    helpTipFocusSounds: 'Tập trung nghe sự khác biệt của âm thanh',
+    helpButton: 'Đã hiểu',
   },
   Türkçe: {
     home: 'Ana Sayfa',
@@ -786,6 +823,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'Ses hatası',
     audioInitializing: 'Ses sistemi hâlâ başlatılıyor. Lütfen tekrar deneyin.',
     hr: 'sa',
+    helpTitle: 'Nasıl çalışılır',
+    helpBody: 'Kelimeyi dinleyin ve duyduğunuza dokunun.',
+    helpTipPracticeTime: 'Her çifti yaklaşık 60 dakika çalışın',
+    helpTipSpeedIncrease: 'Seviye atladıkça hız artar',
+    helpTipFocusSounds: 'Ses farkını duymaya odaklanın',
+    helpButton: 'Anladım',
   },
   فارسی: {
     home: 'خانه',
@@ -849,6 +892,12 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'خطای صوتی',
     audioInitializing: 'سیستم صوتی هنوز در حال آماده‌سازی است. لطفاً دوباره تلاش کنید.',
     hr: 'ساعت',
+    helpTitle: 'نحوه تمرین',
+    helpBody: 'به کلمه گوش دهید و روی آنچه شنیدید ضربه بزنید.',
+    helpTipPracticeTime: 'هر جفت را حدود ۶۰ دقیقه تمرین کنید',
+    helpTipSpeedIncrease: 'با بالا رفتن سطح، سرعت افزایش می‌یابد',
+    helpTipFocusSounds: 'روی شنیدن تفاوت صدا تمرکز کنید',
+    helpButton: 'متوجه شدم',
   },
   廣東話: {
     home: '首頁',
@@ -909,7 +958,14 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     placementCompleted: '已完成',    placementResetConfirm: '返回練習標籤時會重新進行程度測試。',
     audioError: '音頻錯誤',
     audioInitializing: '音頻系統仲係度初始化緊。請稍後再試。',
-    hr: '小時',  },
+    hr: '小時',
+    helpTitle: '點樣練習',
+    helpBody: '聽個字然後撳你聽到嘅。',
+    helpTipPracticeTime: '每對練習大約60分鐘',
+    helpTipSpeedIncrease: '升級之後速度會加快',
+    helpTipFocusSounds: '集中精神聽聲音嘅分別',
+    helpButton: '明白了',
+  },
   'Bahasa Indonesia': {
     home: 'Beranda',
     results: 'Hasil',
@@ -972,5 +1028,11 @@ export const alternateLanguages: Record<string, LanguageTranslations> = {
     audioError: 'Kesalahan audio',
     audioInitializing: 'Sistem audio masih sedang mempersiapkan. Silakan coba lagi.',
     hr: 'jam',
+    helpTitle: 'Cara berlatih',
+    helpBody: 'Dengarkan kata dan ketuk apa yang kamu dengar.',
+    helpTipPracticeTime: 'Latih setiap pasangan selama sekitar 60 menit',
+    helpTipSpeedIncrease: 'Kecepatan meningkat seiring kenaikan level',
+    helpTipFocusSounds: 'Fokus mendengar perbedaan bunyi',
+    helpButton: 'Mengerti',
   },
 };

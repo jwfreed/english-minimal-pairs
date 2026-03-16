@@ -10,7 +10,8 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
-import { alternateLanguages } from '@/app/constants/alternateLanguages';
+import { alternateLanguages, englishTranslations, TranslationSchema } from '@/app/constants/alternateLanguages';
+import { TranslationKey } from '@/app/constants/translationKeys';
 
 const STORAGE_KEY = '@userLanguage';
 const ENGLISH_UI_OVERRIDE_KEY = '@useEnglishUI';
@@ -151,7 +152,7 @@ const isEnglishSpeakingRegion = (regionCode?: string): boolean => {
 interface LanguageContextValue {
   language: string;
   setLanguage: (lang: string) => void;
-  translate: (key: string) => string;
+  translate: (key: keyof TranslationSchema) => string;
   useEnglishUI: boolean;
   setUseEnglishUI: (value: boolean) => void;
 }
@@ -287,10 +288,19 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const translate = useCallback(
-    (key: string) => {
+    (key: keyof TranslationSchema) => {
       // If English UI override is enabled, always use English translations
       const targetLanguage = useEnglishUI ? 'English' : language;
-      return alternateLanguages[targetLanguage]?.[key] || key;
+
+      const value =
+        alternateLanguages[targetLanguage]?.[key] ??
+        englishTranslations[key];
+
+      if (__DEV__ && alternateLanguages[targetLanguage]?.[key] === undefined) {
+        console.warn(`Missing translation for "${key}" in "${targetLanguage}"`);
+      }
+
+      return value;
     },
     [language, useEnglishUI]
   );

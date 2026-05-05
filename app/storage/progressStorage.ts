@@ -1,8 +1,8 @@
-// src/storage/progressStorage.ts – single‑source of truth for practice analytics
 // -----------------------------------------------------------------------------
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
+let writeQueue: Promise<void> = Promise.resolve();
 
 /* ─── types ──────────────────────────────────────────────────────────────── */
 export interface PairAttempt {
@@ -25,10 +25,20 @@ const safeParse = (raw: string | null) => {
   }
 };
 
-/* ─── public API ──────────────────────────────────────────────────────────── */
-export async function getProgress(): Promise<Record<string, PairStats>> {
+const readProgress = async (): Promise<Record<string, PairStats>> => {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
   return safeParse(raw);
+};
+
+const enqueueWrite = (write: () => Promise<void>): Promise<void> => {
+  writeQueue = writeQueue.catch(() => undefined).then(write);
+  return writeQueue;
+};
+
+/* ─── public API ──────────────────────────────────────────────────────────── */
+export async function getProgress(): Promise<Record<string, PairStats>> {
+  await writeQueue.catch(() => undefined);
+  return readProgress();
 }
 
 export async function saveAttempt(
@@ -36,21 +46,28 @@ export async function saveAttempt(
   isCorrect: boolean,
   durationMin = 0
 ) {
-  const progress = await getProgress();
-  const stats = progress[pairId] ?? { attempts: [] };
-
-  stats.attempts.push({
+  const attempt: PairAttempt = {
     isCorrect,
     timestamp: Date.now(),
     durationMin,
-  });
+  };
 
-  progress[pairId] = stats;
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  await enqueueWrite(async () => {
+    const progress = await readProgress();
+    const stats = progress[pairId] ?? { attempts: [] };
+
+    progress[pairId] = {
+      attempts: [...stats.attempts, attempt],
+    };
+
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  });
 }
 
 export async function clearProgress() {
-  await AsyncStorage.removeItem(STORAGE_KEY);
+  await enqueueWrite(async () => {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  });
 }
 
 /* ─── analytics helpers used across the UI ────────────────────────────────── */

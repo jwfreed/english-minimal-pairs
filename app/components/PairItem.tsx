@@ -8,7 +8,7 @@ import {
   estimateActivePracticeTime,
   PairStats,
 } from '@/app/storage/progressStorage';
-import { tKeys } from '@/app/constants/translationKeys';
+import { tKeys, TranslationKey } from '@/app/constants/translationKeys';
 
 // Maximum minutes to display in the progress bar
 const MAX_PRACTICE_MIN = 60;
@@ -26,7 +26,7 @@ interface Props {
   stats: PairStats;
   /** Mastery tier (1–6) for this pair’s group */
   tier?: number;
-  translate: (key: string) => string;
+  translate: (key: TranslationKey) => string;
   themeColors: Record<string, string>;
   styles: any;
 }

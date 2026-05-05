@@ -12,7 +12,9 @@ export default function TTSDebugScreen() {
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 50));
-    console.log(message);
+    if (__DEV__) {
+      console.log(message);
+    }
   };
 
   const testBasicTTS = async () => {

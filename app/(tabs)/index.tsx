@@ -1,4 +1,3 @@
-// app/(tabs)/index.tsx – Home screen with adaptive difficulty, voice rotation & session timer
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import type { SessionTimerHandle } from '@/app/components/SessionTimer';
@@ -25,6 +24,14 @@ import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { useAudio } from '@/app/hooks/useAudio';
 import { buildPairId } from '@/app/utils/idHelpers';
 import { useHaptics } from '@/app/hooks/useHaptics';
+import {
+  FAST_STREAK_NEEDED,
+  FAST_THRESHOLD_MS,
+  LONG_STREAK_NEEDED,
+  SPEED_TABLE,
+  SpeedTier,
+  getNextAdaptiveProgression,
+} from '@/app/learning/adaptiveProgression';
 
 const PLACEMENT_DONE_KEY = '@placementDone';
 
@@ -34,19 +41,6 @@ const PLACEMENT_DONE_KEY = '@placementDone';
  *   long path  → 6 correct per tier × 3 tiers = 18 answers
  * Wrong answers reset the current streak but do NOT demote speed,
  * so worst case with 1 wrong = 24 correct + 1 wrong = 25 total. */
-type SpeedTier = 0 | 1 | 2;
-const SPEED_TABLE: Record<SpeedTier, number> = {
-  0: 0.85,
-  1: 1.0,
-  2: 1.15,
-};
-const MAX_SPEED: SpeedTier = 2;
-
-/** Response-time ceiling for a "fast" answer.  Must account for TTS
- * playback (~0.5-1 s) plus reaction time, so 2 s is unrealistic. */
-const FAST_THRESHOLD_MS = 5000;
-const FAST_STREAK_NEEDED = 3;
-const LONG_STREAK_NEEDED = 6;
 
 export default function HomeScreen() {
   const { translate } = useLanguage();
@@ -165,9 +159,6 @@ export default function HomeScreen() {
       setPlayedIdx(idxToPlay);
     }
 
-    const wordToPlay = idxToPlay === 0 ? selectedPair.word1 : selectedPair.word2;
-    console.log('🔊 Playing word:', wordToPlay);
-
     try {
       await play(idxToPlay);
     } catch (error) {
@@ -175,7 +166,7 @@ export default function HomeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
     }
-  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, selectedPair, translate]);
+  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, translate]);
 
   /** Replay the same word after feedback (used by AnswerButtons "Listen Again") */
   const handleReplay = useCallback(async () => {
@@ -200,31 +191,30 @@ export default function HomeScreen() {
 
       const g = selectedPair.group;
       const curSpeed: SpeedTier = groupSpeedRef.current[g] ?? 0;
-
-      // ── Update streaks (refs — always current) ──
       const longStreak = groupLongStreakRef.current[g] ?? 0;
-      const nextLongStreak = correct ? longStreak + 1 : 0;
-      groupLongStreakRef.current[g] = nextLongStreak;
-
       const fastStreak = groupStreakRef.current[g] ?? 0;
-      const nextFastStreak = correct && rtMs < FAST_THRESHOLD_MS ? fastStreak + 1 : 0;
-      groupStreakRef.current[g] = nextFastStreak;
+      const progression = getNextAdaptiveProgression({
+        correct,
+        responseTimeMs: rtMs,
+        currentSpeed: curSpeed,
+        fastStreak,
+        longStreak,
+        currentMasteryTier: mastery[g] ?? 1,
+      });
+
+      groupLongStreakRef.current[g] = progression.nextLongStreak;
+      groupStreakRef.current[g] = progression.nextFastStreak;
 
       if (__DEV__) {
         const isFast = rtMs < FAST_THRESHOLD_MS;
         console.log(
           `📊 ${g} | ${correct ? '✓' : '✗'} | rt=${rtMs}ms (${isFast ? 'fast' : 'slow'})` +
-          ` | speed=${curSpeed} | fastStreak=${nextFastStreak}/${FAST_STREAK_NEEDED}` +
-          ` | longStreak=${nextLongStreak}/${LONG_STREAK_NEEDED}`
+          ` | speed=${curSpeed} | fastStreak=${progression.nextFastStreak}/${FAST_STREAK_NEEDED}` +
+          ` | longStreak=${progression.nextLongStreak}/${LONG_STREAK_NEEDED}`
         );
       }
 
-      // ── Check promotion criteria ──
-      const promoteNeeded =
-        (correct && rtMs < FAST_THRESHOLD_MS && nextFastStreak >= FAST_STREAK_NEEDED)
-        || nextLongStreak >= LONG_STREAK_NEEDED;
-
-      if (!promoteNeeded) {
+      if (!progression.promoteSpeed && !progression.promoteMastery) {
         // Wrong answers reset streaks (above) but do NOT demote speed.
         // Demoting speed was double-punishment that made mastery promotion
         // unreachable within a reasonable session (~30 answers needed for
@@ -233,21 +223,20 @@ export default function HomeScreen() {
       }
 
       // ── Promote speed or mastery ──
-      if (curSpeed < MAX_SPEED) {
-        groupSpeedRef.current[g] = (curSpeed + 1) as SpeedTier;
-        if (__DEV__) console.log(`⬆ Speed ${g}: ${curSpeed} → ${curSpeed + 1}`);
+      if (progression.promoteSpeed) {
+        groupSpeedRef.current[g] = progression.nextSpeed;
+        if (__DEV__) console.log(`⬆ Speed ${g}: ${curSpeed} → ${progression.nextSpeed}`);
       } else {
-        groupSpeedRef.current[g] = 0;
+        groupSpeedRef.current[g] = progression.nextSpeed;
         promote(g);
-        const newTier = Math.min((mastery[g] ?? 1) + 1, 6);
-        setPromotedTier(newTier);
+        setPromotedTier(progression.nextMasteryTier);
         setPairIndex(0);
-        if (__DEV__) console.log(`🎓 Mastery up for ${g}! Speed reset to 0 → tier ${newTier}`);
+        if (__DEV__) console.log(`🎓 Mastery up for ${g}! Speed reset to 0 → tier ${progression.nextMasteryTier}`);
       }
 
       // Reset streaks after promotion
-      groupStreakRef.current[g] = 0;
-      groupLongStreakRef.current[g] = 0;
+      groupStreakRef.current[g] = progression.nextFastStreak;
+      groupLongStreakRef.current[g] = progression.nextLongStreak;
       forceRender((v) => v + 1);
     },
     [playedIdx, startTime, selectedPair, promote, mastery, recordAttempt, catObj.category]

@@ -1,4 +1,3 @@
-// src/context/CategoryContext.tsx
 import React, {
   createContext,
   useContext,

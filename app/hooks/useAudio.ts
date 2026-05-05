@@ -1,4 +1,3 @@
-// hooks/useSpeech.ts
 // -----------------------------------------------------------------------------
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -24,11 +23,7 @@ export const useAudio = (
   const audioModeConfiguredRef = useRef(false);
 
   const debugLog = useCallback(
-    (...args: Parameters<typeof console.log>) => {
-      if (__DEV__) {
-        // console.log(...args);
-      }
-    },
+    (..._args: Parameters<typeof console.log>) => {},
     []
   );
 

@@ -1,5 +1,3 @@
-// constants/translationKeys.ts
-
 export const tKeys = {
   home: 'home',
   results: 'results',
@@ -60,6 +58,6 @@ export const tKeys = {
   helpTipSpeedIncrease: 'helpTipSpeedIncrease',
   helpTipFocusSounds: 'helpTipFocusSounds',
   helpButton: 'helpButton',
-};
+} as const;
 
 export type TranslationKey = keyof typeof tKeys;

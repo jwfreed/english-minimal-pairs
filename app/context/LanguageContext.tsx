@@ -1,4 +1,3 @@
-// src/context/LanguageContext.tsx
 import React, {
   createContext,
   useContext,
@@ -10,7 +9,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
-import { alternateLanguages, englishTranslations, TranslationSchema } from '@/app/constants/alternateLanguages';
+import { alternateLanguages, englishTranslations } from '@/app/constants/alternateLanguages';
 import { TranslationKey } from '@/app/constants/translationKeys';
 
 const STORAGE_KEY = '@userLanguage';
@@ -152,7 +151,7 @@ const isEnglishSpeakingRegion = (regionCode?: string): boolean => {
 interface LanguageContextValue {
   language: string;
   setLanguage: (lang: string) => void;
-  translate: (key: keyof TranslationSchema) => string;
+  translate: (key: TranslationKey) => string;
   useEnglishUI: boolean;
   setUseEnglishUI: (value: boolean) => void;
 }
@@ -288,7 +287,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const translate = useCallback(
-    (key: keyof TranslationSchema) => {
+    (key: TranslationKey) => {
       // If English UI override is enabled, always use English translations
       const targetLanguage = useEnglishUI ? 'English' : language;
 

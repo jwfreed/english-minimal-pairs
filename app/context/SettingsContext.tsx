@@ -1,4 +1,3 @@
-// context/SettingsContext.tsx
 // -----------------------------------------------------------------------------
 // Manages user settings including TTS voice pool (auto-rotation) and haptics.
 // Users can exclude specific voices via the Settings UI; excluded identifiers
@@ -75,11 +74,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const debugLog = useCallback(
-    (...args: Parameters<typeof console.log>) => {
-      if (__DEV__) {
-        // console.log(...args);
-      }
-    },
+    (..._args: Parameters<typeof console.log>) => {},
     []
   );
 

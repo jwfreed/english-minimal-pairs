@@ -54,7 +54,7 @@ function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrol
         marginBottom: 10,
         height: Platform.OS === 'ios' ? IOS_PICKER_HEIGHT : undefined,
       }}
-      itemStyle={{ fontSize: isTablet ? 36 : 20, fontWeight: '600' }}
+      itemStyle={{ fontSize: isTablet ? 36 : 20, fontWeight: '600', color }}
       {...(Platform.OS === 'ios' ? { onFocus: handleScrollStart } : {})}
     >
       {pairs.map((p, i) => (

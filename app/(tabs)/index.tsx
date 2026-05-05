@@ -166,7 +166,7 @@ export default function HomeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
     }
-  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, translate]);
+  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, selectedPair, translate]);
 
   /** Replay the same word after feedback (used by AnswerButtons "Listen Again") */
   const handleReplay = useCallback(async () => {

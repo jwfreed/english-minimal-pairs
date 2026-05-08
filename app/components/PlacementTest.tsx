@@ -4,7 +4,7 @@
 // tier (1-6) across the active category's groups. Returns a recommended
 // starting tier based on the user's accuracy.
 // -----------------------------------------------------------------------------
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as Speech from 'expo-speech';
 import createStyles from '@/app/constants/styles';
@@ -73,6 +73,20 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   const [answered, setAnswered] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
 
+  // Track the answer-advance timeout so it can be cleared on unmount or before
+  // rescheduling. Without this, the callback can fire after the component
+  // unmounts (e.g. user taps Skip during the 600 ms window) and incorrectly
+  // call onComplete / onSkip side effects.
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current !== null) {
+        clearTimeout(advanceTimerRef.current);
+      }
+    };
+  }, []);
+
   const currentPair = testItems[qIndex];
 
   const playWord = useCallback(async (idx: 0 | 1) => {
@@ -104,8 +118,14 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     const newCorrectCount = correctCount + (correct ? 1 : 0);
     setCorrectCount(newCorrectCount);
 
+    // Clear any previously scheduled advance before setting a new one (defensive).
+    if (advanceTimerRef.current !== null) {
+      clearTimeout(advanceTimerRef.current);
+    }
+
     // Advance after a brief delay
-    setTimeout(() => {
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
       if (qIndex + 1 >= testItems.length) {
         // Test complete — compute recommended tier
         const accuracy = newCorrectCount / testItems.length;
@@ -170,8 +190,9 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
       <TouchableOpacity
         style={{ marginTop: 32, padding: 12 }}
         onPress={onSkip}
+        disabled={answered}
       >
-        <Text style={[styles.ipaText, { textDecorationLine: 'underline' }]}>
+        <Text style={[styles.ipaText, { textDecorationLine: 'underline', opacity: answered ? 0.4 : 1 }]}>
           {translate(tKeys.skip) || 'Skip'}
         </Text>
       </TouchableOpacity>

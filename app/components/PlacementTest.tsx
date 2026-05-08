@@ -125,6 +125,8 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     return <ActivityIndicator />;
   }
 
+  const canPlayAudio = playedIdx !== null && !answered;
+
   return (
     <View style={[styles.container, { justifyContent: 'center' }]}>
       <Text style={[styles.title, { marginBottom: 8 }]}>
@@ -135,13 +137,13 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
       </Text>
 
       <TouchableOpacity
-        style={[styles.button, { marginBottom: 20 }]}
+        style={[styles.button, { marginBottom: 20 }, !canPlayAudio && { opacity: 0.5 }]}
         onPress={() => {
-          if (playedIdx !== null) {
-            setHasPlayed(true);
-            playWord(playedIdx);
-          }
+          if (!canPlayAudio || playedIdx === null) return;
+          setHasPlayed(true);
+          playWord(playedIdx);
         }}
+        disabled={!canPlayAudio}
       >
         <Text style={styles.buttonText}>🔊 {translate(tKeys.playAudio)}</Text>
       </TouchableOpacity>

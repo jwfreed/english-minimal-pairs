@@ -30,14 +30,17 @@ import {
   choosePlaybackForRound,
 } from '@/app/domain/practiceSession';
 import {
+  PLACEMENT_DONE_KEY,
+  serializePlacementDone,
+  shouldShowPlacementTest,
+} from '@/app/domain/masteryPersistence';
+import {
   FAST_STREAK_NEEDED,
   FAST_THRESHOLD_MS,
   LONG_STREAK_NEEDED,
   SPEED_TABLE,
   SpeedTier,
 } from '@/app/learning/adaptiveProgression';
-
-const PLACEMENT_DONE_KEY = '@placementDone';
 
 /* Playback-rate steps per acoustic tier (0–2)
  * 3 tiers keeps the path to mastery promotion short:
@@ -75,7 +78,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     AsyncStorage.getItem(PLACEMENT_DONE_KEY).then((val) => {
-      setShowPlacement(val == null); // show if not done yet
+      setShowPlacement(shouldShowPlacementTest(val)); // show if not done yet
     }).catch(() => setShowPlacement(false));
   }, []);
 
@@ -87,12 +90,12 @@ export default function HomeScreen() {
 
   const handlePlacementComplete = useCallback(async (startTier: number) => {
     setAllGroupsToTier(startTier);
-    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
+    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, serializePlacementDone()).catch(() => {});
     setShowPlacement(false);
   }, [setAllGroupsToTier]);
 
   const handlePlacementSkip = useCallback(async () => {
-    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
+    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, serializePlacementDone()).catch(() => {});
     setShowPlacement(false);
   }, []);
 

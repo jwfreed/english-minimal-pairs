@@ -5,15 +5,18 @@ import {
   buildMasteryForAllGroups,
   selectVisiblePairsByMastery,
 } from '@/app/domain/practiceSession';
-
-const MASTERY_KEY_PREFIX = '@mastery_';
+import {
+  buildMasteryStorageKey,
+  parseStoredMastery,
+  serializeMastery,
+} from '@/app/domain/masteryPersistence';
 
 export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   // map group → highest tier mastered (start at 1)
   const [mastery, setMastery] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  const storageKey = `${MASTERY_KEY_PREFIX}${categoryKey}`;
+  const storageKey = buildMasteryStorageKey(categoryKey);
 
   // Load persisted mastery on mount / category change
   useEffect(() => {
@@ -24,9 +27,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(storageKey);
-        if (raw && !cancelled) {
-          setMastery(JSON.parse(raw));
-        }
+        if (!cancelled) setMastery(parseStoredMastery(raw));
       } catch {
         // ignore – start fresh
       } finally {
@@ -39,7 +40,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   // Persist whenever mastery changes (after initial load)
   useEffect(() => {
     if (isLoading) return;
-    AsyncStorage.setItem(storageKey, JSON.stringify(mastery)).catch(() => {});
+    AsyncStorage.setItem(storageKey, serializeMastery(mastery)).catch(() => {});
   }, [mastery, storageKey, isLoading]);
 
   const visible = useMemo(() => {
@@ -69,7 +70,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   const refresh = useCallback(async () => {
     try {
       const raw = await AsyncStorage.getItem(storageKey);
-      if (raw) setMastery(JSON.parse(raw));
+      setMastery((current) => parseStoredMastery(raw, current));
     } catch {
       // ignore
     }

@@ -9,7 +9,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck"
+    "validate:data": "node scripts/validate-data.js",
+    "check": "npm run lint && npm run typecheck && npm run validate:data"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

@@ -30,8 +30,8 @@ const uhVsAh: Row[] = [
   ['luck', 'lock', 2, '/lʌk/', '/lɑːk/', 'uhVsAh', 'medial'],
   ['cup', 'cop', 3, '/kʌp/', '/kɑːp/', 'uhVsAh', 'medial'],
   ['duck', 'dock', 4, '/dʌk/', '/dɑːk/', 'uhVsAh', 'medial'],
-  ['hut', 'hot', 5, '/hʌt/', '/hɒt/', 'uhVsAh', 'medial'],
-  ['sung', 'song', 6, '/sʌŋ/', '/sɒŋ/', 'uhVsAh', 'medial'],
+  ['hut', 'hot', 5, '/hʌt/', '/hɑːt/', 'uhVsAh', 'medial'],
+  ['sung', 'song', 6, '/sʌŋ/', '/sɑːŋ/', 'uhVsAh', 'medial'],
 ];
 
 const aVsE: Row[] = [

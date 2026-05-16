@@ -30,8 +30,8 @@ const vW: Row[] = [
   ['vest', 'west', 2, '/vɛst/', '/wɛst/', 'vW', 'initial'],
   ['vow', 'wow', 3, '/vaʊ/', '/waʊ/', 'vW', 'initial'],
   ['vane', 'wane', 4, '/veɪn/', '/weɪn/', 'vW', 'initial'],
-  ['wheel', 'veal', 5, '/wiːl/', '/viːl/', 'vW', 'initial'],
-  ['wiper', 'viper', 6, '/ˈwaɪpər/', '/ˈvaɪpər/', 'vW', 'initial'],
+  ['veal', 'wheel', 5, '/viːl/', '/wiːl/', 'vW', 'initial'],
+  ['viper', 'wiper', 6, '/ˈvaɪpər/', '/ˈwaɪpər/', 'vW', 'initial'],
 ];
 
 const rL: Row[] = [

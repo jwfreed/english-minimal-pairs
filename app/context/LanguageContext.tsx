@@ -10,13 +10,18 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
 import { alternateLanguages, englishTranslations } from '@/app/constants/alternateLanguages';
+import {
+  DEFAULT_LANGUAGE_CODE,
+  englishSpeakingRegions,
+  localeLanguageMap,
+  regionLanguageMap,
+} from '@/app/constants/languageSelection';
 import { TranslationKey } from '@/app/constants/translationKeys';
 
 const STORAGE_KEY = '@userLanguage';
 const ENGLISH_UI_OVERRIDE_KEY = '@useEnglishUI';
 const MANUAL_ENGLISH_UI_KEY = '@manualEnglishUIToggle';
 const DEFAULT_LANGUAGE = Object.keys(alternateLanguages)[0];
-const DEFAULT_LANGUAGE_CODE = 'en';
 
 /**
  * Migration map for renamed language keys.
@@ -28,6 +33,7 @@ const LANGUAGE_KEY_MIGRATION: Record<string, string> = {
   'русский язык': 'Русский',
   'زبان فارسی': 'فارسی',
   'bahasa Indo': 'Bahasa Indonesia',
+  'हिंदी/اردو': 'हिन्दी / اردو',
 };
 
 interface DeviceLocaleInfo {
@@ -74,26 +80,7 @@ const getDeviceLocaleInfo = (): DeviceLocaleInfo => {
  * Maps device locale codes to app language names
  */
 const getLanguageFromLocale = (languageCode: string): string => {
-  const localeMap: Record<string, string> = {
-    'en': 'English',
-    'ja': '日本語',
-    'zh': '中文',
-    'th': 'ภาษาไทย',
-    'ko': '한국어',
-    'hi': 'हिंदी/اردو',
-    'ur': 'हिंदी/اردو',
-    'pt': 'Português',
-    'tr': 'Türkçe',
-    'yue': '廣東話',
-    'es': 'Español',
-    'ar': 'العربية',
-    'ru': 'Русский',
-    'vi': 'Tiếng Việt',
-    'fa': 'فارسی',
-    'id': 'Bahasa Indonesia',
-  };
-  
-  return localeMap[languageCode] || DEFAULT_LANGUAGE;
+  return localeLanguageMap[languageCode] || DEFAULT_LANGUAGE;
 };
 
 /**
@@ -102,40 +89,7 @@ const getLanguageFromLocale = (languageCode: string): string => {
  */
 const getLanguageFromRegion = (regionCode?: string): string | null => {
   if (!regionCode) return null;
-  
-  const regionMap: Record<string, string> = {
-    'JP': '日本語',
-    'CN': '中文',
-    'TW': '中文',
-    'HK': '廣東話',
-    'TH': 'ภาษาไทย',
-    'KR': '한국어',
-    'IN': 'हिंदी/اردو',
-    'PK': 'हिंदी/اردو',
-    'PT': 'Português',
-    'BR': 'Português',
-    'TR': 'Türkçe',
-    'ES': 'Español',
-    'MX': 'Español',
-    'AR': 'Español',
-    'CO': 'Español',
-    'CL': 'Español',
-    'PE': 'Español',
-    'VE': 'Español',
-    'SA': 'العربية',
-    'AE': 'العربية',
-    'EG': 'العربية',
-    'IQ': 'العربية',
-    'JO': 'العربية',
-    'KW': 'العربية',
-    'LB': 'العربية',
-    'RU': 'Русский',
-    'VN': 'Tiếng Việt',
-    'IR': 'فارسی',
-    'ID': 'Bahasa Indonesia',
-  };
-  
-  return regionMap[regionCode] || null;
+  return regionLanguageMap[regionCode] || null;
 };
 
 /**
@@ -143,9 +97,7 @@ const getLanguageFromRegion = (regionCode?: string): string | null => {
  */
 const isEnglishSpeakingRegion = (regionCode?: string): boolean => {
   if (!regionCode) return false;
-  
-  const englishRegions = ['US', 'GB', 'CA', 'AU', 'NZ', 'IE', 'ZA', 'SG'];
-  return englishRegions.includes(regionCode);
+  return englishSpeakingRegions.has(regionCode);
 };
 
 interface LanguageContextValue {

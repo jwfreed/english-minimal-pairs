@@ -554,7 +554,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     helpTipFocusSounds: '소리 차이를 듣는 데 집중하세요',
     helpButton: '알겠습니다',
   },
-  'हिंदी/اردو': {
+  'हिन्दी / اردو': {
     home: 'होम/ہوم',
     results: 'परिणाम/نتائج',
     info: 'जानकारी/معلومات',

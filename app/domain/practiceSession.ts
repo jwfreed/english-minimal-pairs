@@ -110,7 +110,7 @@ export function applyPracticeAnswer({
 }: PracticeAnswerInput): PracticeAnswerResult | null {
   if (playedIdx === null || !selectedPair) return null;
 
-  const responseTimeMs = startTime ? nowMs - startTime : 0;
+  const responseTimeMs = startTime !== null ? nowMs - startTime : 0;
   const correct = answerIdx === playedIdx;
   const progression = getNextAdaptiveProgression({
     correct,

@@ -1,3 +1,6 @@
+// The app uses device TTS for spoken words. This script validates only
+// bundled audio assets required by the app; it does not validate runtime
+// device TTS behavior, installed voices, or iOS silent-mode behavior.
 const fs = require('fs');
 const path = require('path');
 
@@ -32,13 +35,11 @@ function validateAudioAssets() {
     const source = fs.existsSync(referencePath)
       ? fs.readFileSync(referencePath, 'utf8')
       : '';
-    if (!source.includes(asset.path)) {
-      const relativeRequirePath = '../../assets/audio/silent.mp3';
-      if (!source.includes(relativeRequirePath)) {
-        errors.push(
-          `${asset.name} is not referenced by ${asset.referencedBy}: ${asset.path}`
-        );
-      }
+    const assetFileName = path.basename(asset.path);
+    if (!source.includes(assetFileName)) {
+      errors.push(
+        `${asset.name} is not referenced by ${asset.referencedBy}: ${assetFileName}`
+      );
     }
   }
 

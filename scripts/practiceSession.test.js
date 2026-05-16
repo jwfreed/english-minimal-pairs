@@ -125,6 +125,49 @@ runTest('applyPracticeAnswer returns null before a word has been played or selec
   );
 });
 
+runTest('applyPracticeAnswer treats zero startTime as a real timestamp', () => {
+  const pair = makePair('rL', 1, 'right', 'light');
+
+  const result = applyPracticeAnswer({
+    selectedPair: pair,
+    category: 'Test',
+    answerIdx: 0,
+    playedIdx: 0,
+    startTime: 0,
+    nowMs: 2500,
+    currentSpeed: 0,
+    fastStreak: 0,
+    longStreak: 0,
+    currentMasteryTier: 1,
+  });
+
+  assert.strictEqual(result.responseTimeMs, 2500);
+  assert.strictEqual(result.durationMin, 2500 / 60000);
+});
+
+runTest('applyPracticeAnswer does not mutate its input pair or input object', () => {
+  const pair = makePair('rL', 1, 'right', 'light');
+  const input = {
+    selectedPair: pair,
+    category: 'Test',
+    answerIdx: 0,
+    playedIdx: 0,
+    startTime: 1000,
+    nowMs: 4500,
+    currentSpeed: 0,
+    fastStreak: 1,
+    longStreak: 1,
+    currentMasteryTier: 1,
+  };
+  const beforePair = JSON.stringify(pair);
+  const beforeInput = JSON.stringify(input);
+
+  applyPracticeAnswer(input);
+
+  assert.strictEqual(JSON.stringify(pair), beforePair);
+  assert.strictEqual(JSON.stringify(input), beforeInput);
+});
+
 runTest('applyPracticeAnswer advances fast streak and promotes speed on fast correct answers', () => {
   const pair = makePair('rL', 1, 'right', 'light');
 

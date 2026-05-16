@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-tests.js",
     "validate:data": "node scripts/validate-data.js",
-    "check": "npm run lint && npm run typecheck && npm run validate:data && npm run test"
+    "validate:audio": "node scripts/validate-audio-assets.js",
+    "check": "npm run lint && npm run typecheck && npm run validate:data && npm run validate:audio && npm run test"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -55,6 +56,8 @@
     "@babel/core": "^7.25.2",
     "@react-native-community/cli": "^18.0.0",
     "@types/react": "~19.1.10",
+    "eslint": "^9.39.4",
+    "eslint-config-expo": "^10.0.0",
     "expo-module-scripts": "^5.0.8",
     "typescript": "^5.3.3"
   },

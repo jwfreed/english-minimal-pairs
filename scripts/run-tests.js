@@ -3,6 +3,7 @@ const path = require('path');
 const testFiles = [
   'validate-data.test.js',
   'practiceSession.test.js',
+  'audioPlayback.test.js',
 ];
 
 for (const testFile of testFiles) {

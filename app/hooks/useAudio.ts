@@ -4,6 +4,11 @@ import { Platform } from 'react-native';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import type { Pair } from '@/app/constants/minimalPairs';
+import {
+  buildSpeechOptions,
+  getPlaybackWord,
+  requireIosVoicesForPlayback,
+} from '@/app/domain/audioPlayback';
 
 /**
  * Custom hook for text-to-speech playback of minimal pairs
@@ -163,9 +168,7 @@ export const useAudio = (
         const voices =
           availableVoicesRef.current ??
           (availableVoicesRef.current = await Speech.getAvailableVoicesAsync());
-        if (voices.length === 0) {
-          throw new Error('TTS not available on iOS Simulator. Please test on a physical device.');
-        }
+        requireIosVoicesForPlayback(Platform.OS, voices);
 
         // Re-ensure audio mode is set before each playback to handle cases
         // where the audio session might have been interrupted or reset
@@ -195,7 +198,7 @@ export const useAudio = (
         }
       }
 
-      const word = idx === 0 ? selectedPair.word1 : selectedPair.word2;
+      const word = getPlaybackWord(selectedPair, idx);
 
       // Pick the next voice from the rotation pool for this utterance
       const voice = getNextVoice ? getNextVoice() : null;
@@ -207,13 +210,9 @@ export const useAudio = (
 
       setIsSpeaking(true);
 
-      // Build speech options with volume explicitly set
-      const speechOptions: Speech.SpeechOptions = {
-        language: 'en-US', // American English
-        pitch: 1.0, // Normal pitch
-        rate: rate, // Use the provided rate
-        volume: 1.0, // Maximum volume
-        ...(voice ? { voice: voice.identifier } : {}),
+      const speechOptions: Speech.SpeechOptions = buildSpeechOptions({
+        rate,
+        voice,
         onDone: () => {
           setIsSpeaking(false);
           debugLog(`✅ Successfully spoke: "${word}"`);
@@ -226,7 +225,7 @@ export const useAudio = (
           setIsSpeaking(false);
           debugError(`❌ TTS Error for "${word}":`, error);
         },
-      };
+      });
 
       try {
         // Log speech attempt details

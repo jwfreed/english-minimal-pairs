@@ -12,6 +12,7 @@ import { useAllThemeColors } from '@/app/context/theme';
 import { useSettings } from '@/app/context/SettingsContext';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { tKeys } from '@/app/constants/translationKeys';
+import { recommendPlacementTier } from '@/app/domain/practiceSession';
 import type { Pair } from '@/app/constants/minimalPairs';
 
 const TOTAL_QUESTIONS = 10;
@@ -127,14 +128,7 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     advanceTimerRef.current = setTimeout(() => {
       advanceTimerRef.current = null;
       if (qIndex + 1 >= testItems.length) {
-        // Test complete — compute recommended tier
-        const accuracy = newCorrectCount / testItems.length;
-        let tier: number;
-        if (accuracy >= 0.9) tier = 4;
-        else if (accuracy >= 0.7) tier = 3;
-        else if (accuracy >= 0.5) tier = 2;
-        else tier = 1;
-        onComplete(tier);
+        onComplete(recommendPlacementTier(newCorrectCount, testItems.length));
       } else {
         setQIndex((i) => i + 1);
       }

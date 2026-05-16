@@ -1,4 +1,4 @@
-name: Test and Coverage
+name: Check
 
 on:
   push:
@@ -7,22 +7,20 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '21'
+          node-version: '20'
+          cache: npm
 
       - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
-      - name: Run Tests with Coverage
-        run: npx jest --coverage || true
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+      - name: Run Checks
+        run: npm run check

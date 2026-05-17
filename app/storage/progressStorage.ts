@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
+export const PAIR_PROGRESS_STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
 let writeQueue: Promise<void> = Promise.resolve();
 
 /* ─── types ──────────────────────────────────────────────────────────────── */
@@ -16,18 +16,26 @@ export interface PairStats {
 }
 
 /* ─── helpers ─────────────────────────────────────────────────────────────── */
-const safeParse = (raw: string | null) => {
-  if (!raw) return {} as Record<string, PairStats>;
+export function getDefaultProgress(): Record<string, PairStats> {
+  return {};
+}
+
+export function parseStoredProgress(raw: string | null): Record<string, PairStats> {
+  if (!raw) return getDefaultProgress();
   try {
     return JSON.parse(raw) as Record<string, PairStats>;
   } catch {
-    return {} as Record<string, PairStats>;
+    return getDefaultProgress();
   }
-};
+}
+
+export function serializeProgress(progress: Record<string, PairStats>): string {
+  return JSON.stringify(progress);
+}
 
 const readProgress = async (): Promise<Record<string, PairStats>> => {
-  const raw = await AsyncStorage.getItem(STORAGE_KEY);
-  return safeParse(raw);
+  const raw = await AsyncStorage.getItem(PAIR_PROGRESS_STORAGE_KEY);
+  return parseStoredProgress(raw);
 };
 
 const enqueueWrite = (write: () => Promise<void>): Promise<void> => {
@@ -60,13 +68,13 @@ export async function saveAttempt(
       attempts: [...stats.attempts, attempt],
     };
 
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));
   });
 }
 
 export async function clearProgress() {
   await enqueueWrite(async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    await AsyncStorage.removeItem(PAIR_PROGRESS_STORAGE_KEY);
   });
 }
 

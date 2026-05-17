@@ -1,8 +1,7 @@
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import type { SessionTimerHandle } from '@/app/components/SessionTimer';
-import { View, Text, Alert, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
@@ -13,12 +12,15 @@ import createStyles from '@/app/constants/styles';
 import { minimalPairs, Pair } from '@/app/constants/minimalPairs';
 import { tKeys } from '@/app/constants/translationKeys';
 
-import PairPicker from '@/app/components/PairPicker';
 import AnswerButtons from '@/app/components/AnswerButtons';
 import HelpOverlay from '@/app/components/HelpOverlay';
 import SessionTimer from '@/app/components/SessionTimer';
 import PlacementTest from '@/app/components/PlacementTest';
 import LevelIndicator from '@/app/components/LevelIndicator';
+import PracticeHeader from '@/app/components/practice/PracticeHeader';
+import PracticePairSelector from '@/app/components/practice/PracticePairSelector';
+import LevelUpCelebration from '@/app/components/practice/LevelUpCelebration';
+import ListenControls from '@/app/components/practice/ListenControls';
 
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { useAudio } from '@/app/hooks/useAudio';
@@ -28,14 +30,17 @@ import {
   choosePlaybackForRound,
 } from '@/app/domain/practiceSession';
 import {
+  PLACEMENT_DONE_KEY,
+  serializePlacementDone,
+  shouldShowPlacementTest,
+} from '@/app/domain/masteryPersistence';
+import {
   FAST_STREAK_NEEDED,
   FAST_THRESHOLD_MS,
   LONG_STREAK_NEEDED,
   SPEED_TABLE,
   SpeedTier,
 } from '@/app/learning/adaptiveProgression';
-
-const PLACEMENT_DONE_KEY = '@placementDone';
 
 /* Playback-rate steps per acoustic tier (0–2)
  * 3 tiers keeps the path to mastery promotion short:
@@ -73,7 +78,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     AsyncStorage.getItem(PLACEMENT_DONE_KEY).then((val) => {
-      setShowPlacement(val == null); // show if not done yet
+      setShowPlacement(shouldShowPlacementTest(val)); // show if not done yet
     }).catch(() => setShowPlacement(false));
   }, []);
 
@@ -85,12 +90,12 @@ export default function HomeScreen() {
 
   const handlePlacementComplete = useCallback(async (startTier: number) => {
     setAllGroupsToTier(startTier);
-    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
+    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, serializePlacementDone()).catch(() => {});
     setShowPlacement(false);
   }, [setAllGroupsToTier]);
 
   const handlePlacementSkip = useCallback(async () => {
-    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, '1').catch(() => {});
+    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, serializePlacementDone()).catch(() => {});
     setShowPlacement(false);
   }, []);
 
@@ -285,60 +290,44 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.practiceHeader}>
-        <View style={styles.practiceHeaderSpacer} />
-        <Text style={styles.practiceTitle}>{translate(tKeys.practicePairs)}</Text>
-        <TouchableOpacity
-          accessibilityLabel="Help"
-          accessibilityRole="button"
-          activeOpacity={0.8}
-          hitSlop={8}
-          onPress={() => setIsHelpVisible(true)}
-          style={styles.helpButton}
-        >
-          <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
-        </TouchableOpacity>
-      </View>
+      <PracticeHeader
+        title={translate(tKeys.practicePairs)}
+        onHelpPress={() => setIsHelpVisible(true)}
+        primaryColor={theme.primary}
+        styles={styles}
+      />
 
       <SessionTimer timerRef={timerRef} />
 
       <View style={styles.mainCard}>
-        {isLoading || !selectedPair ? (
-          <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ color: theme.textSecondary }}>Loading…</Text>
-          </View>
-        ) : (
-          <PairPicker
-            pairs={stableVisible}
-            index={safePairIndex}
-            setIndex={handlePairChange}
-            color={theme.text}
-            onScrollStart={handlePickerScrollStart}
-            onScrollEnd={handlePickerScrollEnd}
-          />
-        )}
+        <PracticePairSelector
+          isLoading={isLoading}
+          selectedPair={selectedPair}
+          pairs={stableVisible}
+          index={safePairIndex}
+          onIndexChange={handlePairChange}
+          color={theme.text}
+          loadingTextColor={theme.textSecondary}
+          onScrollStart={handlePickerScrollStart}
+          onScrollEnd={handlePickerScrollEnd}
+        />
 
         {selectedPair && (
           <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} showCriteria />
         )}
 
-        {/* Level-up celebration — shown above the play button for visibility */}
-        {promotedTier != null && (
-          <View style={styles.levelUpContainer}>
-            <Text style={styles.levelUpText}>
-              🎉 {translate(tKeys.levelUnlocked)}
-            </Text>
-            <LevelIndicator currentTier={promotedTier} compact />
-          </View>
-        )}
+        <LevelUpCelebration
+          promotedTier={promotedTier}
+          label={translate(tKeys.levelUnlocked)}
+          styles={styles}
+        />
 
-        <TouchableOpacity
-          style={[styles.button, { zIndex: 10 }]}
-          onPress={handlePlay}
+        <ListenControls
+          label={playAudioText}
+          onPlay={handlePlay}
           disabled={!audioModeReady || isSpeaking}
-        >
-          <Text style={styles.buttonText}>{playAudioText}</Text>
-        </TouchableOpacity>
+          styles={styles}
+        />
 
         {selectedPair && (
           <AnswerButtons

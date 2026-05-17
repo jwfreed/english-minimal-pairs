@@ -23,8 +23,10 @@ import createStyles from '@/app/constants/styles';
 import { tKeys } from '@/app/constants/translationKeys';
 import { minimalPairs } from '@/app/constants/minimalPairs';
 import { useHaptics } from '@/app/hooks/useHaptics';
-
-const PLACEMENT_DONE_KEY = '@placementDone';
+import {
+  parsePlacementDone,
+  PLACEMENT_DONE_KEY,
+} from '@/app/domain/masteryPersistence';
 
 export default function SettingsScreen() {
   const { translate, setLanguage, useEnglishUI, setUseEnglishUI, language } = useLanguage();
@@ -56,7 +58,7 @@ export default function SettingsScreen() {
   const [placementDone, setPlacementDone] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem(PLACEMENT_DONE_KEY).then((val) => {
-      setPlacementDone(val != null);
+      setPlacementDone(parsePlacementDone(val));
     }).catch(() => {});
   }, []);
 

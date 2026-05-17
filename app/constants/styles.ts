@@ -628,4 +628,6 @@ const createStyles = (colors: ThemeColors) =>
     },
   });
 
+export type AppStyles = ReturnType<typeof createStyles>;
+
 export default createStyles;

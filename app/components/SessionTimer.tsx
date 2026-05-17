@@ -10,9 +10,15 @@ import { View, Text, AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
+import {
+  SESSION_TIMER_CUMULATIVE_STORAGE_KEY,
+  SESSION_TIMER_STORAGE_KEY,
+  parseStoredCumulativeTimerSeconds,
+  parseStoredSessionTimerSeconds,
+  serializeCumulativeTimerSeconds,
+  serializeSessionTimerSeconds,
+} from '@/app/domain/sessionTimerPersistence';
 
-const SESSION_KEY = '@sessionTimer';
-const CUMULATIVE_KEY = '@sessionTimerCumulative';
 const DAILY_GOAL_MINUTES = 15;
 /** Pause the timer after this many seconds of inactivity */
 const IDLE_TIMEOUT_SEC = 120; // 2 minutes
@@ -35,8 +41,8 @@ export interface SessionTimerHandle {
 /** Read the cumulative all-time practice seconds from AsyncStorage. */
 export async function getCumulativeSeconds(): Promise<number> {
   try {
-    const raw = await AsyncStorage.getItem(CUMULATIVE_KEY);
-    if (raw) return JSON.parse(raw) ?? 0;
+    const raw = await AsyncStorage.getItem(SESSION_TIMER_CUMULATIVE_STORAGE_KEY);
+    return parseStoredCumulativeTimerSeconds(raw);
   } catch {
     // ignore
   }
@@ -82,19 +88,19 @@ export default function SessionTimer({ timerRef }: Props) {
   useEffect(() => {
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(SESSION_KEY);
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (data.date === todayKey()) {
-            savedBaseRef.current = data.seconds ?? 0;
-            lastPersistedTodayRef.current = data.seconds ?? 0;
-            accumulatedRef.current = 0;
-            setElapsedToday(data.seconds ?? 0);
-          }
-        }
+        const todaySeconds = parseStoredSessionTimerSeconds(
+          await AsyncStorage.getItem(SESSION_TIMER_STORAGE_KEY),
+          todayKey()
+        );
+        savedBaseRef.current = todaySeconds;
+        lastPersistedTodayRef.current = todaySeconds;
+        accumulatedRef.current = 0;
+        setElapsedToday(todaySeconds);
+
         // Load cumulative total
-        const cumRaw = await AsyncStorage.getItem(CUMULATIVE_KEY);
-        cumulativeBaseRef.current = cumRaw ? (JSON.parse(cumRaw) ?? 0) : 0;
+        cumulativeBaseRef.current = parseStoredCumulativeTimerSeconds(
+          await AsyncStorage.getItem(SESSION_TIMER_CUMULATIVE_STORAGE_KEY)
+        );
       } catch {
         // ignore
       }
@@ -141,8 +147,8 @@ export default function SessionTimer({ timerRef }: Props) {
     try {
       // Daily
       await AsyncStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify({ date: todayKey(), seconds: total })
+        SESSION_TIMER_STORAGE_KEY,
+        serializeSessionTimerSeconds(todayKey(), total)
       );
       // Cumulative: base + delta since last persist
       const delta = total - lastPersistedTodayRef.current;
@@ -150,7 +156,10 @@ export default function SessionTimer({ timerRef }: Props) {
         const newCumulative = cumulativeBaseRef.current + delta;
         cumulativeBaseRef.current = newCumulative;
         lastPersistedTodayRef.current = total;
-        await AsyncStorage.setItem(CUMULATIVE_KEY, JSON.stringify(newCumulative));
+        await AsyncStorage.setItem(
+          SESSION_TIMER_CUMULATIVE_STORAGE_KEY,
+          serializeCumulativeTimerSeconds(newCumulative)
+        );
       }
     } catch {
       // ignore
@@ -165,17 +174,10 @@ export default function SessionTimer({ timerRef }: Props) {
         // Reload in case date rolled over
         (async () => {
           try {
-            const raw = await AsyncStorage.getItem(SESSION_KEY);
-            if (raw) {
-              const data = JSON.parse(raw);
-              if (data.date === todayKey()) {
-                savedBaseRef.current = data.seconds ?? 0;
-              } else {
-                savedBaseRef.current = 0;
-              }
-            } else {
-              savedBaseRef.current = 0;
-            }
+            savedBaseRef.current = parseStoredSessionTimerSeconds(
+              await AsyncStorage.getItem(SESSION_TIMER_STORAGE_KEY),
+              todayKey()
+            );
           } catch {
             savedBaseRef.current = 0;
           }

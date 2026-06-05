@@ -2,7 +2,7 @@
   "expo": {
     "name": "Soundwise English",
     "slug": "english-minimal-pairs",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "soundwise",
@@ -11,13 +11,13 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jfreed.englishminimalpairs",
-      "buildNumber": "56",
+      "buildNumber": "57",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "versionCode": 56,
+      "versionCode": 57,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"

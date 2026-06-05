@@ -30,6 +30,8 @@ export const tKeys = {
   voicesAvailable: 'voicesAvailable',
   theWordWas: 'theWordWas',
   listenAgain: 'listenAgain',
+  correct: 'correct',
+  incorrect: 'incorrect',
   placementTest: 'placementTest',
   placementResetConfirm: 'placementResetConfirm',
   retakePlacement: 'retakePlacement',

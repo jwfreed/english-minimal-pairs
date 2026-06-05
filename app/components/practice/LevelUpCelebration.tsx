@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Text, View, AccessibilityInfo } from 'react-native';
 import type { AppStyles } from '@/app/constants/styles';
 import LevelIndicator from '@/app/components/LevelIndicator';
 
@@ -19,6 +19,12 @@ export default function LevelUpCelebration({
   label,
   styles,
 }: LevelUpCelebrationProps) {
+  useEffect(() => {
+    if (promotedTier != null) {
+      AccessibilityInfo.announceForAccessibility(label);
+    }
+  }, [promotedTier, label]);
+
   if (promotedTier == null) return null;
 
   return (

@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, AccessibilityInfo } from 'react-native';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
 import { useHaptics } from '@/app/hooks/useHaptics';
@@ -46,14 +46,26 @@ export default function AnswerButtons({
   const { triggerHaptic } = useHaptics();
   const { translate } = useLanguage();
 
-  // Trigger haptic feedback when feedback changes
+  // Determine the correct word info for the feedback panel
+  const correctWord = playedIdx === 0 ? pair.word1 : pair.word2;
+  const correctIpa = playedIdx === 0 ? pair.ipa1 : pair.ipa2;
+  const correctPhoneme = playedIdx === 0 ? pair.contrastPhoneme1 : pair.contrastPhoneme2;
+  const ipaSegments = highlightPhoneme(correctIpa, correctPhoneme);
+
+  // Trigger haptic feedback and accessibility announcement when feedback changes
   useEffect(() => {
     if (feedback === 'correct') {
       triggerHaptic('success');
+      AccessibilityInfo.announceForAccessibility(
+        `${translate(tKeys.correct)}. ${translate(tKeys.theWordWas)} ${correctWord}.`
+      );
     } else if (feedback === 'incorrect') {
       triggerHaptic('error');
+      AccessibilityInfo.announceForAccessibility(
+        `${translate(tKeys.incorrect)}. ${translate(tKeys.theWordWas)} ${correctWord}.`
+      );
     }
-  }, [feedback, triggerHaptic]);
+  }, [feedback, triggerHaptic, translate, correctWord]);
 
   const handlePress = (idx: 0 | 1) => {
     if (disabled) return;
@@ -61,32 +73,39 @@ export default function AnswerButtons({
     onAnswer(idx);
   };
 
-  // Determine the correct word info for the feedback panel
-  const correctWord = playedIdx === 0 ? pair.word1 : pair.word2;
-  const correctIpa = playedIdx === 0 ? pair.ipa1 : pair.ipa2;
-  const correctPhoneme = playedIdx === 0 ? pair.contrastPhoneme1 : pair.contrastPhoneme2;
-  const ipaSegments = highlightPhoneme(correctIpa, correctPhoneme);
-
   return (
     <View style={styles.answerContainer}>
       <View style={styles.buttonRow}>
-        {[0, 1].map((idx) => (
-          <TouchableOpacity
-            key={idx}
-            style={[
-              styles.button,
-              { flex: 1, marginTop: 0 },
-              feedback !== null && { opacity: 0.5 },
-            ]}
-            onPress={() => handlePress(idx as 0 | 1)}
-            disabled={disabled}
-          >
-            <Text style={styles.buttonText}>
-              {idx ? pair.word2 : pair.word1}
-            </Text>
-            <Text style={styles.ipaText}>{idx ? pair.ipa2 : pair.ipa1}</Text>
-          </TouchableOpacity>
-        ))}
+        {[0, 1].map((idx) => {
+          const word = idx ? pair.word2 : pair.word1;
+          return (
+            <TouchableOpacity
+              key={idx}
+              style={[
+                styles.button,
+                { flex: 1, marginTop: 0 },
+                feedback !== null && { opacity: 0.5 },
+              ]}
+              onPress={() => handlePress(idx as 0 | 1)}
+              disabled={disabled}
+              accessibilityRole="button"
+              accessibilityLabel={word}
+              accessibilityHint="Double tap to select this word as your answer"
+              accessibilityState={{ disabled }}
+            >
+              <Text style={styles.buttonText} importantForAccessibility="no">
+                {word}
+              </Text>
+              <Text
+                style={styles.ipaText}
+                importantForAccessibility="no"
+                accessibilityElementsHidden={true}
+              >
+                {idx ? pair.ipa2 : pair.ipa1}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Rich feedback panel — shown after answering */}
@@ -99,11 +118,17 @@ export default function AnswerButtons({
                 ? styles.correctFeedback
                 : styles.incorrectFeedback,
             ]}
+            importantForAccessibility="no"
+            accessibilityElementsHidden={true}
           >
             {feedback === 'correct' ? '✓' : '✗'}
           </Text>
           <Text style={styles.feedbackWord}>{correctWord}</Text>
-          <Text style={styles.feedbackIPA}>
+          <Text
+            style={styles.feedbackIPA}
+            importantForAccessibility="no"
+            accessibilityElementsHidden={true}
+          >
             {ipaSegments.map((seg, i) =>
               seg.highlight ? (
                 <Text key={i} style={styles.feedbackHighlight}>
@@ -115,8 +140,16 @@ export default function AnswerButtons({
             )}
           </Text>
           {onReplay && (
-            <TouchableOpacity style={styles.replayButton} onPress={onReplay}>
-              <Text style={styles.replayButtonText}>🔊 {translate(tKeys.listenAgain) || 'Listen Again'}</Text>
+            <TouchableOpacity
+              style={styles.replayButton}
+              onPress={onReplay}
+              accessibilityRole="button"
+              accessibilityLabel={translate(tKeys.listenAgain)}
+              accessibilityHint={`Double tap to replay ${correctWord}`}
+            >
+              <Text style={styles.replayButtonText} importantForAccessibility="no">
+                🔊 {translate(tKeys.listenAgain) || 'Listen Again'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>

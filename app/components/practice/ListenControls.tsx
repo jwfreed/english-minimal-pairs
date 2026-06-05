@@ -22,8 +22,14 @@ export default function ListenControls({
       style={[styles.button, { zIndex: 10 }]}
       onPress={onPlay}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint="Double tap to hear a word"
+      accessibilityState={{ disabled }}
     >
-      <Text style={styles.buttonText}>{label}</Text>
+      <Text style={styles.buttonText} importantForAccessibility="no">
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }

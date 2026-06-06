@@ -93,3 +93,55 @@ export function shouldShowPlacementTestForCategory(
 ): boolean {
   return !parsePlacementDone(categoryRaw);
 }
+
+export interface PlacementMigrationDecision {
+  /** Whether the placement test should be shown to the user. */
+  shouldShowPlacement: boolean;
+  /** Whether to write @placementDone_${category} from the legacy key (one-time only). */
+  shouldSeedCurrentCategoryFromLegacy: boolean;
+  /** Whether to write the migration sentinel key. */
+  shouldWriteLegacyMigrationSentinel: boolean;
+}
+
+/**
+ * Pure decision function for the Practice screen's placement-loading effect.
+ * Takes the three raw AsyncStorage values and returns what actions to take and
+ * whether to show placement — with no side effects.
+ *
+ * Rules (in priority order):
+ * 1. Per-category key present → placed, no migration needed.
+ * 2. Per-category key absent + legacy key present + sentinel absent
+ *    → first-open migration: seed this category and write sentinel.
+ * 3. Per-category key absent + sentinel present → post-migration category,
+ *    show placement (legacy key must not help here).
+ * 4. All absent → fresh install, show placement.
+ */
+export function resolvePlacementStateForCategory(input: {
+  categoryRaw: string | null;
+  legacyRaw: string | null;
+  sentinelRaw: string | null;
+}): PlacementMigrationDecision {
+  const { categoryRaw, legacyRaw, sentinelRaw } = input;
+
+  if (parsePlacementDone(categoryRaw)) {
+    return {
+      shouldShowPlacement: false,
+      shouldSeedCurrentCategoryFromLegacy: false,
+      shouldWriteLegacyMigrationSentinel: false,
+    };
+  }
+
+  if (parsePlacementDone(legacyRaw) && !parsePlacementDone(sentinelRaw)) {
+    return {
+      shouldShowPlacement: false,
+      shouldSeedCurrentCategoryFromLegacy: true,
+      shouldWriteLegacyMigrationSentinel: true,
+    };
+  }
+
+  return {
+    shouldShowPlacement: true,
+    shouldSeedCurrentCategoryFromLegacy: false,
+    shouldWriteLegacyMigrationSentinel: false,
+  };
+}

@@ -34,7 +34,7 @@ import {
   PLACEMENT_LEGACY_MIGRATION_KEY,
   buildPlacementStorageKey,
   serializePlacementDone,
-  shouldShowPlacementTestForCategory,
+  resolvePlacementStateForCategory,
 } from '@/app/domain/masteryPersistence';
 import {
   FAST_STREAK_NEEDED,
@@ -84,24 +84,23 @@ export default function HomeScreen() {
   const catKey = catObj.category;
 
   // Re-check placement each time the category changes.
-  // One-time migration: if the legacy global key exists and no per-category
-  // key has been written yet and the migration sentinel is absent, seed the
-  // current category and write the sentinel so it never fires again.
+  // Delegates the migration decision to a pure helper so the logic is testable
+  // without relying on component behavior.
   useEffect(() => {
     const perCatKey = buildPlacementStorageKey(catKey);
     Promise.all([
       AsyncStorage.getItem(perCatKey),
       AsyncStorage.getItem(PLACEMENT_DONE_KEY),
       AsyncStorage.getItem(PLACEMENT_LEGACY_MIGRATION_KEY),
-    ]).then(async ([catVal, legacyVal, sentinelVal]) => {
-      if (catVal === null && legacyVal !== null && sentinelVal === null) {
-        try {
-          await AsyncStorage.setItem(perCatKey, serializePlacementDone());
-          await AsyncStorage.setItem(PLACEMENT_LEGACY_MIGRATION_KEY, serializePlacementDone());
-          catVal = serializePlacementDone();
-        } catch {}
+    ]).then(async ([categoryRaw, legacyRaw, sentinelRaw]) => {
+      const decision = resolvePlacementStateForCategory({ categoryRaw, legacyRaw, sentinelRaw });
+      if (decision.shouldSeedCurrentCategoryFromLegacy) {
+        await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(() => {});
       }
-      setShowPlacement(shouldShowPlacementTestForCategory(catVal));
+      if (decision.shouldWriteLegacyMigrationSentinel) {
+        await AsyncStorage.setItem(PLACEMENT_LEGACY_MIGRATION_KEY, serializePlacementDone()).catch(() => {});
+      }
+      setShowPlacement(decision.shouldShowPlacement);
     }).catch(() => setShowPlacement(false));
   }, [catKey]);
 

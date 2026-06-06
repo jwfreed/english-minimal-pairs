@@ -9,6 +9,7 @@ const {
   serializePlacementDone,
   parsePlacementDone,
   shouldShowPlacementTestForCategory,
+  resolvePlacementStateForCategory,
 } = loadTsModule(path.join(__dirname, '..', 'app', 'domain', 'masteryPersistence.ts'));
 
 function runTest(name, fn) {
@@ -87,4 +88,79 @@ runTest('retake resets current category — other category remains placed', () =
   assert.strictEqual(shouldShowPlacementTestForCategory(null), true);
   // Category B untouched: still has its key → skip placement
   assert.strictEqual(shouldShowPlacementTestForCategory(serializePlacementDone()), false);
+});
+
+// ── resolvePlacementStateForCategory (migration decision) ─────────────────────
+
+const DONE = serializePlacementDone(); // '1'
+
+runTest('fresh install: no keys → show placement, no migration actions', () => {
+  const d = resolvePlacementStateForCategory({ categoryRaw: null, legacyRaw: null, sentinelRaw: null });
+  assert.strictEqual(d.shouldShowPlacement, true);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, false);
+  assert.strictEqual(d.shouldWriteLegacyMigrationSentinel, false);
+});
+
+runTest('normal placed category: per-category key present → skip placement, no migration', () => {
+  const d = resolvePlacementStateForCategory({ categoryRaw: DONE, legacyRaw: null, sentinelRaw: null });
+  assert.strictEqual(d.shouldShowPlacement, false);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, false);
+  assert.strictEqual(d.shouldWriteLegacyMigrationSentinel, false);
+});
+
+runTest('per-category key wins regardless of legacy and sentinel state', () => {
+  const d = resolvePlacementStateForCategory({ categoryRaw: DONE, legacyRaw: DONE, sentinelRaw: DONE });
+  assert.strictEqual(d.shouldShowPlacement, false);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, false);
+  assert.strictEqual(d.shouldWriteLegacyMigrationSentinel, false);
+});
+
+runTest('first legacy upgrade: legacy present, no per-category key, no sentinel → seed and write sentinel', () => {
+  const d = resolvePlacementStateForCategory({ categoryRaw: null, legacyRaw: DONE, sentinelRaw: null });
+  assert.strictEqual(d.shouldShowPlacement, false);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, true);
+  assert.strictEqual(d.shouldWriteLegacyMigrationSentinel, true);
+});
+
+runTest('later category switch after migration: sentinel present → show placement, no re-seed', () => {
+  const d = resolvePlacementStateForCategory({ categoryRaw: null, legacyRaw: DONE, sentinelRaw: DONE });
+  assert.strictEqual(d.shouldShowPlacement, true);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, false);
+  assert.strictEqual(d.shouldWriteLegacyMigrationSentinel, false);
+});
+
+runTest('legacy key ignored once sentinel exists — legacy value must not suppress placement', () => {
+  // Regardless of what legacyRaw holds, sentinel blocks any further migration.
+  const d = resolvePlacementStateForCategory({ categoryRaw: null, legacyRaw: DONE, sentinelRaw: DONE });
+  assert.strictEqual(d.shouldShowPlacement, true);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, false);
+});
+
+runTest('retake protection: after retake, sentinel prevents legacy key from re-seeding category', () => {
+  // User retook placement (per-category key removed + sentinel written).
+  // On next Practice-screen load: catRaw=null, legacyRaw=DONE, sentinelRaw=DONE.
+  const d = resolvePlacementStateForCategory({ categoryRaw: null, legacyRaw: DONE, sentinelRaw: DONE });
+  assert.strictEqual(d.shouldShowPlacement, true);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, false);
+  assert.strictEqual(d.shouldWriteLegacyMigrationSentinel, false);
+});
+
+runTest('no blind global grant: Category B after migration shows placement', () => {
+  // Category A was seeded from legacy key (migration ran). Sentinel is now set.
+  // Category B has never been placed → its categoryRaw is null.
+  // Legacy key still exists but sentinel blocks it.
+  const categoryBDecision = resolvePlacementStateForCategory({
+    categoryRaw: null,   // Category B has no per-category key
+    legacyRaw: DONE,     // legacy key still in storage
+    sentinelRaw: DONE,   // migration already ran for Category A
+  });
+  assert.strictEqual(categoryBDecision.shouldShowPlacement, true);
+  assert.strictEqual(categoryBDecision.shouldSeedCurrentCategoryFromLegacy, false);
+});
+
+runTest('no sentinel and no legacy: fresh category on fresh install → show placement', () => {
+  const d = resolvePlacementStateForCategory({ categoryRaw: null, legacyRaw: null, sentinelRaw: null });
+  assert.strictEqual(d.shouldShowPlacement, true);
+  assert.strictEqual(d.shouldSeedCurrentCategoryFromLegacy, false);
+  assert.strictEqual(d.shouldWriteLegacyMigrationSentinel, false);
 });

@@ -24,8 +24,10 @@ import { tKeys } from '@/app/constants/translationKeys';
 import { minimalPairs } from '@/app/constants/minimalPairs';
 import { useHaptics } from '@/app/hooks/useHaptics';
 import {
-  parsePlacementDone,
-  PLACEMENT_DONE_KEY,
+  PLACEMENT_LEGACY_MIGRATION_KEY,
+  buildPlacementStorageKey,
+  serializePlacementDone,
+  shouldShowPlacementTestForCategory,
 } from '@/app/domain/masteryPersistence';
 
 export default function SettingsScreen() {
@@ -54,13 +56,17 @@ export default function SettingsScreen() {
   
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  // Track whether the placement test has been completed
+  // Track whether placement is done for the currently selected category.
+  const currentCatKey = minimalPairs[categoryIndex].category;
   const [placementDone, setPlacementDone] = useState(false);
   useEffect(() => {
-    AsyncStorage.getItem(PLACEMENT_DONE_KEY).then((val) => {
-      setPlacementDone(parsePlacementDone(val));
-    }).catch(() => {});
-  }, []);
+    const perCatKey = buildPlacementStorageKey(currentCatKey);
+    AsyncStorage.getItem(perCatKey)
+      .then((catVal) => {
+        setPlacementDone(!shouldShowPlacementTestForCategory(catVal));
+      })
+      .catch(() => {});
+  }, [currentCatKey]);
 
   const toggleSection = useCallback((section: string) => {
     triggerHaptic('light');
@@ -85,13 +91,17 @@ export default function SettingsScreen() {
 
   const handleRetakePlacement = useCallback(async () => {
     triggerHaptic('selection');
-    await AsyncStorage.removeItem(PLACEMENT_DONE_KEY).catch(() => {});
+    const perCatKey = buildPlacementStorageKey(currentCatKey);
+    await AsyncStorage.removeItem(perCatKey).catch(() => {});
+    // Write the migration sentinel so the legacy key cannot silently re-seed
+    // this category when the user navigates to the Practice tab.
+    await AsyncStorage.setItem(PLACEMENT_LEGACY_MIGRATION_KEY, serializePlacementDone()).catch(() => {});
     setPlacementDone(false);
     Alert.alert(
       translate(tKeys.placementTest) || 'Placement Test',
       translate(tKeys.placementResetConfirm) || 'The placement test will run when you return to the Practice tab.',
     );
-  }, [triggerHaptic, translate]);
+  }, [triggerHaptic, translate, currentCatKey]);
 
   return (
     <ScrollView

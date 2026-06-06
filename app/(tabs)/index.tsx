@@ -31,8 +31,10 @@ import {
 } from '@/app/domain/practiceSession';
 import {
   PLACEMENT_DONE_KEY,
+  PLACEMENT_LEGACY_MIGRATION_KEY,
+  buildPlacementStorageKey,
   serializePlacementDone,
-  shouldShowPlacementTest,
+  shouldShowPlacementTestForCategory,
 } from '@/app/domain/masteryPersistence';
 import {
   FAST_STREAK_NEEDED,
@@ -76,28 +78,45 @@ export default function HomeScreen() {
   // Placement test state
   const [showPlacement, setShowPlacement] = useState<boolean | null>(null); // null = loading
 
-  useEffect(() => {
-    AsyncStorage.getItem(PLACEMENT_DONE_KEY).then((val) => {
-      setShowPlacement(shouldShowPlacementTest(val)); // show if not done yet
-    }).catch(() => setShowPlacement(false));
-  }, []);
-
-  // Re-check when the category changes (a different language might warrant a new test)
-  // This is intentionally not re-triggering — placement applies globally.
-
   const catObj = minimalPairs[categoryIndex];
   const { visible, promote, mastery, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
 
+  const catKey = catObj.category;
+
+  // Re-check placement each time the category changes.
+  // One-time migration: if the legacy global key exists and no per-category
+  // key has been written yet and the migration sentinel is absent, seed the
+  // current category and write the sentinel so it never fires again.
+  useEffect(() => {
+    const perCatKey = buildPlacementStorageKey(catKey);
+    Promise.all([
+      AsyncStorage.getItem(perCatKey),
+      AsyncStorage.getItem(PLACEMENT_DONE_KEY),
+      AsyncStorage.getItem(PLACEMENT_LEGACY_MIGRATION_KEY),
+    ]).then(async ([catVal, legacyVal, sentinelVal]) => {
+      if (catVal === null && legacyVal !== null && sentinelVal === null) {
+        try {
+          await AsyncStorage.setItem(perCatKey, serializePlacementDone());
+          await AsyncStorage.setItem(PLACEMENT_LEGACY_MIGRATION_KEY, serializePlacementDone());
+          catVal = serializePlacementDone();
+        } catch {}
+      }
+      setShowPlacement(shouldShowPlacementTestForCategory(catVal));
+    }).catch(() => setShowPlacement(false));
+  }, [catKey]);
+
   const handlePlacementComplete = useCallback(async (startTier: number) => {
+    const perCatKey = buildPlacementStorageKey(catKey);
     setAllGroupsToTier(startTier);
-    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, serializePlacementDone()).catch(() => {});
+    await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(() => {});
     setShowPlacement(false);
-  }, [setAllGroupsToTier]);
+  }, [catKey, setAllGroupsToTier]);
 
   const handlePlacementSkip = useCallback(async () => {
-    await AsyncStorage.setItem(PLACEMENT_DONE_KEY, serializePlacementDone()).catch(() => {});
+    const perCatKey = buildPlacementStorageKey(catKey);
+    await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(() => {});
     setShowPlacement(false);
-  }, []);
+  }, [catKey]);
 
   const timerRef = useRef<SessionTimerHandle | null>(null);
 

@@ -4,7 +4,23 @@ const MASTERY_STORAGE_KEY_PREFIX = '@mastery_';
 const MIN_MASTERY_TIER = 1;
 const MAX_MASTERY_TIER = 6;
 
+/** Legacy global placement key — kept for one-time migration reads only. */
 export const PLACEMENT_DONE_KEY = '@placementDone';
+
+/**
+ * Written once during migration to signal that the legacy @placementDone key
+ * has already seeded the current category. After this sentinel exists, the
+ * legacy key has no further effect on any category placement check.
+ */
+export const PLACEMENT_LEGACY_MIGRATION_KEY = '@placementDoneLegacyMigrated';
+
+/**
+ * Per-category placement key. Follows the same pattern as mastery storage.
+ * Example: buildPlacementStorageKey('日本語') → '@placementDone_日本語'
+ */
+export function buildPlacementStorageKey(categoryKey: string): string {
+  return `@placementDone_${categoryKey}`;
+}
 
 export function buildMasteryStorageKey(categoryKey: string): string {
   return `${MASTERY_STORAGE_KEY_PREFIX}${categoryKey}`;
@@ -65,4 +81,15 @@ export function parsePlacementDone(raw: string | null): boolean {
 
 export function shouldShowPlacementTest(raw: string | null): boolean {
   return !parsePlacementDone(raw);
+}
+
+/**
+ * Returns true when placement should be shown for a category.
+ * Depends only on the per-category key — the legacy global key is handled
+ * separately by the one-time migration in the Practice screen.
+ */
+export function shouldShowPlacementTestForCategory(
+  categoryRaw: string | null
+): boolean {
+  return !parsePlacementDone(categoryRaw);
 }

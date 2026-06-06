@@ -43,6 +43,12 @@ import {
   SPEED_TABLE,
   SpeedTier,
 } from '@/app/learning/adaptiveProgression';
+import {
+  ONBOARDING_SEEN_KEY,
+  shouldShowOnboarding,
+  markOnboardingSeen,
+} from '@/app/storage/onboardingStorage';
+import OnboardingScreen from '@/app/components/OnboardingScreen';
 
 /* Playback-rate steps per acoustic tier (0–2)
  * 3 tiers keeps the path to mastery promotion short:
@@ -77,6 +83,7 @@ export default function HomeScreen() {
 
   // Placement test state
   const [showPlacement, setShowPlacement] = useState<boolean | null>(null); // null = loading
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null); // null = loading
 
   const catObj = minimalPairs[categoryIndex];
   const { visible, promote, mastery, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
@@ -87,12 +94,14 @@ export default function HomeScreen() {
   // Delegates the migration decision to a pure helper so the logic is testable
   // without relying on component behavior.
   useEffect(() => {
+    let cancelled = false;
     const perCatKey = buildPlacementStorageKey(catKey);
     Promise.all([
       AsyncStorage.getItem(perCatKey),
       AsyncStorage.getItem(PLACEMENT_DONE_KEY),
       AsyncStorage.getItem(PLACEMENT_LEGACY_MIGRATION_KEY),
-    ]).then(async ([categoryRaw, legacyRaw, sentinelRaw]) => {
+      AsyncStorage.getItem(ONBOARDING_SEEN_KEY),
+    ]).then(async ([categoryRaw, legacyRaw, sentinelRaw, onboardingRaw]) => {
       const decision = resolvePlacementStateForCategory({ categoryRaw, legacyRaw, sentinelRaw });
       if (decision.shouldSeedCurrentCategoryFromLegacy) {
         await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(() => {});
@@ -100,9 +109,28 @@ export default function HomeScreen() {
       if (decision.shouldWriteLegacyMigrationSentinel) {
         await AsyncStorage.setItem(PLACEMENT_LEGACY_MIGRATION_KEY, serializePlacementDone()).catch(() => {});
       }
-      setShowPlacement(decision.shouldShowPlacement);
-    }).catch(() => setShowPlacement(false));
+      if (!cancelled) {
+        setShowOnboarding(shouldShowOnboarding(onboardingRaw));
+        setShowPlacement(decision.shouldShowPlacement);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setShowOnboarding(false);
+        setShowPlacement(false);
+      }
+    });
+    return () => { cancelled = true; };
   }, [catKey]);
+
+  const handleOnboardingDismiss = useCallback(async () => {
+    try {
+      await markOnboardingSeen();
+    } catch {
+      // Write failure: onboarding may reappear on next cold launch.
+      // User continues in the current session.
+    }
+    setShowOnboarding(false);
+  }, []);
 
   const handlePlacementComplete = useCallback(async (startTier: number) => {
     const perCatKey = buildPlacementStorageKey(catKey);
@@ -287,13 +315,17 @@ export default function HomeScreen() {
   }, [visible]);
 
   // Show PlacementTest if the user hasn't completed it yet
-  if (showPlacement === null) {
+  if (showPlacement === null || showOnboarding === null) {
     // Still checking AsyncStorage
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
         <Text style={{ color: theme.textSecondary }}>Loading…</Text>
       </View>
     );
+  }
+
+  if (showOnboarding) {
+    return <OnboardingScreen onDismiss={handleOnboardingDismiss} />;
   }
 
   if (showPlacement) {

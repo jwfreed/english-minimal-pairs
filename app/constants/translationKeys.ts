@@ -60,6 +60,14 @@ export const tKeys = {
   helpTipSpeedIncrease: 'helpTipSpeedIncrease',
   helpTipFocusSounds: 'helpTipFocusSounds',
   helpButton: 'helpButton',
+  // Onboarding
+  onboardingTitle: 'onboardingTitle',
+  onboardingCTA: 'onboardingCTA',
+  onboardingBullet1: 'onboardingBullet1',
+  onboardingBullet2: 'onboardingBullet2',
+  onboardingBullet3: 'onboardingBullet3',
+  onboardingBullet4: 'onboardingBullet4',
+  onboardingBullet5: 'onboardingBullet5',
 } as const;
 
 export type TranslationKey = keyof typeof tKeys;

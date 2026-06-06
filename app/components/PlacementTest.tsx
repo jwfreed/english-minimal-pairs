@@ -5,8 +5,7 @@
 // starting tier based on the user's accuracy.
 // -----------------------------------------------------------------------------
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import * as Speech from 'expo-speech';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
 import { useSettings } from '@/app/context/SettingsContext';
@@ -14,6 +13,7 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { tKeys } from '@/app/constants/translationKeys';
 import { recommendPlacementTier } from '@/app/domain/practiceSession';
 import type { Pair } from '@/app/constants/minimalPairs';
+import { useAudio } from '@/app/hooks/useAudio';
 
 const TOTAL_QUESTIONS = 10;
 
@@ -90,18 +90,10 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
 
   const currentPair = testItems[qIndex];
 
-  const playWord = useCallback(async (idx: 0 | 1) => {
-    if (!currentPair) return;
-    const word = idx === 0 ? currentPair.word1 : currentPair.word2;
-    const voice = getNextVoice();
-    Speech.speak(word, {
-      language: 'en-US',
-      rate: 1.0,
-      pitch: 1.0,
-      volume: 1.0,
-      ...(voice ? { voice: voice.identifier } : {}),
-    });
-  }, [currentPair, getNextVoice]);
+  // Shared audio path — same hook as the regular practice loop.
+  // Handles iOS silent-mode workaround, audio session setup, isSpeaking tracking,
+  // and voice rotation.
+  const { play, audioModeReady, isSpeaking } = useAudio(currentPair, 1.0, getNextVoice);
 
   // Pick a random word when the question changes (user must press Play Audio)
   useEffect(() => {
@@ -135,11 +127,23 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     }, 600);
   }, [playedIdx, answered, correctCount, qIndex, testItems.length, onComplete]);
 
+  const canPlayAudio = playedIdx !== null && !answered;
+  const playDisabled = !canPlayAudio || !audioModeReady || isSpeaking;
+
+  const handlePlay = useCallback(async () => {
+    if (playDisabled || playedIdx === null) return;
+    setHasPlayed(true);
+    try {
+      await play(playedIdx);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Cannot play clip';
+      Alert.alert(translate(tKeys.audioError) || 'Audio Error', msg);
+    }
+  }, [playDisabled, playedIdx, play, translate]);
+
   if (!currentPair) {
     return <ActivityIndicator />;
   }
-
-  const canPlayAudio = playedIdx !== null && !answered;
 
   return (
     <View style={[styles.container, { justifyContent: 'center' }]}>
@@ -151,13 +155,9 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
       </Text>
 
       <TouchableOpacity
-        style={[styles.button, { marginBottom: 20 }, !canPlayAudio && { opacity: 0.5 }]}
-        onPress={() => {
-          if (!canPlayAudio || playedIdx === null) return;
-          setHasPlayed(true);
-          playWord(playedIdx);
-        }}
-        disabled={!canPlayAudio}
+        style={[styles.button, { marginBottom: 20 }, playDisabled && { opacity: 0.5 }]}
+        onPress={handlePlay}
+        disabled={playDisabled}
       >
         <Text style={styles.buttonText}>🔊 {translate(tKeys.playAudio)}</Text>
       </TouchableOpacity>

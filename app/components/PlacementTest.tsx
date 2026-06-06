@@ -132,9 +132,9 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
 
   const handlePlay = useCallback(async () => {
     if (playDisabled || playedIdx === null) return;
-    setHasPlayed(true);
     try {
       await play(playedIdx);
+      setHasPlayed(true);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert(translate(tKeys.audioError) || 'Audio Error', msg);

@@ -4,6 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const PAIR_PROGRESS_STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
 let writeQueue: Promise<void> = Promise.resolve();
 
+// Raw attempt history is capped per pair to prevent unbounded AsyncStorage growth.
+export const MAX_ATTEMPTS_PER_PAIR = 100;
+
 /* ─── types ──────────────────────────────────────────────────────────────── */
 export interface PairAttempt {
   isCorrect: boolean;
@@ -20,10 +23,27 @@ export function getDefaultProgress(): Record<string, PairStats> {
   return {};
 }
 
+/**
+ * Caps a raw attempts value to the most recent MAX_ATTEMPTS_PER_PAIR entries.
+ * Accepts any value — returns [] for non-arrays so callers never crash on bad data.
+ */
+export function pruneAttemptHistory(attempts: unknown): PairAttempt[] {
+  if (!Array.isArray(attempts)) return [];
+  if (attempts.length <= MAX_ATTEMPTS_PER_PAIR) return attempts as PairAttempt[];
+  return (attempts as PairAttempt[]).slice(-MAX_ATTEMPTS_PER_PAIR);
+}
+
 export function parseStoredProgress(raw: string | null): Record<string, PairStats> {
   if (!raw) return getDefaultProgress();
   try {
-    return JSON.parse(raw) as Record<string, PairStats>;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const result: Record<string, PairStats> = {};
+    for (const [pairId, stats] of Object.entries(parsed)) {
+      const rawAttempts =
+        stats !== null && typeof stats === 'object' ? (stats as Record<string, unknown>).attempts : undefined;
+      result[pairId] = { attempts: pruneAttemptHistory(rawAttempts) };
+    }
+    return result;
   } catch {
     return getDefaultProgress();
   }
@@ -65,7 +85,7 @@ export async function saveAttempt(
     const stats = progress[pairId] ?? { attempts: [] };
 
     progress[pairId] = {
-      attempts: [...stats.attempts, attempt],
+      attempts: pruneAttemptHistory([...stats.attempts, attempt]),
     };
 
     await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));

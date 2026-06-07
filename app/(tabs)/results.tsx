@@ -14,6 +14,7 @@ import PairItem from '@/app/components/PairItem';
 import { buildPairId } from '@/app/utils/idHelpers';
 import { estimateActivePracticeTime } from '@/app/storage/progressStorage';
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
+import { computePracticeNextRecommendation } from '@/app/utils/recommendNextPractice';
 
 export default function ResultsScreen() {
   const { progress } = usePairProgress();
@@ -79,6 +80,11 @@ export default function ResultsScreen() {
     });
     return unsubscribe;
   }, [navigation, refreshMastery]);
+
+  const recommendation = useMemo(
+    () => computePracticeNextRecommendation(progress, catObj?.pairs ?? [], selectedCategoryName ?? ''),
+    [progress, catObj, selectedCategoryName]
+  );
 
   const flattenedPairs = useMemo(() => {
     if (!catObj || catObj.pairs.length === 0) return [];
@@ -176,6 +182,39 @@ export default function ResultsScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Practice This Next Card */}
+        <View
+          style={[
+            styles.masterySummaryCard,
+            { marginHorizontal: 16, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start' },
+          ]}
+          accessibilityRole="text"
+          accessibilityLabel={
+            recommendation
+              ? `${translate(tKeys.practiceThisNext)}: ${recommendation.label}. ${translate(tKeys.practiceThisNextReason)}`
+              : translate(tKeys.practiceThisNextEmpty)
+          }
+        >
+          <Text style={styles.masterySummaryLabel}>
+            {translate(tKeys.practiceThisNext)}
+          </Text>
+          {recommendation ? (
+            <>
+              <Text style={[styles.masterySummaryValue, { marginTop: 4 }]}>
+                {recommendation.label}
+              </Text>
+              <Text style={[styles.masterySummaryLabel, { marginTop: 4 }]}>
+                {translate(tKeys.practiceThisNextReason)}
+              </Text>
+            </>
+          ) : (
+            <Text style={[styles.masterySummaryLabel, { marginTop: 4 }]}>
+              {translate(tKeys.practiceThisNextEmpty)}
+            </Text>
+          )}
+        </View>
+
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <FlashList
             data={flattenedPairs}

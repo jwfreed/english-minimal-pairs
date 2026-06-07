@@ -55,7 +55,7 @@ export function computePracticeNextRecommendation(
   }
 
   // ── 2. Filter groups below the minimum attempt threshold ─────────────────
-  const eligible: Array<{ groupId: string; accuracy: number; cp1: string; cp2: string }> = [];
+  const eligible: { groupId: string; accuracy: number; cp1: string; cp2: string }[] = [];
 
   for (const [groupId, data] of byGroup) {
     if (data.attempts.length < MIN_GROUP_ATTEMPTS) continue;

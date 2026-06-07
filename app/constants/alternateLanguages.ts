@@ -75,6 +75,9 @@ export const englishTranslations = {
     onboardingBullet3: 'Choose which word you heard.',
     onboardingBullet4: 'Practice adapts to your progress.',
     onboardingBullet5: 'No microphone needed.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   } as const;
 
 export type TranslationSchema = Record<keyof typeof englishTranslations, string>;
@@ -158,6 +161,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: '聞こえた単語を選ぼう。',
     onboardingBullet4: '練習は進捗に合わせて調整される。',
     onboardingBullet5: 'マイク不要。',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
 
   中文: {
@@ -236,6 +242,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: '选出你听到的单词。',
     onboardingBullet4: '练习根据你的进度自动调整。',
     onboardingBullet5: '无需麦克风。',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
@@ -313,6 +322,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'เลือกคำที่คุณได้ยิน',
     onboardingBullet4: 'การฝึกปรับตามความก้าวหน้าของคุณ',
     onboardingBullet5: 'ไม่ต้องใช้ไมโครโฟน',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   Español: {
     home: 'Inicio',
@@ -391,6 +403,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'Elige la palabra que escuchaste.',
     onboardingBullet4: 'La práctica se adapta a tu progreso.',
     onboardingBullet5: 'No necesitas micrófono.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   العربية: {
     home: 'الرئيسية',
@@ -469,6 +484,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'اختر الكلمة التي سمعتها.',
     onboardingBullet4: 'تتكيف التدريبات مع تقدمك.',
     onboardingBullet5: 'لا حاجة لميكروفون.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   Русский: {
     home: 'Главная',
@@ -547,6 +565,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'Выбери услышанное слово.',
     onboardingBullet4: 'Упражнения подстраиваются под твой прогресс.',
     onboardingBullet5: 'Микрофон не нужен.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   한국어: {
     home: '홈',
@@ -625,6 +646,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: '들은 단어를 선택하세요.',
     onboardingBullet4: '연습은 나의 진행 상황에 맞게 조정됩니다.',
     onboardingBullet5: '마이크가 필요 없습니다.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   'हिन्दी / اردو': {
     home: 'होम/ہوم',
@@ -703,6 +727,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'जो शब्द सुना वो चुनें।/جو لفظ سنا وہ چنیں۔',
     onboardingBullet4: 'अभ्यास आपकी प्रगति के अनुसार बदलता है।/مشق آپ کی پیشرفت کے مطابق ڈھلتی ہے۔',
     onboardingBullet5: 'माइक की ज़रूरत नहीं।/مائیک کی ضرورت نہیں۔',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   Português: {
     home: 'Início',
@@ -781,6 +808,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'Escolha a palavra que você ouviu.',
     onboardingBullet4: 'A prática se adapta ao seu progresso.',
     onboardingBullet5: 'Não precisa de microfone.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
@@ -859,6 +889,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'Chọn từ bạn vừa nghe.',
     onboardingBullet4: 'Bài tập tự điều chỉnh theo tiến độ của bạn.',
     onboardingBullet5: 'Không cần dùng micro.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   Türkçe: {
     home: 'Ana Sayfa',
@@ -937,6 +970,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'Duyduğunuz kelimeyi seçin.',
     onboardingBullet4: 'Alıştırmalar ilerlemenize göre uyarlanır.',
     onboardingBullet5: 'Mikrofon gerekmez.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   فارسی: {
     home: 'خانه',
@@ -1015,6 +1051,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'کلمه‌ای که شنیدید را انتخاب کنید.',
     onboardingBullet4: 'تمرین‌ها با پیشرفت شما تنظیم می‌شوند.',
     onboardingBullet5: 'نیازی به میکروفون نیست.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   廣東話: {
     home: '首頁',
@@ -1091,6 +1130,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: '揀返你聽到嘅字。',
     onboardingBullet4: '練習會根據你嘅進度調整。',
     onboardingBullet5: '唔需要麥克風。',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
   'Bahasa Indonesia': {
     home: 'Beranda',
@@ -1169,5 +1211,8 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     onboardingBullet3: 'Pilih kata yang kamu dengar.',
     onboardingBullet4: 'Latihan menyesuaikan dengan kemajuanmu.',
     onboardingBullet5: 'Tidak perlu mikrofon.',
+    practiceThisNext: 'Practice this next',
+    practiceThisNextReason: 'Your recent accuracy is lower here.',
+    practiceThisNextEmpty: 'Practice a few pairs to get a recommendation.',
   },
 };

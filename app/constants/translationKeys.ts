@@ -68,6 +68,10 @@ export const tKeys = {
   onboardingBullet3: 'onboardingBullet3',
   onboardingBullet4: 'onboardingBullet4',
   onboardingBullet5: 'onboardingBullet5',
+  // Practice This Next nudge (Results screen)
+  practiceThisNext: 'practiceThisNext',
+  practiceThisNextReason: 'practiceThisNextReason',
+  practiceThisNextEmpty: 'practiceThisNextEmpty',
 } as const;
 
 export type TranslationKey = keyof typeof tKeys;

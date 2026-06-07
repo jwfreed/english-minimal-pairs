@@ -189,7 +189,6 @@ export default function ResultsScreen() {
             styles.masterySummaryCard,
             { marginHorizontal: 16, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start' },
           ]}
-          accessibilityRole="text"
           accessibilityLabel={
             recommendation
               ? `${translate(tKeys.practiceThisNext)}: ${recommendation.label}. ${translate(tKeys.practiceThisNextReason)}`

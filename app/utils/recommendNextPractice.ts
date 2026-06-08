@@ -6,6 +6,12 @@ export interface PracticeNextRecommendation {
   groupId: string;
   label: string;       // e.g. "/r/ vs /l/"
   recentAccuracy: number; // 0–1
+  /**
+   * Why this pair is being recommended:
+   *   'lowAccuracy' — a practiced group whose recent accuracy is comparatively low
+   *   'newPair'     — a pair the user has not begun practicing yet
+   */
+  reason: 'lowAccuracy' | 'newPair';
 }
 
 // A group needs at least this many total attempts before it is considered.
@@ -16,9 +22,19 @@ const MIN_GROUP_ATTEMPTS = 3;
 // consistent with getWeightedAccuracy in progressStorage.ts.
 const RECENT_ATTEMPT_COUNT = 20;
 
+// Recent accuracy at or above this counts as "strong" — strong groups don't
+// need more practice, so we steer the user toward new pairs instead.
+const STRONG_ACCURACY = 0.9;
+
 /**
- * Returns the contrast group with the lowest recent accuracy, or null when
- * there is not enough data. Scope is limited to the currently selected category.
+ * Recommends the next pair to practice within the currently selected category:
+ *   1. The eligible group (≥ MIN_GROUP_ATTEMPTS) with the lowest recent
+ *      accuracy, when one is below STRONG_ACCURACY → reason 'lowAccuracy'.
+ *   2. Otherwise (no eligible groups, or all eligible groups are strong) the
+ *      first pair with no recorded attempts → reason 'newPair'.
+ *   3. Otherwise, if eligible groups exist (all strong, nothing new left), the
+ *      lowest-accuracy eligible group → reason 'lowAccuracy'.
+ *   4. Otherwise null.
  *
  * Pair ID format mirrors buildPairId in idHelpers.ts:
  *   `${category}__${group}__${word1}_${word2}`
@@ -69,18 +85,46 @@ export function computePracticeNextRecommendation(
     eligible.push({ groupId, accuracy, cp1: data.cp1, cp2: data.cp2 });
   }
 
-  if (eligible.length === 0) return null;
-
-  // ── 3. Find lowest accuracy; deterministic alphabetical tie-break ─────────
+  // ── 3. Prefer the lowest-accuracy eligible group when one needs work ──────
+  // Deterministic alphabetical tie-break.
   eligible.sort((a, b) => {
     if (a.accuracy !== b.accuracy) return a.accuracy - b.accuracy;
     return a.groupId.localeCompare(b.groupId);
   });
 
-  const { groupId, accuracy, cp1, cp2 } = eligible[0];
-  return {
-    groupId,
-    label: `/${cp1}/ vs /${cp2}/`,
-    recentAccuracy: accuracy,
-  };
+  const weakest = eligible[0];
+  if (weakest && weakest.accuracy < STRONG_ACCURACY) {
+    return {
+      groupId: weakest.groupId,
+      label: `/${weakest.cp1}/ vs /${weakest.cp2}/`,
+      recentAccuracy: weakest.accuracy,
+      reason: 'lowAccuracy',
+    };
+  }
+
+  // ── 4. Nothing weak: steer toward the first unpracticed pair ─────────────
+  const fresh = pairs.find((pair) => {
+    const id = `${category}__${pair.group}__${pair.word1}_${pair.word2}`;
+    return !progress[id]?.attempts?.length;
+  });
+  if (fresh) {
+    return {
+      groupId: fresh.group,
+      label: `/${fresh.contrastPhoneme1}/ vs /${fresh.contrastPhoneme2}/`,
+      recentAccuracy: 0,
+      reason: 'newPair',
+    };
+  }
+
+  // ── 5. All groups strong and nothing new left: fall back to the weakest ──
+  if (weakest) {
+    return {
+      groupId: weakest.groupId,
+      label: `/${weakest.cp1}/ vs /${weakest.cp2}/`,
+      recentAccuracy: weakest.accuracy,
+      reason: 'lowAccuracy',
+    };
+  }
+
+  return null;
 }

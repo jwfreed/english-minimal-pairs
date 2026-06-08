@@ -1,8 +1,8 @@
 // app/(tabs)/results.tsx
 import React, { useMemo, useCallback, useEffect } from 'react';
-import { View, Text, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { minimalPairs } from '@/app/constants/minimalPairs';
 import { usePairProgress } from '@/app/context/PairProgressContext';
 import { useAllThemeColors } from '@/app/context/theme';
@@ -15,6 +15,7 @@ import { buildPairId } from '@/app/utils/idHelpers';
 import { estimateActivePracticeTime } from '@/app/storage/progressStorage';
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { computePracticeNextRecommendation } from '@/app/utils/recommendNextPractice';
+import { usePracticeTarget } from '@/app/context/PracticeTargetContext';
 
 export default function ResultsScreen() {
   const { progress } = usePairProgress();
@@ -85,6 +86,22 @@ export default function ResultsScreen() {
     () => computePracticeNextRecommendation(progress, catObj?.pairs ?? [], selectedCategoryName ?? ''),
     [progress, catObj, selectedCategoryName]
   );
+
+  const { requestPractice } = usePracticeTarget();
+  const router = useRouter();
+  const handlePracticeNextPress = useCallback(() => {
+    if (!recommendation) return;
+    requestPractice(recommendation.groupId);
+    router.navigate('/');
+  }, [recommendation, requestPractice, router]);
+
+  const reasonText = recommendation
+    ? translate(
+        recommendation.reason === 'newPair'
+          ? tKeys.practiceThisNextReasonNew
+          : tKeys.practiceThisNextReason
+      )
+    : translate(tKeys.practiceThisNextEmpty);
 
   const flattenedPairs = useMemo(() => {
     if (!catObj || catObj.pairs.length === 0) return [];
@@ -183,18 +200,22 @@ export default function ResultsScreen() {
           </View>
         </View>
 
-        {/* Practice This Next Card */}
-        <View
-          style={[
-            styles.masterySummaryCard,
-            { marginHorizontal: 16, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start' },
-          ]}
+        {/* Practice This Next Card — tappable when a recommendation exists */}
+        <Pressable
+          onPress={recommendation ? handlePracticeNextPress : undefined}
+          disabled={!recommendation}
           accessible={true}
+          accessibilityRole={recommendation ? 'button' : undefined}
           accessibilityLabel={
             recommendation
-              ? `${translate(tKeys.practiceThisNext)}: ${recommendation.label}. ${translate(tKeys.practiceThisNextReason)}`
+              ? `${translate(tKeys.practiceThisNext)}: ${recommendation.label}. ${reasonText}`
               : translate(tKeys.practiceThisNextEmpty)
           }
+          style={({ pressed }) => [
+            styles.masterySummaryCard,
+            { marginHorizontal: 16, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start' },
+            pressed && recommendation ? { opacity: 0.7 } : null,
+          ]}
         >
           <Text style={styles.masterySummaryLabel}>
             {translate(tKeys.practiceThisNext)}
@@ -205,15 +226,15 @@ export default function ResultsScreen() {
                 {recommendation.label}
               </Text>
               <Text style={[styles.masterySummaryLabel, { marginTop: 4 }]}>
-                {translate(tKeys.practiceThisNextReason)}
+                {reasonText}
               </Text>
             </>
           ) : (
             <Text style={[styles.masterySummaryLabel, { marginTop: 4 }]}>
-              {translate(tKeys.practiceThisNextEmpty)}
+              {reasonText}
             </Text>
           )}
-        </View>
+        </Pressable>
 
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <FlashList

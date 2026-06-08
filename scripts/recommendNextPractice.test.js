@@ -43,16 +43,20 @@ const pairId = (category, pair) =>
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-runTest('returns null when progress is empty', () => {
+runTest('recommends a new pair when nothing has been practiced', () => {
   const pairs = [makePair('rL', 'r', 'l', 'rake', 'lake')];
   const result = computePracticeNextRecommendation({}, pairs, 'Japanese');
-  assert.strictEqual(result, null);
+  assert.ok(result !== null, 'expected a new-pair recommendation');
+  assert.strictEqual(result.reason, 'newPair');
+  assert.strictEqual(result.groupId, 'rL');
+  assert.strictEqual(result.label, '/r/ vs /l/');
+  assert.strictEqual(result.recentAccuracy, 0);
 });
 
-runTest('returns null when no pair in the current category has enough attempts', () => {
+runTest('returns null when the only practiced pair lacks enough attempts and no unpracticed pair remains', () => {
   const cat = 'Japanese';
   const pair = makePair('rL', 'r', 'l', 'rake', 'lake');
-  // Only 2 attempts — below the 3-attempt threshold
+  // Only 2 attempts — below the 3-attempt threshold, and no unpracticed pair
   const progress = {
     [pairId(cat, pair)]: {
       attempts: [makeAttempt(true), makeAttempt(false)],
@@ -72,10 +76,60 @@ runTest('returns the one practiced group when it has enough attempts', () => {
   };
   const result = computePracticeNextRecommendation(progress, [pair], cat);
   assert.ok(result !== null, 'expected a recommendation');
+  assert.strictEqual(result.reason, 'lowAccuracy');
   assert.strictEqual(result.groupId, 'rL');
   assert.strictEqual(result.label, '/r/ vs /l/');
   assert.ok(typeof result.recentAccuracy === 'number');
   assert.ok(result.recentAccuracy >= 0 && result.recentAccuracy <= 1);
+});
+
+runTest('recommends the first unpracticed pair when every practiced group is strong', () => {
+  const cat = 'Japanese';
+  const strong = makePair('rL', 'r', 'l', 'rake', 'lake');
+  const fresh = makePair('bV', 'b', 'v', 'ban', 'van');
+  // rL: 3/3 correct = 1.0 accuracy (strong); bV: never practiced
+  const progress = {
+    [pairId(cat, strong)]: {
+      attempts: [makeAttempt(true), makeAttempt(true), makeAttempt(true)],
+    },
+  };
+  const result = computePracticeNextRecommendation(progress, [strong, fresh], cat);
+  assert.ok(result !== null, 'expected a new-pair recommendation');
+  assert.strictEqual(result.reason, 'newPair');
+  assert.strictEqual(result.groupId, 'bV');
+  assert.strictEqual(result.label, '/b/ vs /v/');
+  assert.strictEqual(result.recentAccuracy, 0);
+});
+
+runTest('prefers a low-accuracy group over an unpracticed pair', () => {
+  const cat = 'Japanese';
+  const weak = makePair('rL', 'r', 'l', 'rake', 'lake');
+  const fresh = makePair('bV', 'b', 'v', 'ban', 'van');
+  // rL: 1/3 correct (weak); bV: unpracticed
+  const progress = {
+    [pairId(cat, weak)]: {
+      attempts: [makeAttempt(true), makeAttempt(false), makeAttempt(false)],
+    },
+  };
+  const result = computePracticeNextRecommendation(progress, [weak, fresh], cat);
+  assert.ok(result !== null);
+  assert.strictEqual(result.reason, 'lowAccuracy');
+  assert.strictEqual(result.groupId, 'rL');
+});
+
+runTest('falls back to lowest-accuracy when all groups are strong and no unpracticed pair remains', () => {
+  const cat = 'Japanese';
+  const pair = makePair('rL', 'r', 'l', 'rake', 'lake');
+  // Single group, all correct (strong), nothing else to recommend
+  const progress = {
+    [pairId(cat, pair)]: {
+      attempts: [makeAttempt(true), makeAttempt(true), makeAttempt(true)],
+    },
+  };
+  const result = computePracticeNextRecommendation(progress, [pair], cat);
+  assert.ok(result !== null, 'expected a fallback recommendation');
+  assert.strictEqual(result.reason, 'lowAccuracy');
+  assert.strictEqual(result.groupId, 'rL');
 });
 
 runTest('recommends the group with the lowest recent accuracy when multiple are practiced', () => {
@@ -142,14 +196,18 @@ runTest('uses deterministic alphabetical tie-breaking when accuracies are equal'
 runTest('ignores progress entries from other categories', () => {
   const cat = 'Japanese';
   const pair = makePair('rL', 'r', 'l', 'rake', 'lake');
-  // Progress key is for a different category ('Spanish')
+  // Progress key is for a different category ('Spanish') — the local pair is
+  // unpracticed, so it surfaces as a new-pair recommendation, not based on the
+  // Spanish accuracy.
   const progress = {
     [`Spanish__rL__rake_lake`]: {
       attempts: [makeAttempt(true), makeAttempt(false), makeAttempt(false)],
     },
   };
   const result = computePracticeNextRecommendation(progress, [pair], cat);
-  assert.strictEqual(result, null);
+  assert.ok(result !== null);
+  assert.strictEqual(result.reason, 'newPair');
+  assert.strictEqual(result.groupId, 'rL');
 });
 
 runTest('does not divide by zero when a group has an empty attempts array', () => {
@@ -158,10 +216,12 @@ runTest('does not divide by zero when a group has an empty attempts array', () =
   const progress = {
     [pairId(cat, pair)]: { attempts: [] },
   };
-  // Empty array → no crash, returns null
+  // Empty array → no crash; treated as unpracticed → new-pair recommendation.
   assert.doesNotThrow(() => {
     const result = computePracticeNextRecommendation(progress, [pair], cat);
-    assert.strictEqual(result, null);
+    assert.ok(result !== null);
+    assert.strictEqual(result.reason, 'newPair');
+    assert.strictEqual(result.groupId, 'rL');
   });
 });
 

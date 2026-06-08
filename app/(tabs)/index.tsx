@@ -5,6 +5,7 @@ import { View, Text, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
+import { usePracticeTarget } from '@/app/context/PracticeTargetContext';
 import { usePairProgress } from '@/app/context/PairProgressContext';
 import { useSettings } from '@/app/context/SettingsContext';
 import { useAllThemeColors } from '@/app/context/theme';
@@ -60,6 +61,7 @@ import OnboardingScreen from '@/app/components/OnboardingScreen';
 export default function HomeScreen() {
   const { translate } = useLanguage();
   const { categoryIndex } = useCategory();
+  const { targetGroup, consumeTarget } = usePracticeTarget();
   const { recordAttempt } = usePairProgress();
   const { getNextVoice } = useSettings();
   const theme = useAllThemeColors();
@@ -165,6 +167,20 @@ export default function HomeScreen() {
     setPlayedIdx(null);
     setStartTime(null);
   }, [categoryIndex]);
+
+  // Jump to a pair requested from the Results "Practice this next" card.
+  // The target is a group id; visible holds one pair per group, so we can
+  // resolve it to an index once the list is ready, then clear the target.
+  useEffect(() => {
+    if (!targetGroup || isLoading) return;
+    const idx = visible.findIndex((p) => p.group === targetGroup);
+    if (idx === -1) return;
+    setPairIndex(idx);
+    setFeedback(null);
+    setPlayedIdx(null);
+    setStartTime(null);
+    consumeTarget();
+  }, [targetGroup, visible, isLoading, consumeTarget]);
 
   // Clamp pairIndex when visible list shrinks
   const safePairIndex = visible.length > 0 ? Math.min(pairIndex, visible.length - 1) : 0;

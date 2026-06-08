@@ -71,6 +71,7 @@ export const tKeys = {
   // Practice This Next nudge (Results screen)
   practiceThisNext: 'practiceThisNext',
   practiceThisNextReason: 'practiceThisNextReason',
+  practiceThisNextReasonNew: 'practiceThisNextReasonNew',
   practiceThisNextEmpty: 'practiceThisNextEmpty',
 } as const;
 

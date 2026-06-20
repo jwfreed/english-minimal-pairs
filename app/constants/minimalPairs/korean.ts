@@ -45,7 +45,9 @@ const vB: Row[] = [
 
 const rL: Row[] = [
   ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['rate', 'late', 2, '/reɪt/', '/leɪt/', 'rL', 'initial'],
   ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
+  ['rice', 'lice', 2, '/raɪs/', '/laɪs/', 'rL', 'initial'],
   ['rip', 'lip', 3, '/rɪp/', '/lɪp/', 'rL', 'initial'],
   ['rake', 'lake', 4, '/reɪk/', '/leɪk/', 'rL', 'initial'],
   ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],

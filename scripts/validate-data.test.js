@@ -91,3 +91,79 @@ runTest('malformed pairs include useful category group tier and word context', (
   assert(formatted.includes('PAIR_WORD_NON_EMPTY'));
   assert(formatted.includes('/word2b'));
 });
+
+runTest('rejects invalid pair shape fields explicitly', () => {
+  const pairs = [1, 2, 3, 4, 5, 6].map(makePair);
+  pairs[1] = makePair(2, {
+    word1: 'same',
+    word2: 'same',
+    difficulty: 7,
+    group: ' ',
+    contrastPhoneme1: '',
+    contrastPhoneme2: ' ',
+  });
+
+  const result = validateDatasetContract({
+    minimalPairs: [makeCategory('Test Language', pairs)],
+    translationLanguageKeys: ['Test Language'],
+    localeLanguageKeys: ['Test Language'],
+    expectedCategoryCount: 1,
+    expectedGroupsPerCategory: 1,
+  });
+
+  assert(result.errors.some((error) => error.rule === 'PAIR_WORDS_DISTINCT'));
+  assert(result.errors.some((error) => error.rule === 'PAIR_DIFFICULTY_VALID'));
+  assert(result.errors.some((error) => error.rule === 'PAIR_GROUP_NON_EMPTY'));
+  assert(result.errors.some((error) => error.rule === 'PAIR_CONTRAST_PHONEME_PRESENT'));
+});
+
+runTest('requires every category to expose at least one pair', () => {
+  const result = validateDatasetContract({
+    minimalPairs: [makeCategory('Test Language', [])],
+    translationLanguageKeys: ['Test Language'],
+    localeLanguageKeys: ['Test Language'],
+    expectedCategoryCount: 1,
+    expectedGroupsPerCategory: 1,
+  });
+
+  assert(result.errors.some((error) => error.rule === 'CATEGORY_PAIRS_NON_EMPTY'));
+});
+
+runTest('rejects duplicate and reversed duplicate word pairs within a category', () => {
+  const pairs = [1, 2, 3, 4, 5, 6].map(makePair);
+  pairs.push(makePair(6, { word1: 'word1a', word2: 'word1b' }));
+  pairs.push(makePair(6, { word1: 'word2b', word2: 'word2a' }));
+
+  const result = validateDatasetContract({
+    minimalPairs: [makeCategory('Test Language', pairs)],
+    translationLanguageKeys: ['Test Language'],
+    localeLanguageKeys: ['Test Language'],
+    expectedCategoryCount: 1,
+    expectedGroupsPerCategory: 1,
+  });
+
+  assert(result.errors.some((error) => error.rule === 'PAIR_WORD_DUPLICATE'));
+  assert(result.errors.some((error) => error.rule === 'PAIR_WORD_REVERSED_DUPLICATE'));
+});
+
+runTest('allows multiple examples at the same difficulty when all tiers are covered', () => {
+  const pairs = [
+    ...[1, 2, 3, 4, 5, 6].map(makePair),
+    makePair(3, {
+      word1: 'extra3a',
+      word2: 'extra3b',
+      ipa1: '/a-extra/',
+      ipa2: '/b-extra/',
+    }),
+  ];
+
+  const result = validateDatasetContract({
+    minimalPairs: [makeCategory('Test Language', pairs)],
+    translationLanguageKeys: ['Test Language'],
+    localeLanguageKeys: ['Test Language'],
+    expectedCategoryCount: 1,
+    expectedGroupsPerCategory: 1,
+  });
+
+  assert.deepStrictEqual(result.errors, []);
+});

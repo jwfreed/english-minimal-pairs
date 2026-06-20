@@ -40,7 +40,7 @@ runTest('recommendPlacementTier preserves existing placement thresholds', () => 
   assert.strictEqual(recommendPlacementTier(0, 0), 1);
 });
 
-runTest('selectVisiblePairsByMastery picks one pair per group at the mastered tier', () => {
+runTest('selectVisiblePairsByMastery makes mastered-tier group examples visible', () => {
   const pairs = [
     makePair('rL', 1, 'right', 'light'),
     makePair('rL', 2, 'road', 'load'),
@@ -53,6 +53,22 @@ runTest('selectVisiblePairsByMastery picks one pair per group at the mastered ti
   assert.strictEqual(
     JSON.stringify(visible.map((pair) => `${pair.group}:${pair.difficulty}:${pair.word1}/${pair.word2}`)),
     JSON.stringify(['rL:2:road/load', 'vW:1:vine/wine'])
+  );
+});
+
+runTest('selectVisiblePairsByMastery includes every same-tier example for a mastered group', () => {
+  const pairs = [
+    makePair('rL', 1, 'right', 'light'),
+    makePair('rL', 2, 'road', 'load'),
+    makePair('rL', 2, 'rice', 'lice'),
+    makePair('vW', 1, 'vine', 'wine'),
+  ];
+
+  const visible = selectVisiblePairsByMastery(pairs, { rL: 2 });
+
+  assert.strictEqual(
+    JSON.stringify(visible.map((pair) => `${pair.group}:${pair.difficulty}:${pair.word1}/${pair.word2}`)),
+    JSON.stringify(['rL:2:road/load', 'rL:2:rice/lice', 'vW:1:vine/wine'])
   );
 });
 

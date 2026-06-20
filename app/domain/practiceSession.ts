@@ -59,9 +59,10 @@ export function selectVisiblePairsByMastery(
   const byGroup: Record<string, Pair[]> = {};
   pairs.forEach((pair) => (byGroup[pair.group] ??= []).push(pair));
 
-  return Object.values(byGroup).map((groupPairs) => {
+  return Object.values(byGroup).flatMap((groupPairs) => {
     const tier = mastery[groupPairs[0].group] ?? 1;
-    return groupPairs.find((pair) => pair.difficulty === tier) ?? groupPairs[0];
+    const tierPairs = groupPairs.filter((pair) => pair.difficulty === tier);
+    return tierPairs.length > 0 ? tierPairs : [groupPairs[0]];
   });
 }
 

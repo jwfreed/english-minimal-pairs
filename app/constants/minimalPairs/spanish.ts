@@ -18,7 +18,9 @@ const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2
 /* ---------- word-lists with group IDs ---------------------------- */
 const iVsI: Row[] = [
   ['sheep', 'ship', 1, '/ʃiːp/', '/ʃɪp/', 'iVsI', 'medial'],
+  ['seat', 'sit', 1, '/siːt/', '/sɪt/', 'iVsI', 'medial'],
   ['leave', 'live', 2, '/liːv/', '/lɪv/', 'iVsI', 'medial'],
+  ['feel', 'fill', 2, '/fiːl/', '/fɪl/', 'iVsI', 'medial'],
   ['beat', 'bit', 3, '/biːt/', '/bɪt/', 'iVsI', 'medial'],
   ['feet', 'fit', 4, '/fiːt/', '/fɪt/', 'iVsI', 'medial'],
   ['neat', 'knit', 5, '/niːt/', '/nɪt/', 'iVsI', 'medial'],

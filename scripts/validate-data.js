@@ -46,6 +46,10 @@ function sortedUnique(values) {
   return [...new Set(values)].sort((a, b) => String(a).localeCompare(String(b)));
 }
 
+function normalizeWordForDuplicateCheck(word) {
+  return String(word).trim().toLowerCase();
+}
+
 function validateCategoryAlignment({
   categoryKeys,
   translationLanguageKeys,
@@ -114,11 +118,29 @@ function validatePairShape(pair, category) {
     errors.push(
       createError('PAIR_WORD_NON_EMPTY', 'Both word fields must be non-empty strings.', context)
     );
+  } else if (pair.word1.trim() === pair.word2.trim()) {
+    errors.push(
+      createError('PAIR_WORDS_DISTINCT', 'word1 and word2 must be different words.', context)
+    );
   }
 
   if (!isNonEmptyString(pair?.ipa1) || !isNonEmptyString(pair?.ipa2)) {
     errors.push(
       createError('PAIR_IPA_NON_EMPTY', 'Both IPA fields must be non-empty strings.', context)
+    );
+  }
+
+  if (!isNonEmptyString(pair?.group)) {
+    errors.push(createError('PAIR_GROUP_NON_EMPTY', 'Group must be a non-empty string.', context));
+  }
+
+  if (!Number.isInteger(pair?.difficulty) || !EXPECTED_TIERS.includes(pair.difficulty)) {
+    errors.push(
+      createError(
+        'PAIR_DIFFICULTY_VALID',
+        `Difficulty must be one of ${EXPECTED_TIERS.join(', ')}.`,
+        context
+      )
     );
   }
 
@@ -229,8 +251,16 @@ function validateDatasetContract({
       );
       continue;
     }
+    if (pairs.length === 0) {
+      errors.push(
+        createError('CATEGORY_PAIRS_NON_EMPTY', 'Category must expose at least one pair.', {
+          category: categoryName,
+        })
+      );
+    }
 
     const groups = new Map();
+    const seenCategoryWordPairs = new Map();
     for (const pair of pairs) {
       errors.push(...validatePairShape(pair, categoryName));
 
@@ -253,6 +283,37 @@ function validateDatasetContract({
         );
       }
       seenPairIds.add(pairId);
+
+      if (isNonEmptyString(pair?.word1) && isNonEmptyString(pair?.word2)) {
+        const word1 = normalizeWordForDuplicateCheck(pair.word1);
+        const word2 = normalizeWordForDuplicateCheck(pair.word2);
+        const exactKey = `${word1}\u0000${word2}`;
+        const reversedKey = `${word2}\u0000${word1}`;
+        if (seenCategoryWordPairs.has(exactKey)) {
+          errors.push(
+            createError('PAIR_WORD_DUPLICATE', 'Word pair is duplicated in this category.', {
+              category: categoryName,
+              group,
+              tier: pair?.difficulty,
+              pair,
+            })
+          );
+        } else if (seenCategoryWordPairs.has(reversedKey)) {
+          errors.push(
+            createError(
+              'PAIR_WORD_REVERSED_DUPLICATE',
+              'Reversed word pair is duplicated in this category.',
+              {
+                category: categoryName,
+                group,
+                tier: pair?.difficulty,
+                pair,
+              }
+            )
+          );
+        }
+        seenCategoryWordPairs.set(exactKey, pair);
+      }
     }
 
     if (groups.size !== expectedGroupsPerCategory) {
@@ -280,14 +341,6 @@ function validateDatasetContract({
               group,
               tier,
             })
-          );
-        } else if (count > 1) {
-          errors.push(
-            createError(
-              'GROUP_TIER_UNIQUE',
-              `Tier ${tier} appears ${count} times in group "${group}".`,
-              { category: categoryName, group, tier }
-            )
           );
         }
       }

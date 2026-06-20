@@ -169,8 +169,8 @@ export default function HomeScreen() {
   }, [categoryIndex]);
 
   // Jump to a pair requested from the Results "Practice this next" card.
-  // The target is a group id; visible holds one pair per group, so we can
-  // resolve it to an index once the list is ready, then clear the target.
+  // The target is a group id. visible may include multiple same-tier examples
+  // for a group, while mastery remains group-based.
   useEffect(() => {
     if (!targetGroup || isLoading) return;
     const idx = visible.findIndex((p) => p.group === targetGroup);

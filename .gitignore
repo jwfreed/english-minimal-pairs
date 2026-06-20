@@ -15,6 +15,7 @@
 /web-build/
 /android/
 /ios/
+.worktrees/
 
 # logs
 *.log

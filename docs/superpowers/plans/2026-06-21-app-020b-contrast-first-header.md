@@ -12,7 +12,7 @@
 
 ## File Structure
 
-- Create: `app/utils/contrastLabel.ts`
+- Create: `utils/contrastLabel.ts`
   - Pure display helper for contrast title derivation and slash normalization.
 - Create: `scripts/contrastLabel.test.js`
   - Node tests for readable labels, slash normalization, group fallback, and no-pair fallback.
@@ -30,7 +30,7 @@
 ### Task 1: Contrast Label Helper
 
 **Files:**
-- Create: `app/utils/contrastLabel.ts`
+- Create: `utils/contrastLabel.ts`
 - Create: `scripts/contrastLabel.test.js`
 
 - [ ] **Step 1: Write the failing helper tests**
@@ -43,7 +43,7 @@ const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
 const { buildContrastTrainingTitle } = loadTsModule(
-  path.join(__dirname, '..', 'app', 'utils', 'contrastLabel.ts')
+  path.join(__dirname, '..', 'utils', 'contrastLabel.ts')
 );
 
 function runTest(name, fn) {
@@ -98,11 +98,11 @@ console.log('\nAll contrastLabel tests passed.');
 
 Run: `rtk npm test`
 
-Expected: FAIL because `app/utils/contrastLabel.ts` does not exist or `buildContrastTrainingTitle` is not exported.
+Expected: FAIL because `utils/contrastLabel.ts` does not exist or `buildContrastTrainingTitle` is not exported.
 
 - [ ] **Step 3: Implement the helper**
 
-Create `app/utils/contrastLabel.ts`:
+Create `utils/contrastLabel.ts`:
 
 ```typescript
 import type { Pair } from '@/app/constants/minimalPairs';
@@ -147,7 +147,7 @@ Expected: PASS, including `contrastLabel.test.js`.
 - [ ] **Step 5: Commit**
 
 ```bash
-rtk git add app/utils/contrastLabel.ts scripts/contrastLabel.test.js
+rtk git add utils/contrastLabel.ts scripts/contrastLabel.test.js
 rtk git commit -m "feat: add contrast training label helper"
 ```
 
@@ -162,7 +162,7 @@ rtk git commit -m "feat: add contrast training label helper"
 Modify imports in `app/(tabs)/index.tsx`:
 
 ```typescript
-import { buildContrastTrainingTitle } from '@/app/utils/contrastLabel';
+import { buildContrastTrainingTitle } from '@/utils/contrastLabel';
 ```
 
 Add after `selectedPair` is computed:

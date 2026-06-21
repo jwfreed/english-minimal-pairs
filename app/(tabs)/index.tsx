@@ -53,7 +53,7 @@ import {
   markOnboardingSeen,
 } from '@/app/storage/onboardingStorage';
 import OnboardingScreen from '@/app/components/OnboardingScreen';
-import { buildContrastTrainingTitle } from '@/app/utils/contrastLabel';
+import { buildContrastTrainingTitle } from '@/utils/contrastLabel';
 
 /* Playback-rate steps per acoustic tier (0–2)
  * 3 tiers keeps the path to mastery promotion short:

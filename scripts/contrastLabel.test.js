@@ -3,7 +3,7 @@ const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
 const { buildContrastTrainingTitle } = loadTsModule(
-  path.join(__dirname, '..', 'app', 'utils', 'contrastLabel.ts')
+  path.join(__dirname, '..', 'utils', 'contrastLabel.ts')
 );
 
 function runTest(name, fn) {

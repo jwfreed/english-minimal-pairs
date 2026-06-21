@@ -1,4 +1,4 @@
-// app/utils/recommendNextPractice.ts
+// utils/recommendNextPractice.ts
 import type { Pair } from '@/app/constants/minimalPairs';
 import type { PairAttempt, PairStats } from '@/app/storage/progressStorage';
 

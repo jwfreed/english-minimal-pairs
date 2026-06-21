@@ -3,7 +3,7 @@ import {
   type SpeedTier,
   getNextAdaptiveProgression,
 } from '@/app/learning/adaptiveProgression';
-import { buildPairId } from '@/app/utils/idHelpers';
+import { buildPairId } from '@/utils/idHelpers';
 
 export type PracticeFeedback = 'correct' | 'incorrect';
 export type PlayedIndex = 0 | 1;

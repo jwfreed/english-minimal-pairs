@@ -4,7 +4,7 @@ const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
 const { computePracticeNextRecommendation } = loadTsModule(
-  path.join(__dirname, '..', 'app', 'utils', 'recommendNextPractice.ts')
+  path.join(__dirname, '..', 'utils', 'recommendNextPractice.ts')
 );
 
 function runTest(name, fn) {

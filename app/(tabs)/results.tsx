@@ -11,10 +11,10 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
 import { tKeys } from '@/app/constants/translationKeys';
 import PairItem from '@/app/components/PairItem';
-import { buildPairId } from '@/app/utils/idHelpers';
+import { buildPairId } from '@/utils/idHelpers';
 import { estimateActivePracticeTime } from '@/app/storage/progressStorage';
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
-import { computePracticeNextRecommendation } from '@/app/utils/recommendNextPractice';
+import { computePracticeNextRecommendation } from '@/utils/recommendNextPractice';
 import { usePracticeTarget } from '@/app/context/PracticeTargetContext';
 
 export default function ResultsScreen() {

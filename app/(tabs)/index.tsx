@@ -521,7 +521,11 @@ export default function HomeScreen() {
 
         <LevelUpCelebration
           promotedTier={promotedTier}
-          label={translate(tKeys.levelUnlocked)}
+          label={
+            promotedTier == null
+              ? translate(tKeys.levelUnlocked)
+              : `This contrast moved to Level ${promotedTier}`
+          }
           styles={styles}
         />
 

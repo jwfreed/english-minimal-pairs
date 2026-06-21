@@ -96,12 +96,10 @@ export default function ResultsScreen() {
   }, [recommendation, requestPractice, router]);
 
   const reasonText = recommendation
-    ? translate(
-        recommendation.reason === 'newPair'
-          ? tKeys.practiceThisNextReasonNew
-          : tKeys.practiceThisNextReason
-      )
-    : translate(tKeys.practiceThisNextEmpty);
+    ? recommendation.reason === 'newPair'
+      ? "You haven't practiced this contrast yet."
+      : 'Your recent accuracy is lower for this contrast.'
+    : 'Practice a few contrasts to get a recommendation.';
 
   const flattenedPairs = useMemo(() => {
     if (!catObj || catObj.pairs.length === 0) return [];
@@ -187,7 +185,7 @@ export default function ResultsScreen() {
               {masterySummary.masteredGroups} / {masterySummary.totalGroups}
             </Text>
             <Text style={styles.masterySummaryLabel}>
-              {translate(tKeys.pairsMastered)}
+              Contrasts Mastered
             </Text>
           </View>
           <View style={styles.masterySummaryItem}>
@@ -195,7 +193,7 @@ export default function ResultsScreen() {
               {masterySummary.completedLevels} / {masterySummary.totalLevels}
             </Text>
             <Text style={styles.masterySummaryLabel}>
-              {translate(tKeys.levelsCompleted)}
+              Contrast Levels Completed
             </Text>
           </View>
         </View>

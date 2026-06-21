@@ -24,7 +24,7 @@ interface FlattenedPair {
 interface Props {
   item: FlattenedPair;
   stats: PairStats;
-  /** Mastery tier (1–6) for this pair’s group */
+  /** Mastery tier (1–6) for this contrast group */
   tier?: number;
   translate: (key: TranslationKey) => string;
   themeColors: Record<string, string>;

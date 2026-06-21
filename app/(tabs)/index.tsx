@@ -27,8 +27,11 @@ import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { useAudio } from '@/app/hooks/useAudio';
 import { useHaptics } from '@/app/hooks/useHaptics';
 import {
+  advanceTrialCycleSeenIds,
   applyPracticeAnswer,
+  buildTrialPairId,
   choosePlaybackForRound,
+  selectNextTrialPair,
 } from '@/app/domain/practiceSession';
 import {
   PLACEMENT_DONE_KEY,
@@ -150,22 +153,35 @@ export default function HomeScreen() {
   const timerRef = useRef<SessionTimerHandle | null>(null);
 
   const [pairIndex, setPairIndex] = useState(0);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [isHelpVisible, setIsHelpVisible] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
   const [playedIdx, setPlayedIdx] = useState<0 | 1 | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [pendingPlayback, setPendingPlayback] = useState<{
+    pairId: string;
+    playedIdx: 0 | 1;
+  } | null>(null);
   /** Tier the user just promoted to — drives inline celebration in AnswerButtons */
   const [promotedTier, setPromotedTier] = useState<number | null>(null);
+  const lastPairIdRef = useRef<string | null>(null);
+  const seenThisCycleRef = useRef<string[]>([]);
+  const manualPairOverrideRef = useRef(false);
 
   // Reset round state when the category changes so stale startTime / playedIdx
   // from a previous category can't bleed into a new one.
   useEffect(() => {
     setPairIndex(0);
+    setActiveGroup(null);
     setFeedback(null);
     setPlayedIdx(null);
     setStartTime(null);
+    setPendingPlayback(null);
+    lastPairIdRef.current = null;
+    seenThisCycleRef.current = [];
+    manualPairOverrideRef.current = false;
   }, [categoryIndex]);
 
   // Jump to a pair requested from the Results "Practice this next" card.
@@ -175,16 +191,48 @@ export default function HomeScreen() {
     if (!targetGroup || isLoading) return;
     const idx = visible.findIndex((p) => p.group === targetGroup);
     if (idx === -1) return;
+    setActiveGroup(targetGroup);
     setPairIndex(idx);
     setFeedback(null);
     setPlayedIdx(null);
     setStartTime(null);
+    setPendingPlayback(null);
+    lastPairIdRef.current = null;
+    seenThisCycleRef.current = [];
+    manualPairOverrideRef.current = false;
     consumeTarget();
   }, [targetGroup, visible, isLoading, consumeTarget]);
 
   // Clamp pairIndex when visible list shrinks
   const safePairIndex = visible.length > 0 ? Math.min(pairIndex, visible.length - 1) : 0;
   const selectedPair: Pair | undefined = visible[safePairIndex];
+
+  const activeGroupPairs = useMemo(() => {
+    if (!activeGroup) return [];
+    return visible.filter((pair) => pair.group === activeGroup);
+  }, [activeGroup, visible]);
+
+  const activeGroupPairIdsKey = useMemo(
+    () => activeGroupPairs.map(buildTrialPairId).join('|'),
+    [activeGroupPairs]
+  );
+
+  useEffect(() => {
+    if (isLoading || !selectedPair) return;
+    if (!activeGroup || !visible.some((pair) => pair.group === activeGroup)) {
+      setActiveGroup(selectedPair.group);
+    }
+  }, [activeGroup, isLoading, selectedPair, visible]);
+
+  useEffect(() => {
+    seenThisCycleRef.current = [];
+    if (
+      lastPairIdRef.current &&
+      !activeGroupPairs.some((pair) => buildTrialPairId(pair) === lastPairIdRef.current)
+    ) {
+      lastPairIdRef.current = null;
+    }
+  }, [activeGroup, activeGroupPairs, activeGroupPairIdsKey]);
 
   // Keep a stable snapshot of items — only update when the picker is NOT being scrolled
   const [stableVisible, setStableVisible] = useState<Pair[]>(visible);
@@ -202,6 +250,45 @@ export default function HomeScreen() {
     selectedPair,
     SPEED_TABLE[speedTier],
     getNextVoice
+  );
+
+  useEffect(() => {
+    if (!pendingPlayback || !selectedPair) return;
+    if (buildTrialPairId(selectedPair) !== pendingPlayback.pairId) return;
+
+    const playback = pendingPlayback;
+    setPendingPlayback(null);
+    play(playback.playedIdx).catch((error) => {
+      console.error('Audio playback error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
+      Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
+    });
+  }, [pendingPlayback, play, selectedPair, translate]);
+
+  const markScheduledPair = useCallback(
+    (pair: Pair) => {
+      const pairId = buildTrialPairId(pair);
+      const groupPairs = visible.filter((candidate) => candidate.group === pair.group);
+      lastPairIdRef.current = pairId;
+      seenThisCycleRef.current = advanceTrialCycleSeenIds({
+        activeGroupPairs: groupPairs,
+        selectedPair: pair,
+        seenThisCycle: seenThisCycleRef.current,
+      });
+      if (activeGroup !== pair.group) {
+        setActiveGroup(pair.group);
+      }
+      return pairId;
+    },
+    [activeGroup, visible]
+  );
+
+  const findVisiblePairIndex = useCallback(
+    (pair: Pair) => {
+      const pairId = buildTrialPairId(pair);
+      return visible.findIndex((candidate) => buildTrialPairId(candidate) === pairId);
+    },
+    [visible]
   );
 
   const handlePlay = useCallback(async () => {
@@ -225,6 +312,31 @@ export default function HomeScreen() {
       setPromotedTier(null);
       setStartTime(Date.now());
       setPlayedIdx(playback.playedIdx);
+
+      const group = activeGroup ?? selectedPair?.group ?? null;
+      const nextPair =
+        manualPairOverrideRef.current && selectedPair
+          ? selectedPair
+          : group
+            ? selectNextTrialPair({
+                eligiblePairs: visible,
+                activeGroup: group,
+                lastPairId: lastPairIdRef.current,
+                seenThisCycle: seenThisCycleRef.current,
+                random: Math.random,
+              })
+            : selectedPair;
+      manualPairOverrideRef.current = false;
+
+      if (nextPair) {
+        const nextPairId = markScheduledPair(nextPair);
+        const nextPairIndex = findVisiblePairIndex(nextPair);
+        if (nextPairIndex !== -1 && nextPairIndex !== safePairIndex) {
+          setPairIndex(nextPairIndex);
+          setPendingPlayback({ pairId: nextPairId, playedIdx: playback.playedIdx });
+          return;
+        }
+      }
     }
 
     try {
@@ -234,7 +346,21 @@ export default function HomeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
       Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
     }
-  }, [audioModeReady, debugLog, play, triggerHaptic, playedIdx, feedback, translate]);
+  }, [
+    activeGroup,
+    audioModeReady,
+    debugLog,
+    feedback,
+    findVisiblePairIndex,
+    markScheduledPair,
+    play,
+    playedIdx,
+    safePairIndex,
+    selectedPair,
+    translate,
+    triggerHaptic,
+    visible,
+  ]);
 
   /** Replay the same word after feedback (used by AnswerButtons "Listen Again") */
   const handleReplay = useCallback(async () => {
@@ -314,11 +440,22 @@ export default function HomeScreen() {
 
   const handlePairChange = useCallback((i: number) => {
     timerRef.current?.poke();
+    const nextPair = stableVisible[i] ?? visible[i];
+    if (nextPair) {
+      const groupChanged = nextPair.group !== activeGroup;
+      setActiveGroup(nextPair.group);
+      if (groupChanged) {
+        lastPairIdRef.current = null;
+        seenThisCycleRef.current = [];
+      }
+      manualPairOverrideRef.current = true;
+    }
     setPairIndex(i);
     setFeedback(null);
     setPlayedIdx(null);
     setStartTime(null);
-  }, []);
+    setPendingPlayback(null);
+  }, [activeGroup, stableVisible, visible]);
 
   /** Tell us when the user starts / stops scrolling the picker */
   const handlePickerScrollStart = useCallback(() => {

@@ -3,6 +3,7 @@ const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
 const {
+  advanceTrialCycleSeenIds,
   applyPracticeAnswer,
   buildTrialPairId,
   buildMasteryForAllGroups,
@@ -225,6 +226,39 @@ runTest('selectNextTrialPair leaves group-based mastery selection unchanged', ()
   assert.strictEqual(next.word1, 'road');
   assert.strictEqual(next.group, 'rL');
   assert.strictEqual(next.difficulty, 2);
+});
+
+runTest('advanceTrialCycleSeenIds records selected pair without mutating existing seen ids', () => {
+  const rightLight = makePair('rL', 1, 'right', 'light');
+  const riceLice = makePair('rL', 1, 'rice', 'lice');
+  const roadLoad = makePair('rL', 1, 'road', 'load');
+  const seenThisCycle = [buildTrialPairId(rightLight)];
+  const beforeSeen = JSON.stringify(seenThisCycle);
+
+  const nextSeen = advanceTrialCycleSeenIds({
+    activeGroupPairs: [rightLight, riceLice, roadLoad],
+    selectedPair: riceLice,
+    seenThisCycle,
+  });
+
+  assert.strictEqual(JSON.stringify(seenThisCycle), beforeSeen);
+  assert.strictEqual(
+    JSON.stringify(nextSeen.sort()),
+    JSON.stringify([buildTrialPairId(riceLice), buildTrialPairId(rightLight)].sort())
+  );
+});
+
+runTest('advanceTrialCycleSeenIds starts a new cycle after every active-group pair has been seen', () => {
+  const rightLight = makePair('rL', 1, 'right', 'light');
+  const riceLice = makePair('rL', 1, 'rice', 'lice');
+
+  const nextSeen = advanceTrialCycleSeenIds({
+    activeGroupPairs: [rightLight, riceLice],
+    selectedPair: riceLice,
+    seenThisCycle: [buildTrialPairId(rightLight)],
+  });
+
+  assert.strictEqual(JSON.stringify(nextSeen), JSON.stringify([]));
 });
 
 runTest('choosePlaybackForRound replays the same word during an unanswered round', () => {

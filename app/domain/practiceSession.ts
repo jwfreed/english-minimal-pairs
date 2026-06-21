@@ -50,6 +50,12 @@ export interface SelectNextTrialPairInput {
   random?: () => number;
 }
 
+export interface AdvanceTrialCycleSeenIdsInput {
+  activeGroupPairs: Pair[];
+  selectedPair: Pair;
+  seenThisCycle?: readonly string[] | ReadonlySet<string> | null;
+}
+
 export function recommendPlacementTier(correctCount: number, totalQuestions: number): number {
   if (totalQuestions <= 0) return 1;
 
@@ -116,6 +122,21 @@ export function selectNextTrialPair({
   const candidatePairs = unseenPairs.length > 0 ? unseenPairs : repeatSafePairs;
 
   return chooseFromPairs(candidatePairs, random);
+}
+
+export function advanceTrialCycleSeenIds({
+  activeGroupPairs,
+  selectedPair,
+  seenThisCycle = null,
+}: AdvanceTrialCycleSeenIdsInput): string[] {
+  const nextSeenIds = new Set(seenThisCycle ?? []);
+  nextSeenIds.add(buildTrialPairId(selectedPair));
+
+  const activePairIds = activeGroupPairs.map(buildTrialPairId);
+  const hasSeenEveryActivePair =
+    activePairIds.length > 0 && activePairIds.every((pairId) => nextSeenIds.has(pairId));
+
+  return hasSeenEveryActivePair ? [] : Array.from(nextSeenIds);
 }
 
 export function choosePlaybackForRound({

@@ -6,6 +6,7 @@ import { useHaptics } from '@/app/hooks/useHaptics';
 import { useLanguage } from '@/app/context/LanguageContext';
 import { tKeys } from '@/app/constants/translationKeys';
 import type { Pair } from '@/app/constants/minimalPairs';
+import { buildPracticeFeedbackCopy } from '@/utils/practiceFeedback';
 
 interface Props {
   pair: Pair;
@@ -14,8 +15,9 @@ interface Props {
   disabled?: boolean;
   /** Index of the word that was played (0 = word1, 1 = word2) */
   playedIdx?: 0 | 1 | null;
-  /** Replay the played word */
-  onReplay?: () => void;
+  /** Play a specific word from the rendered pair for post-answer compare. */
+  onCompareWord?: (idx: 0 | 1) => void;
+  compareDisabled?: boolean;
 }
 
 /**
@@ -23,13 +25,14 @@ interface Props {
  * Returns an array of {text, highlight} segments.
  */
 function highlightPhoneme(ipa: string, phoneme: string): { text: string; highlight: boolean }[] {
-  if (!phoneme) return [{ text: ipa, highlight: false }];
-  const idx = ipa.indexOf(phoneme);
+  const needle = phoneme.trim().replace(/^\/+|\/+$/g, '').trim();
+  if (!needle) return [{ text: ipa, highlight: false }];
+  const idx = ipa.indexOf(needle);
   if (idx === -1) return [{ text: ipa, highlight: false }];
   return [
     { text: ipa.slice(0, idx), highlight: false },
-    { text: phoneme, highlight: true },
-    { text: ipa.slice(idx + phoneme.length), highlight: false },
+    { text: needle, highlight: true },
+    { text: ipa.slice(idx + needle.length), highlight: false },
   ].filter((s) => s.text.length > 0);
 }
 
@@ -39,33 +42,37 @@ export default function AnswerButtons({
   feedback,
   disabled = false,
   playedIdx,
-  onReplay,
+  onCompareWord,
+  compareDisabled = false,
 }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { triggerHaptic } = useHaptics();
   const { translate } = useLanguage();
 
-  // Determine the correct word info for the feedback panel
-  const correctWord = playedIdx === 0 ? pair.word1 : pair.word2;
-  const correctIpa = playedIdx === 0 ? pair.ipa1 : pair.ipa2;
-  const correctPhoneme = playedIdx === 0 ? pair.contrastPhoneme1 : pair.contrastPhoneme2;
-  const ipaSegments = highlightPhoneme(correctIpa, correctPhoneme);
+  const feedbackCopy = useMemo(
+    () =>
+      feedback !== null && playedIdx != null
+        ? buildPracticeFeedbackCopy({ pair, feedback, playedIdx })
+        : null,
+    [feedback, pair, playedIdx]
+  );
+  const ipaSegments = feedbackCopy
+    ? highlightPhoneme(feedbackCopy.correctIpa, feedbackCopy.correctPhoneme ?? '')
+    : [];
 
   // Trigger haptic feedback and accessibility announcement when feedback changes
   useEffect(() => {
-    if (feedback === 'correct') {
+    if (feedback === 'correct' && feedbackCopy) {
       triggerHaptic('success');
-      AccessibilityInfo.announceForAccessibility(
-        `${translate(tKeys.correct)}. ${translate(tKeys.theWordWas)} ${correctWord}.`
-      );
-    } else if (feedback === 'incorrect') {
+      AccessibilityInfo.announceForAccessibility(feedbackCopy.headline);
+    } else if (feedback === 'incorrect' && feedbackCopy) {
       triggerHaptic('error');
       AccessibilityInfo.announceForAccessibility(
-        `${translate(tKeys.incorrect)}. ${translate(tKeys.theWordWas)} ${correctWord}.`
+        `${translate(tKeys.incorrect)}. ${feedbackCopy.headline} ${feedbackCopy.detail ?? ''}`.trim()
       );
     }
-  }, [feedback, triggerHaptic, translate, correctWord]);
+  }, [feedback, feedbackCopy, triggerHaptic, translate]);
 
   const handlePress = (idx: 0 | 1) => {
     if (disabled) return;
@@ -110,7 +117,7 @@ export default function AnswerButtons({
       </View>
 
       {/* Rich feedback panel — shown after answering */}
-      {feedback !== null && playedIdx !== null && (
+      {feedbackCopy && (
         <View style={styles.feedbackPanel}>
           <Text
             style={[
@@ -124,7 +131,10 @@ export default function AnswerButtons({
           >
             {feedback === 'correct' ? '✓' : '✗'}
           </Text>
-          <Text style={styles.feedbackWord}>{correctWord}</Text>
+          <Text style={styles.feedbackWord}>{feedbackCopy.headline}</Text>
+          {feedbackCopy.detail && (
+            <Text style={styles.feedbackDetail}>{feedbackCopy.detail}</Text>
+          )}
           <Text
             style={styles.feedbackIPA}
             importantForAccessibility="no"
@@ -140,18 +150,37 @@ export default function AnswerButtons({
               )
             )}
           </Text>
-          {onReplay && (
-            <TouchableOpacity
-              style={styles.replayButton}
-              onPress={onReplay}
-              accessibilityRole="button"
-              accessibilityLabel={translate(tKeys.listenAgain)}
-              accessibilityHint={`Double tap to replay ${correctWord}`}
-            >
-              <Text style={styles.replayButtonText} importantForAccessibility="no">
-                🔊 {translate(tKeys.listenAgain) || 'Listen Again'}
-              </Text>
-            </TouchableOpacity>
+          {feedback === 'incorrect' && onCompareWord && (
+            <View style={styles.compareContainer}>
+              <Text style={styles.compareTitle}>Compare the two words</Text>
+              <View style={styles.compareButtonRow}>
+                {[
+                  { idx: 0 as const, word: pair.word1, ipa: pair.ipa1 },
+                  { idx: 1 as const, word: pair.word2, ipa: pair.ipa2 },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.idx}
+                    style={[
+                      styles.compareButton,
+                      compareDisabled && styles.compareButtonDisabled,
+                    ]}
+                    onPress={() => onCompareWord(item.idx)}
+                    disabled={compareDisabled}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Play ${item.word} ${item.ipa}`}
+                    accessibilityHint={`Double tap to hear ${item.word}`}
+                    accessibilityState={{ disabled: compareDisabled }}
+                  >
+                    <Text style={styles.compareButtonText} importantForAccessibility="no">
+                      Play {item.word}
+                    </Text>
+                    <Text style={styles.compareButtonIpa} importantForAccessibility="no">
+                      {item.ipa}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           )}
         </View>
       )}

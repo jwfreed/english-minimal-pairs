@@ -367,15 +367,15 @@ export default function HomeScreen() {
     visible,
   ]);
 
-  /** Replay the same word after feedback (used by AnswerButtons "Listen Again") */
-  const handleReplay = useCallback(async () => {
-    if (playedIdx === null || !audioModeReady) return;
+  /** Play a specific word from the rendered pair after feedback compare. */
+  const handleCompareWord = useCallback(async (idx: 0 | 1) => {
+    if (!audioModeReady) return;
     try {
-      await play(playedIdx);
+      await play(idx);
     } catch (error) {
-      console.error('Replay error:', error);
+      console.error('Compare playback error:', error);
     }
-  }, [play, playedIdx, audioModeReady]);
+  }, [play, audioModeReady]);
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {
@@ -539,7 +539,8 @@ export default function HomeScreen() {
             feedback={feedback}
             disabled={playedIdx === null || feedback !== null}
             playedIdx={playedIdx}
-            onReplay={handleReplay}
+            onCompareWord={handleCompareWord}
+            compareDisabled={!audioModeReady || isSpeaking}
           />
         )}
 

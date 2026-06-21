@@ -509,10 +509,17 @@ const createStyles = (colors: ThemeColors) =>
       borderColor: colors.border,
     },
     feedbackWord: {
-      fontSize: isTablet ? 24 : 18,
+      fontSize: isTablet ? 22 : 17,
       fontWeight: '700' as const,
       color: colors.text,
       marginBottom: 2,
+      textAlign: 'center' as const,
+    },
+    feedbackDetail: {
+      fontSize: isTablet ? 18 : 14,
+      color: colors.textSecondary,
+      textAlign: 'center' as const,
+      marginBottom: 6,
     },
     feedbackIPA: {
       fontSize: isTablet ? 20 : 15,
@@ -535,6 +542,48 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: isTablet ? 18 : 14,
       fontWeight: '600' as const,
       color: colors.primary,
+    },
+    compareContainer: {
+      width: '100%' as const,
+      alignItems: 'center' as const,
+      marginTop: 2,
+    },
+    compareTitle: {
+      fontSize: isTablet ? 18 : 14,
+      fontWeight: '700' as const,
+      color: colors.text,
+      marginBottom: 8,
+      textAlign: 'center' as const,
+    },
+    compareButtonRow: {
+      flexDirection: 'row' as const,
+      width: '100%' as const,
+      gap: 10,
+    },
+    compareButton: {
+      flex: 1,
+      minHeight: 48,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      borderRadius: 8,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      backgroundColor: colors.primary + '22',
+    },
+    compareButtonDisabled: {
+      opacity: 0.55,
+    },
+    compareButtonText: {
+      fontSize: isTablet ? 18 : 14,
+      fontWeight: '700' as const,
+      color: colors.primary,
+      textAlign: 'center' as const,
+    },
+    compareButtonIpa: {
+      fontSize: isTablet ? 16 : 12,
+      color: colors.textSecondary,
+      textAlign: 'center' as const,
+      marginTop: 2,
     },
 
     // ========== Session Timer ==========

@@ -53,6 +53,7 @@ import {
   markOnboardingSeen,
 } from '@/app/storage/onboardingStorage';
 import OnboardingScreen from '@/app/components/OnboardingScreen';
+import { buildContrastTrainingTitle } from '@/app/utils/contrastLabel';
 
 /* Playback-rate steps per acoustic tier (0–2)
  * 3 tiers keeps the path to mastery promotion short:
@@ -206,6 +207,10 @@ export default function HomeScreen() {
   // Clamp pairIndex when visible list shrinks
   const safePairIndex = visible.length > 0 ? Math.min(pairIndex, visible.length - 1) : 0;
   const selectedPair: Pair | undefined = visible[safePairIndex];
+  const contrastTrainingTitle = useMemo(
+    () => buildContrastTrainingTitle(selectedPair),
+    [selectedPair]
+  );
 
   const activeGroupPairs = useMemo(() => {
     if (!activeGroup) return [];
@@ -494,7 +499,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <PracticeHeader
-        title={translate(tKeys.practicePairs)}
+        title="Practice"
         onHelpPress={() => setIsHelpVisible(true)}
         primaryColor={theme.primary}
         styles={styles}
@@ -503,17 +508,12 @@ export default function HomeScreen() {
       <SessionTimer timerRef={timerRef} />
 
       <View style={styles.mainCard}>
-        <PracticePairSelector
-          isLoading={isLoading}
-          selectedPair={selectedPair}
-          pairs={stableVisible}
-          index={safePairIndex}
-          onIndexChange={handlePairChange}
-          color={theme.text}
-          loadingTextColor={theme.textSecondary}
-          onScrollStart={handlePickerScrollStart}
-          onScrollEnd={handlePickerScrollEnd}
-        />
+        <View style={styles.contrastHeader} accessibilityRole="header">
+          <Text style={styles.contrastTitle}>{contrastTrainingTitle}</Text>
+          <Text style={styles.contrastInstruction}>
+            Listen for the sound difference.
+          </Text>
+        </View>
 
         {selectedPair && (
           <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} showCriteria />
@@ -542,6 +542,19 @@ export default function HomeScreen() {
             onReplay={handleReplay}
           />
         )}
+
+        <PracticePairSelector
+          isLoading={isLoading}
+          selectedPair={selectedPair}
+          pairs={stableVisible}
+          index={safePairIndex}
+          onIndexChange={handlePairChange}
+          color={theme.text}
+          loadingTextColor={theme.textSecondary}
+          styles={styles}
+          onScrollStart={handlePickerScrollStart}
+          onScrollEnd={handlePickerScrollEnd}
+        />
       </View>
 
       <HelpOverlay

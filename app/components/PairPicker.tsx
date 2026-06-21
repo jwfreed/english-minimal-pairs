@@ -55,7 +55,7 @@ function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrol
         height: Platform.OS === 'ios' ? IOS_PICKER_HEIGHT : undefined,
       }}
       itemStyle={{ fontSize: isTablet ? 36 : 20, fontWeight: '600', color }}
-      accessibilityLabel="Select word pair"
+      accessibilityLabel="Try a specific pair"
       {...(Platform.OS === 'ios' ? { onFocus: handleScrollStart } : {})}
     >
       {pairs.map((p, i) => (

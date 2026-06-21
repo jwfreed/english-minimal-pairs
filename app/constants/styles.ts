@@ -311,6 +311,42 @@ const createStyles = (colors: ThemeColors) =>
       ...getShadowStyles(),
       marginTop: 6,
     },
+    contrastHeader: {
+      width: '100%',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    contrastTitle: {
+      fontSize: isTablet ? 34 : 24,
+      fontWeight: '800',
+      color: colors.text,
+      textAlign: 'center',
+    },
+    contrastInstruction: {
+      fontSize: isTablet ? 18 : 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    pickerOverrideContainer: {
+      width: '100%',
+      marginTop: 16,
+      alignItems: 'center',
+    },
+    pickerOverrideLabel: {
+      fontSize: isTablet ? 18 : 14,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    answerPrompt: {
+      fontSize: isTablet ? 20 : 16,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
     section: {
       borderRadius: 12,
       marginBottom: 16,

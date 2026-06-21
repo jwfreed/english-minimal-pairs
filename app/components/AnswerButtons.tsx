@@ -75,6 +75,7 @@ export default function AnswerButtons({
 
   return (
     <View style={styles.answerContainer}>
+      <Text style={styles.answerPrompt}>Which word did you hear?</Text>
       <View style={styles.buttonRow}>
         {[0, 1].map((idx) => {
           const word = idx ? pair.word2 : pair.word1;

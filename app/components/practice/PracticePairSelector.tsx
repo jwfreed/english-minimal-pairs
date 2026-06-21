@@ -2,6 +2,12 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import PairPicker from '@/app/components/PairPicker';
 import type { Pair } from '@/app/constants/minimalPairs';
+import type { AppStyles } from '@/app/constants/styles';
+
+type PracticePairSelectorStyles = Pick<
+  AppStyles,
+  'pickerOverrideContainer' | 'pickerOverrideLabel'
+>;
 
 interface PracticePairSelectorProps {
   isLoading: boolean;
@@ -11,6 +17,7 @@ interface PracticePairSelectorProps {
   onIndexChange: (index: number) => void;
   color: string;
   loadingTextColor: string;
+  styles: PracticePairSelectorStyles;
   onScrollStart: () => void;
   onScrollEnd: () => void;
 }
@@ -23,6 +30,7 @@ export default function PracticePairSelector({
   onIndexChange,
   color,
   loadingTextColor,
+  styles,
   onScrollStart,
   onScrollEnd,
 }: PracticePairSelectorProps) {
@@ -37,13 +45,16 @@ export default function PracticePairSelector({
   }
 
   return (
-    <PairPicker
-      pairs={pairs}
-      index={index}
-      setIndex={onIndexChange}
-      color={color}
-      onScrollStart={onScrollStart}
-      onScrollEnd={onScrollEnd}
-    />
+    <View style={styles.pickerOverrideContainer}>
+      <Text style={styles.pickerOverrideLabel}>Try a specific pair</Text>
+      <PairPicker
+        pairs={pairs}
+        index={index}
+        setIndex={onIndexChange}
+        color={color}
+        onScrollStart={onScrollStart}
+        onScrollEnd={onScrollEnd}
+      />
+    </View>
   );
 }

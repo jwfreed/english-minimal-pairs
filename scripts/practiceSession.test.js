@@ -4,9 +4,11 @@ const { loadTsModule } = require('./load-ts-module');
 
 const {
   applyPracticeAnswer,
+  buildTrialPairId,
   buildMasteryForAllGroups,
   choosePlaybackForRound,
   recommendPlacementTier,
+  selectNextTrialPair,
   selectVisiblePairsByMastery,
 } = loadTsModule(path.join(__dirname, '..', 'app', 'domain', 'practiceSession.ts'));
 
@@ -86,6 +88,143 @@ runTest('buildMasteryForAllGroups clamps placement tier and covers each group', 
 
   assert.strictEqual(JSON.stringify(buildMasteryForAllGroups(pairs, 9)), JSON.stringify({ rL: 6, vW: 6 }));
   assert.strictEqual(JSON.stringify(buildMasteryForAllGroups(pairs, 0)), JSON.stringify({ rL: 1, vW: 1 }));
+});
+
+runTest('selectNextTrialPair returns null when no active-group pair exists', () => {
+  const pairs = [makePair('vW', 1, 'vine', 'wine')];
+
+  const next = selectNextTrialPair({
+    eligiblePairs: pairs,
+    activeGroup: 'rL',
+    random: () => 0,
+  });
+
+  assert.strictEqual(next, null);
+});
+
+runTest('selectNextTrialPair returns the only active-group pair', () => {
+  const only = makePair('rL', 1, 'right', 'light');
+  const pairs = [makePair('vW', 1, 'vine', 'wine'), only];
+
+  const next = selectNextTrialPair({
+    eligiblePairs: pairs,
+    activeGroup: 'rL',
+    random: () => 0.99,
+  });
+
+  assert.strictEqual(next, only);
+});
+
+runTest('selectNextTrialPair filters out other groups before random selection', () => {
+  const rightLight = makePair('rL', 1, 'right', 'light');
+  const riceLice = makePair('rL', 1, 'rice', 'lice');
+  const vineWine = makePair('vW', 1, 'vine', 'wine');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [vineWine, rightLight, riceLice],
+    activeGroup: 'rL',
+    random: () => 0.99,
+  });
+
+  assert.strictEqual(next, riceLice);
+});
+
+runTest('selectNextTrialPair avoids immediate repeat when alternatives exist', () => {
+  const rightLight = makePair('rL', 1, 'right', 'light');
+  const riceLice = makePair('rL', 1, 'rice', 'lice');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [rightLight, riceLice],
+    activeGroup: 'rL',
+    lastPairId: buildTrialPairId(rightLight),
+    random: () => 0,
+  });
+
+  assert.strictEqual(next, riceLice);
+});
+
+runTest('selectNextTrialPair selects unseen same-tier pairs before repeats', () => {
+  const rightLight = makePair('rL', 2, 'right', 'light');
+  const riceLice = makePair('rL', 2, 'rice', 'lice');
+  const roadLoad = makePair('rL', 2, 'road', 'load');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [rightLight, riceLice, roadLoad],
+    activeGroup: 'rL',
+    seenThisCycle: [buildTrialPairId(rightLight)],
+    random: () => 0,
+  });
+
+  assert.strictEqual(next, riceLice);
+});
+
+runTest('selectNextTrialPair allows repeats after all active-group pairs have been seen', () => {
+  const rightLight = makePair('rL', 2, 'right', 'light');
+  const riceLice = makePair('rL', 2, 'rice', 'lice');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [rightLight, riceLice],
+    activeGroup: 'rL',
+    lastPairId: buildTrialPairId(rightLight),
+    seenThisCycle: [buildTrialPairId(rightLight), buildTrialPairId(riceLice)],
+    random: () => 0,
+  });
+
+  assert.strictEqual(next, riceLice);
+});
+
+runTest('selectNextTrialPair uses injected random function deterministically', () => {
+  const rightLight = makePair('rL', 1, 'right', 'light');
+  const riceLice = makePair('rL', 1, 'rice', 'lice');
+  const roadLoad = makePair('rL', 1, 'road', 'load');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [rightLight, riceLice, roadLoad],
+    activeGroup: 'rL',
+    random: () => 0.66,
+  });
+
+  assert.strictEqual(next, riceLice);
+});
+
+runTest('selectNextTrialPair does not mutate inputs', () => {
+  const rightLight = makePair('rL', 1, 'right', 'light');
+  const riceLice = makePair('rL', 1, 'rice', 'lice');
+  const pairs = [rightLight, riceLice, makePair('vW', 1, 'vine', 'wine')];
+  const seenThisCycle = [buildTrialPairId(rightLight)];
+  const beforePairs = JSON.stringify(pairs);
+  const beforeSeen = JSON.stringify(seenThisCycle);
+
+  selectNextTrialPair({
+    eligiblePairs: pairs,
+    activeGroup: 'rL',
+    lastPairId: buildTrialPairId(rightLight),
+    seenThisCycle,
+    random: () => 0,
+  });
+
+  assert.strictEqual(JSON.stringify(pairs), beforePairs);
+  assert.strictEqual(JSON.stringify(seenThisCycle), beforeSeen);
+});
+
+runTest('selectNextTrialPair leaves group-based mastery selection unchanged', () => {
+  const pairs = [
+    makePair('rL', 1, 'right', 'light'),
+    makePair('rL', 2, 'rice', 'lice'),
+    makePair('rL', 2, 'road', 'load'),
+    makePair('vW', 1, 'vine', 'wine'),
+  ];
+  const visible = selectVisiblePairsByMastery(pairs, { rL: 2 });
+
+  const next = selectNextTrialPair({
+    eligiblePairs: visible,
+    activeGroup: 'rL',
+    random: () => 0.99,
+  });
+
+  assert.strictEqual(next.word1, 'road');
+  assert.strictEqual(next.group, 'rL');
+  assert.strictEqual(next.difficulty, 2);
 });
 
 runTest('choosePlaybackForRound replays the same word during an unanswered round', () => {

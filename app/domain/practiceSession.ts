@@ -42,6 +42,14 @@ export interface PracticeAnswerResult {
   resetPairIndex: boolean;
 }
 
+export interface SelectNextTrialPairInput {
+  eligiblePairs: Pair[];
+  activeGroup: string;
+  lastPairId?: string | null;
+  seenThisCycle?: readonly string[] | ReadonlySet<string> | null;
+  random?: () => number;
+}
+
 export function recommendPlacementTier(correctCount: number, totalQuestions: number): number {
   if (totalQuestions <= 0) return 1;
 
@@ -76,6 +84,38 @@ export function buildMasteryForAllGroups(
     next[pair.group] = clamped;
   }
   return next;
+}
+
+export function buildTrialPairId(pair: Pair): string {
+  return `${pair.group}:${pair.word1.toLowerCase()}:${pair.word2.toLowerCase()}`;
+}
+
+function chooseFromPairs(pairs: Pair[], random: () => number): Pair {
+  const randomValue = random();
+  const boundedRandom = Math.min(Math.max(randomValue, 0), 0.999999999999);
+  return pairs[Math.floor(boundedRandom * pairs.length)];
+}
+
+export function selectNextTrialPair({
+  eligiblePairs,
+  activeGroup,
+  lastPairId = null,
+  seenThisCycle = null,
+  random = Math.random,
+}: SelectNextTrialPairInput): Pair | null {
+  const activePairs = eligiblePairs.filter((pair) => pair.group === activeGroup);
+  if (activePairs.length === 0) return null;
+  if (activePairs.length === 1) return activePairs[0];
+
+  const nonRepeatingPairs = lastPairId
+    ? activePairs.filter((pair) => buildTrialPairId(pair) !== lastPairId)
+    : activePairs;
+  const repeatSafePairs = nonRepeatingPairs.length > 0 ? nonRepeatingPairs : activePairs;
+  const seenIds = new Set(seenThisCycle ?? []);
+  const unseenPairs = repeatSafePairs.filter((pair) => !seenIds.has(buildTrialPairId(pair)));
+  const candidatePairs = unseenPairs.length > 0 ? unseenPairs : repeatSafePairs;
+
+  return chooseFromPairs(candidatePairs, random);
 }
 
 export function choosePlaybackForRound({

@@ -14,9 +14,10 @@ interface Props {
   color: string;
   onScrollStart?: () => void;
   onScrollEnd?: () => void;
+  accessibilityLabel?: string;
 }
 
-function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrollEnd }: Props) {
+function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrollEnd, accessibilityLabel }: Props) {
   const { triggerHaptic } = useHaptics();
 
   const handleValueChange = useCallback(
@@ -55,7 +56,7 @@ function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrol
         height: Platform.OS === 'ios' ? IOS_PICKER_HEIGHT : undefined,
       }}
       itemStyle={{ fontSize: isTablet ? 36 : 20, fontWeight: '600', color }}
-      accessibilityLabel="Try a specific pair"
+      accessibilityLabel={accessibilityLabel}
       {...(Platform.OS === 'ios' ? { onFocus: handleScrollStart } : {})}
     >
       {pairs.map((p, i) => (

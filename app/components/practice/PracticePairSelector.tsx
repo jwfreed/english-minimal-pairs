@@ -3,6 +3,8 @@ import { Text, View } from 'react-native';
 import PairPicker from '@/app/components/PairPicker';
 import type { Pair } from '@/app/constants/minimalPairs';
 import type { AppStyles } from '@/app/constants/styles';
+import { useLanguage } from '@/app/context/LanguageContext';
+import { tKeys } from '@/app/constants/translationKeys';
 
 type PracticePairSelectorStyles = Pick<
   AppStyles,
@@ -34,19 +36,21 @@ export default function PracticePairSelector({
   onScrollStart,
   onScrollEnd,
 }: PracticePairSelectorProps) {
+  const { translate } = useLanguage();
+
   if (isLoading || !selectedPair) {
     return (
       <View
         style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}
       >
-        <Text style={{ color: loadingTextColor }}>Loading…</Text>
+        <Text style={{ color: loadingTextColor }}>{translate(tKeys.loading)}</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.pickerOverrideContainer}>
-      <Text style={styles.pickerOverrideLabel}>Try a specific pair</Text>
+      <Text style={styles.pickerOverrideLabel}>{translate(tKeys.tryASpecificPair)}</Text>
       <PairPicker
         pairs={pairs}
         index={index}
@@ -54,6 +58,7 @@ export default function PracticePairSelector({
         color={color}
         onScrollStart={onScrollStart}
         onScrollEnd={onScrollEnd}
+        accessibilityLabel={translate(tKeys.tryASpecificPair)}
       />
     </View>
   );

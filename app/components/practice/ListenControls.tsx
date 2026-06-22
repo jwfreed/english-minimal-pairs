@@ -1,6 +1,8 @@
 import React from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import type { AppStyles } from '@/app/constants/styles';
+import { useLanguage } from '@/app/context/LanguageContext';
+import { tKeys } from '@/app/constants/translationKeys';
 
 type ListenControlsStyles = Pick<AppStyles, 'button' | 'buttonText'>;
 
@@ -17,6 +19,8 @@ export default function ListenControls({
   onPlay,
   styles,
 }: ListenControlsProps) {
+  const { translate } = useLanguage();
+
   return (
     <TouchableOpacity
       style={[styles.button, { zIndex: 10 }]}
@@ -24,7 +28,7 @@ export default function ListenControls({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint="Double tap to hear a word"
+      accessibilityHint={translate(tKeys.doubleTapToHearAWord)}
       accessibilityState={{ disabled }}
     >
       <Text style={styles.buttonText} importantForAccessibility="no">

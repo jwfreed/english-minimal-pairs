@@ -11,6 +11,8 @@ const {
   recommendPlacementTier,
   selectNextTrialPair,
   selectVisiblePairsByMastery,
+  updateRecentMissState,
+  RECENT_MISS_DECAY_TRIALS,
 } = loadTsModule(path.join(__dirname, '..', 'app', 'domain', 'practiceSession.ts'));
 
 function runTest(name, fn) {
@@ -588,4 +590,157 @@ runTest('full cycle with three same-tier pairs surfaces each exactly once before
   assert.strictEqual(seenInCycle.size, 3, 'all three pairs appear exactly once per cycle');
   // Use JSON.stringify to avoid cross-realm array comparison issues (loadTsModule VM context).
   assert.strictEqual(JSON.stringify(seenThisCycle), '[]', 'cycle resets after all pairs have been seen');
+});
+
+// ─── Bounded missed-pair weighting ────────────────────────────────────────────
+//
+// These tests define the boost policy:
+//   - Coverage phase (unseen pairs exist): boost is ignored; unseen pairs win.
+//   - All-seen phase: recently missed pair is selected before neutral seen pairs.
+//   - No-immediate-repeat rule outranks boost: missed pair cannot be last pair.
+//   - Boost decays after RECENT_MISS_DECAY_TRIALS subsequent answered trials.
+//   - Correct answer on the missed pair clears boost immediately.
+//   - A new miss overrides the previous missed pair.
+
+runTest('selectNextTrialPair: unseen pair wins over recently missed pair in coverage phase', () => {
+  // Even when pairA is marked as recently missed, pairB (unseen) takes priority.
+  const pairA = makePair('rL', 2, 'rake', 'lake');   // recently missed, already seen
+  const pairB = makePair('rL', 2, 'rate', 'late');   // unseen
+  const pairC = makePair('rL', 2, 'rip', 'lip');     // seen
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [pairA, pairB, pairC],
+    activeGroup: 'rL',
+    seenThisCycle: [buildTrialPairId(pairA), buildTrialPairId(pairC)],
+    recentlyMissedPairId: buildTrialPairId(pairA),
+    random: () => 0,
+  });
+
+  assert.strictEqual(next, pairB, 'unseen pair wins over missed-pair boost during coverage phase');
+});
+
+runTest('selectNextTrialPair: recently missed pair is preferred once all same-tier pairs have been seen', () => {
+  // All pairs seen. random: () => 0.99 would pick pairC (index 1 of [pairA, pairC])
+  // without boost, but boost must override and return pairA.
+  const pairA = makePair('rL', 2, 'rake', 'lake');   // recently missed
+  const pairB = makePair('rL', 2, 'rate', 'late');   // last shown (excluded by lastPairId)
+  const pairC = makePair('rL', 2, 'rip', 'lip');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [pairA, pairB, pairC],
+    activeGroup: 'rL',
+    lastPairId: buildTrialPairId(pairB),
+    seenThisCycle: [buildTrialPairId(pairA), buildTrialPairId(pairB), buildTrialPairId(pairC)],
+    recentlyMissedPairId: buildTrialPairId(pairA),
+    random: () => 0.99,  // would pick pairC without boost
+  });
+
+  assert.strictEqual(next, pairA, 'missed pair is preferred in all-seen phase');
+});
+
+runTest('selectNextTrialPair: missed pair is not chosen when it was the immediately previous pair', () => {
+  // lastPairId === recentlyMissedPairId: no-repeat rule outranks boost.
+  const pairA = makePair('rL', 2, 'rake', 'lake');   // missed AND just shown
+  const pairB = makePair('rL', 2, 'rate', 'late');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [pairA, pairB],
+    activeGroup: 'rL',
+    lastPairId: buildTrialPairId(pairA),
+    seenThisCycle: [buildTrialPairId(pairA), buildTrialPairId(pairB)],
+    recentlyMissedPairId: buildTrialPairId(pairA),
+    random: () => 0,
+  });
+
+  assert.strictEqual(next, pairB, 'no-repeat rule blocks missed-pair boost when pair was just shown');
+});
+
+runTest('updateRecentMissState: boost expires after RECENT_MISS_DECAY_TRIALS subsequent correct answers', () => {
+  const pairA = makePair('rL', 2, 'rake', 'lake');
+  const pairB = makePair('rL', 2, 'rate', 'late');
+
+  // Record a miss on pairA.
+  let state = updateRecentMissState({
+    state: { recentlyMissedPairId: null, trialsSinceMiss: 0 },
+    answeredPairId: buildTrialPairId(pairA),
+    wasCorrect: false,
+  });
+  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA), 'miss is recorded');
+  assert.strictEqual(state.trialsSinceMiss, 0);
+
+  // Answer pairB correctly (RECENT_MISS_DECAY_TRIALS - 1) times — boost still active.
+  for (let i = 0; i < RECENT_MISS_DECAY_TRIALS - 1; i++) {
+    state = updateRecentMissState({
+      state,
+      answeredPairId: buildTrialPairId(pairB),
+      wasCorrect: true,
+    });
+    assert.ok(state.recentlyMissedPairId !== null, `boost still active after ${i + 1} correct answers on other pair`);
+  }
+
+  // One final correct answer on pairB → decay threshold reached → boost clears.
+  state = updateRecentMissState({
+    state,
+    answeredPairId: buildTrialPairId(pairB),
+    wasCorrect: true,
+  });
+  assert.strictEqual(state.recentlyMissedPairId, null, 'boost expires after RECENT_MISS_DECAY_TRIALS trials');
+  assert.strictEqual(state.trialsSinceMiss, 0, 'counter resets after expiry');
+});
+
+runTest('updateRecentMissState: correct answer on the missed pair clears boost immediately', () => {
+  const pairA = makePair('rL', 2, 'rake', 'lake');
+
+  let state = updateRecentMissState({
+    state: { recentlyMissedPairId: null, trialsSinceMiss: 0 },
+    answeredPairId: buildTrialPairId(pairA),
+    wasCorrect: false,
+  });
+  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA));
+
+  state = updateRecentMissState({
+    state,
+    answeredPairId: buildTrialPairId(pairA),
+    wasCorrect: true,
+  });
+  assert.strictEqual(state.recentlyMissedPairId, null, 'correct answer on missed pair clears boost');
+  assert.strictEqual(state.trialsSinceMiss, 0);
+});
+
+runTest('selectNextTrialPair: no boost applied when recentlyMissedPairId is null — random selection governs', () => {
+  // With null recentlyMissedPairId, behavior is unchanged from the existing scheduler.
+  const pairA = makePair('rL', 2, 'rake', 'lake');
+  const pairB = makePair('rL', 2, 'rate', 'late');
+
+  const next = selectNextTrialPair({
+    eligiblePairs: [pairA, pairB],
+    activeGroup: 'rL',
+    lastPairId: buildTrialPairId(pairA),
+    seenThisCycle: [buildTrialPairId(pairA), buildTrialPairId(pairB)],
+    recentlyMissedPairId: null,
+    random: () => 0,
+  });
+
+  // repeatSafePairs = [pairB]; random: () => 0 → pairB.
+  assert.strictEqual(next, pairB, 'null recentlyMissedPairId leaves selection to random');
+});
+
+runTest('updateRecentMissState: a new incorrect answer overrides the previous missed pair', () => {
+  const pairA = makePair('rL', 2, 'rake', 'lake');
+  const pairB = makePair('rL', 2, 'rate', 'late');
+
+  let state = updateRecentMissState({
+    state: { recentlyMissedPairId: null, trialsSinceMiss: 0 },
+    answeredPairId: buildTrialPairId(pairA),
+    wasCorrect: false,
+  });
+  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA));
+
+  state = updateRecentMissState({
+    state,
+    answeredPairId: buildTrialPairId(pairB),
+    wasCorrect: false,
+  });
+  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairB), 'new miss overrides old missed pair');
+  assert.strictEqual(state.trialsSinceMiss, 0, 'trial counter resets on new miss');
 });

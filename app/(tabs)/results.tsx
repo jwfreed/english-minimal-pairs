@@ -97,9 +97,9 @@ export default function ResultsScreen() {
 
   const reasonText = recommendation
     ? recommendation.reason === 'newPair'
-      ? "You haven't practiced this contrast yet."
-      : 'Your recent accuracy is lower for this contrast.'
-    : 'Practice a few contrasts to get a recommendation.';
+      ? translate(tKeys.practiceThisNextReasonNew)
+      : translate(tKeys.practiceThisNextReason)
+    : translate(tKeys.practiceThisNextEmpty);
 
   const flattenedPairs = useMemo(() => {
     if (!catObj || catObj.pairs.length === 0) return [];
@@ -160,7 +160,7 @@ export default function ResultsScreen() {
         style={[styles.container, { backgroundColor: themeColors.background }]}
       >
         <Text style={[styles.title, { color: themeColors.text }]}>
-          {`No pairs found for ${selectedCategoryName}`}
+          {`${translate(tKeys.noPairsFound)} ${selectedCategoryName}`}
         </Text>
       </View>
     );
@@ -185,7 +185,7 @@ export default function ResultsScreen() {
               {masterySummary.masteredGroups} / {masterySummary.totalGroups}
             </Text>
             <Text style={styles.masterySummaryLabel}>
-              Contrasts Mastered
+              {translate(tKeys.pairsMastered)}
             </Text>
           </View>
           <View style={styles.masterySummaryItem}>
@@ -193,7 +193,7 @@ export default function ResultsScreen() {
               {masterySummary.completedLevels} / {masterySummary.totalLevels}
             </Text>
             <Text style={styles.masterySummaryLabel}>
-              Contrast Levels Completed
+              {translate(tKeys.levelsCompleted)}
             </Text>
           </View>
         </View>

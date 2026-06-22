@@ -79,6 +79,7 @@ export const englishTranslations = {
     practiceThisNextReason: 'Your recent accuracy is lower for this contrast.',
     practiceThisNextReasonNew: "You haven't practiced this contrast yet.",
     practiceThisNextEmpty: 'Practice a few contrasts to get a recommendation.',
+    noPairsFound: 'No contrasts found for',
   } as const;
 
 export type TranslationSchema = Record<keyof typeof englishTranslations, string>;
@@ -166,6 +167,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: '最近の正答率がここで低めです。',
     practiceThisNextReasonNew: 'このコントラストはまだ練習していません。',
     practiceThisNextEmpty: 'いくつかのコントラストを練習すると、おすすめが表示されます。',
+    noPairsFound: '対象のコントラストが見つかりません：',
   },
 
   中文: {
@@ -248,6 +250,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: '你最近在这里的准确率较低。',
     practiceThisNextReasonNew: '你还没有练习过这个对比音。',
     practiceThisNextEmpty: '多练习几个对比音即可获得推荐。',
+    noPairsFound: '找不到此分类的对比音：',
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
@@ -329,6 +332,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'ความแม่นยำล่าสุดของคุณตรงนี้ต่ำกว่า',
     practiceThisNextReasonNew: 'คุณยังไม่ได้ฝึกเสียงนี้',
     practiceThisNextEmpty: 'ฝึกสักสองสามเสียงเพื่อรับคำแนะนำ',
+    noPairsFound: 'ไม่พบเสียงในหมวดหมู่:',
   },
   Español: {
     home: 'Inicio',
@@ -411,6 +415,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'Tu precisión reciente es más baja aquí.',
     practiceThisNextReasonNew: 'Aún no has practicado este contraste.',
     practiceThisNextEmpty: 'Practica algunos contrastes para obtener una recomendación.',
+    noPairsFound: 'No se encontraron contrastes para',
   },
   العربية: {
     home: 'الرئيسية',
@@ -493,6 +498,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'دقتك الأخيرة أقل هنا.',
     practiceThisNextReasonNew: 'لم تتدرّب على هذا التباين بعد.',
     practiceThisNextEmpty: 'تدرّب على بعض التباينات للحصول على توصية.',
+    noPairsFound: 'لا توجد تباينات لـ',
   },
   Русский: {
     home: 'Главная',
@@ -575,6 +581,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'Здесь ваша недавняя точность ниже.',
     practiceThisNextReasonNew: 'Вы ещё не практиковали этот контраст.',
     practiceThisNextEmpty: 'Попрактикуйте несколько контрастов, чтобы получить рекомендацию.',
+    noPairsFound: 'Контрасты не найдены для',
   },
   한국어: {
     home: '홈',
@@ -657,6 +664,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: '최근 정확도가 여기서 더 낮습니다.',
     practiceThisNextReasonNew: '이 대비음은 아직 연습하지 않았습니다.',
     practiceThisNextEmpty: '몇 개의 대비음을 연습하면 추천을 받을 수 있습니다.',
+    noPairsFound: '대비음을 찾을 수 없습니다:',
   },
   'हिन्दी / اردو': {
     home: 'होम/ہوم',
@@ -739,6 +747,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'यहाँ आपकी हाल की सटीकता कम है।/یہاں آپ کی حالیہ درستگی کم ہے۔',
     practiceThisNextReasonNew: 'आपने अभी तक इस ध्वनि अंतर का अभ्यास नहीं किया है।/آپ نے ابھی تک یہ آوازی فرق مشق نہیں کیا۔',
     practiceThisNextEmpty: 'कुछ ध्वनि अंतरों का अभ्यास करें ताकि सुझाव मिल सके।/کچھ آوازی فرقوں کی مشق کریں تاکہ تجویز مل سکے۔',
+    noPairsFound: 'इस श्रेणी में कोई ध्वनि अंतर नहीं मिला:/اس زمرے میں کوئی آوازی فرق نہیں ملا:',
   },
   Português: {
     home: 'Início',
@@ -821,6 +830,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'Sua precisão recente é menor aqui.',
     practiceThisNextReasonNew: 'Você ainda não praticou este contraste.',
     practiceThisNextEmpty: 'Pratique alguns contrastes para receber uma recomendação.',
+    noPairsFound: 'Nenhum contraste encontrado para',
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
@@ -903,6 +913,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'Độ chính xác gần đây của bạn ở đây thấp hơn.',
     practiceThisNextReasonNew: 'Bạn chưa luyện tập cặp âm này.',
     practiceThisNextEmpty: 'Hãy luyện vài cặp âm để nhận gợi ý.',
+    noPairsFound: 'Không tìm thấy cặp âm cho',
   },
   Türkçe: {
     home: 'Ana Sayfa',
@@ -985,6 +996,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'Burada son doğruluğun daha düşük.',
     practiceThisNextReasonNew: 'Bu ses farkını henüz çalışmadın.',
     practiceThisNextEmpty: 'Öneri almak için birkaç ses farkı çalış.',
+    noPairsFound: 'Bu kategori için ses farkı bulunamadı:',
   },
   فارسی: {
     home: 'خانه',
@@ -1067,6 +1079,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'دقت اخیر شما اینجا کمتر است.',
     practiceThisNextReasonNew: 'هنوز این تضاد صوتی را تمرین نکرده‌اید.',
     practiceThisNextEmpty: 'چند تضاد صوتی را تمرین کنید تا پیشنهاد دریافت کنید.',
+    noPairsFound: 'تضادی برای این دسته یافت نشد:',
   },
   廣東話: {
     home: '首頁',
@@ -1147,6 +1160,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: '你最近喺呢度嘅準確率較低。',
     practiceThisNextReasonNew: '你仲未練過呢個對比音。',
     practiceThisNextEmpty: '練多幾個對比音就會有推薦。',
+    noPairsFound: '搵唔到呢個分類嘅對比音：',
   },
   'Bahasa Indonesia': {
     home: 'Beranda',
@@ -1229,5 +1243,6 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReason: 'Akurasi terbaru Anda di sini lebih rendah.',
     practiceThisNextReasonNew: 'Anda belum melatih kontras ini.',
     practiceThisNextEmpty: 'Latih beberapa kontras untuk mendapatkan rekomendasi.',
+    noPairsFound: 'Tidak ada kontras yang ditemukan untuk',
   },
 };

@@ -8,6 +8,8 @@ import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import createStyles from '@/app/constants/styles';
 import { useAllThemeColors } from '@/app/context/theme';
+import { useLanguage } from '@/app/context/LanguageContext';
+import { tKeys } from '@/app/constants/translationKeys';
 
 const TOTAL_TIERS = 6;
 
@@ -23,12 +25,13 @@ interface Props {
 export default function LevelIndicator({ currentTier, compact = false, showCriteria = false }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { translate } = useLanguage();
 
   const isMastered = currentTier >= TOTAL_TIERS;
   const dotSize = compact ? 8 : 10;
   const levelText = isMastered
-    ? 'Contrast mastered'
-    : `Contrast level ${currentTier} of ${TOTAL_TIERS}`;
+    ? translate(tKeys.mastered)
+    : `${translate(tKeys.levelOf)} ${currentTier} / ${TOTAL_TIERS}`;
 
   return (
     <View style={styles.levelIndicatorRow}>
@@ -66,7 +69,7 @@ export default function LevelIndicator({ currentTier, compact = false, showCrite
       </View>
       {showCriteria && !isMastered && (
         <Text style={styles.levelCriteriaText}>
-          Answer correctly at increasing speeds to level up this contrast.
+          {translate(tKeys.levelCriteria)}
         </Text>
       )}
     </View>

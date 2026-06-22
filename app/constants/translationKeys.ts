@@ -73,6 +73,8 @@ export const tKeys = {
   practiceThisNextReason: 'practiceThisNextReason',
   practiceThisNextReasonNew: 'practiceThisNextReasonNew',
   practiceThisNextEmpty: 'practiceThisNextEmpty',
+  // Results empty state
+  noPairsFound: 'noPairsFound',
 } as const;
 
 export type TranslationKey = keyof typeof tKeys;

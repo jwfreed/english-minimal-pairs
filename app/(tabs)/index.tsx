@@ -208,8 +208,8 @@ export default function HomeScreen() {
   const safePairIndex = visible.length > 0 ? Math.min(pairIndex, visible.length - 1) : 0;
   const selectedPair: Pair | undefined = visible[safePairIndex];
   const contrastTrainingTitle = useMemo(
-    () => buildContrastTrainingTitle(selectedPair),
-    [selectedPair]
+    () => buildContrastTrainingTitle(selectedPair, translate),
+    [selectedPair, translate]
   );
 
   const activeGroupPairs = useMemo(() => {
@@ -477,7 +477,7 @@ export default function HomeScreen() {
     // Still checking AsyncStorage
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
-        <Text style={{ color: theme.textSecondary }}>Loading…</Text>
+        <Text style={{ color: theme.textSecondary }}>{translate(tKeys.loading)}</Text>
       </View>
     );
   }
@@ -499,7 +499,8 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <PracticeHeader
-        title="Practice"
+        title={translate(tKeys.practicePairs)}
+        helpAccessibilityLabel={translate(tKeys.helpLabel)}
         onHelpPress={() => setIsHelpVisible(true)}
         primaryColor={theme.primary}
         styles={styles}
@@ -511,7 +512,7 @@ export default function HomeScreen() {
         <View style={styles.contrastHeader} accessibilityRole="header">
           <Text style={styles.contrastTitle}>{contrastTrainingTitle}</Text>
           <Text style={styles.contrastInstruction}>
-            Listen for the sound difference.
+            {translate(tKeys.listenForSoundDifference)}
           </Text>
         </View>
 
@@ -524,7 +525,7 @@ export default function HomeScreen() {
           label={
             promotedTier == null
               ? translate(tKeys.levelUnlocked)
-              : `This contrast moved to Level ${promotedTier}`
+              : `${translate(tKeys.contrastMovedToLevel)} ${promotedTier}`
           }
           styles={styles}
         />

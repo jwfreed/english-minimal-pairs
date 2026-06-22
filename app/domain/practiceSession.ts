@@ -47,6 +47,7 @@ export interface SelectNextTrialPairInput {
   activeGroup: string;
   lastPairId?: string | null;
   seenThisCycle?: readonly string[] | ReadonlySet<string> | null;
+  recentlyMissedPairId?: string | null;
   random?: () => number;
 }
 
@@ -151,6 +152,7 @@ export function selectNextTrialPair({
   activeGroup,
   lastPairId = null,
   seenThisCycle = null,
+  recentlyMissedPairId = null,
   random = Math.random,
 }: SelectNextTrialPairInput): Pair | null {
   const activePairs = eligiblePairs.filter((pair) => pair.group === activeGroup);
@@ -163,9 +165,21 @@ export function selectNextTrialPair({
   const repeatSafePairs = nonRepeatingPairs.length > 0 ? nonRepeatingPairs : activePairs;
   const seenIds = new Set(seenThisCycle ?? []);
   const unseenPairs = repeatSafePairs.filter((pair) => !seenIds.has(buildTrialPairId(pair)));
-  const candidatePairs = unseenPairs.length > 0 ? unseenPairs : repeatSafePairs;
 
-  return chooseFromPairs(candidatePairs, random);
+  // Coverage phase: unseen same-tier pairs outrank the missed-pair boost.
+  if (unseenPairs.length > 0) {
+    return chooseFromPairs(unseenPairs, random);
+  }
+
+  // All-seen phase: boost the recently missed pair when eligible.
+  if (recentlyMissedPairId) {
+    const missedPair = repeatSafePairs.find(
+      (pair) => buildTrialPairId(pair) === recentlyMissedPairId
+    );
+    if (missedPair) return missedPair;
+  }
+
+  return chooseFromPairs(repeatSafePairs, random);
 }
 
 export function advanceTrialCycleSeenIds({

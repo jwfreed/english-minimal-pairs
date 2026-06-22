@@ -1,4 +1,5 @@
 import type { Pair } from '@/app/constants/minimalPairs';
+import { tKeys, TranslationKey } from '@/app/constants/translationKeys';
 
 const DEFAULT_CONTRAST_TITLE = 'Train this contrast';
 
@@ -6,9 +7,12 @@ function normalizePhonemeForDisplay(value: string | undefined): string {
   return (value ?? '').trim().replace(/^\/+|\/+$/g, '').trim();
 }
 
-function formatGroupFallback(group: string | undefined): string {
+function formatGroupFallback(
+  group: string | undefined,
+  t: (key: TranslationKey, fallback: string) => string,
+): string {
   const compact = (group ?? '').trim();
-  if (!compact) return DEFAULT_CONTRAST_TITLE;
+  if (!compact) return t(tKeys.trainThisContrast, DEFAULT_CONTRAST_TITLE);
 
   const spaced = compact
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -17,17 +21,23 @@ function formatGroupFallback(group: string | undefined): string {
     .replace(/\s+/g, ' ')
     .trim();
 
-  return spaced ? `Train ${spaced}` : DEFAULT_CONTRAST_TITLE;
+  return spaced ? `${t(tKeys.trainContrast, 'Train')} ${spaced}` : t(tKeys.trainThisContrast, DEFAULT_CONTRAST_TITLE);
 }
 
-export function buildContrastTrainingTitle(pair: Pair | undefined): string {
-  if (!pair) return DEFAULT_CONTRAST_TITLE;
+export function buildContrastTrainingTitle(
+  pair: Pair | undefined,
+  translate?: (key: TranslationKey) => string,
+): string {
+  const t = (key: TranslationKey, fallback: string): string =>
+    translate ? translate(key) : fallback;
+
+  if (!pair) return t(tKeys.trainThisContrast, DEFAULT_CONTRAST_TITLE);
 
   const first = normalizePhonemeForDisplay(pair.contrastPhoneme1);
   const second = normalizePhonemeForDisplay(pair.contrastPhoneme2);
   if (first && second) {
-    return `Train /${first}/ vs /${second}/`;
+    return `${t(tKeys.trainContrast, 'Train')} /${first}/ vs /${second}/`;
   }
 
-  return formatGroupFallback(pair.group);
+  return formatGroupFallback(pair.group, t);
 }

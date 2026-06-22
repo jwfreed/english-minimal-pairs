@@ -53,9 +53,9 @@ export default function AnswerButtons({
   const feedbackCopy = useMemo(
     () =>
       feedback !== null && playedIdx != null
-        ? buildPracticeFeedbackCopy({ pair, feedback, playedIdx })
+        ? buildPracticeFeedbackCopy({ pair, feedback, playedIdx, translate })
         : null,
-    [feedback, pair, playedIdx]
+    [feedback, pair, playedIdx, translate]
   );
   const ipaSegments = feedbackCopy
     ? highlightPhoneme(feedbackCopy.correctIpa, feedbackCopy.correctPhoneme ?? '')
@@ -82,7 +82,7 @@ export default function AnswerButtons({
 
   return (
     <View style={styles.answerContainer}>
-      <Text style={styles.answerPrompt}>Which word did you hear?</Text>
+      <Text style={styles.answerPrompt}>{translate(tKeys.whichWordDidYouHear)}</Text>
       <View style={styles.buttonRow}>
         {[0, 1].map((idx) => {
           const word = idx ? pair.word2 : pair.word1;
@@ -98,7 +98,7 @@ export default function AnswerButtons({
               disabled={disabled}
               accessibilityRole="button"
               accessibilityLabel={word}
-              accessibilityHint="Double tap to select this word as your answer"
+              accessibilityHint={translate(tKeys.doubleTapToSelectWord)}
               accessibilityState={{ disabled }}
             >
               <Text style={styles.buttonText} importantForAccessibility="no">
@@ -152,7 +152,7 @@ export default function AnswerButtons({
           </Text>
           {feedback === 'incorrect' && onCompareWord && (
             <View style={styles.compareContainer}>
-              <Text style={styles.compareTitle}>Compare the two words</Text>
+              <Text style={styles.compareTitle}>{translate(tKeys.compareTheTwoWords)}</Text>
               <View style={styles.compareButtonRow}>
                 {[
                   { idx: 0 as const, word: pair.word1, ipa: pair.ipa1 },
@@ -167,12 +167,12 @@ export default function AnswerButtons({
                     onPress={() => onCompareWord(item.idx)}
                     disabled={compareDisabled}
                     accessibilityRole="button"
-                    accessibilityLabel={`Play ${item.word} ${item.ipa}`}
-                    accessibilityHint={`Double tap to hear ${item.word}`}
+                    accessibilityLabel={`${translate(tKeys.play)} ${item.word} ${item.ipa}`}
+                    accessibilityHint={`${translate(tKeys.doubleTapToHear)} ${item.word}`}
                     accessibilityState={{ disabled: compareDisabled }}
                   >
                     <Text style={styles.compareButtonText} importantForAccessibility="no">
-                      Play {item.word}
+                      {translate(tKeys.play)} {item.word}
                     </Text>
                     <Text style={styles.compareButtonIpa} importantForAccessibility="no">
                       {item.ipa}

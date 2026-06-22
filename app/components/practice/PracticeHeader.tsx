@@ -13,6 +13,7 @@ interface PracticeHeaderProps {
   onHelpPress: () => void;
   primaryColor: string;
   styles: PracticeHeaderStyles;
+  helpAccessibilityLabel?: string;
 }
 
 export default function PracticeHeader({
@@ -20,13 +21,14 @@ export default function PracticeHeader({
   onHelpPress,
   primaryColor,
   styles,
+  helpAccessibilityLabel,
 }: PracticeHeaderProps) {
   return (
     <View style={styles.practiceHeader}>
       <View style={styles.practiceHeaderSpacer} />
       <Text style={styles.practiceTitle}>{title}</Text>
       <TouchableOpacity
-        accessibilityLabel="Help"
+        accessibilityLabel={helpAccessibilityLabel ?? 'Help'}
         accessibilityRole="button"
         activeOpacity={0.8}
         hitSlop={8}

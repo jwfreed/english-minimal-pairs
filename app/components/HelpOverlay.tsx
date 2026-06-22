@@ -43,7 +43,7 @@ export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
     >
       <View style={styles.root}>
         <Pressable
-          accessibilityLabel="Close help"
+          accessibilityLabel={t(tKeys.closeHelp)}
           accessibilityRole="button"
           onPress={onClose}
           style={StyleSheet.absoluteFill}
@@ -52,7 +52,7 @@ export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
         <View style={styles.cardContainer}>
           <ThemedView
             accessible
-            accessibilityLabel="How to practice help"
+            accessibilityLabel={t(tKeys.helpTitle)}
             accessibilityViewIsModal
             onAccessibilityEscape={onClose}
             style={styles.card}
@@ -67,7 +67,7 @@ export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
 
             <View style={styles.tipsSection}>
               <ThemedText style={styles.tipsHeading} type="defaultSemiBold">
-                Tips
+                {t(tKeys.tips)}
               </ThemedText>
 
               {TIPS.map((tip, index) => (

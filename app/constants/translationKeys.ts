@@ -75,6 +75,30 @@ export const tKeys = {
   practiceThisNextEmpty: 'practiceThisNextEmpty',
   // Results empty state
   noPairsFound: 'noPairsFound',
+  // Practice UI
+  whichWordDidYouHear: 'whichWordDidYouHear',
+  compareTheTwoWords: 'compareTheTwoWords',
+  play: 'play',
+  tryASpecificPair: 'tryASpecificPair',
+  loading: 'loading',
+  listenForSoundDifference: 'listenForSoundDifference',
+  contrastMovedToLevel: 'contrastMovedToLevel',
+  // Help overlay
+  tips: 'tips',
+  closeHelp: 'closeHelp',
+  helpLabel: 'helpLabel',
+  // Accessibility hints
+  doubleTapToSelectWord: 'doubleTapToSelectWord',
+  doubleTapToHearAWord: 'doubleTapToHearAWord',
+  doubleTapToHear: 'doubleTapToHear',
+  // Feedback copy (label-prefix pattern)
+  correctYouHeard: 'correctYouHeard',
+  correctThatWas: 'correctThatWas',
+  incorrectThisWas: 'incorrectThisWas',
+  listenAndCompareWith: 'listenAndCompareWith',
+  // Contrast training title
+  trainThisContrast: 'trainThisContrast',
+  trainContrast: 'trainContrast',
 } as const;
 
 export type TranslationKey = keyof typeof tKeys;

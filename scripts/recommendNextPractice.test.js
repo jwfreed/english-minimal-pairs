@@ -225,4 +225,87 @@ runTest('does not divide by zero when a group has an empty attempts array', () =
   });
 });
 
+// ─── Characterization: group-level identity under pair reordering ──────────
+//
+// These tests lock in the invariant that recommendations are keyed by contrast
+// group (e.g. 'rL'), not by pair array index or pair position. A future change
+// that accidentally keys progress by index rather than word content would break
+// them.
+
+runTest('group recommendation is stable when pairs within the group are reordered', () => {
+  // Invariant: reordering the pairs array must not change which group is recommended
+  // or what accuracy is reported for it.
+  const cat = 'Japanese';
+  const pair1 = makePair('rL', 'r', 'l', 'rake', 'lake');
+  const pair2 = makePair('rL', 'r', 'l', 'rate', 'late');
+
+  const progress = {
+    [pairId(cat, pair1)]: {
+      attempts: [makeAttempt(true), makeAttempt(false), makeAttempt(false)],
+    },
+    [pairId(cat, pair2)]: {
+      attempts: [makeAttempt(true), makeAttempt(false), makeAttempt(false)],
+    },
+  };
+
+  const resultForward  = computePracticeNextRecommendation(progress, [pair1, pair2], cat);
+  const resultReversed = computePracticeNextRecommendation(progress, [pair2, pair1], cat);
+
+  assert.strictEqual(resultForward?.groupId,  'rL', 'forward order returns rL group');
+  assert.strictEqual(resultReversed?.groupId, 'rL', 'reversed order still returns rL group');
+  assert.ok(
+    Math.abs((resultForward?.recentAccuracy ?? 0) - (resultReversed?.recentAccuracy ?? 0)) < 0.001,
+    'aggregated accuracy is unaffected by pair order',
+  );
+});
+
+runTest('progress key encodes pair word content, not array index — reordering preserves existing history', () => {
+  // Invariant: buildPairId encodes the pair's words, so reordering pairs in the
+  // input array does not orphan existing progress entries.
+  //
+  // Setup: pairA (rake/lake) has strong history; pairB (rate/late) is unpracticed.
+  // With [pairA, pairB]: pairA's progress is found, pairB is new → 'newPair' for rL.
+  // With [pairB, pairA]: pairA's progress is STILL found (key is word-based, not index-based)
+  //   so pairB is still new → same 'newPair' result.
+  const cat = 'Japanese';
+  const pairA = makePair('rL', 'r', 'l', 'rake', 'lake');
+  const pairB = makePair('rL', 'r', 'l', 'rate', 'late');
+
+  const progress = {
+    [pairId(cat, pairA)]: {
+      attempts: [makeAttempt(true), makeAttempt(true), makeAttempt(true)],
+    },
+  };
+
+  const resultNormal   = computePracticeNextRecommendation(progress, [pairA, pairB], cat);
+  const resultReversed = computePracticeNextRecommendation(progress, [pairB, pairA], cat);
+
+  // pairB is new in both cases because pairA's history is found by word-based key
+  assert.strictEqual(resultNormal?.reason,   'newPair', 'pairB is new when pairs in normal order');
+  assert.strictEqual(resultReversed?.reason, 'newPair', 'pairB is still new when order reversed');
+  assert.strictEqual(
+    resultNormal?.groupId,
+    resultReversed?.groupId,
+    'same group is recommended regardless of pair array order',
+  );
+});
+
+runTest('recommendation uses group ID as the stable identity key, not pair count or position', () => {
+  // A group with only one pair and enough attempts should still be recommended
+  // by its group ID, not by anything derived from array position.
+  const cat = 'Japanese';
+  const pair = makePair('bV', 'b', 'v', 'ban', 'van');
+
+  const progress = {
+    [pairId(cat, pair)]: {
+      attempts: [makeAttempt(true), makeAttempt(false), makeAttempt(false)],
+    },
+  };
+
+  const result = computePracticeNextRecommendation(progress, [pair], cat);
+  assert.strictEqual(result?.groupId, 'bV', 'recommendation group ID matches pair.group');
+  assert.strictEqual(result?.label, '/b/ vs /v/', 'label uses contrastPhoneme1 and contrastPhoneme2');
+  assert.strictEqual(result?.reason, 'lowAccuracy', '1/3 accuracy triggers lowAccuracy reason');
+});
+
 console.log('\nAll recommendNextPractice tests passed.');

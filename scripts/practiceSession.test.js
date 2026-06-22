@@ -434,3 +434,158 @@ runTest('applyPracticeAnswer promotes mastery and resets speed at max speed', ()
   assert.strictEqual(result.promotedTier, 4);
   assert.strictEqual(result.resetPairIndex, true);
 });
+
+// ─── Characterization: contrast-group as the mastery unit ─────────────────
+//
+// These tests lock in the invariant that mastery is keyed by contrast group,
+// not by individual word pair. A future algorithm change that accidentally
+// promotes a pair's mastery independently of its group would break them.
+
+runTest('mastery tier is applied per contrast group — all pairs in the same group share one tier', () => {
+  // Invariant: two pairs with the same group ID share one mastery tier.
+  // selectVisiblePairsByMastery must use pair.group as the key, not pair position.
+  const pairs = [
+    makePair('rL', 1, 'rake', 'lake'),
+    makePair('rL', 2, 'rate', 'late'),
+    makePair('rL', 3, 'rip', 'lip'),
+  ];
+  // mastery['rL'] = 2 → all rL pairs resolve to difficulty-2 tier
+  const visible = selectVisiblePairsByMastery(pairs, { rL: 2 });
+  assert.strictEqual(visible.length, 1, 'only the one difficulty-2 pair is visible');
+  assert.strictEqual(visible[0].word1, 'rate', 'the difficulty-2 pair is the visible one');
+  assert.strictEqual(visible[0].group, 'rL', 'the visible pair belongs to the rL group');
+});
+
+runTest('mastery tier resolution is unaffected by the order pairs appear within a group', () => {
+  // Invariant: reordering pairs within the same group must not change which pairs
+  // are visible. The key is pair.group, not array position.
+  const pairs = [
+    makePair('rL', 1, 'rake', 'lake'),
+    makePair('rL', 2, 'rate', 'late'),
+  ];
+  const pairsReversed = [
+    makePair('rL', 2, 'rate', 'late'),
+    makePair('rL', 1, 'rake', 'lake'),
+  ];
+  const mastery = { rL: 2 };
+
+  const visibleNormal = selectVisiblePairsByMastery(pairs, mastery);
+  const visibleReversed = selectVisiblePairsByMastery(pairsReversed, mastery);
+
+  assert.strictEqual(visibleNormal.length, 1);
+  assert.strictEqual(visibleReversed.length, 1);
+  assert.strictEqual(
+    visibleNormal[0].word1,
+    visibleReversed[0].word1,
+    'same pair is visible regardless of input order',
+  );
+  assert.strictEqual(
+    visibleNormal[0].group,
+    visibleReversed[0].group,
+    'group identity is unaffected by pair order',
+  );
+});
+
+runTest('mastery for two different groups is tracked independently', () => {
+  // Two groups at different tiers should each expose the correct tier pairs.
+  const pairs = [
+    makePair('rL', 1, 'rake', 'lake'),
+    makePair('rL', 2, 'rate', 'late'),
+    makePair('bV', 1, 'ban', 'van'),
+    makePair('bV', 2, 'berry', 'very'),
+  ];
+  const visible = selectVisiblePairsByMastery(pairs, { rL: 2, bV: 1 });
+
+  const rLVisible = visible.filter((p) => p.group === 'rL');
+  const bVVisible = visible.filter((p) => p.group === 'bV');
+
+  assert.strictEqual(rLVisible.length, 1);
+  assert.strictEqual(rLVisible[0].word1, 'rate', 'rL shows difficulty-2 pair');
+  assert.strictEqual(bVVisible.length, 1);
+  assert.strictEqual(bVVisible[0].word1, 'ban', 'bV shows difficulty-1 pair');
+});
+
+// ─── Characterization: single-pair tier limitation ────────────────────────
+//
+// When a contrast group has only one pair at the current difficulty tier,
+// the scheduler CANNOT produce within-tier variety. Immediate repeat is
+// unavoidable. This is a DATASET LIMITATION, not a scheduler defect.
+// These tests document that boundary explicitly.
+
+runTest('single-pair tier: scheduler returns the sole pair on every call — dataset limitation, not a bug', () => {
+  // A group like bV (tier 1: ban/van only) cannot provide variety.
+  // The scheduler correctly falls back to the only available pair.
+  const onlyPair = makePair('bV', 1, 'ban', 'van');
+
+  const first = selectNextTrialPair({
+    eligiblePairs: [onlyPair],
+    activeGroup: 'bV',
+    random: () => 0,
+  });
+  // Supply the only pair as lastPairId to simulate consecutive plays
+  const second = selectNextTrialPair({
+    eligiblePairs: [onlyPair],
+    activeGroup: 'bV',
+    lastPairId: buildTrialPairId(onlyPair),
+    random: () => 0,
+  });
+
+  assert.strictEqual(first, onlyPair, 'scheduler returns the only eligible pair');
+  assert.strictEqual(second, onlyPair, 'scheduler returns the same pair again — unavoidable with one pair at this tier');
+  assert.notStrictEqual(first, null, 'scheduler does not return null for a single-pair tier');
+});
+
+runTest('single-pair tier: seenThisCycle resets immediately after the only pair is seen', () => {
+  // With one pair in the group, the cycle resets after every play.
+  // This means seenThisCycle stays empty — it never blocks the only pair.
+  const onlyPair = makePair('bV', 1, 'ban', 'van');
+
+  const nextSeen = advanceTrialCycleSeenIds({
+    activeGroupPairs: [onlyPair],
+    selectedPair: onlyPair,
+    seenThisCycle: [],
+  });
+
+  // Use JSON.stringify to avoid cross-realm array comparison issues (loadTsModule VM context).
+  assert.strictEqual(JSON.stringify(nextSeen), '[]', 'cycle resets immediately when the only pair is seen');
+});
+
+// ─── Characterization: full cycle coverage with multiple same-tier pairs ──
+
+runTest('full cycle with three same-tier pairs surfaces each exactly once before any repeat', () => {
+  // Extends no-repeat coverage to N=3 pairs.
+  // Each pair must appear before any is repeated in a single cycle.
+  const p1 = makePair('rL', 2, 'rate', 'late');
+  const p2 = makePair('rL', 2, 'rice', 'lice');
+  const p3 = makePair('rL', 2, 'road', 'load');
+  const eligiblePairs = [p1, p2, p3];
+
+  let lastPairId = null;
+  let seenThisCycle = [];
+  const seenInCycle = new Set();
+
+  for (let i = 0; i < 3; i++) {
+    const next = selectNextTrialPair({
+      eligiblePairs,
+      activeGroup: 'rL',
+      lastPairId,
+      seenThisCycle,
+      random: () => 0,
+    });
+    assert.ok(next !== null, `trial ${i + 1}: scheduler returned a pair`);
+    const nextId = buildTrialPairId(next);
+    assert.ok(!seenInCycle.has(nextId), `pair ${nextId} should not have appeared yet this cycle`);
+    seenInCycle.add(nextId);
+
+    seenThisCycle = advanceTrialCycleSeenIds({
+      activeGroupPairs: eligiblePairs,
+      selectedPair: next,
+      seenThisCycle,
+    });
+    lastPairId = nextId;
+  }
+
+  assert.strictEqual(seenInCycle.size, 3, 'all three pairs appear exactly once per cycle');
+  // Use JSON.stringify to avoid cross-realm array comparison issues (loadTsModule VM context).
+  assert.strictEqual(JSON.stringify(seenThisCycle), '[]', 'cycle resets after all pairs have been seen');
+});

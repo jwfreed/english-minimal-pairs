@@ -666,7 +666,7 @@ runTest('updateRecentMissState: boost expires after RECENT_MISS_DECAY_TRIALS sub
     wasCorrect: false,
   });
   assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA), 'miss is recorded');
-  assert.strictEqual(state.trialsSinceMiss, 0);
+  assert.strictEqual(state.trialsSinceMiss, 0, 'trialsSinceMiss initializes to 0 on first miss');
 
   // Answer pairB correctly (RECENT_MISS_DECAY_TRIALS - 1) times — boost still active.
   for (let i = 0; i < RECENT_MISS_DECAY_TRIALS - 1; i++) {
@@ -696,7 +696,7 @@ runTest('updateRecentMissState: correct answer on the missed pair clears boost i
     answeredPairId: buildTrialPairId(pairA),
     wasCorrect: false,
   });
-  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA));
+  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA), 'miss is recorded on pairA before clearing');
 
   state = updateRecentMissState({
     state,
@@ -704,7 +704,7 @@ runTest('updateRecentMissState: correct answer on the missed pair clears boost i
     wasCorrect: true,
   });
   assert.strictEqual(state.recentlyMissedPairId, null, 'correct answer on missed pair clears boost');
-  assert.strictEqual(state.trialsSinceMiss, 0);
+  assert.strictEqual(state.trialsSinceMiss, 0, 'trialsSinceMiss resets when boost is cleared by correct answer');
 });
 
 runTest('selectNextTrialPair: no boost applied when recentlyMissedPairId is null — random selection governs', () => {
@@ -734,7 +734,7 @@ runTest('updateRecentMissState: a new incorrect answer overrides the previous mi
     answeredPairId: buildTrialPairId(pairA),
     wasCorrect: false,
   });
-  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA));
+  assert.strictEqual(state.recentlyMissedPairId, buildTrialPairId(pairA), 'initial miss on pairA is recorded');
 
   state = updateRecentMissState({
     state,

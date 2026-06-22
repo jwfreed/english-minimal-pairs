@@ -11,11 +11,29 @@ import { useLanguage } from '@/app/context/LanguageContext';
 import { useCategory } from '@/app/context/CategoryContext';
 import { tKeys } from '@/app/constants/translationKeys';
 import PairItem from '@/app/components/PairItem';
+import LevelIndicator from '@/app/components/LevelIndicator';
 import { buildPairId } from '@/utils/idHelpers';
 import { estimateActivePracticeTime } from '@/app/storage/progressStorage';
 import { useContrastPairs } from '@/app/hooks/useContrastPairs';
 import { computePracticeNextRecommendation } from '@/utils/recommendNextPractice';
 import { usePracticeTarget } from '@/app/context/PracticeTargetContext';
+
+type ContrastHeader = {
+  type: 'header';
+  group: string;
+  phoneme1: string;
+  phoneme2: string;
+};
+type PairRow = {
+  type: 'pair';
+  id: string;
+  word1: string;
+  word2: string;
+  category: string;
+  group: string;
+  colIndex: number;
+};
+type ListItem = ContrastHeader | PairRow;
 
 export default function ResultsScreen() {
   const { progress } = usePairProgress();
@@ -101,49 +119,65 @@ export default function ResultsScreen() {
       : translate(tKeys.practiceThisNextReason)
     : translate(tKeys.practiceThisNextEmpty);
 
-  const flattenedPairs = useMemo(() => {
+  const listData = useMemo((): ListItem[] => {
     if (!catObj || catObj.pairs.length === 0) return [];
-    const pairs = catObj.pairs.map((pairObj) => {
-      const id = buildPairId(pairObj, catObj.category);
-      return {
-        id,
-        word1: pairObj.word1,
-        word2: pairObj.word2,
-        category: catObj.category,
-        group: pairObj.group,
-      };
-    });
 
-    return pairs.sort((a, b) => {
-      const statsA = progress[a.id];
-      const statsB = progress[b.id];
-      const hasAttemptsA = statsA?.attempts?.length > 0;
-      const hasAttemptsB = statsB?.attempts?.length > 0;
+    const groupOrder: string[] = [];
+    const groupedPairs: Record<string, typeof catObj.pairs> = {};
 
-      if (hasAttemptsA && !hasAttemptsB) return -1;
-      if (!hasAttemptsA && hasAttemptsB) return 1;
-      return 0;
-    });
-  }, [catObj, progress]);
+    for (const pairObj of catObj.pairs) {
+      if (!groupedPairs[pairObj.group]) {
+        groupOrder.push(pairObj.group);
+        groupedPairs[pairObj.group] = [];
+      }
+      groupedPairs[pairObj.group].push(pairObj);
+    }
+
+    const items: ListItem[] = [];
+    for (const group of groupOrder) {
+      const sorted = [...groupedPairs[group]].sort((a, b) => a.difficulty - b.difficulty);
+      const rep = sorted[0];
+      items.push({ type: 'header', group, phoneme1: rep.contrastPhoneme1, phoneme2: rep.contrastPhoneme2 });
+      sorted.forEach((pairObj, i) => {
+        items.push({
+          type: 'pair',
+          id: buildPairId(pairObj, catObj.category),
+          word1: pairObj.word1,
+          word2: pairObj.word2,
+          category: catObj.category,
+          group,
+          colIndex: i % numColumns,
+        });
+      });
+    }
+    return items;
+  }, [catObj, numColumns]);
 
   const renderItem = useCallback(
-    ({ item, index }: { item: any; index: number }) => {
+    ({ item }: { item: ListItem }) => {
+      if (item.type === 'header') {
+        return (
+          <View style={[styles.sectionHeader, { marginTop: 8, marginBottom: 0, paddingHorizontal: 0 }]}>
+            <View style={styles.sectionHeaderLeft}>
+              <Text style={styles.sectionTitle}>
+                {`/${item.phoneme1}/ – /${item.phoneme2}/`}
+              </Text>
+            </View>
+            <LevelIndicator currentTier={mastery[item.group] ?? 1} compact />
+          </View>
+        );
+      }
+
       const stats = progress[item.id] || { attempts: [] };
-      
-      // Add spacing for grid layout
-      const isLeftColumn = index % numColumns === 0;
-      const itemStyle = numColumns > 1 ? {
-        flex: 1,
-        marginRight: isLeftColumn ? gap / 2 : 0,
-        marginLeft: !isLeftColumn ? gap / 2 : 0,
-      } : {};
+      const itemStyle: object = numColumns > 1
+        ? { flex: 1, marginRight: item.colIndex === 0 ? gap / 2 : 0, marginLeft: item.colIndex !== 0 ? gap / 2 : 0 }
+        : {};
 
       return (
         <View style={itemStyle}>
           <PairItem
             item={item}
             stats={stats}
-            tier={mastery[item.group] ?? 1}
             translate={translate}
             themeColors={themeColors}
             styles={styles}
@@ -151,7 +185,7 @@ export default function ResultsScreen() {
         </View>
       );
     },
-    [progress, mastery, translate, themeColors, styles, numColumns]
+    [progress, mastery, translate, themeColors, styles, numColumns, gap],
   );
 
   if (!catObj || catObj.pairs.length === 0) {
@@ -236,13 +270,14 @@ export default function ResultsScreen() {
 
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <FlashList
-            data={flattenedPairs}
-            extraData={[progress, numColumns]}
-            keyExtractor={(item) => item.id}
+            data={listData}
+            extraData={[progress, mastery, numColumns]}
+            keyExtractor={(item) => item.type === 'header' ? `header-${item.group}` : item.id}
             renderItem={renderItem}
             numColumns={numColumns}
             key={numColumns.toString()} // Force re-render when columns change
             contentContainerStyle={{ paddingBottom: 20 }}
+            overrideItemLayout={(layout, item) => { if (item.type === 'header') { layout.span = numColumns; } }}
           />
         </View>
       </View>

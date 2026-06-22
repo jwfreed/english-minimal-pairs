@@ -390,7 +390,7 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     practiceThisNextReasonNew: 'คุณยังไม่ได้ฝึกเสียงนี้',
     practiceThisNextEmpty: 'ฝึกสักสองสามเสียงเพื่อรับคำแนะนำ',
     noPairsFound: 'ไม่พบเสียงในหมวดหมู่:',
-    whichWordDidYouHear: 'คุณได้ยินคำไหน？',
+    whichWordDidYouHear: 'คุณได้ยินคำไหน',
     compareTheTwoWords: 'เปรียบเทียบสองคำ',
     play: 'เล่น',
     tryASpecificPair: 'เลือกคู่คำที่ต้องการ',

@@ -431,7 +431,12 @@ export default function HomeScreen() {
         groupSpeedRef.current[g] = result.nextSpeed;
         promote(g);
         setPromotedTier(result.promotedTier);
-        if (result.resetPairIndex) setPairIndex(0);
+        if (result.resetPairIndex) {
+          setPairIndex(0);
+          setFeedback(null);
+          setPlayedIdx(null);
+          setStartTime(null);
+        }
         if (__DEV__) console.log(`🎓 Mastery up for ${g}! Speed reset to 0 → tier ${result.promotedTier}`);
       }
 

@@ -56,6 +56,50 @@ export interface AdvanceTrialCycleSeenIdsInput {
   seenThisCycle?: readonly string[] | ReadonlySet<string> | null;
 }
 
+export interface RecentMissState {
+  recentlyMissedPairId: string | null;
+  trialsSinceMiss: number;
+}
+
+// Boost expires after this many subsequent answered trials since the miss.
+export const RECENT_MISS_DECAY_TRIALS = 5;
+
+/**
+ * Returns the updated recent-miss state after one answered trial.
+ *
+ * Rules:
+ * - Any incorrect answer starts a new miss (resets counter).
+ * - Correct answer on the missed pair clears the boost immediately.
+ * - Correct answer on any other pair increments the decay counter;
+ *   boost expires when the counter reaches RECENT_MISS_DECAY_TRIALS.
+ */
+export function updateRecentMissState({
+  state,
+  answeredPairId,
+  wasCorrect,
+}: {
+  state: RecentMissState;
+  answeredPairId: string;
+  wasCorrect: boolean;
+}): RecentMissState {
+  if (!wasCorrect) {
+    return { recentlyMissedPairId: answeredPairId, trialsSinceMiss: 0 };
+  }
+
+  if (!state.recentlyMissedPairId) {
+    return state;
+  }
+
+  if (answeredPairId === state.recentlyMissedPairId) {
+    return { recentlyMissedPairId: null, trialsSinceMiss: 0 };
+  }
+
+  const next = state.trialsSinceMiss + 1;
+  return next >= RECENT_MISS_DECAY_TRIALS
+    ? { recentlyMissedPairId: null, trialsSinceMiss: 0 }
+    : { ...state, trialsSinceMiss: next };
+}
+
 export function recommendPlacementTier(correctCount: number, totalQuestions: number): number {
   if (totalQuestions <= 0) return 1;
 

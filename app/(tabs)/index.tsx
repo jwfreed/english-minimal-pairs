@@ -32,6 +32,8 @@ import {
   buildTrialPairId,
   choosePlaybackForRound,
   selectNextTrialPair,
+  updateRecentMissState,
+  type RecentMissState,
 } from '@/app/domain/practiceSession';
 import {
   PLACEMENT_DONE_KEY,
@@ -169,6 +171,7 @@ export default function HomeScreen() {
   const [promotedTier, setPromotedTier] = useState<number | null>(null);
   const lastPairIdRef = useRef<string | null>(null);
   const seenThisCycleRef = useRef<string[]>([]);
+  const recentMissStateRef = useRef<RecentMissState>({ recentlyMissedPairId: null, trialsSinceMiss: 0 });
   const manualPairOverrideRef = useRef(false);
 
   // Reset round state when the category changes so stale startTime / playedIdx
@@ -182,6 +185,7 @@ export default function HomeScreen() {
     setPendingPlayback(null);
     lastPairIdRef.current = null;
     seenThisCycleRef.current = [];
+    recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
     manualPairOverrideRef.current = false;
   }, [categoryIndex]);
 
@@ -200,6 +204,7 @@ export default function HomeScreen() {
     setPendingPlayback(null);
     lastPairIdRef.current = null;
     seenThisCycleRef.current = [];
+    recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
     manualPairOverrideRef.current = false;
     consumeTarget();
   }, [targetGroup, visible, isLoading, consumeTarget]);
@@ -231,6 +236,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     seenThisCycleRef.current = [];
+    recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
     if (
       lastPairIdRef.current &&
       !activeGroupPairs.some((pair) => buildTrialPairId(pair) === lastPairIdRef.current)
@@ -328,6 +334,7 @@ export default function HomeScreen() {
                 activeGroup: group,
                 lastPairId: lastPairIdRef.current,
                 seenThisCycle: seenThisCycleRef.current,
+                recentlyMissedPairId: recentMissStateRef.current.recentlyMissedPairId,
                 random: Math.random,
               })
             : selectedPair;
@@ -402,6 +409,11 @@ export default function HomeScreen() {
 
       setFeedback(result.feedback);
       recordAttempt(result.pairId, result.correct, result.durationMin);
+      recentMissStateRef.current = updateRecentMissState({
+        state: recentMissStateRef.current,
+        answeredPairId: buildTrialPairId(selectedPair),
+        wasCorrect: result.correct,
+      });
 
       groupLongStreakRef.current[g] = result.nextLongStreak;
       groupStreakRef.current[g] = result.nextFastStreak;
@@ -457,6 +469,7 @@ export default function HomeScreen() {
       if (groupChanged) {
         lastPairIdRef.current = null;
         seenThisCycleRef.current = [];
+        recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
       }
       manualPairOverrideRef.current = true;
     }

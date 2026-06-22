@@ -12,6 +12,7 @@
     "test": "node scripts/run-tests.js",
     "validate:data": "node scripts/validate-data.js",
     "validate:audio": "node scripts/validate-audio-assets.js",
+    "audit:sparse-tiers": "node scripts/audit-sparse-tiers.js",
     "check": "npm run lint && npm run typecheck && npm run validate:data && npm run validate:audio && npm run test"
   },
   "dependencies": {

@@ -36,7 +36,10 @@ const ethD: Row[] = [
 
 const wV: Row[] = [
   ['wine', 'vine', 1, '/waɪn/', '/vaɪn/', 'wV', 'initial'],
+  ['went', 'vent', 1, '/wɛnt/', '/vɛnt/', 'wV', 'initial'],
+  ['wet', 'vet', 1, '/wɛt/', '/vɛt/', 'wV', 'initial'],
   ['west', 'vest', 2, '/wɛst/', '/vɛst/', 'wV', 'initial'],
+  ['while', 'vile', 2, '/waɪl/', '/vaɪl/', 'wV', 'initial'],
   ['wow', 'vow', 3, '/waʊ/', '/vaʊ/', 'wV', 'initial'],
   ['wane', 'vane', 4, '/weɪn/', '/veɪn/', 'wV', 'initial'],
   ['wheel', 'veal', 5, '/wiːl/', '/viːl/', 'wV', 'initial'],

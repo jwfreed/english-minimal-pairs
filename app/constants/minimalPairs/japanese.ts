@@ -31,7 +31,11 @@ const rL: Row[] = [
 
 const bV: Row[] = [
   ['ban', 'van', 1, '/bæn/', '/væn/', 'bV', 'initial'],
+  ['bet', 'vet', 1, '/bɛt/', '/vɛt/', 'bV', 'initial'],
+  ['best', 'vest', 1, '/bɛst/', '/vɛst/', 'bV', 'initial'],
   ['berry', 'very', 2, '/ˈbɛri/', '/ˈvɛri/', 'bV', 'initial'],
+  ['boat', 'vote', 2, '/boʊt/', '/voʊt/', 'bV', 'initial'],
+  ['bail', 'veil', 2, '/beɪl/', '/veɪl/', 'bV', 'initial'],
   ['bow', 'vow', 3, '/baʊ/', '/vaʊ/', 'bV', 'initial'],
   ['bat', 'vat', 4, '/bæt/', '/væt/', 'bV', 'initial'],
   ['marble', 'marvel', 5, '/ˈmɑːrbəl/', '/ˈmɑːrvəl/', 'bV', 'medial'],

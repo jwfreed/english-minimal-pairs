@@ -18,8 +18,14 @@ const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2
 /* ---------- word-lists with group IDs ---------------------------- */
 const pB: Row[] = [
   ['pat', 'bat', 1, '/pæt/', '/bæt/', 'pB', 'initial'],
+  ['pig', 'big', 1, '/pɪɡ/', '/bɪɡ/', 'pB', 'initial'],
+  ['pin', 'bin', 1, '/pɪn/', '/bɪn/', 'pB', 'initial'],
   ['pan', 'ban', 2, '/pæn/', '/bæn/', 'pB', 'initial'],
+  ['pet', 'bet', 2, '/pɛt/', '/bɛt/', 'pB', 'initial'],
+  ['pill', 'bill', 2, '/pɪl/', '/bɪl/', 'pB', 'initial'],
   ['pear', 'bear', 3, '/pɛə/', '/bɛə/', 'pB', 'initial'],
+  ['peak', 'beak', 3, '/piːk/', '/biːk/', 'pB', 'initial'],
+  ['pale', 'bale', 3, '/peɪl/', '/beɪl/', 'pB', 'initial'],
   ['pack', 'back', 4, '/pæk/', '/bæk/', 'pB', 'initial'],
   ['rapid', 'rabid', 5, '/ˈræpɪd/', '/ˈræbɪd/', 'pB', 'medial'],
   ['cap', 'cab', 6, '/kæp/', '/kæb/', 'pB', 'final'],

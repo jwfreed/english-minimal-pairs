@@ -27,8 +27,12 @@ const thetaS: Row[] = [
 
 const vW: Row[] = [
   ['vine', 'wine', 1, '/vaɪn/', '/waɪn/', 'vW', 'initial'],
+  ['vent', 'went', 1, '/vɛnt/', '/wɛnt/', 'vW', 'initial'],
+  ['vet', 'wet', 1, '/vɛt/', '/wɛt/', 'vW', 'initial'],
   ['vest', 'west', 2, '/vɛst/', '/wɛst/', 'vW', 'initial'],
+  ['vile', 'while', 2, '/vaɪl/', '/waɪl/', 'vW', 'initial'],
   ['vow', 'wow', 3, '/vaʊ/', '/waʊ/', 'vW', 'initial'],
+  ['veil', 'wail', 3, '/veɪl/', '/weɪl/', 'vW', 'initial'],
   ['vane', 'wane', 4, '/veɪn/', '/weɪn/', 'vW', 'initial'],
   ['veal', 'wheel', 5, '/viːl/', '/wiːl/', 'vW', 'initial'],
   ['viper', 'wiper', 6, '/ˈvaɪpər/', '/ˈwaɪpər/', 'vW', 'initial'],

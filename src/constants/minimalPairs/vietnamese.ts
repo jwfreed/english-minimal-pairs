@@ -45,8 +45,14 @@ const zS: Row[] = [
 
 const rL: Row[] = [
   ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['red', 'led', 1, '/rɛd/', '/lɛd/', 'rL', 'initial'],
+  ['row', 'low', 1, '/roʊ/', '/loʊ/', 'rL', 'initial'],
   ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
+  ['rain', 'lane', 2, '/reɪn/', '/leɪn/', 'rL', 'initial'],
+  ['read', 'lead', 2, '/riːd/', '/liːd/', 'rL', 'initial'],
   ['rip', 'lip', 3, '/rɪp/', '/lɪp/', 'rL', 'initial'],
+  ['rung', 'lung', 3, '/rʌŋ/', '/lʌŋ/', 'rL', 'initial'],
+  ['ride', 'lied', 3, '/raɪd/', '/laɪd/', 'rL', 'initial'],
   ['rake', 'lake', 4, '/reɪk/', '/leɪk/', 'rL', 'initial'],
   ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],
   ['crowd', 'cloud', 6, '/kraʊd/', '/klaʊd/', 'rL', 'initial'],

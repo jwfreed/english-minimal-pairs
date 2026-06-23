@@ -10,13 +10,13 @@
 | Total categories | 14 |
 | Total category × group combinations | 70 |
 | Total target slots | 420 |
-| Complete slots | 3 |
-| Underfilled slots | 417 |
-| Total missing pairs | 620 |
+| Complete slots | 13 |
+| Underfilled slots | 407 |
+| Total missing pairs | 599 |
 | Exception slots | 0 |
-| Existing pair count | 430 |
+| Existing pair count | 453 |
 | Target pair count | 1050 |
-| Fill percentage | 41% |
+| Fill percentage | 43% |
 
 This report is a dataset coverage target matrix. It does not mark scheduler behavior as defective and does not change source pair data.
 
@@ -58,9 +58,6 @@ Sorted by: severity → category → group ID → tier.
 | Español | bV | b/v | 1 | 1 | 3 | 2 | HIGH | ban/van |
 | Español | bV | b/v | 2 | 1 | 3 | 2 | HIGH | berry/very |
 | Español | bV | b/v | 3 | 1 | 3 | 2 | HIGH | bow/vow |
-| Español | iVsI | iː/ɪ | 1 | 2 | 3 | 1 | HIGH | seat/sit, sheep/ship |
-| Español | iVsI | iː/ɪ | 2 | 2 | 3 | 1 | HIGH | feel/fill, leave/live |
-| Español | iVsI | iː/ɪ | 3 | 1 | 3 | 2 | HIGH | beat/bit |
 | Español | thetaS | θ/s | 1 | 1 | 3 | 2 | HIGH | thin/sin |
 | Español | thetaS | θ/s | 2 | 1 | 3 | 2 | HIGH | thick/sick |
 | Español | thetaS | θ/s | 3 | 1 | 3 | 2 | HIGH | think/sink |
@@ -133,9 +130,6 @@ Sorted by: severity → category → group ID → tier.
 | العربية | iVsI | iː/ɪ | 1 | 1 | 3 | 2 | HIGH | sheep/ship |
 | العربية | iVsI | iː/ɪ | 2 | 1 | 3 | 2 | HIGH | leave/live |
 | العربية | iVsI | iː/ɪ | 3 | 1 | 3 | 2 | HIGH | beat/bit |
-| العربية | pB | p/b | 1 | 1 | 3 | 2 | HIGH | pat/bat |
-| العربية | pB | p/b | 2 | 1 | 3 | 2 | HIGH | pan/ban |
-| العربية | pB | p/b | 3 | 1 | 3 | 2 | HIGH | pear/bear |
 | العربية | thetaS | θ/s | 1 | 1 | 3 | 2 | HIGH | thin/sin |
 | العربية | thetaS | θ/s | 2 | 1 | 3 | 2 | HIGH | thick/sick |
 | العربية | thetaS | θ/s | 3 | 1 | 3 | 2 | HIGH | think/sink |
@@ -154,8 +148,7 @@ Sorted by: severity → category → group ID → tier.
 | فارسی | thetaT | θ/t | 1 | 1 | 3 | 2 | HIGH | thin/tin |
 | فارسی | thetaT | θ/t | 2 | 1 | 3 | 2 | HIGH | thick/tick |
 | فارسی | thetaT | θ/t | 3 | 1 | 3 | 2 | HIGH | thank/tank |
-| فارسی | wV | w/v | 1 | 1 | 3 | 2 | HIGH | wine/vine |
-| فارسی | wV | w/v | 2 | 1 | 3 | 2 | HIGH | west/vest |
+| فارسی | wV | w/v | 2 | 2 | 3 | 1 | HIGH | west/vest, while/vile |
 | فارسی | wV | w/v | 3 | 1 | 3 | 2 | HIGH | wow/vow |
 | हिन्दी / اردو | aVsE | æ/ɛ | 1 | 1 | 3 | 2 | HIGH | bad/bed |
 | हिन्दी / اردو | aVsE | æ/ɛ | 2 | 1 | 3 | 2 | HIGH | pan/pen |
@@ -213,9 +206,8 @@ Sorted by: severity → category → group ID → tier.
 | 中文 | uVsU | uː/ʊ | 1 | 1 | 3 | 2 | HIGH | pool/pull |
 | 中文 | uVsU | uː/ʊ | 2 | 1 | 3 | 2 | HIGH | suit/soot |
 | 中文 | uVsU | uː/ʊ | 3 | 1 | 3 | 2 | HIGH | fool/full |
-| 中文 | vW | v/w | 1 | 1 | 3 | 2 | HIGH | vine/wine |
-| 中文 | vW | v/w | 2 | 1 | 3 | 2 | HIGH | vest/west |
-| 中文 | vW | v/w | 3 | 1 | 3 | 2 | HIGH | vow/wow |
+| 中文 | vW | v/w | 2 | 2 | 3 | 1 | HIGH | vest/west, vile/while |
+| 中文 | vW | v/w | 3 | 2 | 3 | 1 | HIGH | veil/wail, vow/wow |
 | 廣東話 | ethD | ð/d | 1 | 1 | 3 | 2 | HIGH | then/den |
 | 廣東話 | ethD | ð/d | 2 | 1 | 3 | 2 | HIGH | though/dough |
 | 廣東話 | ethD | ð/d | 3 | 1 | 3 | 2 | HIGH | they/day |
@@ -233,8 +225,6 @@ Sorted by: severity → category → group ID → tier.
 | 日本語 | aVsUh | æ/ʌ | 1 | 1 | 3 | 2 | HIGH | cat/cut |
 | 日本語 | aVsUh | æ/ʌ | 2 | 1 | 3 | 2 | HIGH | batter/butter |
 | 日本語 | aVsUh | æ/ʌ | 3 | 1 | 3 | 2 | HIGH | ran/run |
-| 日本語 | bV | b/v | 1 | 1 | 3 | 2 | HIGH | ban/van |
-| 日本語 | bV | b/v | 2 | 1 | 3 | 2 | HIGH | berry/very |
 | 日本語 | bV | b/v | 3 | 1 | 3 | 2 | HIGH | bow/vow |
 | 日本語 | iVsI | iː/ɪ | 1 | 1 | 3 | 2 | HIGH | sheep/ship |
 | 日本語 | iVsI | iː/ɪ | 2 | 1 | 3 | 2 | HIGH | leave/live |
@@ -492,45 +482,45 @@ Priority uses missing pairs weighted by tier: tier 1 ×5, tier 2 ×4, tier 3 ×3
 | 29 | Русский | wV | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
 | 30 | العربية | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
 | 31 | العربية | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 32 | العربية | pB | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 33 | العربية | thetaS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 34 | العربية | vF | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 35 | فارسی | aVsE | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 36 | فارسی | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 37 | فارسی | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 38 | فارسی | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 39 | فارسی | wV | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 40 | हिन्दी / اردو | aVsE | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 41 | हिन्दी / اردو | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 42 | हिन्दी / اردو | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 43 | हिन्दी / اردو | wV | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 44 | हिन्दी / اردو | zS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 45 | ภาษาไทย | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 46 | ภาษาไทย | rL | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 47 | ภาษาไทย | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 48 | ภาษาไทย | vF | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 49 | ภาษาไทย | zS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 50 | 한국어 | fP | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 51 | 한국어 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 52 | 한국어 | thetaS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 53 | 한국어 | vB | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 54 | 中文 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 55 | 中文 | rL | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 56 | 中文 | thetaS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 57 | 中文 | uVsU | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 58 | 中文 | vW | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 59 | 廣東話 | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 60 | 廣東話 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 61 | 廣東話 | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 62 | 廣東話 | vW | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 63 | 日本語 | aVsUh | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 64 | 日本語 | bV | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 65 | 日本語 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 66 | 日本語 | sTheta | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
-| 67 | 한국어 | rL | 1, 3 | 4 | 7 | Add 2 pairs at tier 1 first |
-| 68 | 廣東話 | rL | 1, 3 | 4 | 7 | Add 2 pairs at tier 1 first |
-| 69 | Español | iVsI | 1, 2, 3 | 4 | 7 | Add 1 pair at tier 1 first |
-| 70 | 日本語 | rL | 1, 3 | 2 | 5 | Add 1 pair at tier 1 first |
+| 32 | العربية | thetaS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 33 | العربية | vF | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 34 | فارسی | aVsE | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 35 | فارسی | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 36 | فارسی | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 37 | فارسی | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 38 | हिन्दी / اردو | aVsE | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 39 | हिन्दी / اردو | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 40 | हिन्दी / اردو | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 41 | हिन्दी / اردو | wV | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 42 | हिन्दी / اردو | zS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 43 | ภาษาไทย | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 44 | ภาษาไทย | rL | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 45 | ภาษาไทย | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 46 | ภาษาไทย | vF | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 47 | ภาษาไทย | zS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 48 | 한국어 | fP | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 49 | 한국어 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 50 | 한국어 | thetaS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 51 | 한국어 | vB | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 52 | 中文 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 53 | 中文 | rL | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 54 | 中文 | thetaS | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 55 | 中文 | uVsU | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 56 | 廣東話 | ethD | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 57 | 廣東話 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 58 | 廣東話 | thetaT | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 59 | 廣東話 | vW | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 60 | 日本語 | aVsUh | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 61 | 日本語 | iVsI | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 62 | 日本語 | sTheta | 1, 2, 3 | 6 | 9 | Add 2 pairs at tier 1 first |
+| 63 | 한국어 | rL | 1, 3 | 4 | 7 | Add 2 pairs at tier 1 first |
+| 64 | 廣東話 | rL | 1, 3 | 4 | 7 | Add 2 pairs at tier 1 first |
+| 65 | فارسی | wV | 2, 3 | 3 | 6 | Add 1 pair at tier 2 first |
+| 66 | 日本語 | rL | 1, 3 | 2 | 5 | Add 1 pair at tier 1 first |
+| 67 | 中文 | vW | 2, 3 | 2 | 5 | Add 1 pair at tier 2 first |
+| 68 | 日本語 | bV | 3 | 2 | 5 | Add 2 pairs at tier 3 first |
+| 69 | Español | iVsI |  | 0 | 3 | Add 1 pair at tier 4 |
+| 70 | العربية | pB |  | 0 | 3 | Add 1 pair at tier 4 |
 
 ## 5. Exceptions
 

@@ -1,6 +1,6 @@
 // utils/recommendNextPractice.ts
-import type { Pair } from '@/app/constants/minimalPairs';
-import type { PairAttempt, PairStats } from '@/app/storage/progressStorage';
+import type { Pair } from '@/src/constants/minimalPairs';
+import type { PairAttempt, PairStats } from '@/src/storage/progressStorage';
 
 export interface PracticeNextRecommendation {
   groupId: string;

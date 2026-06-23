@@ -1,5 +1,5 @@
-import type { Pair } from '@/app/constants/minimalPairs';
-import { tKeys, TranslationKey } from '@/app/constants/translationKeys';
+import type { Pair } from '@/src/constants/minimalPairs';
+import { tKeys, TranslationKey } from '@/src/constants/translationKeys';
 
 const DEFAULT_CONTRAST_TITLE = 'Train this contrast';
 

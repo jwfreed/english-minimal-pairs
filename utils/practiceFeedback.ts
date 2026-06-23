@@ -1,6 +1,6 @@
-import type { Pair } from '@/app/constants/minimalPairs';
-import { tKeys, TranslationKey } from '@/app/constants/translationKeys';
-import type { PlayedIndex, PracticeFeedback } from '@/app/domain/practiceSession';
+import type { Pair } from '@/src/constants/minimalPairs';
+import { tKeys, TranslationKey } from '@/src/constants/translationKeys';
+import type { PlayedIndex, PracticeFeedback } from '@/src/domain/practiceSession';
 
 const EN_FALLBACK: Partial<Record<TranslationKey, string>> = {
   correctYouHeard: 'Correct — you heard',

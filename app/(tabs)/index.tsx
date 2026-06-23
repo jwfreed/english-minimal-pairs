@@ -1,31 +1,31 @@
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
-import type { SessionTimerHandle } from '@/app/components/SessionTimer';
+import type { SessionTimerHandle } from '@/src/components/SessionTimer';
 import { View, Text, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLanguage } from '@/app/context/LanguageContext';
-import { useCategory } from '@/app/context/CategoryContext';
-import { usePracticeTarget } from '@/app/context/PracticeTargetContext';
-import { usePairProgress } from '@/app/context/PairProgressContext';
-import { useSettings } from '@/app/context/SettingsContext';
-import { useAllThemeColors } from '@/app/context/theme';
-import createStyles from '@/app/constants/styles';
-import { minimalPairs, Pair } from '@/app/constants/minimalPairs';
-import { tKeys } from '@/app/constants/translationKeys';
+import { useLanguage } from '@/src/context/LanguageContext';
+import { useCategory } from '@/src/context/CategoryContext';
+import { usePracticeTarget } from '@/src/context/PracticeTargetContext';
+import { usePairProgress } from '@/src/context/PairProgressContext';
+import { useSettings } from '@/src/context/SettingsContext';
+import { useAllThemeColors } from '@/src/context/theme';
+import createStyles from '@/src/constants/styles';
+import { minimalPairs, Pair } from '@/src/constants/minimalPairs';
+import { tKeys } from '@/src/constants/translationKeys';
 
-import AnswerButtons from '@/app/components/AnswerButtons';
-import HelpOverlay from '@/app/components/HelpOverlay';
-import SessionTimer from '@/app/components/SessionTimer';
-import PlacementTest from '@/app/components/PlacementTest';
-import LevelIndicator from '@/app/components/LevelIndicator';
-import PracticeHeader from '@/app/components/practice/PracticeHeader';
-import PracticePairSelector from '@/app/components/practice/PracticePairSelector';
-import LevelUpCelebration from '@/app/components/practice/LevelUpCelebration';
-import ListenControls from '@/app/components/practice/ListenControls';
+import AnswerButtons from '@/src/components/AnswerButtons';
+import HelpOverlay from '@/src/components/HelpOverlay';
+import SessionTimer from '@/src/components/SessionTimer';
+import PlacementTest from '@/src/components/PlacementTest';
+import LevelIndicator from '@/src/components/LevelIndicator';
+import PracticeHeader from '@/src/components/practice/PracticeHeader';
+import PracticePairSelector from '@/src/components/practice/PracticePairSelector';
+import LevelUpCelebration from '@/src/components/practice/LevelUpCelebration';
+import ListenControls from '@/src/components/practice/ListenControls';
 
-import { useContrastPairs } from '@/app/hooks/useContrastPairs';
-import { useAudio } from '@/app/hooks/useAudio';
-import { useHaptics } from '@/app/hooks/useHaptics';
+import { useContrastPairs } from '@/src/hooks/useContrastPairs';
+import { useAudio } from '@/src/hooks/useAudio';
+import { useHaptics } from '@/src/hooks/useHaptics';
 import {
   advanceTrialCycleSeenIds,
   applyPracticeAnswer,
@@ -34,27 +34,27 @@ import {
   selectNextTrialPair,
   updateRecentMissState,
   type RecentMissState,
-} from '@/app/domain/practiceSession';
+} from '@/src/domain/practiceSession';
 import {
   PLACEMENT_DONE_KEY,
   PLACEMENT_LEGACY_MIGRATION_KEY,
   buildPlacementStorageKey,
   serializePlacementDone,
   resolvePlacementStateForCategory,
-} from '@/app/domain/masteryPersistence';
+} from '@/src/domain/masteryPersistence';
 import {
   FAST_STREAK_NEEDED,
   FAST_THRESHOLD_MS,
   LONG_STREAK_NEEDED,
   SPEED_TABLE,
   SpeedTier,
-} from '@/app/learning/adaptiveProgression';
+} from '@/src/learning/adaptiveProgression';
 import {
   ONBOARDING_SEEN_KEY,
   shouldShowOnboarding,
   markOnboardingSeen,
-} from '@/app/storage/onboardingStorage';
-import OnboardingScreen from '@/app/components/OnboardingScreen';
+} from '@/src/storage/onboardingStorage';
+import OnboardingScreen from '@/src/components/OnboardingScreen';
 import { buildContrastTrainingTitle } from '@/utils/contrastLabel';
 
 /* Playback-rate steps per acoustic tier (0–2)

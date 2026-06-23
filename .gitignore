@@ -17,6 +17,10 @@
 /ios/
 .worktrees/
 
+# Agent / Superpowers local artifacts
+.claude/
+docs/superpowers/
+
 # logs
 *.log
 npm-debug.log*

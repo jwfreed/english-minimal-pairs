@@ -15,20 +15,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSettings } from '@/app/context/SettingsContext';
-import { useLanguage } from '@/app/context/LanguageContext';
-import { useCategory } from '@/app/context/CategoryContext';
-import { useAllThemeColors, useTheme } from '@/app/context/theme';
-import createStyles from '@/app/constants/styles';
-import { tKeys } from '@/app/constants/translationKeys';
-import { minimalPairs } from '@/app/constants/minimalPairs';
-import { useHaptics } from '@/app/hooks/useHaptics';
+import { useSettings } from '@/src/context/SettingsContext';
+import { useLanguage } from '@/src/context/LanguageContext';
+import { useCategory } from '@/src/context/CategoryContext';
+import { useAllThemeColors, useTheme } from '@/src/context/theme';
+import createStyles from '@/src/constants/styles';
+import { tKeys } from '@/src/constants/translationKeys';
+import { minimalPairs } from '@/src/constants/minimalPairs';
+import { useHaptics } from '@/src/hooks/useHaptics';
 import {
   PLACEMENT_LEGACY_MIGRATION_KEY,
   buildPlacementStorageKey,
   serializePlacementDone,
   shouldShowPlacementTestForCategory,
-} from '@/app/domain/masteryPersistence';
+} from '@/src/domain/masteryPersistence';
 
 export default function SettingsScreen() {
   const { translate, setLanguage, useEnglishUI, setUseEnglishUI, language } = useLanguage();

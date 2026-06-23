@@ -5,7 +5,7 @@ const { loadTsModule } = require('./load-ts-module');
 const {
   ONBOARDING_SEEN_KEY,
   shouldShowOnboarding,
-} = loadTsModule(path.join(__dirname, '..', 'app', 'storage', 'onboardingStorage.ts'));
+} = loadTsModule(path.join(__dirname, '..', 'src', 'storage', 'onboardingStorage.ts'));
 
 function runTest(name, fn) {
   try {

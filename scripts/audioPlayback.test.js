@@ -7,7 +7,7 @@ const {
   buildSpeechOptions,
   getPlaybackWord,
   requireIosVoicesForPlayback,
-} = loadTsModule(path.join(__dirname, '..', 'app', 'domain', 'audioPlayback.ts'));
+} = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'audioPlayback.ts'));
 
 function runTest(name, fn) {
   try {

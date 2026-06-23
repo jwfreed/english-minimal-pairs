@@ -374,15 +374,15 @@ function validateDatasetContract({
 function loadRepoData() {
   const moduleCache = new Map();
   const minimalPairsModule = loadTsModule(
-    path.join(PROJECT_ROOT, 'app', 'constants', 'minimalPairs.ts'),
+    path.join(PROJECT_ROOT, 'src', 'constants', 'minimalPairs.ts'),
     moduleCache
   );
   const translationsModule = loadTsModule(
-    path.join(PROJECT_ROOT, 'app', 'constants', 'alternateLanguages.ts'),
+    path.join(PROJECT_ROOT, 'src', 'constants', 'alternateLanguages.ts'),
     moduleCache
   );
   const languageSelectionModule = loadTsModule(
-    path.join(PROJECT_ROOT, 'app', 'constants', 'languageSelection.ts'),
+    path.join(PROJECT_ROOT, 'src', 'constants', 'languageSelection.ts'),
     moduleCache
   );
 

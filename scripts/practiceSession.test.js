@@ -13,7 +13,7 @@ const {
   selectVisiblePairsByMastery,
   updateRecentMissState,
   RECENT_MISS_DECAY_TRIALS,
-} = loadTsModule(path.join(__dirname, '..', 'app', 'domain', 'practiceSession.ts'));
+} = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'practiceSession.ts'));
 
 function runTest(name, fn) {
   try {

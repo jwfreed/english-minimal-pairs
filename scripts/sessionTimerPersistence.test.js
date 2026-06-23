@@ -11,7 +11,7 @@ const {
   parseStoredSessionTimerSeconds,
   serializeCumulativeTimerSeconds,
   serializeSessionTimerSeconds,
-} = loadTsModule(path.join(__dirname, '..', 'app', 'domain', 'sessionTimerPersistence.ts'));
+} = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'sessionTimerPersistence.ts'));
 
 function runTest(name, fn) {
   try {

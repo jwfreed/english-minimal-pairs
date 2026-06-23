@@ -42,7 +42,7 @@ const withAudioSession = (config) => {
       try audioSession.setCategory(
         .playback,
         mode: .spokenAudio,
-        options: [.duckOthers, .allowBluetooth, .allowBluetoothA2DP]
+        options: [.duckOthers, .allowBluetoothHFP, .allowBluetoothA2DP]
       )
       
       // Activate the audio session

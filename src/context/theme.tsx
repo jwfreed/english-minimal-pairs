@@ -6,43 +6,19 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useThemeColor } from '../hooks/useThemeColor';
+import { Colors } from '@/src/constants/Colors';
+import {
+  darkTheme,
+  isDarkTheme,
+  lightTheme,
+  type Theme,
+  type ThemeMode,
+} from '@/src/constants/themeTokens';
 import { useColorScheme } from '../hooks/useColorScheme'; // Patched hook
 
 const THEME_STORAGE_KEY = '@userThemePreference';
 
-const lightTheme = {
-  background: '#ffffff',
-  text: '#000000',
-  textSecondary: '#6b7280',
-  primary: '#6200ee',
-  primaryLight: '#e8d9ff',
-  buttonText: '#ffffff',
-  success: '#16a34a',
-  error: '#dc2626',
-  cardBackground: '#f9fafb',
-  shadow: '#00000050',
-  icon: '#6b7280',
-  border: '#e5e7eb',
-};
-
-const darkTheme = {
-  background: '#000000',
-  text: '#ffffff',
-  textSecondary: '#9ca3af',
-  primary: '#bb86fc',
-  primaryLight: '#3d2859',
-  buttonText: '#000000',
-  success: '#22c55e',
-  error: '#ef4444',
-  cardBackground: '#1f2937',
-  shadow: '#ffffff20',
-  icon: '#d1d5db',
-  border: '#374151',
-};
-
-export type Theme = typeof lightTheme;
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type { Theme, ThemeMode };
 
 interface ThemeContextData {
   theme: Theme;
@@ -116,17 +92,22 @@ export const useTheme = (): ThemeContextData => {
   return context;
 };
 
-export const useAllThemeColors = () => ({
-  background: useThemeColor({}, 'background'),
-  text: useThemeColor({}, 'text'),
-  textSecondary: useThemeColor({}, 'textSecondary'),
-  success: useThemeColor({}, 'success'),
-  error: useThemeColor({}, 'error'),
-  primary: useThemeColor({}, 'primary'),
-  primaryLight: useThemeColor({}, 'primaryLight'),
-  buttonText: useThemeColor({}, 'buttonText'),
-  cardBackground: useThemeColor({}, 'cardBackground'),
-  shadow: useThemeColor({}, 'shadow'),
-  icon: useThemeColor({}, 'icon'),
-  border: useThemeColor({}, 'border'),
-});
+export const useAllThemeColors = () => {
+  const { theme } = useTheme();
+  const colors = isDarkTheme(theme) ? Colors.dark : Colors.light;
+
+  return {
+    background: colors.background,
+    text: colors.text,
+    textSecondary: colors.textSecondary,
+    success: colors.success,
+    error: colors.error,
+    primary: colors.primary,
+    primaryLight: colors.primaryLight,
+    buttonText: colors.buttonText,
+    cardBackground: colors.cardBackground,
+    shadow: colors.shadow,
+    icon: colors.icon,
+    border: colors.border,
+  };
+};

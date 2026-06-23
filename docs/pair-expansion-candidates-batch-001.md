@@ -55,10 +55,10 @@ No substitution from the default scope was needed.
 | Category | Group ID | Target contrast | Missing early pairs | Candidate count | Recommended count | Notes |
 |---|---|---:|---:|---:|---:|---|
 | 日本語 | bV | b/v | 6 | 8 | 4 | Identical existing pairs as Español/bV; cross-category noted |
-| 中文 | vW | v/w | 6 | 8 | 5 | Reversed word-order versions proposed for فارسی/wV |
+| 中文 | vW | v/w | 6 | 8 | 4 | Reversed word-order versions proposed for فارسی/wV |
 | Español | iVsI | iː/ɪ | 4 | 9 | 6 | iː/ɪ contrast shared across many categories; no same-category conflicts |
 | العربية | pB | p/b | 6 | 9 | 6 | Covers initial and final position |
-| فارسی | wV | w/v | 6 | 8 | 4 | Reversed-word forms of 中文/vW proposals |
+| فارسی | wV | w/v | 6 | 8 | 3 | Reversed-word forms of 中文/vW proposals |
 
 ---
 
@@ -76,8 +76,8 @@ No substitution from the default scope was needed.
 | recommended | 2 | bail | veil | /beɪl/ | /veɪl/ | initial | b/v | Both familiar; clean diphthong vowel | "Bail" has multiple meanings (legal, bucket) but all content-safe |
 | candidate | 3 | bend | vend | /bɛnd/ | /vɛnd/ | initial | b/v | "Vend" is familiar from "vending machine"; extends to T3 lexical context | "Vend" is lower frequency than b-word counterpart |
 | candidate | 3 | bile | vile | /baɪl/ | /vaɪl/ | initial | b/v | Both common words; clear diphthong contrast | "Bile" is a medical term but widely understood |
-| candidate | 4 | robe | rove | /roʊb/ | /roʊv/ | final | b/v | Final position pair; tests the contrast in a less salient coda context | Final-position b/v less acoustically distinct; appropriate for T4 |
-| needs_ipa_review | 5 | rebel | revel | /ˈrɛbəl/ | /ˈrɛvəl/ | medial | b/v | Medial position; both familiar common words | Unstressed medial syllable may reduce contrast clarity; verify stress marking and vowel reduction in review |
+| needs_tts_review | 4 | robe | rove | /roʊb/ | /roʊv/ | final | b/v | Final position pair; tests the contrast in a less salient coda context | Final-position b/v less acoustically distinct; TTS rendering of final voiced vs. voiceless in coda is unverified — synthesize and confirm contrast is perceptible |
+| needs_ipa_review | 5 | rebel | revel | /ˈrɛbəl/ | /ˈrɛvəl/ | medial | b/v | Medial position; both familiar common words | Unstressed medial syllable may reduce contrast clarity; verify stress marking and vowel reduction in review; TTS rendering in unstressed medial position also warrants verification |
 
 ---
 
@@ -92,11 +92,11 @@ No substitution from the default scope was needed.
 | recommended | 1 | vent | went | /vɛnt/ | /wɛnt/ | initial | v/w | Very common everyday words; clear initial contrast | None identified |
 | recommended | 1 | vet | wet | /vɛt/ | /wɛt/ | initial | v/w | Very common CVC words; extends T1 variety | None identified |
 | recommended | 2 | vile | while | /vaɪl/ | /waɪl/ | initial | v/w | Both common; clean diphthong contrast | None identified |
-| recommended | 2 | vise | wise | /vaɪz/ | /waɪz/ | initial | v/w | Both common and familiar | TTS check recommended: "vise" (tool) vs "vice" (spelling variant) |
+| needs_tts_review | 2 | vise | wise | /vaɪz/ | /waɪz/ | initial | v/w | Both common and familiar | TTS check required: confirm app TTS voice renders "vise" as /vaɪz/ and not as a variant of "vice" |
 | recommended | 3 | veil | wail | /veɪl/ | /weɪl/ | initial | v/w | Both familiar; clean diphthong | None identified |
 | candidate | 3 | very | wary | /ˈvɛri/ | /ˈwɛri/ | initial | v/w | Both common; disyllabic form slightly raises difficulty | Verify stress pattern and vowel quality in unstressed syllable |
-| candidate | 4 | vend | wend | /vɛnd/ | /wɛnd/ | initial | v/w | "Wend" (wend one's way) is moderately familiar | Lower frequency; TTS check recommended for "wend" |
-| candidate | 4 | vim | whim | /vɪm/ | /wɪm/ | initial | v/w | Both known; "whim" is common; "vim" is less frequent | "Vim" is lower frequency; may be too obscure for early tiers |
+| needs_tts_review | 4 | vend | wend | /vɛnd/ | /wɛnd/ | initial | v/w | "Wend" (wend one's way) is moderately familiar | "Wend" is low-frequency; TTS reliability unverified — confirm the app voice produces a natural /wɛnd/ before approving |
+| too_obscure_for_tier | 4 | vim | whim | /vɪm/ | /wɪm/ | initial | v/w | "Whim" is common; "vim" is low-frequency | "Vim" (vigor, energy) is too low-frequency for L2 learner populations at any tier; learners who do not know the word cannot perform the discrimination task |
 
 ---
 
@@ -135,8 +135,8 @@ No substitution from the default scope was needed.
 | recommended | 3 | peak | beak | /piːk/ | /biːk/ | initial | p/b | Both familiar; slightly longer vowel than T1–T2 pairs | None identified |
 | recommended | 3 | pale | bale | /peɪl/ | /beɪl/ | initial | p/b | Both familiar; diphthong vowel | "Bale" is context-specific (bale of hay) but widely understood |
 | candidate | 4 | pest | best | /pɛst/ | /bɛst/ | initial | p/b | Very common words; consonant cluster in coda adds T4 difficulty | None identified |
-| candidate | 5 | tap | tab | /tæp/ | /tæb/ | final | p/b | Final position; both very common; tests contrast in less salient coda | Final p/b are both often unreleased in English; appropriate for T5 difficulty |
-| candidate | 6 | cup | cub | /kʌp/ | /kʌb/ | final | p/b | Final position; both familiar; fills T6 gap | Same coda-saliency limitation as T5; appropriate for upper tier |
+| needs_tts_review | 5 | tap | tab | /tæp/ | /tæb/ | final | p/b | Final position; both very common; tests contrast in less salient coda | Final /p/ vs /b/ are often unreleased and may be TTS-indistinct; verify the app voice produces a perceptibly different coda before approving |
+| needs_tts_review | 6 | cup | cub | /kʌp/ | /kʌb/ | final | p/b | Final position; both familiar; fills T6 gap | Same final /p/ vs /b/ TTS risk as T5 pair; confirm the existing cap/cab (T6) renders with a perceptible contrast first — if it does not, reassess all final p/b candidates |
 
 ---
 
@@ -153,11 +153,11 @@ No substitution from the default scope was needed.
 | recommended | 1 | went | vent | /wɛnt/ | /vɛnt/ | initial | w/v | Word-reversed form of 中文/vW T1 candidate; very common | If 中文/vW vent/went is also approved, the pairs are consistent reversed forms |
 | recommended | 1 | wet | vet | /wɛt/ | /vɛt/ | initial | w/v | Word-reversed of 中文/vW T1 candidate; very common | Same as above |
 | recommended | 2 | while | vile | /waɪl/ | /vaɪl/ | initial | w/v | Word-reversed of 中文/vW T2 candidate; both common | None identified |
-| recommended | 2 | wise | vise | /waɪz/ | /vaɪz/ | initial | w/v | Word-reversed of 中文/vW T2 candidate | TTS check recommended for "vise" |
+| needs_tts_review | 2 | wise | vise | /waɪz/ | /vaɪz/ | initial | w/v | Word-reversed of 中文/vW T2 candidate | TTS check required: confirm app TTS voice renders "vise" as /vaɪz/ and not as a variant of "vice" |
 | candidate | 3 | wail | veil | /weɪl/ | /veɪl/ | initial | w/v | Word-reversed of 中文/vW T3 candidate; both familiar | None identified |
-| candidate | 3 | wary | vary | /ˈwɛri/ | /ˈvɛri/ | initial | w/v | Word-reversed of 中文/vW T3 candidate; both common | Verify stress and vowel quality |
-| candidate | 4 | wend | vend | /wɛnd/ | /vɛnd/ | initial | w/v | Word-reversed of 中文/vW T4 candidate | TTS check for "wend" recommended |
-| candidate | 4 | whim | vim | /wɪm/ | /vɪm/ | initial | w/v | Word-reversed of 中文/vW T4 candidate | "Vim" is lower frequency |
+| needs_human_decision | 3 | wary | vary | /ˈwɛri/ | /ˈvɛri/ | initial | w/v | Word-reversed of 中文/vW T3 candidate; both common | "vary" and "very" are homophones in GAm (/ˈvɛri/); the written word shown to the learner differs but the audio is identical — see Collision Notes |
+| needs_tts_review | 4 | wend | vend | /wɛnd/ | /vɛnd/ | initial | w/v | Word-reversed of 中文/vW T4 candidate | "Wend" is low-frequency; TTS reliability unverified — confirm the app voice produces a natural /wɛnd/ before approving |
+| too_obscure_for_tier | 4 | whim | vim | /wɪm/ | /vɪm/ | initial | w/v | "Whim" is common; "vim" is low-frequency | "Vim" (vigor, energy) is too low-frequency for L2 learner populations at any tier; learners who do not know the word cannot perform the discrimination task |
 
 ---
 
@@ -225,6 +225,11 @@ Existing pairs inspected: wine/vine, west/vest, wow/vow, wane/vane, wheel/veal, 
 - The 中文/vW proposed candidates are the word-reversed forms of the Farsi/wV proposals.
   This is consistent with the existing data pattern and is not a collision within either
   category.
+- **vary/very homophone:** `vary` (/ˈvɛri/) and `very` (/ˈvɛri/) are homophones in General
+  American English. The pair `wary/vary` is phonemically identical to the reversed 中文/vW
+  pair `very/wary`. If both are approved later, a data-import PR must choose the spelling
+  deliberately per category because the written word affects the meaning displayed to the
+  learner even though the audio is the same.
 
 ---
 

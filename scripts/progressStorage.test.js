@@ -9,7 +9,7 @@ const {
   parseStoredProgress,
   serializeProgress,
   pruneAttemptHistory,
-} = loadTsModule(path.join(__dirname, '..', 'app', 'storage', 'progressStorage.ts'));
+} = loadTsModule(path.join(__dirname, '..', 'src', 'storage', 'progressStorage.ts'));
 
 function runTest(name, fn) {
   try {

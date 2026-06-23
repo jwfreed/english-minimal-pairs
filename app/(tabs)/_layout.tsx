@@ -2,16 +2,16 @@ import React, { useMemo, useCallback } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { PairProgressProvider } from '@/app/context/PairProgressContext';
-import { LanguageProvider, useLanguage } from '@/app/context/LanguageContext';
-import { CategoryProvider } from '@/app/context/CategoryContext';
-import { PracticeTargetProvider } from '@/app/context/PracticeTargetContext';
-import { SettingsProvider } from '@/app/context/SettingsContext';
-import { ThemeProvider } from '@/app/context/theme';
+import { PairProgressProvider } from '@/src/context/PairProgressContext';
+import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
+import { CategoryProvider } from '@/src/context/CategoryContext';
+import { PracticeTargetProvider } from '@/src/context/PracticeTargetContext';
+import { SettingsProvider } from '@/src/context/SettingsContext';
+import { ThemeProvider } from '@/src/context/theme';
 
 import { useColorScheme } from 'react-native';
-import { Colors } from '@/app/constants/Colors';
-import { tKeys } from '@/app/constants/translationKeys';
+import { Colors } from '@/src/constants/Colors';
+import { tKeys } from '@/src/constants/translationKeys';
 
 function TabLayout() {
   const { translate, language } = useLanguage();

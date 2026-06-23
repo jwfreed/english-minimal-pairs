@@ -11,7 +11,7 @@ const {
   serializeMastery,
   serializePlacementDone,
   shouldShowPlacementTest,
-} = loadTsModule(path.join(__dirname, '..', 'app', 'domain', 'masteryPersistence.ts'));
+} = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'masteryPersistence.ts'));
 
 function runTest(name, fn) {
   try {

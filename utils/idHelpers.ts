@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-import { Pair } from '@/app/constants/minimalPairs';
+import { Pair } from '@/src/constants/minimalPairs';
 
 /**
  * Consistent ID used for tracking progress per pair.

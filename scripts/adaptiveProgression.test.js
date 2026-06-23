@@ -23,7 +23,7 @@ const {
   FAST_THRESHOLD_MS,
   LONG_STREAK_NEEDED,
   MAX_SPEED,
-} = loadTsModule(path.join(__dirname, '..', 'app', 'learning', 'adaptiveProgression.ts'));
+} = loadTsModule(path.join(__dirname, '..', 'src', 'learning', 'adaptiveProgression.ts'));
 
 function runTest(name, fn) {
   try {

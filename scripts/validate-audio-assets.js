@@ -10,7 +10,7 @@ const requiredAudioAssets = [
   {
     name: 'iOS silent-mode TTS warmup audio',
     path: 'assets/audio/silent.mp3',
-    referencedBy: 'app/hooks/useAudio.ts',
+    referencedBy: 'src/hooks/useAudio.ts',
   },
 ];
 

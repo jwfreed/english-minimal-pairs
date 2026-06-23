@@ -48,11 +48,11 @@ In the output, you'll find options to open the app in a:
 ## Project Structure
 
 - **app/(tabs)**: Main practice, results, and settings screens.
-- **app/context**: Language, category, settings, theme, and progress providers.
-- **app/storage**: AsyncStorage persistence for practice analytics.
-- **app/learning**: Pure learning-rule helpers used by the practice UI.
-- **app/hooks**: Audio, haptics, contrast-pair selection, and theme hooks.
-- **app/constants/minimalPairs**: Minimal-pair data grouped by learner language.
+- **src/context**: Language, category, settings, theme, and progress providers.
+- **src/storage**: AsyncStorage persistence for practice analytics.
+- **src/learning**: Pure learning-rule helpers used by the practice UI.
+- **src/hooks**: Audio, haptics, contrast-pair selection, and theme hooks.
+- **src/constants/minimalPairs**: Minimal-pair data grouped by learner language.
 - **assets/audio**: Silent audio asset used by the iOS TTS workaround.
 
 ## Learn More

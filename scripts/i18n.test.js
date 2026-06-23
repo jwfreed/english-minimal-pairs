@@ -2,11 +2,11 @@ const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
 const { tKeys } = loadTsModule(
-  path.join(__dirname, '..', 'app', 'constants', 'translationKeys.ts')
+  path.join(__dirname, '..', 'src', 'constants', 'translationKeys.ts')
 );
 
 const { englishTranslations, alternateLanguages } = loadTsModule(
-  path.join(__dirname, '..', 'app', 'constants', 'alternateLanguages.ts')
+  path.join(__dirname, '..', 'src', 'constants', 'alternateLanguages.ts')
 );
 
 const allTKeys = Object.values(tKeys);

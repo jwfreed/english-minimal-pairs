@@ -53,8 +53,13 @@ const aVsE: Row[] = [
 
 const bV: Row[] = [
   ['ban', 'van', 1, '/bæn/', '/væn/', 'bV', 'initial'],
+  ['bet', 'vet', 1, '/bɛt/', '/vɛt/', 'bV', 'initial'],
+  ['boat', 'vote', 1, '/boʊt/', '/voʊt/', 'bV', 'initial'],
   ['berry', 'very', 2, '/ˈbɛri/', '/ˈvɛri/', 'bV', 'initial'],
+  ['best', 'vest', 2, '/bɛst/', '/vɛst/', 'bV', 'initial'],
+  ['bolt', 'volt', 2, '/boʊlt/', '/voʊlt/', 'bV', 'initial'],
   ['bow', 'vow', 3, '/baʊ/', '/vaʊ/', 'bV', 'initial'],
+  ['bane', 'vane', 3, '/beɪn/', '/veɪn/', 'bV', 'initial'],
   ['bat', 'vat', 4, '/bæt/', '/væt/', 'bV', 'initial'],
   ['marble', 'marvel', 5, '/ˈmɑːrbəl/', '/ˈmɑːrvəl/', 'bV', 'medial'],
   ['curb', 'curve', 6, '/kɜːrb/', '/kɜːrv/', 'bV', 'final'],

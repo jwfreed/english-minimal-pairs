@@ -27,8 +27,14 @@ const iVsI: Row[] = [
 
 const fP: Row[] = [
   ['fine', 'pine', 1, '/faɪn/', '/paɪn/', 'fP', 'initial'],
+  ['face', 'pace', 1, '/feɪs/', '/peɪs/', 'fP', 'initial'],
+  ['fork', 'pork', 1, '/fɔːrk/', '/pɔːrk/', 'fP', 'initial'],
   ['fan', 'pan', 2, '/fæn/', '/pæn/', 'fP', 'initial'],
+  ['fat', 'pat', 2, '/fæt/', '/pæt/', 'fP', 'initial'],
+  ['file', 'pile', 2, '/faɪl/', '/paɪl/', 'fP', 'initial'],
   ['ferry', 'perry', 3, '/ˈfɛri/', '/ˈpɛri/', 'fP', 'initial'],
+  ['feel', 'peel', 3, '/fiːl/', '/piːl/', 'fP', 'initial'],
+  ['foot', 'put', 3, '/fʊt/', '/pʊt/', 'fP', 'initial'],
   ['fail', 'pale', 4, '/feɪl/', '/peɪl/', 'fP', 'initial'],
   ['coffee', 'copy', 5, '/ˈkɒfi/', '/ˈkɒpi/', 'fP', 'medial'],
   ['leaf', 'leap', 6, '/liːf/', '/liːp/', 'fP', 'final'],

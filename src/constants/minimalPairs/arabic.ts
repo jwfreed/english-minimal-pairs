@@ -38,6 +38,12 @@ const vF: Row[] = [
   ['vase', 'face', 4, '/veɪs/', '/feɪs/', 'vF', 'initial'],
   ['save', 'safe', 5, '/seɪv/', '/seɪf/', 'vF', 'final'],
   ['leave', 'leaf', 6, '/liːv/', '/liːf/', 'vF', 'final'],
+  ['vast', 'fast', 1, '/væst/', '/fæst/', 'vF', 'initial'],
+  ['veil', 'fail', 1, '/veɪl/', '/feɪl/', 'vF', 'initial'],
+  ['vault', 'fault', 2, '/vɔːlt/', '/fɔːlt/', 'vF', 'initial'],
+  ['view', 'few', 2, '/vjuː/', '/fjuː/', 'vF', 'initial'],
+  ['very', 'ferry', 3, '/ˈvɛri/', '/ˈfɛri/', 'vF', 'initial'],
+  ['veer', 'fear', 3, '/vɪər/', '/fɪər/', 'vF', 'initial'],
 ];
 
 const thetaS: Row[] = [

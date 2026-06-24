@@ -41,6 +41,12 @@ const zS: Row[] = [
   ['zoo', 'sue', 4, '/zuː/', '/suː/', 'zS', 'initial'],
   ['buzz', 'bus', 5, '/bʌz/', '/bʌs/', 'zS', 'final'],
   ['lies', 'lice', 6, '/laɪz/', '/laɪs/', 'zS', 'final'],
+  ['zap', 'sap', 1, '/zæp/', '/sæp/', 'zS', 'initial'],
+  ['zinc', 'sink', 1, '/zɪŋk/', '/sɪŋk/', 'zS', 'initial'],
+  ['rise', 'rice', 2, '/raɪz/', '/raɪs/', 'zS', 'final'],
+  ['maze', 'mace', 2, '/meɪz/', '/meɪs/', 'zS', 'final'],
+  ['phase', 'face', 3, '/feɪz/', '/feɪs/', 'zS', 'final'],
+  ['prize', 'price', 3, '/praɪz/', '/praɪs/', 'zS', 'final'],
 ];
 
 const rL: Row[] = [
@@ -65,6 +71,12 @@ const aVsUh: Row[] = [
   ['cap', 'cup', 4, '/kæp/', '/kʌp/', 'aVsUh', 'medial'],
   ['hang', 'hung', 5, '/hæŋ/', '/hʌŋ/', 'aVsUh', 'medial'],
   ['stamp', 'stump', 6, '/stæmp/', '/stʌmp/', 'aVsUh', 'medial'],
+  ['bat', 'but', 1, '/bæt/', '/bʌt/', 'aVsUh', 'medial'],
+  ['hat', 'hut', 1, '/hæt/', '/hʌt/', 'aVsUh', 'medial'],
+  ['bag', 'bug', 2, '/bæɡ/', '/bʌɡ/', 'aVsUh', 'medial'],
+  ['mad', 'mud', 2, '/mæd/', '/mʌd/', 'aVsUh', 'medial'],
+  ['pan', 'pun', 3, '/pæn/', '/pʌn/', 'aVsUh', 'medial'],
+  ['match', 'much', 3, '/mætʃ/', '/mʌtʃ/', 'aVsUh', 'medial'],
 ];
 
 /* ---------- export category object ----------------------------- */

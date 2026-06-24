@@ -23,6 +23,12 @@ const thetaT: Row[] = [
   ['thaw', 'taw', 4, '/θɔː/', '/tɔː/', 'thetaT', 'initial'],
   ['math', 'mat', 5, '/mæθ/', '/mæt/', 'thetaT', 'final'],
   ['oath', 'oat', 6, '/oʊθ/', '/oʊt/', 'thetaT', 'final'],
+  ['thigh', 'tie', 1, '/θaɪ/', '/taɪ/', 'thetaT', 'initial'],
+  ['thorn', 'torn', 1, '/θɔːrn/', '/tɔːrn/', 'thetaT', 'initial'],
+  ['thought', 'taught', 2, '/θɔːt/', '/tɔːt/', 'thetaT', 'initial'],
+  ['three', 'tree', 2, '/θriː/', '/triː/', 'thetaT', 'initial'],
+  ['thread', 'tread', 3, '/θrɛd/', '/trɛd/', 'thetaT', 'initial'],
+  ['threw', 'true', 3, '/θruː/', '/truː/', 'thetaT', 'initial'],
 ];
 
 const ethD: Row[] = [
@@ -32,6 +38,10 @@ const ethD: Row[] = [
   ['there', 'dare', 4, '/ðɛə/', '/dɛə/', 'ethD', 'initial'],
   ['breathe', 'breed', 5, '/briːð/', '/briːd/', 'ethD', 'final'],
   ['loathe', 'load', 6, '/loʊð/', '/loʊd/', 'ethD', 'final'],
+  ['those', 'doze', 1, '/ðoʊz/', '/doʊz/', 'ethD', 'initial'],
+  ['father', 'fodder', 2, '/ˈfɑːðər/', '/ˈfɑːdər/', 'ethD', 'medial'],
+  ['lather', 'ladder', 3, '/ˈlæðər/', '/ˈlædər/', 'ethD', 'medial'],
+  ['seethe', 'seed', 3, '/siːð/', '/siːd/', 'ethD', 'final'],
 ];
 
 const vF: Row[] = [
@@ -56,6 +66,12 @@ const aVsUh: Row[] = [
   ['cap', 'cup', 4, '/kæp/', '/kʌp/', 'aVsUh', 'medial'],
   ['hang', 'hung', 5, '/hæŋ/', '/hʌŋ/', 'aVsUh', 'medial'],
   ['stamp', 'stump', 6, '/stæmp/', '/stʌmp/', 'aVsUh', 'medial'],
+  ['bat', 'but', 1, '/bæt/', '/bʌt/', 'aVsUh', 'medial'],
+  ['hat', 'hut', 1, '/hæt/', '/hʌt/', 'aVsUh', 'medial'],
+  ['bag', 'bug', 2, '/bæɡ/', '/bʌɡ/', 'aVsUh', 'medial'],
+  ['mad', 'mud', 2, '/mæd/', '/mʌd/', 'aVsUh', 'medial'],
+  ['pan', 'pun', 3, '/pæn/', '/pʌn/', 'aVsUh', 'medial'],
+  ['match', 'much', 3, '/mætʃ/', '/mʌtʃ/', 'aVsUh', 'medial'],
 ];
 
 const iVsI: Row[] = [
@@ -65,6 +81,12 @@ const iVsI: Row[] = [
   ['feet', 'fit', 4, '/fiːt/', '/fɪt/', 'iVsI', 'medial'],
   ['neat', 'knit', 5, '/niːt/', '/nɪt/', 'iVsI', 'medial'],
   ['peach', 'pitch', 6, '/piːtʃ/', '/pɪtʃ/', 'iVsI', 'medial'],
+  ['bean', 'bin', 1, '/biːn/', '/bɪn/', 'iVsI', 'medial'],
+  ['keen', 'kin', 1, '/kiːn/', '/kɪn/', 'iVsI', 'medial'],
+  ['reed', 'rid', 2, '/riːd/', '/rɪd/', 'iVsI', 'medial'],
+  ['deep', 'dip', 2, '/diːp/', '/dɪp/', 'iVsI', 'medial'],
+  ['seal', 'sill', 3, '/siːl/', '/sɪl/', 'iVsI', 'medial'],
+  ['heap', 'hip', 3, '/hiːp/', '/hɪp/', 'iVsI', 'medial'],
 ];
 
 /* ---------- export category object ----------------------------- */

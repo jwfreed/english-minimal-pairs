@@ -54,8 +54,14 @@ const wV: Row[] = [
 
 const aVsE: Row[] = [
   ['bad', 'bed', 1, '/bæd/', '/bɛd/', 'aVsE', 'medial'],
+  ['bag', 'beg', 1, '/bæɡ/', '/bɛɡ/', 'aVsE', 'medial'],
+  ['man', 'men', 1, '/mæn/', '/mɛn/', 'aVsE', 'medial'],
   ['pan', 'pen', 2, '/pæn/', '/pɛn/', 'aVsE', 'medial'],
+  ['gas', 'guess', 2, '/ɡæs/', '/ɡɛs/', 'aVsE', 'medial'],
+  ['sad', 'said', 2, '/sæd/', '/sɛd/', 'aVsE', 'medial'],
   ['dad', 'dead', 3, '/dæd/', '/dɛd/', 'aVsE', 'medial'],
+  ['land', 'lend', 3, '/lænd/', '/lɛnd/', 'aVsE', 'medial'],
+  ['mat', 'met', 3, '/mæt/', '/mɛt/', 'aVsE', 'medial'],
   ['bat', 'bet', 4, '/bæt/', '/bɛt/', 'aVsE', 'medial'],
   ['band', 'bend', 5, '/bænd/', '/bɛnd/', 'aVsE', 'medial'],
   ['ham', 'hem', 6, '/hæm/', '/hɛm/', 'aVsE', 'medial'],

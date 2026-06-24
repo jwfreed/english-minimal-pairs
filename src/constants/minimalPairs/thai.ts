@@ -45,8 +45,14 @@ const vF: Row[] = [
 
 const zS: Row[] = [
   ['zip', 'sip', 1, '/zɪp/', '/sɪp/', 'zS', 'initial'],
+  ['zap', 'sap', 1, '/zæp/', '/sæp/', 'zS', 'initial'],
+  ['zinc', 'sink', 1, '/zɪŋk/', '/sɪŋk/', 'zS', 'initial'],
   ['zeal', 'seal', 2, '/ziːl/', '/siːl/', 'zS', 'initial'],
+  ['raise', 'race', 2, '/reɪz/', '/reɪs/', 'zS', 'final'],
+  ['eyes', 'ice', 2, '/aɪz/', '/aɪs/', 'zS', 'final'],
   ['zone', 'sewn', 3, '/zoʊn/', '/soʊn/', 'zS', 'initial'],
+  ['rise', 'rice', 3, '/raɪz/', '/raɪs/', 'zS', 'final'],
+  ['phase', 'face', 3, '/feɪz/', '/feɪs/', 'zS', 'final'],
   ['zoo', 'sue', 4, '/zuː/', '/suː/', 'zS', 'initial'],
   ['buzz', 'bus', 5, '/bʌz/', '/bʌs/', 'zS', 'final'],
   ['lies', 'lice', 6, '/laɪz/', '/laɪs/', 'zS', 'final'],

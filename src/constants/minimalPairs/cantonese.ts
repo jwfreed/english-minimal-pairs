@@ -45,12 +45,18 @@ const vW: Row[] = [
 
 const rL: Row[] = [
   ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['red', 'led', 1, '/rɛd/', '/lɛd/', 'rL', 'initial'],
+  ['row', 'low', 1, '/roʊ/', '/loʊ/', 'rL', 'initial'],
   ['rate', 'late', 2, '/reɪt/', '/leɪt/', 'rL', 'initial'],
   ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
   ['rice', 'lice', 2, '/raɪs/', '/laɪs/', 'rL', 'initial'],
   ['rip', 'lip', 3, '/rɪp/', '/lɪp/', 'rL', 'initial'],
+  ['rain', 'lane', 3, '/reɪn/', '/leɪn/', 'rL', 'initial'],
+  ['read', 'lead', 3, '/riːd/', '/liːd/', 'rL', 'initial'],
   ['rake', 'lake', 4, '/reɪk/', '/leɪk/', 'rL', 'initial'],
+  ['rung', 'lung', 4, '/rʌŋ/', '/lʌŋ/', 'rL', 'initial'],
   ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],
+  ['ride', 'lied', 5, '/raɪd/', '/laɪd/', 'rL', 'initial'],
   ['crowd', 'cloud', 6, '/kraʊd/', '/klaʊd/', 'rL', 'initial'],
 ];
 

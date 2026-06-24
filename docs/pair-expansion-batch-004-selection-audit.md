@@ -11,9 +11,12 @@
 
 **Title:** Pair Expansion Batch 004 Selection Audit
 
-**Outcome:** Complete. A 24-candidate High-confidence packet was selected across 4 L1/contrast
-slots. All candidates passed duplicate, safety, and quality checks. No pair data was modified.
-The document is ready to guide a future app-039 data-import PR.
+**Outcome:** Complete. A 23-candidate High-confidence packet was selected across 4 L1/contrast
+slots. One candidate (beer/veer, Español/bV T3) was demoted from High-confidence to
+Medium-confidence after review; it requires product-owner confirmation of alcohol-vocabulary
+acceptability before app-039 may import it (see Section 11). All other 23 candidates passed
+duplicate, safety, and quality checks. No pair data was modified. The document is ready to
+guide a future app-039 data-import PR.
 
 ---
 
@@ -180,19 +183,25 @@ Each slot scored 0–2 on five dimensions (max 10):
 | Русский / hZero | 2 | 2 | 2 | 2 | 2 | **10** |
 | 中文 / rL | 2 | 2 | 2 | 2 | 2 | **10** |
 
-All four selected slots scored 10/10. The selection packet uses ranks 1–4: 24 candidates across
-4 L1/contrast slots, 6 candidates per slot.
+All four selected slots scored 10/10. The selection packet targets ranks 1–4: up to 24 candidates
+across 4 L1/contrast slots, 6 candidates per slot. One candidate (beer/veer, Español/bV T3) was
+demoted to Medium-confidence during audit, yielding 23 High-confidence pairs (see Sections 8, 11).
 
 ---
 
 ## 8. Batch 004 High-Confidence Candidate Packet
 
-**Total: 24 candidates across 4 L1/contrast slots.**
+**Total: 23 candidates across 4 L1/contrast slots.**
+
+> **Note:** beer/veer (originally candidate #6) has been demoted to Medium-confidence after
+> review. The Soundwise app may be used by children, students, or institutional learners, and
+> alcohol-related vocabulary requires explicit product-owner acceptance before import. The pair
+> remains fully documented in Section 11. Until accepted, the app-039 import packet is 23 pairs.
 
 All candidates below passed all audit gates:
 
 - Real English words in standard contemporary use ✓
-- Classroom/app-safe content ✓
+- Classroom/app-safe content ✓ (beer/veer excluded — demoted to Medium-confidence, see Section 11)
 - Minimal or cleanly contrastive pair for the target group ✓
 - No same-category duplicate or reverse duplicate in current repo data ✓
 - Appropriate for the recommended tier, pending final human IPA/TTS review in app-039 ✓
@@ -206,7 +215,6 @@ All candidates below passed all audit gates:
 | 3 | Español | spanish.ts | bV | b/v | best | vest | /bɛst/ | /vɛst/ | 2 | initial | b | v |
 | 4 | Español | spanish.ts | bV | b/v | bolt | volt | /boʊlt/ | /voʊlt/ | 2 | initial | b | v |
 | 5 | Español | spanish.ts | bV | b/v | bane | vane | /beɪn/ | /veɪn/ | 3 | initial | b | v |
-| 6 | Español | spanish.ts | bV | b/v | beer | veer | /bɪr/ | /vɪr/ | 3 | initial | b | v |
 | 7 | Português | portuguese.ts | iVsI | iː/ɪ | peel | pill | /piːl/ | /pɪl/ | 1 | medial | iː | ɪ |
 | 8 | Português | portuguese.ts | iVsI | iː/ɪ | heel | hill | /hiːl/ | /hɪl/ | 1 | medial | iː | ɪ |
 | 9 | Português | portuguese.ts | iVsI | iː/ɪ | feel | fill | /fiːl/ | /fɪl/ | 2 | medial | iː | ɪ |
@@ -263,12 +271,11 @@ pool/pull appear across many L1 files).
 | 3 | best | vest | /bɛst/ | /vɛst/ | 2 | initial | Both very common words; short-ɛ vowel; adds consonant cluster coda (slightly harder than T1) |
 | 4 | bolt | volt | /boʊlt/ | /voʊlt/ | 2 | initial | Common nouns (bolt = fastener/lightning; volt = electrical unit); clean initial b/v contrast |
 | 5 | bane | vane | /beɪn/ | /veɪn/ | 3 | initial | Both standard vocabulary (bane = cause of misery; vane = weather vane); diphthong adds difficulty |
-| 6 | beer | veer | /bɪr/ | /vɪr/ | 3 | initial | Both standard words; veer = to change direction (common verb); beer = alcoholic beverage (see register note) |
 
 **Tier rationale:**
 - T1 (bet/vet, boat/vote): Simple, high-frequency, CVC or CVC+T words; no compound difficulty.
 - T2 (best/vest, bolt/volt): Slightly more complex codas; both words remain very common.
-- T3 (bane/vane, beer/veer): Diphthong + nasal or rhotic vowel; slightly less basic vocabulary.
+- T3 (bane/vane only): Diphthong + nasal; slightly less basic vocabulary. beer/veer was demoted to Medium-confidence (see Section 11); T3 will have one pair after app-039 — the second T3 pair remains an open gap.
 
 ---
 
@@ -526,7 +533,7 @@ pattern (e.g., sheep/ship, pool/pull, thin/sin appear across many L1 files).**
 | best/vest | Standard vocabulary; no concerns | Safe |
 | bolt/volt | Standard vocabulary; no concerns | Safe |
 | bane/vane | "bane" = idiomatic ("bane of my existence") but fully standard | Safe |
-| beer/veer | "beer" = alcoholic beverage; standard vocabulary in GA English; appears in IELTS/TOEFL wordlists; not profanity | Safe — note below |
+| beer/veer | "beer" = alcoholic beverage; demoted to Medium-confidence — see Section 11 | Demoted — see Section 11 |
 | peel/pill | Standard vocabulary; pill = medication, not drug-slang in context | Safe |
 | heel/hill | Standard vocabulary; no concerns | Safe |
 | feel/fill | Standard vocabulary; no concerns | Safe |
@@ -547,10 +554,10 @@ pattern (e.g., sheep/ship, pool/pull, thin/sin appear across many L1 files).**
 | rung/lung | Standard vocabulary; no concerns | Safe |
 
 **beer/veer register note:** "Beer" is an alcoholic beverage. It is standard English vocabulary
-(not slang, not profanity) and appears in mainstream ESL materials. If the product targets
-children's markets or strictly alcohol-free institutional clients, a human reviewer should
-confirm acceptability. If any concern exists, beer/veer should be downgraded to medium
-confidence and replaced (see Section 11 for an alternative).
+(not slang, not profanity) and appears in mainstream ESL materials. Because the Soundwise app
+may serve children or institutional learners, beer/veer has been demoted to Medium-confidence
+and excluded from the 23-pair High-confidence packet. Product-owner confirmation is required
+before it can be imported. See Section 11 for the full entry and Section 17 for the remaining T3 gap.
 
 ---
 
@@ -561,7 +568,7 @@ additional human review. They are explicitly excluded from the High-confidence p
 
 | Candidate or slot | L1 / Contrast | Concern | What needs review |
 |---|---|---|---|
-| beer/veer | Español / bV (T3 alt) | "beer" = alcoholic beverage; safe for most app contexts but some institutional clients restrict alcohol vocabulary | Product owner should confirm acceptability; if rejected, substitute bale/vale (register concern: "vale" is archaic) or bile/vile (safety concern: bile is a body fluid — see rejected list) |
+| beer/veer | Español / bV (T3) | "beer" = alcoholic beverage; safe for most app contexts but some institutional clients restrict alcohol vocabulary | Product owner must confirm acceptability. IPA: /bɪr/ / /vɪr/; position: initial; contrastPhonemes: b/v. If rejected, find a fresh T3 pair — bale/vale has a register concern ("vale" is archaic), bile/vile is rejected (bile = body fluid, see Section 12). |
 | base/vase | Español / bV | "vase" has multiple GA pronunciations: /veɪs/, /vɑːz/, /veɪz/ | IPA transcription must be confirmed before import; TTS output must be verified; likely /veɪs/ in standard GA but regional variation exists |
 | her/err (Русский/hZero T3) | Русский / hZero | "err" (/ɜːr/) is standard but lower-frequency in spoken English; most common in the idiom "to err is human"; might be T4 rather than T3 for some products | Confirm vocabulary level acceptability; if downgraded, replace with harm/arm only at T3 and find a separate second pair |
 | rife/life | 中文 / rL (T3 alt) | "rife" = full of, prevalent; B2 vocabulary level; less concrete than rice/lice or rung/lung | Confirm learner vocabulary level; rife/life is a valid fresh pair but deferred in favor of rice/lice |
@@ -610,11 +617,11 @@ additional human review. They are explicitly excluded from the High-confidence p
 
 **Suggested next branch:** `app-039-pair-expansion-batch-004-import`
 
-**Import-ready pair count:** 24 (exactly)
+**Import-ready pair count:** 23 (beer/veer demoted to Medium-confidence — see Section 11)
 
 **Files that will change in app-039:**
 
-1. `src/constants/minimalPairs/spanish.ts` — add 6 bV pairs
+1. `src/constants/minimalPairs/spanish.ts` — add 5 bV pairs (beer/veer excluded; see Section 11)
 2. `src/constants/minimalPairs/portuguese.ts` — add 6 iVsI pairs
 3. `src/constants/minimalPairs/russian.ts` — add 6 hZero pairs
 4. `src/constants/minimalPairs/mandarin.ts` — add 6 rL pairs
@@ -624,7 +631,7 @@ additional human review. They are explicitly excluded from the High-confidence p
 
 ### Pre-import checklist for app-039
 
-1. Re-read this audit document and import only the 24 High-confidence pairs.
+1. Re-read this audit document and import only the 23 High-confidence pairs (beer/veer excluded — see Section 11).
 2. Verify the current main branch is at or beyond commit `8005e9a` before branching.
 3. Confirm same-category duplicate and reverse-duplicate absence immediately before each pair import.
 4. Verify IPA against a reliable General American English reference (e.g., Merriam-Webster online) for each pair before adding data.
@@ -653,8 +660,8 @@ git diff --check
 
 | Metric | Pre-import (current) | Expected post-import |
 |---|---:|---:|
-| Existing pairs | 506 | 530 |
-| Missing pairs | 546 | 522 |
+| Existing pairs | 506 | 529 |
+| Missing pairs | 546 | 523 |
 | Underfilled slots | 380 | 356 |
 | Fill percentage | 48% | ~50% |
 
@@ -699,7 +706,7 @@ Each row must be passed to `make(row, contrastPhoneme1, contrastPhoneme2)`.
 ['best', 'vest', 2, '/bɛst/', '/vɛst/', 'bV', 'initial'],
 ['bolt', 'volt', 2, '/boʊlt/', '/voʊlt/', 'bV', 'initial'],
 ['bane', 'vane', 3, '/beɪn/', '/veɪn/', 'bV', 'initial'],
-['beer', 'veer', 3, '/bɪr/', '/vɪr/', 'bV', 'initial'],
+// beer/veer demoted to Medium-confidence — do not import without product-owner confirmation (see Section 11)
 ```
 
 **Portuguese/iVsI example rows:**
@@ -766,11 +773,11 @@ In each file, the `make` call needs the correct contrastPhonemes:
 
 | L1 | Group | Contrast | New pairs | Tiers addressed |
 |---|---|---|---:|---|
-| Español | bV | b/v | 6 | T1 × 2, T2 × 2, T3 × 2 |
+| Español | bV | b/v | 5 | T1 × 2, T2 × 2, T3 × 1 (T3 gap — see Section 11) |
 | Português | iVsI | iː/ɪ | 6 | T1 × 2, T2 × 2, T3 × 2 |
 | Русский | hZero | h/∅ | 6 | T1 × 2, T2 × 2, T3 × 2 |
 | 中文 | rL | r/l | 6 | T1 × 2, T2 × 2, T3 × 2 |
-| **Total** | | | **24** | |
+| **Total** | | | **23** | |
 
 ---
 
@@ -797,9 +804,14 @@ This app-038 audit document is documentation-only. Confirm:
 
 ## 17. Remaining Risks / Follow-Up
 
-**Primary risk:** The one context-sensitive judgment call in this packet is beer/veer in
-Español/bV. If the product serves children or strictly alcohol-free institutional contexts,
-a human reviewer should confirm or substitute before app-039 imports this pair; the pair
-`bale/vale` (register note: "vale" is somewhat archaic) or `bare/fare` (wrong contrast: b/f)
-are not clean substitutes, so the replacement would need fresh selection from the medium list.
-All other 23 candidates are unconditionally safe and import-ready.
+**beer/veer disposition:** beer/veer (Español/bV T3) was demoted to Medium-confidence during
+this audit — see Section 11. It is excluded from the 23-pair High-confidence import packet.
+Product-owner confirmation of alcohol-vocabulary acceptability is required before it can be
+imported in a future batch.
+
+**Primary remaining gap:** After app-039 imports, Español/bV T3 will have one pair (bane/vane)
+instead of the two-pair target. beer/veer is the documented candidate pending product-owner
+acceptance. If rejected, a fresh T3 pair must be selected; bale/vale has a register concern
+("vale" is archaic) and bile/vile is rejected (see Section 12).
+
+**All 23 High-confidence candidates** are unconditionally safe and import-ready.

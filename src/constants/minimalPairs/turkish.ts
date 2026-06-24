@@ -54,8 +54,14 @@ const uVsU: Row[] = [
 
 const aVsUh: Row[] = [
   ['cat', 'cut', 1, '/kæt/', '/kʌt/', 'aVsUh', 'medial'],
+  ['bat', 'but', 1, '/bæt/', '/bʌt/', 'aVsUh', 'medial'],
+  ['hat', 'hut', 1, '/hæt/', '/hʌt/', 'aVsUh', 'medial'],
   ['batter', 'butter', 2, '/ˈbætər/', '/ˈbʌtər/', 'aVsUh', 'medial'],
+  ['bag', 'bug', 2, '/bæɡ/', '/bʌɡ/', 'aVsUh', 'medial'],
+  ['mad', 'mud', 2, '/mæd/', '/mʌd/', 'aVsUh', 'medial'],
   ['ran', 'run', 3, '/ræn/', '/rʌn/', 'aVsUh', 'medial'],
+  ['pan', 'pun', 3, '/pæn/', '/pʌn/', 'aVsUh', 'medial'],
+  ['match', 'much', 3, '/mætʃ/', '/mʌtʃ/', 'aVsUh', 'medial'],
   ['cap', 'cup', 4, '/kæp/', '/kʌp/', 'aVsUh', 'medial'],
   ['hang', 'hung', 5, '/hæŋ/', '/hʌŋ/', 'aVsUh', 'medial'],
   ['stamp', 'stump', 6, '/stæmp/', '/stʌmp/', 'aVsUh', 'medial'],

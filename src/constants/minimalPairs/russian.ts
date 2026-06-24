@@ -59,8 +59,14 @@ const thetaS: Row[] = [
 
 const hZero: Row[] = [
   ['hat', 'at', 1, '/hæt/', '/æt/', 'hZero', 'initial'],
+  ['hit', 'it', 1, '/hɪt/', '/ɪt/', 'hZero', 'initial'],
+  ['hall', 'all', 1, '/hɔːl/', '/ɔːl/', 'hZero', 'initial'],
   ['heat', 'eat', 2, '/hiːt/', '/iːt/', 'hZero', 'initial'],
+  ['hear', 'ear', 2, '/hɪr/', '/ɪr/', 'hZero', 'initial'],
+  ['hold', 'old', 2, '/hoʊld/', '/oʊld/', 'hZero', 'initial'],
   ['hill', 'ill', 3, '/hɪl/', '/ɪl/', 'hZero', 'initial'],
+  ['harm', 'arm', 3, '/hɑːrm/', '/ɑːrm/', 'hZero', 'initial'],
+  ['her', 'err', 3, '/hɜːr/', '/ɜːr/', 'hZero', 'initial'],
   ['hair', 'air', 4, '/heə/', '/eə/', 'hZero', 'initial'],
   ['hedge', 'edge', 5, '/hɛdʒ/', '/ɛdʒ/', 'hZero', 'initial'],
   ['hand', 'and', 6, '/hænd/', '/ænd/', 'hZero', 'initial'],

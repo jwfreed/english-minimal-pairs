@@ -40,8 +40,14 @@ const vW: Row[] = [
 
 const rL: Row[] = [
   ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['red', 'led', 1, '/rɛd/', '/lɛd/', 'rL', 'initial'],
+  ['rock', 'lock', 1, '/rɑːk/', '/lɑːk/', 'rL', 'initial'],
   ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
+  ['rate', 'late', 2, '/reɪt/', '/leɪt/', 'rL', 'initial'],
+  ['rain', 'lane', 2, '/reɪn/', '/leɪn/', 'rL', 'initial'],
   ['rake', 'lake', 3, '/reɪk/', '/leɪk/', 'rL', 'initial'],
+  ['rice', 'lice', 3, '/raɪs/', '/laɪs/', 'rL', 'initial'],
+  ['rung', 'lung', 3, '/rʌŋ/', '/lʌŋ/', 'rL', 'initial'],
   ['rip', 'lip', 4, '/rɪp/', '/lɪp/', 'rL', 'initial'],
   ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],
   ['crowd', 'cloud', 6, '/kraʊd/', '/klaʊd/', 'rL', 'initial'],

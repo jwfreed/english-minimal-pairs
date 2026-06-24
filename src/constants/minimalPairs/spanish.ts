@@ -63,6 +63,7 @@ const bV: Row[] = [
   ['bat', 'vat', 4, '/bæt/', '/væt/', 'bV', 'initial'],
   ['marble', 'marvel', 5, '/ˈmɑːrbəl/', '/ˈmɑːrvəl/', 'bV', 'medial'],
   ['curb', 'curve', 6, '/kɜːrb/', '/kɜːrv/', 'bV', 'final'],
+  ['bail', 'veil', 3, '/beɪl/', '/veɪl/', 'bV', 'initial'],
 ];
 
 const thetaS: Row[] = [

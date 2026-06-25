@@ -41,6 +41,12 @@ const zS: Row[] = [
   ['zoo', 'sue', 4, '/zuː/', '/suː/', 'zS', 'initial'],
   ['buzz', 'bus', 5, '/bʌz/', '/bʌs/', 'zS', 'final'],
   ['lies', 'lice', 6, '/laɪz/', '/laɪs/', 'zS', 'final'],
+  ['zap', 'sap', 1, '/zæp/', '/sæp/', 'zS', 'initial'],
+  ['zinc', 'sink', 1, '/zɪŋk/', '/sɪŋk/', 'zS', 'initial'],
+  ['rise', 'rice', 2, '/raɪz/', '/raɪs/', 'zS', 'final'],
+  ['maze', 'mace', 2, '/meɪz/', '/meɪs/', 'zS', 'final'],
+  ['phase', 'face', 3, '/feɪz/', '/feɪs/', 'zS', 'final'],
+  ['prize', 'price', 3, '/praɪz/', '/praɪs/', 'zS', 'final'],
 ];
 
 const wV: Row[] = [

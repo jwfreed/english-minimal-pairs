@@ -40,6 +40,12 @@ const uhVsAh: Row[] = [
   ['duck', 'dock', 4, '/dʌk/', '/dɑːk/', 'uhVsAh', 'medial'],
   ['hut', 'hot', 5, '/hʌt/', '/hɑːt/', 'uhVsAh', 'medial'],
   ['sung', 'song', 6, '/sʌŋ/', '/sɑːŋ/', 'uhVsAh', 'medial'],
+  ['nut', 'not', 1, '/nʌt/', '/nɑːt/', 'uhVsAh', 'medial'],
+  ['bus', 'boss', 1, '/bʌs/', '/bɑːs/', 'uhVsAh', 'medial'],
+  ['gun', 'gone', 2, '/ɡʌn/', '/ɡɑːn/', 'uhVsAh', 'medial'],
+  ['done', 'don', 2, '/dʌn/', '/dɑːn/', 'uhVsAh', 'medial'],
+  ['sub', 'sob', 3, '/sʌb/', '/sɑːb/', 'uhVsAh', 'medial'],
+  ['bug', 'bog', 3, '/bʌɡ/', '/bɑːɡ/', 'uhVsAh', 'medial'],
 ];
 
 const aVsE: Row[] = [
@@ -49,6 +55,12 @@ const aVsE: Row[] = [
   ['bat', 'bet', 4, '/bæt/', '/bɛt/', 'aVsE', 'medial'],
   ['band', 'bend', 5, '/bænd/', '/bɛnd/', 'aVsE', 'medial'],
   ['ham', 'hem', 6, '/hæm/', '/hɛm/', 'aVsE', 'medial'],
+  ['man', 'men', 1, '/mæn/', '/mɛn/', 'aVsE', 'medial'],
+  ['sat', 'set', 1, '/sæt/', '/sɛt/', 'aVsE', 'medial'],
+  ['gas', 'guess', 2, '/ɡæs/', '/ɡɛs/', 'aVsE', 'medial'],
+  ['sad', 'said', 2, '/sæd/', '/sɛd/', 'aVsE', 'medial'],
+  ['land', 'lend', 3, '/lænd/', '/lɛnd/', 'aVsE', 'medial'],
+  ['mat', 'met', 3, '/mæt/', '/mɛt/', 'aVsE', 'medial'],
 ];
 
 const bV: Row[] = [
@@ -73,6 +85,12 @@ const thetaS: Row[] = [
   ['theme', 'seem', 4, '/θiːm/', '/siːm/', 'thetaS', 'initial'],
   ['mouth', 'mouse', 5, '/maʊθ/', '/maʊs/', 'thetaS', 'final'],
   ['path', 'pass', 6, '/pæθ/', '/pæs/', 'thetaS', 'final'],
+  ['thaw', 'saw', 1, '/θɔː/', '/sɔː/', 'thetaS', 'initial'],
+  ['thumb', 'sum', 1, '/θʌm/', '/sʌm/', 'thetaS', 'initial'],
+  ['thought', 'sought', 2, '/θɔːt/', '/sɔːt/', 'thetaS', 'initial'],
+  ['thank', 'sank', 2, '/θæŋk/', '/sæŋk/', 'thetaS', 'initial'],
+  ['faith', 'face', 3, '/feɪθ/', '/feɪs/', 'thetaS', 'final'],
+  ['math', 'mass', 3, '/mæθ/', '/mæs/', 'thetaS', 'final'],
 ];
 
 /* ---------- export category object ------------------------------- */

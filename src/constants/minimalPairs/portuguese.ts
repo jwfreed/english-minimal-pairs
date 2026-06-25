@@ -33,9 +33,14 @@ const thetaT: Row[] = [
 
 const ethD: Row[] = [
   ['then', 'den', 1, '/ðɛn/', '/dɛn/', 'ethD', 'initial'],
+  ['those', 'doze', 1, '/ðoʊz/', '/doʊz/', 'ethD', 'initial'],
   ['though', 'dough', 2, '/ðoʊ/', '/doʊ/', 'ethD', 'initial'],
+  ['father', 'fodder', 2, '/ˈfɑːðər/', '/ˈfɑːdər/', 'ethD', 'medial'],
   ['they', 'day', 3, '/ðeɪ/', '/deɪ/', 'ethD', 'initial'],
+  ['lather', 'ladder', 3, '/ˈlæðər/', '/ˈlædər/', 'ethD', 'medial'],
+  ['seethe', 'seed', 3, '/siːð/', '/siːd/', 'ethD', 'final'],
   ['there', 'dare', 4, '/ðɛə/', '/dɛə/', 'ethD', 'initial'],
+  ['soothe', 'sued', 4, '/suːð/', '/suːd/', 'ethD', 'final'],
   ['breathe', 'breed', 5, '/briːð/', '/briːd/', 'ethD', 'final'],
   ['loathe', 'load', 6, '/loʊð/', '/loʊd/', 'ethD', 'final'],
 ];
@@ -59,6 +64,7 @@ const uVsU: Row[] = [
   ['pool', 'pull', 1, '/puːl/', '/pʊl/', 'uVsU', 'medial'],
   ['suit', 'soot', 2, '/suːt/', '/sʊt/', 'uVsU', 'medial'],
   ['fool', 'full', 3, '/fuːl/', '/fʊl/', 'uVsU', 'medial'],
+  ['wooed', 'wood', 3, '/wuːd/', '/wʊd/', 'uVsU', 'medial'],
   ['Luke', 'look', 4, '/luːk/', '/lʊk/', 'uVsU', 'medial'],
   ['cooed', 'could', 5, '/kuːd/', '/kʊd/', 'uVsU', 'medial'],
   ['stewed', 'stood', 6, '/stuːd/', '/stʊd/', 'uVsU', 'medial'],
@@ -66,11 +72,20 @@ const uVsU: Row[] = [
 
 const aVsE: Row[] = [
   ['bad', 'bed', 1, '/bæd/', '/bɛd/', 'aVsE', 'medial'],
+  ['man', 'men', 1, '/mæn/', '/mɛn/', 'aVsE', 'medial'],
+  ['sat', 'set', 1, '/sæt/', '/sɛt/', 'aVsE', 'medial'],
   ['pan', 'pen', 2, '/pæn/', '/pɛn/', 'aVsE', 'medial'],
+  ['mass', 'mess', 2, '/mæs/', '/mɛs/', 'aVsE', 'medial'],
+  ['sad', 'said', 2, '/sæd/', '/sɛd/', 'aVsE', 'medial'],
   ['dad', 'dead', 3, '/dæd/', '/dɛd/', 'aVsE', 'medial'],
+  ['land', 'lend', 3, '/lænd/', '/lɛnd/', 'aVsE', 'medial'],
+  ['mat', 'met', 3, '/mæt/', '/mɛt/', 'aVsE', 'medial'],
   ['bat', 'bet', 4, '/bæt/', '/bɛt/', 'aVsE', 'medial'],
+  ['rack', 'wreck', 4, '/ræk/', '/rɛk/', 'aVsE', 'medial'],
   ['band', 'bend', 5, '/bænd/', '/bɛnd/', 'aVsE', 'medial'],
+  ['bland', 'blend', 5, '/blænd/', '/blɛnd/', 'aVsE', 'medial'],
   ['ham', 'hem', 6, '/hæm/', '/hɛm/', 'aVsE', 'medial'],
+  ['flash', 'flesh', 6, '/flæʃ/', '/flɛʃ/', 'aVsE', 'medial'],
 ];
 
 /* ---------- export category object ----------------------------- */

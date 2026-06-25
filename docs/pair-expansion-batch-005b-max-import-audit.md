@@ -242,8 +242,8 @@ were explicitly scoped to Batch 006 in the original selection strategy.
 | Existing pairs | 570 | 616 | +46 | `validate:data` |
 | Missing pairs | 482 | 436 | −46 | `audit:pair-targets` |
 | Underfilled slots | 349 | 327 | −22 | `audit:pair-targets` |
-| Complete slots | 51 | 93 | +42 | `audit:pair-targets` |
-| Fill percentage | 54% | 59% | +5 pp | `audit:pair-targets` |
+| Complete slots | 71 | 93 | +22 | `audit:pair-targets` |
+| Fill percentage | 54% | 58% | +4 pp | `audit:pair-targets` |
 
 ---
 

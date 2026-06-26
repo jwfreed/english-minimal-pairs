@@ -57,20 +57,34 @@ const thetaS: Row[] = [
 
 const ethD: Row[] = [
   ['then', 'den', 1, '/ðɛn/', '/dɛn/', 'ethD', 'initial'],
+  ['those', 'doze', 1, '/ðoʊz/', '/doʊz/', 'ethD', 'initial'],
   ['though', 'dough', 2, '/ðoʊ/', '/doʊ/', 'ethD', 'initial'],
+  ['father', 'fodder', 2, '/ˈfɑːðər/', '/ˈfɑːdər/', 'ethD', 'medial'],
   ['they', 'day', 3, '/ðeɪ/', '/deɪ/', 'ethD', 'initial'],
+  ['lather', 'ladder', 3, '/ˈlæðər/', '/ˈlædər/', 'ethD', 'medial'],
+  ['seethe', 'seed', 3, '/siːð/', '/siːd/', 'ethD', 'final'],
   ['there', 'dare', 4, '/ðɛə/', '/dɛə/', 'ethD', 'initial'],
+  ['soothe', 'sued', 4, '/suːð/', '/suːd/', 'ethD', 'final'],
   ['breathe', 'breed', 5, '/briːð/', '/briːd/', 'ethD', 'final'],
   ['loathe', 'load', 6, '/loʊð/', '/loʊd/', 'ethD', 'final'],
 ];
 
 const iVsI: Row[] = [
   ['sheep', 'ship', 1, '/ʃiːp/', '/ʃɪp/', 'iVsI', 'medial'],
+  ['peel', 'pill', 1, '/piːl/', '/pɪl/', 'iVsI', 'medial'],
+  ['bean', 'bin', 1, '/biːn/', '/bɪn/', 'iVsI', 'medial'],
   ['leave', 'live', 2, '/liːv/', '/lɪv/', 'iVsI', 'medial'],
+  ['feel', 'fill', 2, '/fiːl/', '/fɪl/', 'iVsI', 'medial'],
+  ['reed', 'rid', 2, '/riːd/', '/rɪd/', 'iVsI', 'medial'],
   ['beat', 'bit', 3, '/biːt/', '/bɪt/', 'iVsI', 'medial'],
+  ['green', 'grin', 3, '/ɡriːn/', '/ɡrɪn/', 'iVsI', 'medial'],
+  ['seal', 'sill', 3, '/siːl/', '/sɪl/', 'iVsI', 'medial'],
   ['feet', 'fit', 4, '/fiːt/', '/fɪt/', 'iVsI', 'medial'],
+  ['peak', 'pick', 4, '/piːk/', '/pɪk/', 'iVsI', 'medial'],
   ['neat', 'knit', 5, '/niːt/', '/nɪt/', 'iVsI', 'medial'],
+  ['heed', 'hid', 5, '/hiːd/', '/hɪd/', 'iVsI', 'medial'],
   ['peach', 'pitch', 6, '/piːtʃ/', '/pɪtʃ/', 'iVsI', 'medial'],
+  ['least', 'list', 6, '/liːst/', '/lɪst/', 'iVsI', 'medial'],
 ];
 
 /* ---------- export category object ------------------------------- */

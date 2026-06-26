@@ -18,8 +18,14 @@ const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2
 /* ---------- word-lists with group IDs --------------------------- */
 const thetaT: Row[] = [
   ['thin', 'tin', 1, '/θɪn/', '/tɪn/', 'thetaT', 'initial'],
+  ['thigh', 'tie', 1, '/θaɪ/', '/taɪ/', 'thetaT', 'initial'],
+  ['thorn', 'torn', 1, '/θɔːrn/', '/tɔːrn/', 'thetaT', 'initial'],
   ['thick', 'tick', 2, '/θɪk/', '/tɪk/', 'thetaT', 'initial'],
+  ['thought', 'taught', 2, '/θɔːt/', '/tɔːt/', 'thetaT', 'initial'],
+  ['three', 'tree', 2, '/θriː/', '/triː/', 'thetaT', 'initial'],
   ['thank', 'tank', 3, '/θæŋk/', '/tæŋk/', 'thetaT', 'initial'],
+  ['thread', 'tread', 3, '/θrɛd/', '/trɛd/', 'thetaT', 'initial'],
+  ['threw', 'true', 3, '/θruː/', '/truː/', 'thetaT', 'initial'],
   ['thaw', 'taw', 4, '/θɔː/', '/tɔː/', 'thetaT', 'initial'],
   ['math', 'mat', 5, '/mæθ/', '/mæt/', 'thetaT', 'final'],
   ['oath', 'oat', 6, '/oʊθ/', '/oʊt/', 'thetaT', 'final'],
@@ -36,8 +42,13 @@ const ethD: Row[] = [
 
 const vW: Row[] = [
   ['vine', 'wine', 1, '/vaɪn/', '/waɪn/', 'vW', 'initial'],
+  ['vent', 'went', 1, '/vɛnt/', '/wɛnt/', 'vW', 'initial'],
+  ['vet', 'wet', 1, '/vɛt/', '/wɛt/', 'vW', 'initial'],
   ['vest', 'west', 2, '/vɛst/', '/wɛst/', 'vW', 'initial'],
+  ['vile', 'while', 2, '/vaɪl/', '/waɪl/', 'vW', 'initial'],
+  ['verse', 'worse', 2, '/vɜːrs/', '/wɜːrs/', 'vW', 'initial'],
   ['vow', 'wow', 3, '/vaʊ/', '/waʊ/', 'vW', 'initial'],
+  ['veil', 'wail', 3, '/veɪl/', '/weɪl/', 'vW', 'initial'],
   ['vane', 'wane', 4, '/veɪn/', '/weɪn/', 'vW', 'initial'],
   ['veal', 'wheel', 5, '/viːl/', '/wiːl/', 'vW', 'initial'],
   ['viper', 'wiper', 6, '/ˈvaɪpər/', '/ˈwaɪpər/', 'vW', 'initial'],

@@ -19,11 +19,13 @@ const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2
 const rL: Row[] = [
   ['rake', 'lake', 1, '/reɪk/', '/leɪk/', 'rL', 'initial'],
   ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['red', 'led', 1, '/rɛd/', '/lɛd/', 'rL', 'initial'],
   ['rate', 'late', 2, '/reɪt/', '/leɪt/', 'rL', 'initial'],
   ['rice', 'lice', 2, '/raɪs/', '/laɪs/', 'rL', 'initial'],
   ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
   ['rag', 'lag', 3, '/ræɡ/', '/læɡ/', 'rL', 'initial'],
   ['rip', 'lip', 3, '/rɪp/', '/lɪp/', 'rL', 'initial'],
+  ['rain', 'lane', 3, '/reɪn/', '/leɪn/', 'rL', 'initial'],
   ['pray', 'play', 4, '/preɪ/', '/pleɪ/', 'rL', 'initial'],
   ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],
   ['crowd', 'cloud', 6, '/kraʊd/', '/klaʊd/', 'rL', 'initial'],

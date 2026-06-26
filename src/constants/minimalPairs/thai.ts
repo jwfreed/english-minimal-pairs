@@ -18,8 +18,14 @@ const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2
 /* ---------- word-lists with group IDs ---------------------------- */
 const thetaT: Row[] = [
   ['thin', 'tin', 1, '/θɪn/', '/tɪn/', 'thetaT', 'initial'],
+  ['thigh', 'tie', 1, '/θaɪ/', '/taɪ/', 'thetaT', 'initial'],
+  ['thorn', 'torn', 1, '/θɔːrn/', '/tɔːrn/', 'thetaT', 'initial'],
   ['thick', 'tick', 2, '/θɪk/', '/tɪk/', 'thetaT', 'initial'],
+  ['thought', 'taught', 2, '/θɔːt/', '/tɔːt/', 'thetaT', 'initial'],
+  ['three', 'tree', 2, '/θriː/', '/triː/', 'thetaT', 'initial'],
   ['thank', 'tank', 3, '/θæŋk/', '/tæŋk/', 'thetaT', 'initial'],
+  ['thread', 'tread', 3, '/θrɛd/', '/trɛd/', 'thetaT', 'initial'],
+  ['threw', 'true', 3, '/θruː/', '/truː/', 'thetaT', 'initial'],
   ['thaw', 'taw', 4, '/θɔː/', '/tɔː/', 'thetaT', 'initial'],
   ['math', 'mat', 5, '/mæθ/', '/mæt/', 'thetaT', 'final'],
   ['oath', 'oat', 6, '/oʊθ/', '/oʊt/', 'thetaT', 'final'],
@@ -60,8 +66,14 @@ const zS: Row[] = [
 
 const rL: Row[] = [
   ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['red', 'led', 1, '/rɛd/', '/lɛd/', 'rL', 'initial'],
+  ['row', 'low', 1, '/roʊ/', '/loʊ/', 'rL', 'initial'],
   ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
+  ['rate', 'late', 2, '/reɪt/', '/leɪt/', 'rL', 'initial'],
+  ['rice', 'lice', 2, '/raɪs/', '/laɪs/', 'rL', 'initial'],
   ['rip', 'lip', 3, '/rɪp/', '/lɪp/', 'rL', 'initial'],
+  ['rain', 'lane', 3, '/reɪn/', '/leɪn/', 'rL', 'initial'],
+  ['read', 'lead', 3, '/riːd/', '/liːd/', 'rL', 'initial'],
   ['rake', 'lake', 4, '/reɪk/', '/leɪk/', 'rL', 'initial'],
   ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],
   ['crowd', 'cloud', 6, '/kraʊd/', '/klaʊd/', 'rL', 'initial'],

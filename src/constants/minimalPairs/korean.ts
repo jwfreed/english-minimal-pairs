@@ -42,8 +42,14 @@ const fP: Row[] = [
 
 const vB: Row[] = [
   ['van', 'ban', 1, '/væn/', '/bæn/', 'vB', 'initial'],
+  ['vet', 'bet', 1, '/vɛt/', '/bɛt/', 'vB', 'initial'],
+  ['vent', 'bent', 1, '/vɛnt/', '/bɛnt/', 'vB', 'initial'],
   ['vest', 'best', 2, '/vɛst/', '/bɛst/', 'vB', 'initial'],
+  ['vote', 'boat', 2, '/voʊt/', '/boʊt/', 'vB', 'initial'],
+  ['very', 'berry', 2, '/ˈvɛri/', '/ˈbɛri/', 'vB', 'initial'],
   ['vow', 'bow', 3, '/vaʊ/', '/baʊ/', 'vB', 'initial'],
+  ['veil', 'bail', 3, '/veɪl/', '/beɪl/', 'vB', 'initial'],
+  ['vat', 'bat', 3, '/væt/', '/bæt/', 'vB', 'initial'],
   ['vase', 'base', 4, '/veɪs/', '/beɪs/', 'vB', 'initial'],
   ['dove', 'dub', 5, '/dʌv/', '/dʌb/', 'vB', 'final'],
   ['curve', 'curb', 6, '/kɜːrv/', '/kɜːrb/', 'vB', 'final'],
@@ -51,10 +57,14 @@ const vB: Row[] = [
 
 const rL: Row[] = [
   ['right', 'light', 1, '/raɪt/', '/laɪt/', 'rL', 'initial'],
+  ['red', 'led', 1, '/rɛd/', '/lɛd/', 'rL', 'initial'],
+  ['row', 'low', 1, '/roʊ/', '/loʊ/', 'rL', 'initial'],
   ['rate', 'late', 2, '/reɪt/', '/leɪt/', 'rL', 'initial'],
   ['road', 'load', 2, '/roʊd/', '/loʊd/', 'rL', 'initial'],
   ['rice', 'lice', 2, '/raɪs/', '/laɪs/', 'rL', 'initial'],
   ['rip', 'lip', 3, '/rɪp/', '/lɪp/', 'rL', 'initial'],
+  ['rain', 'lane', 3, '/reɪn/', '/leɪn/', 'rL', 'initial'],
+  ['read', 'lead', 3, '/riːd/', '/liːd/', 'rL', 'initial'],
   ['rake', 'lake', 4, '/reɪk/', '/leɪk/', 'rL', 'initial'],
   ['correct', 'collect', 5, '/kəˈrɛkt/', '/kəˈlɛkt/', 'rL', 'medial'],
   ['crowd', 'cloud', 6, '/kraʊd/', '/klaʊd/', 'rL', 'initial'],

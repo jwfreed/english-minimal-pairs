@@ -18,8 +18,14 @@ const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2
 /* ---------- word-lists with group IDs ---------------------------- */
 const thetaS: Row[] = [
   ['thin', 'sin', 1, '/θɪn/', '/sɪn/', 'thetaS', 'initial'],
+  ['thaw', 'saw', 1, '/θɔː/', '/sɔː/', 'thetaS', 'initial'],
+  ['thumb', 'sum', 1, '/θʌm/', '/sʌm/', 'thetaS', 'initial'],
   ['thick', 'sick', 2, '/θɪk/', '/sɪk/', 'thetaS', 'initial'],
+  ['thought', 'sought', 2, '/θɔːt/', '/sɔːt/', 'thetaS', 'initial'],
+  ['thank', 'sank', 2, '/θæŋk/', '/sæŋk/', 'thetaS', 'initial'],
   ['think', 'sink', 3, '/θɪŋk/', '/sɪŋk/', 'thetaS', 'initial'],
+  ['faith', 'face', 3, '/feɪθ/', '/feɪs/', 'thetaS', 'final'],
+  ['math', 'mass', 3, '/mæθ/', '/mæs/', 'thetaS', 'final'],
   ['mouth', 'mouse', 4, '/maʊθ/', '/maʊs/', 'thetaS', 'final'],
   ['both', 'boss', 5, '/boʊθ/', '/bɒs/', 'thetaS', 'final'],
   ['path', 'pass', 6, '/pæθ/', '/pæs/', 'thetaS', 'final'],

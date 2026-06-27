@@ -33,9 +33,14 @@ const thetaT: Row[] = [
 
 const ethD: Row[] = [
   ['then', 'den', 1, '/ðɛn/', '/dɛn/', 'ethD', 'initial'],
+  ['those', 'doze', 1, '/ðoʊz/', '/doʊz/', 'ethD', 'initial'],
   ['though', 'dough', 2, '/ðoʊ/', '/doʊ/', 'ethD', 'initial'],
+  ['father', 'fodder', 2, '/ˈfɑːðər/', '/ˈfɑːdər/', 'ethD', 'medial'],
   ['they', 'day', 3, '/ðeɪ/', '/deɪ/', 'ethD', 'initial'],
+  ['lather', 'ladder', 3, '/ˈlæðər/', '/ˈlædər/', 'ethD', 'medial'],
+  ['seethe', 'seed', 3, '/siːð/', '/siːd/', 'ethD', 'final'],
   ['there', 'dare', 4, '/ðɛə/', '/dɛə/', 'ethD', 'initial'],
+  ['soothe', 'sued', 4, '/suːð/', '/suːd/', 'ethD', 'final'],
   ['breathe', 'breed', 5, '/briːð/', '/briːd/', 'ethD', 'final'],
   ['loathe', 'load', 6, '/loʊð/', '/loʊd/', 'ethD', 'final'],
 ];

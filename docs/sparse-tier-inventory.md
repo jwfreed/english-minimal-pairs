@@ -9,11 +9,11 @@
 |---|---:|
 | Total contrast groups (category × group) | 70 |
 | Total group/tier combinations present | 420 |
-| Healthy (≥ 2 pairs) | 7 |
-| Single-pair tiers (HIGH + MEDIUM) | 413 |
+| Healthy (≥ 2 pairs) | 197 |
+| Single-pair tiers (HIGH + MEDIUM) | 223 |
 | Possible missing-tier gaps | 0 |
 
-**413 of 420 group/tier slots (98%) contain exactly one pair and cannot provide rotation variety at that tier.**
+**223 of 420 group/tier slots (53%) contain exactly one pair and cannot provide rotation variety at that tier.**
 
 This is a dataset coverage limitation, not a scheduler bug. The scheduler handles single-pair tiers correctly; expanding the dataset is the only way to improve variety.
 
@@ -24,202 +24,42 @@ Sorted by: severity → category → group → tier.
 
 | Category | Group ID | Contrast | Tier | Pairs | Severity |
 |---|---|---|---:|---|---|
-| Bahasa Indonesia | aVsUh | æ/ʌ | 1 | cat/cut | HIGH |
-| Bahasa Indonesia | aVsUh | æ/ʌ | 2 | batter/butter | HIGH |
-| Bahasa Indonesia | aVsUh | æ/ʌ | 3 | ran/run | HIGH |
-| Bahasa Indonesia | ethD | ð/d | 1 | then/den | HIGH |
-| Bahasa Indonesia | ethD | ð/d | 2 | though/dough | HIGH |
-| Bahasa Indonesia | ethD | ð/d | 3 | they/day | HIGH |
-| Bahasa Indonesia | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| Bahasa Indonesia | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| Bahasa Indonesia | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| Bahasa Indonesia | thetaT | θ/t | 1 | thin/tin | HIGH |
-| Bahasa Indonesia | thetaT | θ/t | 2 | thick/tick | HIGH |
-| Bahasa Indonesia | thetaT | θ/t | 3 | thank/tank | HIGH |
-| Bahasa Indonesia | vF | v/f | 1 | vine/fine | HIGH |
-| Bahasa Indonesia | vF | v/f | 2 | vat/fat | HIGH |
-| Bahasa Indonesia | vF | v/f | 3 | van/fan | HIGH |
-| Español | aVsE | æ/ɛ | 1 | bad/bed | HIGH |
-| Español | aVsE | æ/ɛ | 2 | pan/pen | HIGH |
-| Español | aVsE | æ/ɛ | 3 | dad/dead | HIGH |
-| Español | bV | b/v | 1 | ban/van | HIGH |
-| Español | bV | b/v | 2 | berry/very | HIGH |
-| Español | bV | b/v | 3 | bow/vow | HIGH |
-| Español | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| Español | thetaS | θ/s | 1 | thin/sin | HIGH |
-| Español | thetaS | θ/s | 2 | thick/sick | HIGH |
-| Español | thetaS | θ/s | 3 | think/sink | HIGH |
-| Español | uhVsAh | ʌ/ɑː | 1 | cut/cot | HIGH |
-| Español | uhVsAh | ʌ/ɑː | 2 | luck/lock | HIGH |
-| Español | uhVsAh | ʌ/ɑː | 3 | cup/cop | HIGH |
-| Português | aVsE | æ/ɛ | 1 | bad/bed | HIGH |
-| Português | aVsE | æ/ɛ | 2 | pan/pen | HIGH |
-| Português | aVsE | æ/ɛ | 3 | dad/dead | HIGH |
-| Português | ethD | ð/d | 1 | then/den | HIGH |
-| Português | ethD | ð/d | 2 | though/dough | HIGH |
-| Português | ethD | ð/d | 3 | they/day | HIGH |
-| Português | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| Português | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| Português | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| Português | thetaT | θ/t | 1 | thin/tin | HIGH |
-| Português | thetaT | θ/t | 2 | thick/tick | HIGH |
-| Português | thetaT | θ/t | 3 | thank/tank | HIGH |
 | Português | uVsU | uː/ʊ | 1 | pool/pull | HIGH |
 | Português | uVsU | uː/ʊ | 2 | suit/soot | HIGH |
-| Português | uVsU | uː/ʊ | 3 | fool/full | HIGH |
-| Tiếng Việt | aVsUh | æ/ʌ | 1 | cat/cut | HIGH |
-| Tiếng Việt | aVsUh | æ/ʌ | 2 | batter/butter | HIGH |
-| Tiếng Việt | aVsUh | æ/ʌ | 3 | ran/run | HIGH |
-| Tiếng Việt | ethD | ð/d | 1 | then/den | HIGH |
-| Tiếng Việt | ethD | ð/d | 2 | though/dough | HIGH |
-| Tiếng Việt | ethD | ð/d | 3 | they/day | HIGH |
-| Tiếng Việt | rL | r/l | 1 | right/light | HIGH |
-| Tiếng Việt | rL | r/l | 2 | road/load | HIGH |
-| Tiếng Việt | rL | r/l | 3 | rip/lip | HIGH |
-| Tiếng Việt | thetaT | θ/t | 1 | thin/tin | HIGH |
-| Tiếng Việt | thetaT | θ/t | 2 | thick/tick | HIGH |
-| Tiếng Việt | thetaT | θ/t | 3 | thank/tank | HIGH |
-| Tiếng Việt | zS | z/s | 1 | zip/sip | HIGH |
-| Tiếng Việt | zS | z/s | 2 | zeal/seal | HIGH |
-| Tiếng Việt | zS | z/s | 3 | zone/sewn | HIGH |
-| Türkçe | aVsUh | æ/ʌ | 1 | cat/cut | HIGH |
-| Türkçe | aVsUh | æ/ʌ | 2 | batter/butter | HIGH |
-| Türkçe | aVsUh | æ/ʌ | 3 | ran/run | HIGH |
-| Türkçe | ethD | ð/d | 1 | then/den | HIGH |
-| Türkçe | ethD | ð/d | 2 | though/dough | HIGH |
-| Türkçe | ethD | ð/d | 3 | they/day | HIGH |
-| Türkçe | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| Türkçe | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| Türkçe | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| Türkçe | thetaT | θ/t | 1 | thin/tin | HIGH |
-| Türkçe | thetaT | θ/t | 2 | thick/tick | HIGH |
-| Türkçe | thetaT | θ/t | 3 | thank/tank | HIGH |
 | Türkçe | uVsU | uː/ʊ | 1 | pool/pull | HIGH |
 | Türkçe | uVsU | uː/ʊ | 2 | suit/soot | HIGH |
-| Türkçe | uVsU | uː/ʊ | 3 | fool/full | HIGH |
-| Русский | aVsUh | æ/ʌ | 1 | bat/but | HIGH |
-| Русский | aVsUh | æ/ʌ | 2 | cap/cup | HIGH |
-| Русский | aVsUh | æ/ʌ | 3 | pan/pun | HIGH |
-| Русский | hZero | h/∅ | 1 | hat/at | HIGH |
-| Русский | hZero | h/∅ | 2 | heat/eat | HIGH |
-| Русский | hZero | h/∅ | 3 | hill/ill | HIGH |
-| Русский | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| Русский | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| Русский | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
 | Русский | thetaS | θ/s | 1 | thin/sin | HIGH |
 | Русский | thetaS | θ/s | 2 | thick/sick | HIGH |
 | Русский | thetaS | θ/s | 3 | think/sink | HIGH |
-| Русский | wV | w/v | 1 | wine/vine | HIGH |
-| Русский | wV | w/v | 2 | west/vest | HIGH |
-| Русский | wV | w/v | 3 | wow/vow | HIGH |
-| العربية | ethD | ð/d | 1 | then/den | HIGH |
-| العربية | ethD | ð/d | 2 | though/dough | HIGH |
-| العربية | ethD | ð/d | 3 | they/day | HIGH |
-| العربية | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| العربية | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| العربية | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| العربية | pB | p/b | 1 | pat/bat | HIGH |
-| العربية | pB | p/b | 2 | pan/ban | HIGH |
-| العربية | pB | p/b | 3 | pear/bear | HIGH |
 | العربية | thetaS | θ/s | 1 | thin/sin | HIGH |
 | العربية | thetaS | θ/s | 2 | thick/sick | HIGH |
 | العربية | thetaS | θ/s | 3 | think/sink | HIGH |
-| العربية | vF | v/f | 1 | vine/fine | HIGH |
-| العربية | vF | v/f | 2 | vat/fat | HIGH |
-| العربية | vF | v/f | 3 | van/fan | HIGH |
-| فارسی | aVsE | æ/ɛ | 1 | bad/bed | HIGH |
-| فارسی | aVsE | æ/ɛ | 2 | pan/pen | HIGH |
-| فارسی | aVsE | æ/ɛ | 3 | dad/dead | HIGH |
-| فارسی | ethD | ð/d | 1 | then/den | HIGH |
-| فارسی | ethD | ð/d | 2 | though/dough | HIGH |
-| فارسی | ethD | ð/d | 3 | they/day | HIGH |
-| فارسی | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| فارسی | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| فارسی | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| فارسی | thetaT | θ/t | 1 | thin/tin | HIGH |
-| فارسی | thetaT | θ/t | 2 | thick/tick | HIGH |
-| فارسی | thetaT | θ/t | 3 | thank/tank | HIGH |
-| فارسی | wV | w/v | 1 | wine/vine | HIGH |
-| فارسی | wV | w/v | 2 | west/vest | HIGH |
-| فارسی | wV | w/v | 3 | wow/vow | HIGH |
-| हिन्दी / اردو | aVsE | æ/ɛ | 1 | bad/bed | HIGH |
-| हिन्दी / اردو | aVsE | æ/ɛ | 2 | pan/pen | HIGH |
-| हिन्दी / اردو | aVsE | æ/ɛ | 3 | dad/dead | HIGH |
-| हिन्दी / اردو | ethD | ð/d | 1 | then/den | HIGH |
-| हिन्दी / اردو | ethD | ð/d | 2 | though/dough | HIGH |
-| हिन्दी / اردو | ethD | ð/d | 3 | they/day | HIGH |
 | हिन्दी / اردو | thetaT | θ/t | 1 | thin/tin | HIGH |
 | हिन्दी / اردو | thetaT | θ/t | 2 | thick/tick | HIGH |
 | हिन्दी / اردو | thetaT | θ/t | 3 | thank/tank | HIGH |
 | हिन्दी / اردو | wV | w/v | 1 | wine/vine | HIGH |
 | हिन्दी / اردو | wV | w/v | 2 | west/vest | HIGH |
 | हिन्दी / اردو | wV | w/v | 3 | wow/vow | HIGH |
-| हिन्दी / اردو | zS | z/s | 1 | zip/sip | HIGH |
-| हिन्दी / اردو | zS | z/s | 2 | zeal/seal | HIGH |
-| हिन्दी / اردو | zS | z/s | 3 | zone/sewn | HIGH |
-| ภาษาไทย | ethD | ð/d | 1 | then/den | HIGH |
-| ภาษาไทย | ethD | ð/d | 2 | though/dough | HIGH |
-| ภาษาไทย | ethD | ð/d | 3 | they/day | HIGH |
-| ภาษาไทย | rL | r/l | 1 | right/light | HIGH |
-| ภาษาไทย | rL | r/l | 2 | road/load | HIGH |
-| ภาษาไทย | rL | r/l | 3 | rip/lip | HIGH |
-| ภาษาไทย | thetaT | θ/t | 1 | thin/tin | HIGH |
-| ภาษาไทย | thetaT | θ/t | 2 | thick/tick | HIGH |
-| ภาษาไทย | thetaT | θ/t | 3 | thank/tank | HIGH |
 | ภาษาไทย | vF | v/f | 1 | vine/fine | HIGH |
 | ภาษาไทย | vF | v/f | 2 | vat/fat | HIGH |
 | ภาษาไทย | vF | v/f | 3 | van/fan | HIGH |
-| ภาษาไทย | zS | z/s | 1 | zip/sip | HIGH |
-| ภาษาไทย | zS | z/s | 2 | zeal/seal | HIGH |
-| ภาษาไทย | zS | z/s | 3 | zone/sewn | HIGH |
-| 한국어 | fP | f/p | 1 | fine/pine | HIGH |
-| 한국어 | fP | f/p | 2 | fan/pan | HIGH |
-| 한국어 | fP | f/p | 3 | ferry/perry | HIGH |
 | 한국어 | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
 | 한국어 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
 | 한국어 | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| 한국어 | rL | r/l | 1 | right/light | HIGH |
-| 한국어 | rL | r/l | 3 | rip/lip | HIGH |
 | 한국어 | thetaS | θ/s | 1 | thin/sin | HIGH |
 | 한국어 | thetaS | θ/s | 2 | thick/sick | HIGH |
 | 한국어 | thetaS | θ/s | 3 | think/sink | HIGH |
-| 한국어 | vB | v/b | 1 | van/ban | HIGH |
-| 한국어 | vB | v/b | 2 | vest/best | HIGH |
-| 한국어 | vB | v/b | 3 | vow/bow | HIGH |
 | 中文 | iVsI | iː/ɪ | 1 | beat/bit | HIGH |
 | 中文 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
 | 中文 | iVsI | iː/ɪ | 3 | feet/fit | HIGH |
-| 中文 | rL | r/l | 1 | right/light | HIGH |
-| 中文 | rL | r/l | 2 | road/load | HIGH |
-| 中文 | rL | r/l | 3 | rake/lake | HIGH |
-| 中文 | thetaS | θ/s | 1 | thin/sin | HIGH |
-| 中文 | thetaS | θ/s | 2 | thick/sick | HIGH |
-| 中文 | thetaS | θ/s | 3 | think/sink | HIGH |
 | 中文 | uVsU | uː/ʊ | 1 | pool/pull | HIGH |
 | 中文 | uVsU | uː/ʊ | 2 | suit/soot | HIGH |
-| 中文 | uVsU | uː/ʊ | 3 | fool/full | HIGH |
-| 中文 | vW | v/w | 1 | vine/wine | HIGH |
-| 中文 | vW | v/w | 2 | vest/west | HIGH |
-| 中文 | vW | v/w | 3 | vow/wow | HIGH |
-| 廣東話 | ethD | ð/d | 1 | then/den | HIGH |
-| 廣東話 | ethD | ð/d | 2 | though/dough | HIGH |
-| 廣東話 | ethD | ð/d | 3 | they/day | HIGH |
 | 廣東話 | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
 | 廣東話 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
 | 廣東話 | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| 廣東話 | rL | r/l | 1 | right/light | HIGH |
-| 廣東話 | rL | r/l | 3 | rip/lip | HIGH |
-| 廣東話 | thetaT | θ/t | 1 | thin/tin | HIGH |
-| 廣東話 | thetaT | θ/t | 2 | thick/tick | HIGH |
-| 廣東話 | thetaT | θ/t | 3 | thank/tank | HIGH |
-| 廣東話 | vW | v/w | 1 | vine/wine | HIGH |
-| 廣東話 | vW | v/w | 2 | vest/west | HIGH |
-| 廣東話 | vW | v/w | 3 | vow/wow | HIGH |
 | 日本語 | aVsUh | æ/ʌ | 1 | cat/cut | HIGH |
 | 日本語 | aVsUh | æ/ʌ | 2 | batter/butter | HIGH |
 | 日本語 | aVsUh | æ/ʌ | 3 | ran/run | HIGH |
-| 日本語 | bV | b/v | 1 | ban/van | HIGH |
-| 日本語 | bV | b/v | 2 | berry/very | HIGH |
 | 日本語 | bV | b/v | 3 | bow/vow | HIGH |
 | 日本語 | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
 | 日本語 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
@@ -257,10 +97,6 @@ Sorted by: severity → category → group → tier.
 | Español | uhVsAh | ʌ/ɑː | 4 | duck/dock | MEDIUM |
 | Español | uhVsAh | ʌ/ɑː | 5 | hut/hot | MEDIUM |
 | Español | uhVsAh | ʌ/ɑː | 6 | sung/song | MEDIUM |
-| Português | aVsE | æ/ɛ | 4 | bat/bet | MEDIUM |
-| Português | aVsE | æ/ɛ | 5 | band/bend | MEDIUM |
-| Português | aVsE | æ/ɛ | 6 | ham/hem | MEDIUM |
-| Português | ethD | ð/d | 4 | there/dare | MEDIUM |
 | Português | ethD | ð/d | 5 | breathe/breed | MEDIUM |
 | Português | ethD | ð/d | 6 | loathe/load | MEDIUM |
 | Português | iVsI | iː/ɪ | 4 | feet/fit | MEDIUM |
@@ -290,15 +126,8 @@ Sorted by: severity → category → group → tier.
 | Türkçe | aVsUh | æ/ʌ | 4 | cap/cup | MEDIUM |
 | Türkçe | aVsUh | æ/ʌ | 5 | hang/hung | MEDIUM |
 | Türkçe | aVsUh | æ/ʌ | 6 | stamp/stump | MEDIUM |
-| Türkçe | ethD | ð/d | 4 | there/dare | MEDIUM |
 | Türkçe | ethD | ð/d | 5 | breathe/breed | MEDIUM |
 | Türkçe | ethD | ð/d | 6 | loathe/load | MEDIUM |
-| Türkçe | iVsI | iː/ɪ | 4 | feet/fit | MEDIUM |
-| Türkçe | iVsI | iː/ɪ | 5 | neat/knit | MEDIUM |
-| Türkçe | iVsI | iː/ɪ | 6 | peach/pitch | MEDIUM |
-| Türkçe | thetaT | θ/t | 4 | thaw/taw | MEDIUM |
-| Türkçe | thetaT | θ/t | 5 | math/mat | MEDIUM |
-| Türkçe | thetaT | θ/t | 6 | oath/oat | MEDIUM |
 | Türkçe | uVsU | uː/ʊ | 4 | Luke/look | MEDIUM |
 | Türkçe | uVsU | uː/ʊ | 5 | cooed/could | MEDIUM |
 | Türkçe | uVsU | uː/ʊ | 6 | stewed/stood | MEDIUM |
@@ -317,12 +146,8 @@ Sorted by: severity → category → group → tier.
 | Русский | wV | w/v | 4 | wane/vane | MEDIUM |
 | Русский | wV | w/v | 5 | wheel/veal | MEDIUM |
 | Русский | wV | w/v | 6 | wiper/viper | MEDIUM |
-| العربية | ethD | ð/d | 4 | there/dare | MEDIUM |
 | العربية | ethD | ð/d | 5 | breathe/breed | MEDIUM |
 | العربية | ethD | ð/d | 6 | loathe/load | MEDIUM |
-| العربية | iVsI | iː/ɪ | 4 | feet/fit | MEDIUM |
-| العربية | iVsI | iː/ɪ | 5 | neat/knit | MEDIUM |
-| العربية | iVsI | iː/ɪ | 6 | peach/pitch | MEDIUM |
 | العربية | pB | p/b | 4 | pack/back | MEDIUM |
 | العربية | pB | p/b | 5 | rapid/rabid | MEDIUM |
 | العربية | pB | p/b | 6 | cap/cab | MEDIUM |
@@ -332,25 +157,14 @@ Sorted by: severity → category → group → tier.
 | العربية | vF | v/f | 4 | vase/face | MEDIUM |
 | العربية | vF | v/f | 5 | save/safe | MEDIUM |
 | العربية | vF | v/f | 6 | leave/leaf | MEDIUM |
-| فارسی | aVsE | æ/ɛ | 4 | bat/bet | MEDIUM |
-| فارسی | aVsE | æ/ɛ | 5 | band/bend | MEDIUM |
-| فارسی | aVsE | æ/ɛ | 6 | ham/hem | MEDIUM |
-| فارسی | ethD | ð/d | 4 | there/dare | MEDIUM |
 | فارسی | ethD | ð/d | 5 | breathe/breed | MEDIUM |
 | فارسی | ethD | ð/d | 6 | loathe/load | MEDIUM |
-| فارسی | iVsI | iː/ɪ | 4 | feet/fit | MEDIUM |
-| فارسی | iVsI | iː/ɪ | 5 | neat/knit | MEDIUM |
-| فارسی | iVsI | iː/ɪ | 6 | peach/pitch | MEDIUM |
-| فارسی | thetaT | θ/t | 4 | thaw/taw | MEDIUM |
-| فارسی | thetaT | θ/t | 5 | math/mat | MEDIUM |
-| فارسی | thetaT | θ/t | 6 | oath/oat | MEDIUM |
 | فارسی | wV | w/v | 4 | wane/vane | MEDIUM |
 | فارسی | wV | w/v | 5 | wheel/veal | MEDIUM |
 | فارسی | wV | w/v | 6 | wiper/viper | MEDIUM |
 | हिन्दी / اردو | aVsE | æ/ɛ | 4 | bat/bet | MEDIUM |
 | हिन्दी / اردو | aVsE | æ/ɛ | 5 | band/bend | MEDIUM |
 | हिन्दी / اردو | aVsE | æ/ɛ | 6 | ham/hem | MEDIUM |
-| हिन्दी / اردو | ethD | ð/d | 4 | there/dare | MEDIUM |
 | हिन्दी / اردو | ethD | ð/d | 5 | breathe/breed | MEDIUM |
 | हिन्दी / اردو | ethD | ð/d | 6 | loathe/load | MEDIUM |
 | हिन्दी / اردو | thetaT | θ/t | 4 | thaw/taw | MEDIUM |
@@ -362,7 +176,6 @@ Sorted by: severity → category → group → tier.
 | हिन्दी / اردو | zS | z/s | 4 | zoo/sue | MEDIUM |
 | हिन्दी / اردو | zS | z/s | 5 | buzz/bus | MEDIUM |
 | हिन्दी / اردو | zS | z/s | 6 | lies/lice | MEDIUM |
-| ภาษาไทย | ethD | ð/d | 4 | there/dare | MEDIUM |
 | ภาษาไทย | ethD | ð/d | 5 | breathe/breed | MEDIUM |
 | ภาษาไทย | ethD | ð/d | 6 | loathe/load | MEDIUM |
 | ภาษาไทย | rL | r/l | 4 | rake/lake | MEDIUM |
@@ -407,14 +220,11 @@ Sorted by: severity → category → group → tier.
 | 中文 | vW | v/w | 4 | vane/wane | MEDIUM |
 | 中文 | vW | v/w | 5 | veal/wheel | MEDIUM |
 | 中文 | vW | v/w | 6 | viper/wiper | MEDIUM |
-| 廣東話 | ethD | ð/d | 4 | there/dare | MEDIUM |
 | 廣東話 | ethD | ð/d | 5 | breathe/breed | MEDIUM |
 | 廣東話 | ethD | ð/d | 6 | loathe/load | MEDIUM |
 | 廣東話 | iVsI | iː/ɪ | 4 | feet/fit | MEDIUM |
 | 廣東話 | iVsI | iː/ɪ | 5 | neat/knit | MEDIUM |
 | 廣東話 | iVsI | iː/ɪ | 6 | peach/pitch | MEDIUM |
-| 廣東話 | rL | r/l | 4 | rake/lake | MEDIUM |
-| 廣東話 | rL | r/l | 5 | correct/collect | MEDIUM |
 | 廣東話 | rL | r/l | 6 | crowd/cloud | MEDIUM |
 | 廣東話 | thetaT | θ/t | 4 | thaw/taw | MEDIUM |
 | 廣東話 | thetaT | θ/t | 5 | math/mat | MEDIUM |
@@ -448,76 +258,69 @@ Sorted by: HIGH sparse tiers desc → MEDIUM sparse tiers desc → category → 
 
 | Priority | Category | Group ID | Contrast | Sparse tiers | HIGH | MEDIUM | Suggested action |
 |---:|---|---|---|---|---:|---:|---|
-| 1 | Bahasa Indonesia | aVsUh | æ/ʌ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 2 | Bahasa Indonesia | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 3 | Bahasa Indonesia | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 4 | Bahasa Indonesia | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 5 | Bahasa Indonesia | vF | v/f | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 6 | Español | aVsE | æ/ɛ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 7 | Español | bV | b/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 8 | Español | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 9 | Español | uhVsAh | ʌ/ɑː | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 10 | Português | aVsE | æ/ɛ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 11 | Português | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 12 | Português | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 13 | Português | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 14 | Português | uVsU | uː/ʊ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 15 | Tiếng Việt | aVsUh | æ/ʌ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 16 | Tiếng Việt | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 17 | Tiếng Việt | rL | r/l | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 18 | Tiếng Việt | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 19 | Tiếng Việt | zS | z/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 20 | Türkçe | aVsUh | æ/ʌ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 21 | Türkçe | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 22 | Türkçe | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 23 | Türkçe | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 24 | Türkçe | uVsU | uː/ʊ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 25 | Русский | aVsUh | æ/ʌ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 26 | Русский | hZero | h/∅ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 27 | Русский | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 28 | Русский | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 29 | Русский | wV | w/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 30 | العربية | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 31 | العربية | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 32 | العربية | pB | p/b | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 33 | العربية | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 34 | العربية | vF | v/f | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 35 | فارسی | aVsE | æ/ɛ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 36 | فارسی | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 37 | فارسی | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 38 | فارسی | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 39 | فارسی | wV | w/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 40 | हिन्दी / اردو | aVsE | æ/ɛ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 41 | हिन्दी / اردو | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 42 | हिन्दी / اردو | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 43 | हिन्दी / اردو | wV | w/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 44 | हिन्दी / اردو | zS | z/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 45 | ภาษาไทย | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 46 | ภาษาไทย | rL | r/l | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 47 | ภาษาไทย | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 48 | ภาษาไทย | vF | v/f | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 49 | ภาษาไทย | zS | z/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 50 | 한국어 | fP | f/p | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 51 | 한국어 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 52 | 한국어 | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 53 | 한국어 | vB | v/b | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 54 | 中文 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 55 | 中文 | rL | r/l | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 56 | 中文 | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 57 | 中文 | uVsU | uː/ʊ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 58 | 中文 | vW | v/w | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 59 | 廣東話 | ethD | ð/d | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 60 | 廣東話 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 61 | 廣東話 | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 62 | 廣東話 | vW | v/w | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 63 | 日本語 | aVsUh | æ/ʌ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 64 | 日本語 | bV | b/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 65 | 日本語 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 66 | 日本語 | sTheta | s/θ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 67 | 한국어 | rL | r/l | 1, 3, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
-| 68 | 廣東話 | rL | r/l | 1, 3, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
-| 69 | Español | iVsI | iː/ɪ | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
-| 70 | 日本語 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 1 | Русский | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 2 | العربية | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 3 | हिन्दी / اردو | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 4 | हिन्दी / اردو | wV | w/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 5 | ภาษาไทย | vF | v/f | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 6 | 한국어 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 7 | 한국어 | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 8 | 中文 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 9 | 廣東話 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 10 | 日本語 | aVsUh | æ/ʌ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 11 | 日本語 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 12 | 日本語 | sTheta | s/θ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 13 | Português | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
+| 14 | Türkçe | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
+| 15 | 中文 | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
+| 16 | 日本語 | bV | b/v | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 17 | Bahasa Indonesia | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 18 | Bahasa Indonesia | ethD | ð/d | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 19 | Bahasa Indonesia | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 20 | Bahasa Indonesia | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 21 | Bahasa Indonesia | vF | v/f | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 22 | Español | aVsE | æ/ɛ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 23 | Español | bV | b/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 24 | Español | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 25 | Español | thetaS | θ/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 26 | Español | uhVsAh | ʌ/ɑː | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 27 | Português | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 28 | Português | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 29 | Tiếng Việt | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 30 | Tiếng Việt | ethD | ð/d | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 31 | Tiếng Việt | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 32 | Tiếng Việt | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 33 | Tiếng Việt | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 34 | Türkçe | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 35 | Русский | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 36 | Русский | hZero | h/∅ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 37 | Русский | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 38 | Русский | wV | w/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 39 | العربية | pB | p/b | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 40 | العربية | vF | v/f | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 41 | فارسی | wV | w/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 42 | हिन्दी / اردو | aVsE | æ/ɛ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 43 | हिन्दी / اردو | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 44 | ภาษาไทย | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 45 | ภาษาไทย | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 46 | ภาษาไทย | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 47 | 한국어 | fP | f/p | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 48 | 한국어 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 49 | 한국어 | vB | v/b | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 50 | 中文 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 51 | 中文 | thetaS | θ/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 52 | 中文 | vW | v/w | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 53 | 廣東話 | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 54 | 廣東話 | vW | v/w | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 55 | 日本語 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 56 | Português | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
+| 57 | Türkçe | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
+| 58 | العربية | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
+| 59 | فارسی | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
+| 60 | हिन्दी / اردو | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
+| 61 | ภาษาไทย | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
+| 62 | 廣東話 | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
+| 63 | 廣東話 | rL | r/l | 6 | 0 | 1 | Add 1 pair at tier 6 |
 
 ## 5. Notes for Future Data PRs
 

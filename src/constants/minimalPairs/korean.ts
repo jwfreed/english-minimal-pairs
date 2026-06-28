@@ -18,7 +18,11 @@ const make = ([w1, w2, diff, ipa1, ipa2, group, position]: Row, cp1: string, cp2
 /* ---------- word-lists with group IDs ---------------------------- */
 const iVsI: Row[] = [
   ['sheep', 'ship', 1, '/ʃiːp/', '/ʃɪp/', 'iVsI', 'medial'],
+  ['peel', 'pill', 1, '/piːl/', '/pɪl/', 'iVsI', 'medial'],
+  ['bean', 'bin', 1, '/biːn/', '/bɪn/', 'iVsI', 'medial'],
   ['leave', 'live', 2, '/liːv/', '/lɪv/', 'iVsI', 'medial'],
+  ['feel', 'fill', 2, '/fiːl/', '/fɪl/', 'iVsI', 'medial'],
+  ['reed', 'rid', 2, '/riːd/', '/rɪd/', 'iVsI', 'medial'],
   ['beat', 'bit', 3, '/biːt/', '/bɪt/', 'iVsI', 'medial'],
   ['feet', 'fit', 4, '/fiːt/', '/fɪt/', 'iVsI', 'medial'],
   ['neat', 'knit', 5, '/niːt/', '/nɪt/', 'iVsI', 'medial'],
@@ -72,7 +76,11 @@ const rL: Row[] = [
 
 const thetaS: Row[] = [
   ['thin', 'sin', 1, '/θɪn/', '/sɪn/', 'thetaS', 'initial'],
+  ['thaw', 'saw', 1, '/θɔː/', '/sɔː/', 'thetaS', 'initial'],
+  ['thumb', 'sum', 1, '/θʌm/', '/sʌm/', 'thetaS', 'initial'],
   ['thick', 'sick', 2, '/θɪk/', '/sɪk/', 'thetaS', 'initial'],
+  ['thought', 'sought', 2, '/θɔːt/', '/sɔːt/', 'thetaS', 'initial'],
+  ['thank', 'sank', 2, '/θæŋk/', '/sæŋk/', 'thetaS', 'initial'],
   ['think', 'sink', 3, '/θɪŋk/', '/sɪŋk/', 'thetaS', 'initial'],
   ['mouth', 'mouse', 4, '/maʊθ/', '/maʊs/', 'thetaS', 'final'],
   ['both', 'boss', 5, '/boʊθ/', '/bɒs/', 'thetaS', 'final'],

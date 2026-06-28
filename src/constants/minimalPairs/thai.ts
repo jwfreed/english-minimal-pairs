@@ -47,7 +47,11 @@ const ethD: Row[] = [
 
 const vF: Row[] = [
   ['vine', 'fine', 1, '/vaɪn/', '/faɪn/', 'vF', 'initial'],
+  ['vast', 'fast', 1, '/væst/', '/fæst/', 'vF', 'initial'],
+  ['veil', 'fail', 1, '/veɪl/', '/feɪl/', 'vF', 'initial'],
   ['vat', 'fat', 2, '/væt/', '/fæt/', 'vF', 'initial'],
+  ['vault', 'fault', 2, '/vɔːlt/', '/fɔːlt/', 'vF', 'initial'],
+  ['view', 'few', 2, '/vjuː/', '/fjuː/', 'vF', 'initial'],
   ['van', 'fan', 3, '/væn/', '/fæn/', 'vF', 'initial'],
   ['vase', 'face', 4, '/veɪs/', '/feɪs/', 'vF', 'initial'],
   ['save', 'safe', 5, '/seɪv/', '/seɪf/', 'vF', 'final'],

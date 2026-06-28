@@ -62,7 +62,11 @@ const rL: Row[] = [
 
 const iVsI: Row[] = [
   ['beat', 'bit', 1, '/biːt/', '/bɪt/', 'iVsI', 'medial'],
+  ['sheep', 'ship', 1, '/ʃiːp/', '/ʃɪp/', 'iVsI', 'medial'],
+  ['bean', 'bin', 1, '/biːn/', '/bɪn/', 'iVsI', 'medial'],
   ['leave', 'live', 2, '/liːv/', '/lɪv/', 'iVsI', 'medial'],
+  ['feel', 'fill', 2, '/fiːl/', '/fɪl/', 'iVsI', 'medial'],
+  ['reed', 'rid', 2, '/riːd/', '/rɪd/', 'iVsI', 'medial'],
   ['feet', 'fit', 3, '/fiːt/', '/fɪt/', 'iVsI', 'medial'],
   ['seat', 'sit', 4, '/siːt/', '/sɪt/', 'iVsI', 'medial'],
   ['neat', 'knit', 5, '/niːt/', '/nɪt/', 'iVsI', 'medial'],

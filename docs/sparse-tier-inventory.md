@@ -9,11 +9,11 @@
 |---|---:|
 | Total contrast groups (category × group) | 70 |
 | Total group/tier combinations present | 420 |
-| Healthy (≥ 2 pairs) | 197 |
-| Single-pair tiers (HIGH + MEDIUM) | 223 |
+| Healthy (≥ 2 pairs) | 223 |
+| Single-pair tiers (HIGH + MEDIUM) | 197 |
 | Possible missing-tier gaps | 0 |
 
-**223 of 420 group/tier slots (53%) contain exactly one pair and cannot provide rotation variety at that tier.**
+**197 of 420 group/tier slots (47%) contain exactly one pair and cannot provide rotation variety at that tier.**
 
 This is a dataset coverage limitation, not a scheduler bug. The scheduler handles single-pair tiers correctly; expanding the dataset is the only way to improve variety.
 
@@ -28,44 +28,18 @@ Sorted by: severity → category → group → tier.
 | Português | uVsU | uː/ʊ | 2 | suit/soot | HIGH |
 | Türkçe | uVsU | uː/ʊ | 1 | pool/pull | HIGH |
 | Türkçe | uVsU | uː/ʊ | 2 | suit/soot | HIGH |
-| Русский | thetaS | θ/s | 1 | thin/sin | HIGH |
-| Русский | thetaS | θ/s | 2 | thick/sick | HIGH |
 | Русский | thetaS | θ/s | 3 | think/sink | HIGH |
-| العربية | thetaS | θ/s | 1 | thin/sin | HIGH |
-| العربية | thetaS | θ/s | 2 | thick/sick | HIGH |
 | العربية | thetaS | θ/s | 3 | think/sink | HIGH |
-| हिन्दी / اردو | thetaT | θ/t | 1 | thin/tin | HIGH |
-| हिन्दी / اردو | thetaT | θ/t | 2 | thick/tick | HIGH |
-| हिन्दी / اردو | thetaT | θ/t | 3 | thank/tank | HIGH |
 | हिन्दी / اردو | wV | w/v | 1 | wine/vine | HIGH |
 | हिन्दी / اردو | wV | w/v | 2 | west/vest | HIGH |
 | हिन्दी / اردو | wV | w/v | 3 | wow/vow | HIGH |
-| ภาษาไทย | vF | v/f | 1 | vine/fine | HIGH |
-| ภาษาไทย | vF | v/f | 2 | vat/fat | HIGH |
 | ภาษาไทย | vF | v/f | 3 | van/fan | HIGH |
-| 한국어 | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| 한국어 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
 | 한국어 | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| 한국어 | thetaS | θ/s | 1 | thin/sin | HIGH |
-| 한국어 | thetaS | θ/s | 2 | thick/sick | HIGH |
 | 한국어 | thetaS | θ/s | 3 | think/sink | HIGH |
-| 中文 | iVsI | iː/ɪ | 1 | beat/bit | HIGH |
-| 中文 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
 | 中文 | iVsI | iː/ɪ | 3 | feet/fit | HIGH |
 | 中文 | uVsU | uː/ʊ | 1 | pool/pull | HIGH |
 | 中文 | uVsU | uː/ʊ | 2 | suit/soot | HIGH |
-| 廣東話 | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| 廣東話 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| 廣東話 | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| 日本語 | aVsUh | æ/ʌ | 1 | cat/cut | HIGH |
-| 日本語 | aVsUh | æ/ʌ | 2 | batter/butter | HIGH |
-| 日本語 | aVsUh | æ/ʌ | 3 | ran/run | HIGH |
 | 日本語 | bV | b/v | 3 | bow/vow | HIGH |
-| 日本語 | iVsI | iː/ɪ | 1 | sheep/ship | HIGH |
-| 日本語 | iVsI | iː/ɪ | 2 | leave/live | HIGH |
-| 日本語 | iVsI | iː/ɪ | 3 | beat/bit | HIGH |
-| 日本語 | sTheta | s/θ | 1 | sink/think | HIGH |
-| 日本語 | sTheta | s/θ | 2 | sick/thick | HIGH |
 | 日本語 | sTheta | s/θ | 3 | mass/math | HIGH |
 | Bahasa Indonesia | aVsUh | æ/ʌ | 4 | cap/cup | MEDIUM |
 | Bahasa Indonesia | aVsUh | æ/ʌ | 5 | hang/hung | MEDIUM |
@@ -258,60 +232,60 @@ Sorted by: HIGH sparse tiers desc → MEDIUM sparse tiers desc → category → 
 
 | Priority | Category | Group ID | Contrast | Sparse tiers | HIGH | MEDIUM | Suggested action |
 |---:|---|---|---|---|---:|---:|---|
-| 1 | Русский | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 2 | العربية | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 3 | हिन्दी / اردو | thetaT | θ/t | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 4 | हिन्दी / اردو | wV | w/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 5 | ภาษาไทย | vF | v/f | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 6 | 한국어 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 7 | 한국어 | thetaS | θ/s | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 8 | 中文 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 9 | 廣東話 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 10 | 日本語 | aVsUh | æ/ʌ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 11 | 日本語 | iVsI | iː/ɪ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 12 | 日本語 | sTheta | s/θ | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
-| 13 | Português | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
-| 14 | Türkçe | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
-| 15 | 中文 | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
-| 16 | 日本語 | bV | b/v | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
-| 17 | Bahasa Indonesia | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 18 | Bahasa Indonesia | ethD | ð/d | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 19 | Bahasa Indonesia | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 20 | Bahasa Indonesia | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 21 | Bahasa Indonesia | vF | v/f | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 22 | Español | aVsE | æ/ɛ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 23 | Español | bV | b/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 24 | Español | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 25 | Español | thetaS | θ/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 26 | Español | uhVsAh | ʌ/ɑː | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 27 | Português | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 28 | Português | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 29 | Tiếng Việt | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 30 | Tiếng Việt | ethD | ð/d | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 31 | Tiếng Việt | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 32 | Tiếng Việt | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 33 | Tiếng Việt | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 34 | Türkçe | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 35 | Русский | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 36 | Русский | hZero | h/∅ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 37 | Русский | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 38 | Русский | wV | w/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 39 | العربية | pB | p/b | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 40 | العربية | vF | v/f | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 41 | فارسی | wV | w/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 42 | हिन्दी / اردو | aVsE | æ/ɛ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 43 | हिन्दी / اردو | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 44 | ภาษาไทย | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 45 | ภาษาไทย | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 46 | ภาษาไทย | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 47 | 한국어 | fP | f/p | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 48 | 한국어 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 49 | 한국어 | vB | v/b | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 50 | 中文 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 51 | 中文 | thetaS | θ/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 52 | 中文 | vW | v/w | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 53 | 廣東話 | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
-| 54 | 廣東話 | vW | v/w | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 1 | हिन्दी / اردو | wV | w/v | 1, 2, 3, 4, 5, 6 | 3 | 3 | Add 1 pair each at tiers 1, 2, 3 |
+| 2 | Português | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
+| 3 | Türkçe | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
+| 4 | 中文 | uVsU | uː/ʊ | 1, 2, 4, 5, 6 | 2 | 3 | Add 1 pair at earliest sparse tier (1) |
+| 5 | Русский | thetaS | θ/s | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 6 | العربية | thetaS | θ/s | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 7 | ภาษาไทย | vF | v/f | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 8 | 한국어 | iVsI | iː/ɪ | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 9 | 한국어 | thetaS | θ/s | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 10 | 中文 | iVsI | iː/ɪ | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 11 | 日本語 | bV | b/v | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 12 | 日本語 | sTheta | s/θ | 3, 4, 5, 6 | 1 | 3 | Add 1 pair at earliest sparse tier (3) |
+| 13 | Bahasa Indonesia | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 14 | Bahasa Indonesia | ethD | ð/d | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 15 | Bahasa Indonesia | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 16 | Bahasa Indonesia | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 17 | Bahasa Indonesia | vF | v/f | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 18 | Español | aVsE | æ/ɛ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 19 | Español | bV | b/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 20 | Español | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 21 | Español | thetaS | θ/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 22 | Español | uhVsAh | ʌ/ɑː | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 23 | Português | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 24 | Português | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 25 | Tiếng Việt | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 26 | Tiếng Việt | ethD | ð/d | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 27 | Tiếng Việt | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 28 | Tiếng Việt | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 29 | Tiếng Việt | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 30 | Türkçe | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 31 | Русский | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 32 | Русский | hZero | h/∅ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 33 | Русский | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 34 | Русский | wV | w/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 35 | العربية | pB | p/b | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 36 | العربية | vF | v/f | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 37 | فارسی | wV | w/v | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 38 | हिन्दी / اردو | aVsE | æ/ɛ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 39 | हिन्दी / اردو | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 40 | हिन्दी / اردو | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 41 | ภาษาไทย | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 42 | ภาษาไทย | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 43 | ภาษาไทย | zS | z/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 44 | 한국어 | fP | f/p | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 45 | 한국어 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 46 | 한국어 | vB | v/b | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 47 | 中文 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 48 | 中文 | thetaS | θ/s | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 49 | 中文 | vW | v/w | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 50 | 廣東話 | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 51 | 廣東話 | thetaT | θ/t | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 52 | 廣東話 | vW | v/w | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 53 | 日本語 | aVsUh | æ/ʌ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
+| 54 | 日本語 | iVsI | iː/ɪ | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
 | 55 | 日本語 | rL | r/l | 4, 5, 6 | 0 | 3 | Add 1 pair at tier 4 |
 | 56 | Português | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |
 | 57 | Türkçe | ethD | ð/d | 5, 6 | 0 | 2 | Add 1 pair at tier 5 |

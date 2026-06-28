@@ -28,8 +28,12 @@ place, no blocking inconsistency remains.
 All remaining coverage deficits (239 missing slot-pairs; 197 single-pair tiers)
 map to previously documented, intentionally accepted classifications. None is a
 new or unexplained gap. Pedagogical completeness — not numeric target closure —
-is the freeze standard, and every contrast group now provides early-tier
-rotation variety at tiers 1–2 (most also at tier 3).
+is the freeze standard, and most contrast groups now provide early-tier
+rotation variety at tiers 1–2 (most also at tier 3). The remaining
+single-pair early tiers are intentional, documented SCARCITY_LIMITED
+exceptions — Português/uVsU, Türkçe/uVsU, 中文/uVsU (pool/pull and
+suit/soot exhaust the clean uː/ʊ pool), and हिन्दी / اردو/wV (w/v-family
+scarcity) — all catalogued in §Remaining Gap Taxonomy below.
 
 ## Final Inventory
 

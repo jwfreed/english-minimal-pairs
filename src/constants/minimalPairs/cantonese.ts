@@ -78,8 +78,14 @@ const rL: Row[] = [
 
 const iVsI: Row[] = [
   ['sheep', 'ship', 1, '/ʃiːp/', '/ʃɪp/', 'iVsI', 'medial'],
+  ['peel', 'pill', 1, '/piːl/', '/pɪl/', 'iVsI', 'medial'],
+  ['bean', 'bin', 1, '/biːn/', '/bɪn/', 'iVsI', 'medial'],
   ['leave', 'live', 2, '/liːv/', '/lɪv/', 'iVsI', 'medial'],
+  ['feel', 'fill', 2, '/fiːl/', '/fɪl/', 'iVsI', 'medial'],
+  ['reed', 'rid', 2, '/riːd/', '/rɪd/', 'iVsI', 'medial'],
   ['beat', 'bit', 3, '/biːt/', '/bɪt/', 'iVsI', 'medial'],
+  ['seal', 'sill', 3, '/siːl/', '/sɪl/', 'iVsI', 'medial'],
+  ['heap', 'hip', 3, '/hiːp/', '/hɪp/', 'iVsI', 'medial'],
   ['feet', 'fit', 4, '/fiːt/', '/fɪt/', 'iVsI', 'medial'],
   ['neat', 'knit', 5, '/niːt/', '/nɪt/', 'iVsI', 'medial'],
   ['peach', 'pitch', 6, '/piːtʃ/', '/pɪtʃ/', 'iVsI', 'medial'],

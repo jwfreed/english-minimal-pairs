@@ -2,13 +2,38 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
+import type { AudioMode } from 'expo-audio';
 import type { Pair } from '@/src/constants/minimalPairs';
 import {
   buildSpeechOptions,
   getPlaybackWord,
   requireIosVoicesForPlayback,
 } from '@/src/domain/audioPlayback';
+
+// Audio-session configuration for TTS playback. `playsInSilentMode` is the
+// critical setting: without it, iOS mutes TTS when the ring/silent switch is on.
+const IOS_PLAYBACK_AUDIO_MODE: Partial<AudioMode> = {
+  playsInSilentMode: true,
+  interruptionMode: 'duckOthers',
+  allowsRecording: false,
+  shouldPlayInBackground: false,
+};
+
+// Also used on web, where expo-audio's setAudioModeAsync is a no-op.
+const ANDROID_PLAYBACK_AUDIO_MODE: Partial<AudioMode> = {
+  interruptionMode: 'duckOthers',
+  shouldPlayInBackground: false,
+};
+
+// WORKAROUND (temporary, iOS only): playing a short silent file after
+// configuring the audio session keeps expo-speech audible when the iOS
+// ring/silent switch is on. Whether expo-audio still needs this is an open
+// question scheduled for a separate physical-device experiment; do not remove
+// it as part of unrelated changes.
+// See: https://stackoverflow.com/questions/61949934/expo-speech-not-working-on-some-ios-devices/62331403#62331403
+// scripts/validate-audio-assets.js checks that this file references silent.mp3.
+const SILENT_WARMUP_SOURCE = require('../../assets/audio/silent.mp3');
 
 /**
  * Custom hook for text-to-speech playback of minimal pairs
@@ -23,9 +48,20 @@ export const useAudio = (
 ) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioModeReady, setAudioModeReady] = useState(false);
-  const silentSoundRef = useRef<Audio.Sound | null>(null);
   const availableVoicesRef = useRef<Speech.Voice[] | null>(null);
   const audioModeConfiguredRef = useRef(false);
+
+  // Lifecycle-managed player for the one-time iOS warmup; released
+  // automatically on unmount. Non-iOS platforms get a source-less player that
+  // never plays. `keepAudioSessionActive` prevents expo-audio from
+  // deactivating the iOS audio session when the warmup clip finishes — the
+  // previous audio library deliberately never deactivated the session while
+  // the app was foregrounded (see expo/expo#15873), and deactivation would
+  // undo the silent-mode workaround before TTS runs.
+  const silentWarmupPlayer = useAudioPlayer(
+    Platform.OS === 'ios' ? SILENT_WARMUP_SOURCE : null,
+    { keepAudioSessionActive: true }
+  );
 
   const debugLog = useCallback(
     (..._args: Parameters<typeof console.log>) => {},
@@ -63,30 +99,18 @@ export const useAudio = (
           // Configure audio session to play even when device is in silent mode
           // This is critical for TTS to work when the phone is in silent mode
           debugLog('🔧 Configuring audio mode…');
-          await Audio.setAudioModeAsync({
-            playsInSilentModeIOS: true,
-            staysActiveInBackground: false,
-            shouldDuckAndroid: false,
-            interruptionModeIOS: 2, // INTERRUPTION_MODE_IOS_DUCK_OTHERS
-            allowsRecordingIOS: false,
-          });
+          await setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE);
           audioModeConfiguredRef.current = true;
           debugLog('✅ Audio mode configured for silent mode playback');
 
-          // WORKAROUND: Play a silent audio file to enable TTS in silent mode
-          // This is a known workaround for expo-speech on iOS
-          // See: https://stackoverflow.com/questions/61949934/expo-speech-not-working-on-some-ios-devices/62331403#62331403
+          // One-time silent warmup — see SILENT_WARMUP_SOURCE above.
           try {
-            debugLog('🔇 Loading silent audio file…');
-            const { sound } = await Audio.Sound.createAsync(
-              require('../../assets/audio/silent.mp3')
-            );
-            silentSoundRef.current = sound;
-            await sound.playAsync();
+            debugLog('🔇 Playing silent warmup audio…');
+            silentWarmupPlayer.play();
             debugLog('✅ Silent audio played - iOS silent-mode workaround enabled');
           } catch (soundError) {
             debugWarn(
-              '⚠️ Could not load silent audio, TTS may not work in silent mode:',
+              '⚠️ Could not play silent audio, TTS may not work in silent mode:',
               soundError
             );
           }
@@ -105,11 +129,7 @@ export const useAudio = (
           }
         } else {
           // On Android, just configure audio mode
-          await Audio.setAudioModeAsync({
-            playsInSilentModeIOS: false,
-            staysActiveInBackground: false,
-            shouldDuckAndroid: true,
-          });
+          await setAudioModeAsync(ANDROID_PLAYBACK_AUDIO_MODE);
           audioModeConfiguredRef.current = true;
           debugLog('✅ Audio mode configured for Android');
         }
@@ -134,24 +154,10 @@ export const useAudio = (
 
     checkPlatform();
 
-    // Cleanup: unload silent sound
     return () => {
       cancelled = true;
-      const silentSound = silentSoundRef.current;
-      silentSoundRef.current = null;
-      if (silentSound) {
-        (async () => {
-          try {
-            await silentSound.stopAsync().catch(() => undefined);
-          } finally {
-            await silentSound.unloadAsync();
-          }
-        })().catch((error) => {
-          debugWarn('⚠️ Error releasing silent audio resource:', error);
-        });
-      }
     };
-  }, [debugError, debugLog, debugWarn]);
+  }, [debugError, debugLog, debugWarn, silentWarmupPlayer]);
 
   /**
    * Plays the specified word using text-to-speech
@@ -174,13 +180,7 @@ export const useAudio = (
         // where the audio session might have been interrupted or reset
         if (!audioModeConfiguredRef.current) {
           try {
-            await Audio.setAudioModeAsync({
-              playsInSilentModeIOS: true,
-              staysActiveInBackground: false,
-              shouldDuckAndroid: false,
-              interruptionModeIOS: 2, // INTERRUPTION_MODE_IOS_DUCK_OTHERS
-              allowsRecordingIOS: false,
-            });
+            await setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE);
             audioModeConfiguredRef.current = true;
             debugLog('🔧 Audio mode re-confirmed before playback');
           } catch (error) {

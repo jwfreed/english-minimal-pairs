@@ -137,7 +137,9 @@ This runs: lint · typecheck · data validation · audio asset validation · uni
 > This cannot be validated by automated tests.
 
 - [ ] Put the iOS device into silent mode (physical switch on the side).
-  Expected: **TTS audio still plays** through the speaker. `expo-av` is configured with `INTERRUPTION_MODE_IOS_DO_NOT_MIX` and `playsInSilentModeIOS: true`; the app intentionally overrides silent mode for learning audio. Ringtones and notifications should be muted, but the app's TTS must not be.
+  Expected: **TTS audio still plays** through the speaker. `expo-audio` is configured with `playsInSilentMode: true` and `interruptionMode: 'duckOthers'`; the app intentionally overrides silent mode for learning audio. Ringtones and notifications should be muted, but the app's TTS must not be.
+- [ ] Turn silent mode off (switch back to ring) and tap Listen.
+  Expected: TTS plays normally; no change in volume or routing versus silent mode.
 - [ ] Verify no regression: muting with the iOS volume buttons does reduce app audio volume (the silent switch alone should not silence TTS).
 
 ### 15. Background / Foreground Behavior
@@ -148,6 +150,32 @@ This runs: lint · typecheck · data validation · audio asset validation · uni
   Expected: app resumes at the same round state without crash; a tap on Listen replays correctly.
 - [ ] Receive a phone call during a round (if testable).
   Expected: TTS audio pauses; call audio works normally; returning to the app does not crash audio session.
+
+### 16. Audio Session Regression Checks (expo-audio migration)
+
+> Added for the migration to `expo-audio`. Run on physical devices after any change to `src/hooks/useAudio.ts` or the audio dependencies.
+
+- [ ] Tap Listen rapidly 5+ times while speech is still playing.
+  Expected: the previous utterance stops, the latest one plays, and the speaking state does not get stuck (Listen keeps working afterward).
+- [ ] Start music in another app (e.g. Music/Spotify), return to the app, tap Listen.
+  Expected: the other app's audio ducks (lowers) during TTS and recovers afterward; TTS is clearly audible over it.
+- [ ] Navigate to another tab during playback, and again immediately after playback ends.
+  Expected: no crash, no audio glitch, and returning to Practice lets Listen work normally.
+- [ ] iOS Simulator only: tap Listen with no TTS voices installed.
+  Expected: the existing explicit error appears ("TTS not available on iOS Simulator. Please test on a physical device."); the app does not hang or crash.
+- [ ] In Settings, refresh the voice list and toggle a voice exclusion, then play several rounds.
+  Expected: voice rotation behavior is unchanged; excluded voices are never used; no audio-session errors.
+
+**First-utterance checks (iOS, silent switch on).** These specifically test the moment the audio session must be (re-)configured before speech runs — the highest-risk point for a swallowed first word:
+
+- [ ] Cold launch: force-quit the app, relaunch, and tap Listen as the very first action.
+  Expected: the first utterance is audible; it is not silently dropped while the session/warmup initializes.
+- [ ] Foreground recovery: background the app for several seconds, return to it, and tap Listen as the first action after returning.
+  Expected: the first utterance after resuming is audible, not just the second or later tap.
+- [ ] Interruption recovery: receive a phone call (or trigger another system interruption) during idle time, dismiss it, and tap Listen as the first action afterward.
+  Expected: the first utterance after the interruption ends is audible.
+- [ ] Bluetooth route change: with the app open and idle, connect (or disconnect) a Bluetooth audio device, then tap Listen as the first action after the route change.
+  Expected: the first utterance after the route change is audible and plays through the new route.
 
 ---
 

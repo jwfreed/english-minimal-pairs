@@ -56,7 +56,7 @@ type IosAudioSessionExperimentVariant =
 // The `as` widening keeps TypeScript from narrowing the const to one literal,
 // which would make the other variants' comparisons compile errors.
 const IOS_AUDIO_SESSION_EXPERIMENT =
-  'A-silent-warmup' as IosAudioSessionExperimentVariant;
+  'B-no-warmup' as IosAudioSessionExperimentVariant;
 
 const IOS_SILENT_WARMUP_ENABLED =
   IOS_AUDIO_SESSION_EXPERIMENT === 'A-silent-warmup';

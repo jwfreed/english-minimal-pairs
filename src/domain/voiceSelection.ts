@@ -96,3 +96,26 @@ export function applyUserExclusions<V extends SelectableVoice>(
 ): V[] {
   return eligible.filter((voice) => !excludedIds.has(voice.identifier));
 }
+
+/** Rotation priority tier: lower cycles earlier. Tiers order, never gate. */
+function rotationTier(voice: SelectableVoice): number {
+  if (isUsEnglish(voice)) return isEnhanced(voice) ? 0 : 1;
+  return isEnhanced(voice) ? 2 : 3;
+}
+
+/**
+ * Prioritized rotation pool. Contains every voice from the input — defaults
+ * are never discarded because enhanced voices exist. Order:
+ *   1. en-US enhanced  2. en-US default  3. other en-* enhanced
+ *   4. other en-* default; lexical tie-break within a tier.
+ * Empty input returns [] (callers fall back to the system default voice).
+ */
+export function buildVoiceRotationPool<V extends SelectableVoice>(
+  pool: readonly V[]
+): V[] {
+  return [...pool].sort((a, b) => {
+    const byTier = rotationTier(a) - rotationTier(b);
+    if (byTier !== 0) return byTier;
+    return compareLexical(a, b);
+  });
+}

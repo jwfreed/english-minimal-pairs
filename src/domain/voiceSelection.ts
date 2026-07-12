@@ -88,3 +88,11 @@ export function collectEligibleVoices<V extends SelectableVoice>(
   }
   return deduped.sort(compareUiOrder);
 }
+
+/** Active pool shown in Settings: eligible voices minus user exclusions. */
+export function applyUserExclusions<V extends SelectableVoice>(
+  eligible: readonly V[],
+  excludedIds: ReadonlySet<string>
+): V[] {
+  return eligible.filter((voice) => !excludedIds.has(voice.identifier));
+}

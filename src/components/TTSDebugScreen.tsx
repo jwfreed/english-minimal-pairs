@@ -12,9 +12,21 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform } from '
 import * as Speech from 'expo-speech';
 import { buildSpeechOptions, type SpeechOptions } from '@/src/domain/audioPlayback';
 import { useSettings } from '@/src/context/SettingsContext';
+import { minimalPairs } from '@/src/constants/minimalPairs';
 
 // Same rate the placement test uses; production practice varies it per user.
 const DEBUG_RATE = 1.0;
+
+// Deterministic pronunciation-audit sample: both words of the first two pairs
+// of the first category, with their intended IPA so a listener can compare
+// what the voice says against what the dataset claims. Flagged pairs from
+// docs/pronunciation-risk-audit.md can be checked the same way.
+const AUDIT_SAMPLE: { word: string; ipa: string }[] = minimalPairs[0].pairs
+  .slice(0, 2)
+  .flatMap((pair) => [
+    { word: pair.word1, ipa: pair.ipa1 },
+    { word: pair.word2, ipa: pair.ipa2 },
+  ]);
 
 export default function TTSDebugScreen() {
   const { getNextVoice } = useSettings();
@@ -55,7 +67,11 @@ export default function TTSDebugScreen() {
       });
       setLastOptions(options);
       addLog(
-        `🎤 voice: ${voice ? `${voice.name} (${voice.identifier})` : 'system default'}`
+        `🎤 voice: ${
+          voice
+            ? `${voice.name} (${voice.identifier}) [${voice.quality ?? 'unknown quality'}]`
+            : 'system default'
+        }`
       );
       addLog(`🌐 locale: ${options.language}`);
       try {
@@ -112,11 +128,10 @@ export default function TTSDebugScreen() {
   };
 
   const testMinimalPairWords = async () => {
-    addLog('📚 Testing minimal pair words with rotating production voices...');
-    const words = ['sheep', 'ship', 'light', 'right'];
+    addLog('📚 Testing dataset minimal-pair words with rotating production voices...');
 
-    for (const word of words) {
-      addLog(`   Speaking: ${word}`);
+    for (const { word, ipa } of AUDIT_SAMPLE) {
+      addLog(`   Speaking: ${word} — intended IPA ${ipa}`);
       await speakWord(word, getNextVoice());
       // Wait 500ms between words
       await new Promise(resolve => setTimeout(resolve, 500));

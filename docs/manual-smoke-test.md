@@ -245,11 +245,35 @@ A single success is not sufficient evidence.
 | 11 | Navigate away during / just after playback | No crash, no stuck audio state |
 | 12 | Force quit, relaunch, first utterance | Audible on first tap |
 
+### Verified TestFlight build log
+
+Record each production build's variant here **before** testing, verified
+against the EAS build record (`eas build:list --platform ios`), not inferred
+from the marketing version number — `appVersionSource` is `"remote"`
+([eas.json](../eas.json)), so `app.json`'s committed `buildNumber` does not
+reflect the actual submitted build number, and the same marketing version
+(e.g. `1.1.3`) can span multiple build numbers and multiple commits.
+
+| Build no. | Version | Commit | Profile | Build date | Selector value at that commit | Verified via |
+|---|---|---|---|---|---|---|
+| 78 | 1.1.3 | `5b83006280384eac68a5994ebe1398afcf0becde` | production | 2026-07-12 | `B-no-warmup` | `eas build:list` + `git show <commit>:src/hooks/useAudio.ts` |
+| 77 | 1.1.3 | `a3f4ef41062cf378af174a4bc9732e2b3eb92af2` | production | 2026-07-12 | `A-silent-warmup` | `eas build:list` + `git show <commit>:src/hooks/useAudio.ts` |
+| 76 | 1.1.3 | `0f168d3c99db2f1b049005975b8252eff9a03225` | production | 2026-07-11 | n/a — pre-experiment (PR 1 migration; selector did not exist yet) | `eas build:list` |
+
+**Build 78 is the Variant B build.** This is the first build with the warmup
+disabled — use it (and only it) to log results against the Variant B rows in
+the Results log below.
+
+Build 77 is the **baseline (A)** configuration — it predates any B or C
+build. Do not record device results for build 77 against variant B or C rows
+below; any testing on build 77 only re-validates the current shipping
+behavior, not the experiment.
+
 ### Results log
 
-| Variant | Device / iOS | Build no. | Scenario # | Attempt | Pass/Fail | Notes |
-|---|---|---|---|---|---|---|
-| | | | | | | |
+| Variant | Device / iOS | Build no. | Commit | Scenario # | Attempt | Pass/Fail | Notes |
+|---|---|---|---|---|---|---|---|
+| | | | | | | | |
 
 ### Decision rule
 

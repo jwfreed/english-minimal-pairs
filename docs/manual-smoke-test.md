@@ -179,6 +179,89 @@ This runs: lint · typecheck · data validation · audio asset validation · uni
 
 ---
 
+## 17. TEMPORARY — iOS Silent-Warmup Experiment (app-060 / PR 2)
+
+> **Temporary section.** Remove together with the `IOS_AUDIO_SESSION_EXPERIMENT`
+> selector in `src/hooks/useAudio.ts` once the experiment reaches a decision.
+> This experiment determines whether the `silent.mp3` warmup is still required
+> now that `expo-audio` configures the audio session.
+
+### Build variants
+
+The variant is selected at build time by the `IOS_AUDIO_SESSION_EXPERIMENT`
+constant in `src/hooks/useAudio.ts`. Produce each TestFlight build from a
+commit where the constant is unambiguous, and record the constant value with
+the build number below **before** testing. The committed ship value is
+`'A-silent-warmup'`.
+
+| Variant | Constant value | What changes |
+|---|---|---|
+| A (baseline) | `'A-silent-warmup'` | Current shipping behavior: warmup plays once after session config. |
+| B (primary) | `'B-no-warmup'` | The silent `expo-audio` player is never loaded or played, so it triggers no session activation/retention; everything else identical. See Controls below — this is not just "no warmup sound." |
+| C (secondary) | `'C-system-speech-session'` | No warmup **and** `useApplicationAudioSession: false` — iOS owns the speech session. Answers a different question than B; do not treat C results as evidence about B. |
+
+### Controls — hold constant across variants
+
+Same physical iPhone, same iOS version, same build configuration
+(TestFlight/release), same selected TTS voice, same test words, same app
+settings, same playback rate, same network state, and the same
+Bluetooth/headphone route per scenario.
+
+The effective independent variable between A and B is **whether the silent
+`expo-audio` player is loaded and played** — not merely "whether the warmup
+plays." In A, `useAudioPlayer` is given the `silent.mp3` source and `.play()`
+is called, which triggers expo-audio's own session activation (and, via
+`keepAudioSessionActive: true`, retention of that active session after the
+clip finishes). In B, `useAudioPlayer` is given `null`: no source is loaded,
+`.play()` is never called, and `keepAudioSessionActive` is therefore inert —
+it has nothing to retain. So B does not just "skip a warmup sound"; it
+removes every session-activation and session-retention effect that loading
+and playing that player would otherwise cause, and relies entirely on the
+AppDelegate plugin's launch-time activation (see note below) plus
+`expo-speech`'s own session handling. Treat the two as differing in that
+whole bundle of effects, not in playback of one audio clip alone.
+
+Note: `plugins/withAudioSession.js` natively sets and activates the audio
+session in the AppDelegate at launch in **all** variants. It is part of the
+baseline environment, not an experiment variable.
+
+### Test matrix — run per variant, per device
+
+Repeat every first-utterance scenario (1, 2, 5, 6, 7, 12) at least 3 times.
+A single success is not sufficient evidence.
+
+| # | Scenario | Pass criterion |
+|---|---|---|
+| 1 | Cold launch, silent switch ON, first utterance | First word audible, not swallowed |
+| 2 | Cold launch, silent switch OFF, first utterance | First word audible |
+| 3 | Second and later utterances | All audible, no degradation |
+| 4 | Rapid repeated Listen taps (5+) | Latest utterance plays; state never sticks |
+| 5 | Background ≥10 s, foreground, first utterance | Audible on first tap after return |
+| 6 | Interruption (phone call/timer), dismiss, first utterance | Audible on first tap after interruption |
+| 7 | Connect/disconnect Bluetooth while idle, first utterance | Audible through the new route |
+| 8 | Wired or wireless headphones | Routes to headphones, audible |
+| 9 | Playback while another app plays audio | Other audio ducks during TTS, recovers after |
+| 10 | Idle ≥30 s after playback | Other apps' audio is NOT still ducked |
+| 11 | Navigate away during / just after playback | No crash, no stuck audio state |
+| 12 | Force quit, relaunch, first utterance | Audible on first tap |
+
+### Results log
+
+| Variant | Device / iOS | Build no. | Scenario # | Attempt | Pass/Fail | Notes |
+|---|---|---|---|---|---|---|
+| | | | | | | |
+
+### Decision rule
+
+Remove `silent.mp3` (and this section, the experiment selector, and the
+validator entry) only if variant B passes the full matrix — including
+repeated first-utterance runs and silent-switch scenarios — on at least two
+physical iOS versions or devices, with no stuck ducking and no regression in
+repeated playback or route changes. If evidence is incomplete or mixed,
+retain the warmup and remove the experiment selector.
+
+---
+
 ## Failure Log
 
 Record any failures below. Do not ship if any item marked Critical is failing.

@@ -35,6 +35,32 @@ const ANDROID_PLAYBACK_AUDIO_MODE: Partial<AudioMode> = {
 // scripts/validate-audio-assets.js checks that this file references silent.mp3.
 const SILENT_WARMUP_SOURCE = require('../../assets/audio/silent.mp3');
 
+// EXPERIMENT (temporary, app-060, iOS only): build-time selector for the
+// silent-warmup necessity experiment. Each physical-device test build must be
+// produced from a commit where this constant is unambiguous; record the value
+// alongside the build number in docs/manual-smoke-test.md before testing.
+// Ship value: 'A-silent-warmup'. Remove this selector once the experiment
+// reaches a decision.
+//   'A-silent-warmup'         Baseline: warmup plays once after session config.
+//   'B-no-warmup'             App audio session only; the warmup never plays.
+//   'C-system-speech-session' No warmup, and expo-speech is told to use a
+//                             system-managed speech session
+//                             (useApplicationAudioSession: false). Answers a
+//                             different question than B — session ownership
+//                             moves to iOS — so do not compare it against A as
+//                             if it were B.
+type IosAudioSessionExperimentVariant =
+  | 'A-silent-warmup'
+  | 'B-no-warmup'
+  | 'C-system-speech-session';
+// The `as` widening keeps TypeScript from narrowing the const to one literal,
+// which would make the other variants' comparisons compile errors.
+const IOS_AUDIO_SESSION_EXPERIMENT =
+  'A-silent-warmup' as IosAudioSessionExperimentVariant;
+
+const IOS_SILENT_WARMUP_ENABLED =
+  IOS_AUDIO_SESSION_EXPERIMENT === 'A-silent-warmup';
+
 /**
  * Custom hook for text-to-speech playback of minimal pairs
  * @param selectedPair  The currently displayed minimal‑pair object (may be undefined on first render)
@@ -52,14 +78,21 @@ export const useAudio = (
   const audioModeConfiguredRef = useRef(false);
 
   // Lifecycle-managed player for the one-time iOS warmup; released
-  // automatically on unmount. Non-iOS platforms get a source-less player that
-  // never plays. `keepAudioSessionActive` prevents expo-audio from
+  // automatically on unmount. Non-iOS platforms — and no-warmup experiment
+  // variants — get a source-less player that never plays. A source-less
+  // player never calls play() and therefore never triggers expo-audio's own
+  // session activation/retention, so `keepAudioSessionActive: true` is inert
+  // in those variants; it is kept in the constructor call only so the two
+  // code paths stay visually parallel, not because it makes B or C behave
+  // like A. In the warmup-enabled case, it prevents expo-audio from
   // deactivating the iOS audio session when the warmup clip finishes — the
   // previous audio library deliberately never deactivated the session while
   // the app was foregrounded (see expo/expo#15873), and deactivation would
   // undo the silent-mode workaround before TTS runs.
   const silentWarmupPlayer = useAudioPlayer(
-    Platform.OS === 'ios' ? SILENT_WARMUP_SOURCE : null,
+    Platform.OS === 'ios' && IOS_SILENT_WARMUP_ENABLED
+      ? SILENT_WARMUP_SOURCE
+      : null,
     { keepAudioSessionActive: true }
   );
 
@@ -104,15 +137,20 @@ export const useAudio = (
           debugLog('✅ Audio mode configured for silent mode playback');
 
           // One-time silent warmup — see SILENT_WARMUP_SOURCE above.
-          try {
-            debugLog('🔇 Playing silent warmup audio…');
-            silentWarmupPlayer.play();
-            debugLog('✅ Silent audio played - iOS silent-mode workaround enabled');
-          } catch (soundError) {
-            debugWarn(
-              '⚠️ Could not play silent audio, TTS may not work in silent mode:',
-              soundError
-            );
+          debugLog(
+            `🧪 iOS audio-session experiment variant: ${IOS_AUDIO_SESSION_EXPERIMENT}`
+          );
+          if (IOS_SILENT_WARMUP_ENABLED) {
+            try {
+              debugLog('🔇 Playing silent warmup audio…');
+              silentWarmupPlayer.play();
+              debugLog('✅ Silent audio played - iOS silent-mode workaround enabled');
+            } catch (soundError) {
+              debugWarn(
+                '⚠️ Could not play silent audio, TTS may not work in silent mode:',
+                soundError
+              );
+            }
           }
 
           // iOS Simulator doesn't support TTS - check if voices are available
@@ -210,22 +248,32 @@ export const useAudio = (
 
       setIsSpeaking(true);
 
-      const speechOptions: Speech.SpeechOptions = buildSpeechOptions({
-        rate,
-        voice,
-        onDone: () => {
-          setIsSpeaking(false);
-          debugLog(`✅ Successfully spoke: "${word}"`);
-        },
-        onStopped: () => {
-          setIsSpeaking(false);
-          debugLog(`⏸️ Speech stopped for: "${word}"`);
-        },
-        onError: (error) => {
-          setIsSpeaking(false);
-          debugError(`❌ TTS Error for "${word}":`, error);
-        },
-      });
+      const speechOptions: Speech.SpeechOptions = {
+        ...buildSpeechOptions({
+          rate,
+          voice,
+          onDone: () => {
+            setIsSpeaking(false);
+            debugLog(`✅ Successfully spoke: "${word}"`);
+          },
+          onStopped: () => {
+            setIsSpeaking(false);
+            debugLog(`⏸️ Speech stopped for: "${word}"`);
+          },
+          onError: (error) => {
+            setIsSpeaking(false);
+            debugError(`❌ TTS Error for "${word}":`, error);
+          },
+        }),
+        // Experiment variant C only: hand the speech audio session to iOS.
+        // AVSpeechSynthesizer latches this on its first utterance, so it must
+        // be identical for every utterance in a build — the build-time
+        // constant guarantees that.
+        ...(Platform.OS === 'ios' &&
+        IOS_AUDIO_SESSION_EXPERIMENT === 'C-system-speech-session'
+          ? { useApplicationAudioSession: false }
+          : {}),
+      };
 
       try {
         // Log speech attempt details

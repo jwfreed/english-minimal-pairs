@@ -110,7 +110,7 @@ function rotationTier(voice: SelectableVoice): number {
  *   4. other en-* default; lexical tie-break within a tier.
  * Empty input returns [] (callers fall back to the system default voice).
  */
-export function buildVoiceRotationPool<V extends SelectableVoice>(
+export function buildPrioritizedVoiceRotationPool<V extends SelectableVoice>(
   pool: readonly V[]
 ): V[] {
   return [...pool].sort((a, b) => {
@@ -125,7 +125,7 @@ export function buildVoiceRotationPool<V extends SelectableVoice>(
  * identifier sequence changed in any way, restart at 0; otherwise keep the
  * previous index (clamped into range as a corruption guard).
  */
-export function resolveRotationIndex(
+export function currentRotationIndex(
   previousPoolIds: readonly string[],
   previousIndex: number,
   currentPool: readonly SelectableVoice[]

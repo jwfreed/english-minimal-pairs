@@ -5,8 +5,8 @@ const { loadTsModule } = require('./load-ts-module');
 const {
   collectEligibleVoices,
   applyUserExclusions,
-  buildVoiceRotationPool,
-  resolveRotationIndex,
+  buildPrioritizedVoiceRotationPool,
+  currentRotationIndex,
   advanceRotationIndex,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'voiceSelection.ts'));
 
@@ -96,30 +96,30 @@ runTest('applyUserExclusions with no exclusions returns the same voices', () => 
   assert.deepStrictEqual(plain(applyUserExclusions(pool, new Set())), plain(pool));
 });
 
-runTest('buildVoiceRotationPool orders by tier and keeps every voice', () => {
+runTest('buildPrioritizedVoiceRotationPool orders by tier and keeps every voice', () => {
   const pool = [
     v('au-d', 'Lee', 'Default', 'en-AU'),
     v('us-d', 'Aaron', 'Default', 'en-US'),
     v('gb-e', 'Daniel', 'Enhanced', 'en-GB'),
     v('us-e', 'Evan', 'Enhanced', 'en-US'),
   ];
-  const result = buildVoiceRotationPool(pool);
+  const result = buildPrioritizedVoiceRotationPool(pool);
   assert.deepStrictEqual(
     plain(result.map((x) => x.identifier)),
     ['us-e', 'us-d', 'gb-e', 'au-d'] // enhanced US, default US, enhanced en-*, default en-*
   );
 });
 
-runTest('buildVoiceRotationPool does not discard defaults when enhanced exist', () => {
-  const result = buildVoiceRotationPool([
+runTest('buildPrioritizedVoiceRotationPool does not discard defaults when enhanced exist', () => {
+  const result = buildPrioritizedVoiceRotationPool([
     v('us-e', 'Evan', 'Enhanced', 'en-US'),
     v('us-d', 'Aaron', 'Default', 'en-US'),
   ]);
   assert.strictEqual(result.length, 2);
 });
 
-runTest('buildVoiceRotationPool with no enhanced voices keeps all defaults usable', () => {
-  const result = buildVoiceRotationPool([
+runTest('buildPrioritizedVoiceRotationPool with no enhanced voices keeps all defaults usable', () => {
+  const result = buildPrioritizedVoiceRotationPool([
     v('gb-d', 'Serena', 'Default', 'en-GB'),
     v('us-d', 'Aaron', 'Default', 'en-US'),
   ]);
@@ -129,8 +129,8 @@ runTest('buildVoiceRotationPool with no enhanced voices keeps all defaults usabl
   );
 });
 
-runTest('buildVoiceRotationPool with only non-US voices still orders enhanced first', () => {
-  const result = buildVoiceRotationPool([
+runTest('buildPrioritizedVoiceRotationPool with only non-US voices still orders enhanced first', () => {
+  const result = buildPrioritizedVoiceRotationPool([
     v('gb-d', 'Serena', 'Default', 'en-GB'),
     v('au-e', 'Karen', 'Enhanced', 'en-AU'),
   ]);
@@ -140,42 +140,42 @@ runTest('buildVoiceRotationPool with only non-US voices still orders enhanced fi
   );
 });
 
-runTest('buildVoiceRotationPool returns [] for an empty pool', () => {
-  assert.deepStrictEqual(plain(buildVoiceRotationPool([])), []);
+runTest('buildPrioritizedVoiceRotationPool returns [] for an empty pool', () => {
+  assert.deepStrictEqual(plain(buildPrioritizedVoiceRotationPool([])), []);
 });
 
-runTest('buildVoiceRotationPool ties break deterministically (language, name, id)', () => {
+runTest('buildPrioritizedVoiceRotationPool ties break deterministically (language, name, id)', () => {
   const a = v('id-a', 'Karen', 'Enhanced', 'en-AU');
   const b = v('id-b', 'Karen', 'Enhanced', 'en-AU');
   assert.deepStrictEqual(
-    plain(buildVoiceRotationPool([b, a]).map((x) => x.identifier)),
+    plain(buildPrioritizedVoiceRotationPool([b, a]).map((x) => x.identifier)),
     ['id-a', 'id-b']
   );
 });
 
-runTest('resolveRotationIndex keeps the index for an unchanged pool', () => {
-  const pool = buildVoiceRotationPool([
+runTest('currentRotationIndex keeps the index for an unchanged pool', () => {
+  const pool = buildPrioritizedVoiceRotationPool([
     v('us-e', 'Evan', 'Enhanced', 'en-US'),
     v('us-d', 'Aaron', 'Default', 'en-US'),
   ]);
   const ids = pool.map((x) => x.identifier);
-  assert.strictEqual(resolveRotationIndex(ids, 1, pool), 1);
+  assert.strictEqual(currentRotationIndex(ids, 1, pool), 1);
 });
 
-runTest('resolveRotationIndex resets to 0 when the pool identity changes', () => {
-  const pool = buildVoiceRotationPool([
+runTest('currentRotationIndex resets to 0 when the pool identity changes', () => {
+  const pool = buildPrioritizedVoiceRotationPool([
     v('us-e', 'Evan', 'Enhanced', 'en-US'),
     v('us-d', 'Aaron', 'Default', 'en-US'),
   ]);
-  assert.strictEqual(resolveRotationIndex(['us-e', 'gone'], 1, pool), 0);
-  assert.strictEqual(resolveRotationIndex(['us-e'], 0, pool), 0); // length change
-  assert.strictEqual(resolveRotationIndex([], 0, pool), 0); // first call
+  assert.strictEqual(currentRotationIndex(['us-e', 'gone'], 1, pool), 0);
+  assert.strictEqual(currentRotationIndex(['us-e'], 0, pool), 0); // length change
+  assert.strictEqual(currentRotationIndex([], 0, pool), 0); // first call
 });
 
-runTest('resolveRotationIndex clamps an out-of-range index to 0', () => {
-  const pool = buildVoiceRotationPool([v('us-e', 'Evan', 'Enhanced', 'en-US')]);
-  assert.strictEqual(resolveRotationIndex(['us-e'], 5, pool), 0);
-  assert.strictEqual(resolveRotationIndex(['us-e'], -1, pool), 0);
+runTest('currentRotationIndex clamps an out-of-range index to 0', () => {
+  const pool = buildPrioritizedVoiceRotationPool([v('us-e', 'Evan', 'Enhanced', 'en-US')]);
+  assert.strictEqual(currentRotationIndex(['us-e'], 5, pool), 0);
+  assert.strictEqual(currentRotationIndex(['us-e'], -1, pool), 0);
 });
 
 runTest('advanceRotationIndex wraps and guards empty pools', () => {
@@ -186,7 +186,7 @@ runTest('advanceRotationIndex wraps and guards empty pools', () => {
 });
 
 runTest('unchanged pool of two or more voices never repeats consecutively', () => {
-  const pool = buildVoiceRotationPool([
+  const pool = buildPrioritizedVoiceRotationPool([
     v('us-e', 'Evan', 'Enhanced', 'en-US'),
     v('us-d', 'Aaron', 'Default', 'en-US'),
     v('gb-e', 'Daniel', 'Enhanced', 'en-GB'),
@@ -195,7 +195,7 @@ runTest('unchanged pool of two or more voices never repeats consecutively', () =
   let state = { poolIds: [], index: 0 };
   let previous = null;
   for (let i = 0; i < 10; i++) {
-    const index = resolveRotationIndex(state.poolIds, state.index, pool);
+    const index = currentRotationIndex(state.poolIds, state.index, pool);
     const voice = pool[index];
     assert.notStrictEqual(voice.identifier, previous);
     previous = voice.identifier;
@@ -204,11 +204,11 @@ runTest('unchanged pool of two or more voices never repeats consecutively', () =
 });
 
 runTest('single-voice pool repeats safely without crashing', () => {
-  const pool = buildVoiceRotationPool([v('us-e', 'Evan', 'Enhanced', 'en-US')]);
+  const pool = buildPrioritizedVoiceRotationPool([v('us-e', 'Evan', 'Enhanced', 'en-US')]);
   const ids = pool.map((x) => x.identifier);
   let state = { poolIds: [], index: 0 };
   for (let i = 0; i < 3; i++) {
-    const index = resolveRotationIndex(state.poolIds, state.index, pool);
+    const index = currentRotationIndex(state.poolIds, state.index, pool);
     assert.strictEqual(pool[index].identifier, 'us-e');
     state = { poolIds: ids, index: advanceRotationIndex(index, pool.length) };
   }

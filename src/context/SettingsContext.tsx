@@ -17,9 +17,9 @@ import * as Speech from 'expo-speech';
 import {
   advanceRotationIndex,
   applyUserExclusions,
-  buildVoiceRotationPool,
+  buildPrioritizedVoiceRotationPool,
   collectEligibleVoices,
-  resolveRotationIndex,
+  currentRotationIndex,
 } from '@/src/domain/voiceSelection';
 
 const SETTINGS_STORAGE_KEY = '@userSettings';
@@ -150,9 +150,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   /** Round-robin over the prioritized rotation pool; resets on pool change */
   const getNextVoice = useCallback((): Voice | null => {
-    const rotation = buildVoiceRotationPool(voicePool);
+    const rotation = buildPrioritizedVoiceRotationPool(voicePool);
     if (rotation.length === 0) return null;
-    const index = resolveRotationIndex(
+    const index = currentRotationIndex(
       rotationRef.current.poolIds,
       rotationRef.current.index,
       rotation

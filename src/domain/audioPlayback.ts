@@ -5,6 +5,7 @@ export type PlaybackPlatform = 'ios' | 'android' | 'web' | 'windows' | 'macos';
 
 export interface PlaybackVoice {
   identifier: string;
+  language: string;
 }
 
 export interface SpeechOptionCallbacks {
@@ -13,8 +14,10 @@ export interface SpeechOptionCallbacks {
   onError: (error: unknown) => void;
 }
 
+const FALLBACK_LANGUAGE = 'en-US';
+
 export interface SpeechOptions extends SpeechOptionCallbacks {
-  language: 'en-US';
+  language: string;
   pitch: 1;
   rate: number;
   volume: 1;
@@ -55,7 +58,7 @@ export function buildSpeechOptions({
   voice: PlaybackVoice | null;
 } & SpeechOptionCallbacks): SpeechOptions {
   return {
-    language: 'en-US',
+    language: voice?.language || FALLBACK_LANGUAGE,
     pitch: 1.0,
     rate,
     volume: 1.0,

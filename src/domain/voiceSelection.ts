@@ -119,3 +119,28 @@ export function buildVoiceRotationPool<V extends SelectableVoice>(
     return compareLexical(a, b);
   });
 }
+
+/**
+ * Reset/clamp the rotation index against the current pool. If the pool's
+ * identifier sequence changed in any way, restart at 0; otherwise keep the
+ * previous index (clamped into range as a corruption guard).
+ */
+export function resolveRotationIndex(
+  previousPoolIds: readonly string[],
+  previousIndex: number,
+  currentPool: readonly SelectableVoice[]
+): number {
+  const samePool =
+    previousPoolIds.length === currentPool.length &&
+    currentPool.every((voice, i) => voice.identifier === previousPoolIds[i]);
+  if (!samePool) return 0;
+  if (!Number.isInteger(previousIndex)) return 0;
+  if (previousIndex < 0 || previousIndex >= currentPool.length) return 0;
+  return previousIndex;
+}
+
+/** Advance round-robin: (index + 1) mod poolLength; 0 for empty pools. */
+export function advanceRotationIndex(index: number, poolLength: number): number {
+  if (poolLength <= 0) return 0;
+  return (index + 1) % poolLength;
+}

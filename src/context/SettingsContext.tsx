@@ -14,21 +14,16 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
+import {
+  advanceRotationIndex,
+  applyUserExclusions,
+  buildVoiceRotationPool,
+  collectEligibleVoices,
+  resolveRotationIndex,
+} from '@/src/domain/voiceSelection';
 
 const SETTINGS_STORAGE_KEY = '@userSettings';
 const EXCLUDED_VOICES_KEY = '@excludedVoices';
-
-/** Novelty / low-quality voice name substrings to exclude by default */
-const DEFAULT_EXCLUDED_NAMES = [
-  'zarvox', 'wobble', 'whisper', 'trinoids', 'superstar', 'organ',
-  'kathy', 'jester', 'good news', 'cellos', 'bubbles', 'boing',
-  'bells', 'bahh', 'bad news', 'albert',
-];
-
-/** Also exclude specific locale+name combos */
-const DEFAULT_EXCLUDED_LOCALE_NAMES: [string, string][] = [
-  ['en-GB', 'sandy'],
-];
 
 type Voice = Speech.Voice;
 
@@ -59,11 +54,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoadingVoices, setIsLoadingVoices] = useState(true);
   const [hapticsEnabled, setHapticsEnabledState] = useState(true);
   const isMountedRef = useRef(true);
-  const rotationIndexRef = useRef(0);
+  const rotationRef = useRef<{ poolIds: string[]; index: number }>({
+    poolIds: [],
+    index: 0,
+  });
 
   // Derive active pool from allVoices - excludedVoiceIds
   const voicePool = useMemo(
-    () => allVoices.filter((v) => !excludedVoiceIds.has(v.identifier)),
+    () => applyUserExclusions(allVoices, excludedVoiceIds),
     [allVoices, excludedVoiceIds]
   );
 
@@ -96,42 +94,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     []
   );
 
-  /**
-   * Collect ALL en-* voices from the device TTS engine, excluding known
-   * novelty / low-quality voices entirely so they never appear in the UI.
-   * Prefer "enhanced" / "premium" quality voices first, then sort by locale
-   * so we get good variety (en-US, en-GB, en-AU, en-IN, …).
-   */
-  const collectEnVoices = useCallback((voices: Speech.Voice[]) => {
-    const enVoices = voices.filter((v) => {
-      if (!v.language.toLowerCase().startsWith('en')) return false;
-
-      // Strip out novelty voices entirely
-      const lowerName = v.name.toLowerCase();
-      if (DEFAULT_EXCLUDED_NAMES.some((n) => lowerName.includes(n))) return false;
-      for (const [locale, name] of DEFAULT_EXCLUDED_LOCALE_NAMES) {
-        if (
-          v.language.toLowerCase() === locale.toLowerCase() &&
-          lowerName.includes(name.toLowerCase())
-        ) return false;
-      }
-      return true;
-    });
-
-    // Sort: enhanced quality first, then alphabetical by locale + name
-    enVoices.sort((a, b) => {
-      const aq = (a.quality ?? '').toLowerCase().includes('enhanced') ? 0 : 1;
-      const bq = (b.quality ?? '').toLowerCase().includes('enhanced') ? 0 : 1;
-      if (aq !== bq) return aq - bq;
-      const locCmp = a.language.localeCompare(b.language);
-      if (locCmp !== 0) return locCmp;
-      return a.name.localeCompare(b.name);
-    });
-
-    debugLog(`✅ Collected ${enVoices.length} en-* voices from device`);
-    return enVoices;
-  }, [debugLog]);
-
   const hydrateVoices = useCallback(async () => {
     setIsLoadingVoices(true);
     try {
@@ -150,7 +112,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       const voices = await Speech.getAvailableVoicesAsync();
-      const pool = collectEnVoices(voices);
+      const pool = collectEligibleVoices(voices);
 
       // Remove any stale exclusions that reference voices no longer in the pool
       // (e.g. novelty voices that are now filtered out at collection time)
@@ -168,7 +130,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       setExcludedVoiceIds(excludedSet);
       setAllVoices(pool);
-      rotationIndexRef.current = 0;
 
       if (pool.length === 0) {
         debugWarn('⚠️ No en-* TTS voices found on device');
@@ -185,13 +146,22 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setIsLoadingVoices(false);
       }
     }
-  }, [collectEnVoices, debugError, debugLog, debugWarn]);
+  }, [debugError, debugLog, debugWarn]);
 
-  /** Round-robin voice selection — cycles through the pool */
+  /** Round-robin over the prioritized rotation pool; resets on pool change */
   const getNextVoice = useCallback((): Voice | null => {
-    if (voicePool.length === 0) return null;
-    const voice = voicePool[rotationIndexRef.current % voicePool.length];
-    rotationIndexRef.current = (rotationIndexRef.current + 1) % voicePool.length;
+    const rotation = buildVoiceRotationPool(voicePool);
+    if (rotation.length === 0) return null;
+    const index = resolveRotationIndex(
+      rotationRef.current.poolIds,
+      rotationRef.current.index,
+      rotation
+    );
+    const voice = rotation[index];
+    rotationRef.current = {
+      poolIds: rotation.map((v) => v.identifier),
+      index: advanceRotationIndex(index, rotation.length),
+    };
     return voice;
   }, [voicePool]);
 
@@ -262,7 +232,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       AsyncStorage.setItem(EXCLUDED_VOICES_KEY, JSON.stringify([...next])).catch(() => {});
       return next;
     });
-    rotationIndexRef.current = 0;
   }, []);
 
   const value = useMemo(() => ({

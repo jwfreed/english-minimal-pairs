@@ -275,25 +275,39 @@ behavior, not the experiment.
 
 ### Results log
 
-| Variant | Device / iOS | Build no. | Commit | Scenario # | Attempt | Pass/Fail | Notes |
-|---|---|---|---|---|---|---|---|
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 1 (cold launch, silent ON) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 2 (cold launch, silent OFF) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 3 (later utterances) | 1/1 | Pass | |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 4 (rapid repeated taps) | 1/1 | Pass | |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 5 (background/foreground) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 6 (interruption recovery) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 7 (Bluetooth route change) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 8 (headphones) | 1/1 | Pass | |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 9 (ducking during playback) | 1/1 | Pass | |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 10 (idle after playback, ducking recovery) | 1/1 | Pass | |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 11 (navigate away during/after) | 1/1 | Pass | |
-| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 12 (force quit, relaunch) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
+> **Note on device coverage:** the second test round below was reported as
+> run on "the same device, iPhone 16 [Pro], iOS 26.5.2" — i.e. the identical
+> physical device and identical iOS version as round 1, not a second
+> configuration. The decision rule requires success on **at least two
+> distinct physical iOS versions or devices**, specifically to catch
+> device-model- or OS-version-specific behavior. Two passes on one
+> device/iOS combination satisfy the *repetition* requirement for the
+> first-utterance scenarios but do **not** satisfy the *two-device/version*
+> requirement. Round 2 is logged below as additional repetitions on device
+> config #1, not as device config #2.
 
-**Coverage so far: 1 of ≥2 required devices; all 12 scenarios attempted once
-each; 0 of 6 first-utterance scenarios repeated to the ≥3-attempt threshold
-the matrix and decision rule call for.** No failures observed in this pass.
-This is a genuinely positive first signal, not proof — see Decision rule.
+| Variant | Device / iOS | Build no. | Commit | Scenario # | Attempts | Pass/Fail | Notes |
+|---|---|---|---|---|---|---|---|
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 1 (cold launch, silent ON) | 3/3 | Pass | Meets ≥3 repetition threshold |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 2 (cold launch, silent OFF) | 3/3 | Pass | Meets ≥3 repetition threshold |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 3 (later utterances) | 2/2 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 4 (rapid repeated taps) | 2/2 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 5 (background/foreground) | 3/3 | Pass | Meets ≥3 repetition threshold |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 6 (interruption recovery) | 3/3 | Pass | Meets ≥3 repetition threshold |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 7 (Bluetooth route change) | 3/3 | Pass | Meets ≥3 repetition threshold |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 8 (headphones) | 2/2 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 9 (ducking during playback) | 2/2 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 10 (idle after playback, ducking recovery) | 2/2 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 11 (navigate away during/after) | 2/2 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 12 (force quit, relaunch) | 3/3 | Pass | Meets ≥3 repetition threshold |
+
+**Coverage so far:** full 12-scenario matrix completed twice, first-utterance
+scenarios (1, 2, 5, 6, 7, 12) repeated 3 times each, **zero failures across
+all attempts**, on **one** physical device/iOS configuration (iPhone 16 Pro,
+iOS 26.5.2). This is strong evidence for that specific configuration and
+satisfies the matrix's repetition requirement. It does **not** yet satisfy
+the decision rule's requirement of at least two distinct physical iOS
+versions or devices — see the note above and Decision rule below.
 
 ### Decision rule
 

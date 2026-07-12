@@ -90,10 +90,19 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
 
   const currentPair = testItems[qIndex];
 
+  // Placement is an assessment, not guided practice: always rotate across the
+  // full prioritized pool instead of staging by the pair's difficulty. The
+  // wrapper ignores the difficulty useAudio supplies and requests placement
+  // mode explicitly.
+  const getPlacementVoice = useCallback(
+    () => getNextVoice({ mode: 'placement' }),
+    [getNextVoice]
+  );
+
   // Shared audio path — same hook as the regular practice loop.
   // Handles iOS silent-mode workaround, audio session setup, isSpeaking tracking,
   // and voice rotation.
-  const { play, audioModeReady, isSpeaking } = useAudio(currentPair, 1.0, getNextVoice);
+  const { play, audioModeReady, isSpeaking } = useAudio(currentPair, 1.0, getPlacementVoice);
 
   // Pick a random word when the question changes (user must press Play Audio)
   useEffect(() => {

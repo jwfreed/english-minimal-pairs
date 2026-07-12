@@ -17,9 +17,11 @@ import * as Speech from 'expo-speech';
 import {
   advanceRotationIndex,
   applyUserExclusions,
+  buildPlaybackVoicePool,
   buildPrioritizedVoiceRotationPool,
   collectEligibleVoices,
   currentRotationIndex,
+  type VoicePlaybackContext,
 } from '@/src/domain/voiceSelection';
 
 const SETTINGS_STORAGE_KEY = '@userSettings';
@@ -39,7 +41,7 @@ interface SettingsContextType {
   /** Toggle a voice in/out of the pool */
   toggleVoice: (identifier: string) => void;
   /** Round-robin: returns the next voice from the active pool */
-  getNextVoice: () => Voice | null;
+  getNextVoice: (context?: VoicePlaybackContext) => Voice | null;
   isLoadingVoices: boolean;
   refreshVoices: () => Promise<void>;
   hapticsEnabled: boolean;
@@ -148,9 +150,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [debugError, debugLog, debugWarn]);
 
-  /** Round-robin over the prioritized rotation pool; resets on pool change */
-  const getNextVoice = useCallback((): Voice | null => {
-    const rotation = buildPrioritizedVoiceRotationPool(voicePool);
+  /** Round-robin over the prioritized rotation pool; resets on pool change.
+   *  The playback context stages how much of the pool is eligible: practice
+   *  stages by pair difficulty, placement always uses the full pool. */
+  const getNextVoice = useCallback((context?: VoicePlaybackContext): Voice | null => {
+    const rotation = buildPlaybackVoicePool(
+      buildPrioritizedVoiceRotationPool(voicePool),
+      context
+    );
     if (rotation.length === 0) return null;
     const index = currentRotationIndex(
       rotationRef.current.poolIds,

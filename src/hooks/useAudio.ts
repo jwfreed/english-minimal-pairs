@@ -70,7 +70,9 @@ const IOS_SILENT_WARMUP_ENABLED =
 export const useAudio = (
   selectedPair: Pair | undefined,
   rate: number,
-  getNextVoice?: () => Speech.Voice | null
+  getNextVoice?: (context?: {
+    difficulty?: Pair['difficulty'];
+  }) => Speech.Voice | null
 ) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioModeReady, setAudioModeReady] = useState(false);
@@ -238,8 +240,11 @@ export const useAudio = (
 
       const word = getPlaybackWord(selectedPair, idx);
 
-      // Pick the next voice from the rotation pool for this utterance
-      const voice = getNextVoice ? getNextVoice() : null;
+      // Pick the next voice from the rotation pool for this utterance; the
+      // pair's difficulty stages how much of the pool is eligible.
+      const voice = getNextVoice
+        ? getNextVoice({ difficulty: selectedPair.difficulty })
+        : null;
 
       debugLog(`🔊 Attempting to speak: "${word}" at rate ${rate}`);
       if (voice) {

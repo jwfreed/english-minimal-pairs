@@ -120,6 +120,51 @@ export function buildPrioritizedVoiceRotationPool<V extends SelectableVoice>(
   });
 }
 
+/** Pair difficulty tier (mirrors Difficulty in constants/minimalPairs). */
+export type VoiceStageDifficulty = 1 | 2 | 3 | 4 | 5 | 6;
+
+/**
+ * Staged voice variability: difficulty limits how much of the prioritized
+ * rotation pool a pair may rotate through. Prioritization and rotation
+ * semantics are unchanged — this only trims the pool's tail.
+ *   1–2 (easy)   → first voice only
+ *   3–4 (medium) → first two voices
+ *   5–6 (hard)   → complete pool
+ * No difficulty (legacy callers) keeps the complete pool. Pools smaller than
+ * the stage limit are used as-is.
+ */
+export function buildDifficultyVoicePool<V extends SelectableVoice>(
+  prioritizedPool: readonly V[],
+  difficulty?: VoiceStageDifficulty
+): V[] {
+  if (difficulty === undefined) return [...prioritizedPool];
+  const limit = difficulty <= 2 ? 1 : difficulty <= 4 ? 2 : prioritizedPool.length;
+  return prioritizedPool.slice(0, limit);
+}
+
+/** How a playback request wants the rotation pool staged. */
+export type VoicePlaybackMode = 'practice' | 'placement';
+
+export interface VoicePlaybackContext {
+  difficulty?: VoiceStageDifficulty;
+  /** Defaults to 'practice' (difficulty staging) when omitted. */
+  mode?: VoicePlaybackMode;
+}
+
+/**
+ * Pool eligible for one utterance. Placement is an assessment, not guided
+ * practice, so it always samples the complete prioritized pool; practice —
+ * and legacy callers without a context — stage by difficulty via
+ * buildDifficultyVoicePool (no difficulty means the full pool).
+ */
+export function buildPlaybackVoicePool<V extends SelectableVoice>(
+  prioritizedPool: readonly V[],
+  context?: VoicePlaybackContext
+): V[] {
+  if (context?.mode === 'placement') return [...prioritizedPool];
+  return buildDifficultyVoicePool(prioritizedPool, context?.difficulty);
+}
+
 /**
  * Reset/clamp the rotation index against the current pool. If the pool's
  * identifier sequence changed in any way, restart at 0; otherwise keep the

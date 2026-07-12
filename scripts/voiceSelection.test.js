@@ -6,6 +6,8 @@ const {
   collectEligibleVoices,
   applyUserExclusions,
   buildPrioritizedVoiceRotationPool,
+  buildDifficultyVoicePool,
+  buildPlaybackVoicePool,
   currentRotationIndex,
   advanceRotationIndex,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'voiceSelection.ts'));
@@ -212,4 +214,207 @@ runTest('single-voice pool repeats safely without crashing', () => {
     assert.strictEqual(pool[index].identifier, 'us-e');
     state = { poolIds: ids, index: advanceRotationIndex(index, pool.length) };
   }
+});
+
+// ── buildDifficultyVoicePool: staged voice variability by pair difficulty ──
+
+// Four-voice prioritized pool: en-US enhanced, en-US default, en-GB enhanced,
+// en-AU default (buildPrioritizedVoiceRotationPool tier order).
+function prioritizedFour() {
+  return buildPrioritizedVoiceRotationPool([
+    v('au-d', 'Lee', 'Default', 'en-AU'),
+    v('us-d', 'Aaron', 'Default', 'en-US'),
+    v('gb-e', 'Daniel', 'Enhanced', 'en-GB'),
+    v('us-e', 'Evan', 'Enhanced', 'en-US'),
+  ]);
+}
+
+runTest('buildDifficultyVoicePool easy (difficulty 1-2) returns only the first prioritized voice', () => {
+  const pool = prioritizedFour();
+  for (const difficulty of [1, 2]) {
+    assert.deepStrictEqual(
+      plain(buildDifficultyVoicePool(pool, difficulty).map((x) => x.identifier)),
+      ['us-e']
+    );
+  }
+});
+
+runTest('buildDifficultyVoicePool medium (difficulty 3-4) returns the first two prioritized voices', () => {
+  const pool = prioritizedFour();
+  for (const difficulty of [3, 4]) {
+    assert.deepStrictEqual(
+      plain(buildDifficultyVoicePool(pool, difficulty).map((x) => x.identifier)),
+      ['us-e', 'us-d']
+    );
+  }
+});
+
+runTest('buildDifficultyVoicePool hard (difficulty 5-6) returns the complete prioritized pool', () => {
+  const pool = prioritizedFour();
+  for (const difficulty of [5, 6]) {
+    assert.deepStrictEqual(
+      plain(buildDifficultyVoicePool(pool, difficulty).map((x) => x.identifier)),
+      ['us-e', 'us-d', 'gb-e', 'au-d']
+    );
+  }
+});
+
+runTest('buildDifficultyVoicePool without a difficulty returns the complete pool (legacy callers)', () => {
+  const pool = prioritizedFour();
+  assert.deepStrictEqual(
+    plain(buildDifficultyVoicePool(pool, undefined).map((x) => x.identifier)),
+    ['us-e', 'us-d', 'gb-e', 'au-d']
+  );
+});
+
+runTest('buildDifficultyVoicePool single-voice pool behaves identically at every difficulty', () => {
+  const pool = buildPrioritizedVoiceRotationPool([v('us-e', 'Evan', 'Enhanced', 'en-US')]);
+  for (const difficulty of [1, 2, 3, 4, 5, 6]) {
+    assert.deepStrictEqual(
+      plain(buildDifficultyVoicePool(pool, difficulty).map((x) => x.identifier)),
+      ['us-e']
+    );
+  }
+});
+
+runTest('buildDifficultyVoicePool two-voice pool uses one voice at easy and both at medium/hard', () => {
+  const pool = buildPrioritizedVoiceRotationPool([
+    v('us-d', 'Aaron', 'Default', 'en-US'),
+    v('us-e', 'Evan', 'Enhanced', 'en-US'),
+  ]);
+  assert.deepStrictEqual(
+    plain(buildDifficultyVoicePool(pool, 1).map((x) => x.identifier)),
+    ['us-e']
+  );
+  for (const difficulty of [3, 5]) {
+    assert.deepStrictEqual(
+      plain(buildDifficultyVoicePool(pool, difficulty).map((x) => x.identifier)),
+      ['us-e', 'us-d']
+    );
+  }
+});
+
+runTest('buildDifficultyVoicePool empty pool returns [] at every difficulty', () => {
+  for (const difficulty of [1, 3, 5]) {
+    assert.deepStrictEqual(plain(buildDifficultyVoicePool([], difficulty)), []);
+  }
+});
+
+runTest('buildDifficultyVoicePool applies after user exclusions, not before', () => {
+  const eligible = collectEligibleVoices([
+    v('us-e', 'Evan', 'Enhanced', 'en-US'),
+    v('us-d', 'Aaron', 'Default', 'en-US'),
+    v('gb-e', 'Daniel', 'Enhanced', 'en-GB'),
+  ]);
+  // Excluding the top-priority voice promotes the next one into the easy slot.
+  const active = applyUserExclusions(eligible, new Set(['us-e']));
+  const staged = buildDifficultyVoicePool(
+    buildPrioritizedVoiceRotationPool(active),
+    1
+  );
+  assert.deepStrictEqual(plain(staged.map((x) => x.identifier)), ['us-d']);
+});
+
+runTest('rotation stays within the staged subset and reuses existing round-robin semantics', () => {
+  const staged = buildDifficultyVoicePool(prioritizedFour(), 3); // us-e, us-d
+  const ids = staged.map((x) => x.identifier);
+  let state = { poolIds: [], index: 0 };
+  const spoken = [];
+  for (let i = 0; i < 6; i++) {
+    const index = currentRotationIndex(state.poolIds, state.index, staged);
+    spoken.push(staged[index].identifier);
+    state = { poolIds: ids, index: advanceRotationIndex(index, staged.length) };
+  }
+  assert.deepStrictEqual(spoken, ['us-e', 'us-d', 'us-e', 'us-d', 'us-e', 'us-d']);
+});
+
+runTest('easy difficulty repeats the same voice consistently across playbacks', () => {
+  const staged = buildDifficultyVoicePool(prioritizedFour(), 1);
+  const ids = staged.map((x) => x.identifier);
+  let state = { poolIds: [], index: 0 };
+  for (let i = 0; i < 4; i++) {
+    const index = currentRotationIndex(state.poolIds, state.index, staged);
+    assert.strictEqual(staged[index].identifier, 'us-e');
+    state = { poolIds: ids, index: advanceRotationIndex(index, staged.length) };
+  }
+});
+
+runTest('stage transition changes the subset and resets rotation deterministically', () => {
+  const pool = prioritizedFour();
+  const medium = buildDifficultyVoicePool(pool, 3);
+  const hard = buildDifficultyVoicePool(pool, 5);
+  assert.notDeepStrictEqual(
+    plain(medium.map((x) => x.identifier)),
+    plain(hard.map((x) => x.identifier))
+  );
+  // Rotation state recorded against the medium subset resets when the staged
+  // pool grows (currentRotationIndex treats it as a new pool).
+  const mediumIds = medium.map((x) => x.identifier);
+  assert.strictEqual(currentRotationIndex(mediumIds, 1, hard), 0);
+});
+
+runTest('buildDifficultyVoicePool never mutates its input pool', () => {
+  const pool = prioritizedFour();
+  const before = plain(pool);
+  buildDifficultyVoicePool(pool, 1);
+  buildDifficultyVoicePool(pool, 3);
+  buildDifficultyVoicePool(pool, 5);
+  assert.deepStrictEqual(plain(pool), before);
+});
+
+// ── buildPlaybackVoicePool: per-utterance pool with placement override ──
+
+runTest('buildPlaybackVoicePool practice mode stages by difficulty', () => {
+  const pool = prioritizedFour();
+  assert.deepStrictEqual(
+    plain(buildPlaybackVoicePool(pool, { mode: 'practice', difficulty: 1 }).map((x) => x.identifier)),
+    ['us-e']
+  );
+  assert.deepStrictEqual(
+    plain(buildPlaybackVoicePool(pool, { mode: 'practice', difficulty: 3 }).map((x) => x.identifier)),
+    ['us-e', 'us-d']
+  );
+  assert.deepStrictEqual(
+    plain(buildPlaybackVoicePool(pool, { mode: 'practice', difficulty: 5 }).map((x) => x.identifier)),
+    ['us-e', 'us-d', 'gb-e', 'au-d']
+  );
+  // Difficulty alone (no explicit mode) is also practice.
+  assert.deepStrictEqual(
+    plain(buildPlaybackVoicePool(pool, { difficulty: 1 }).map((x) => x.identifier)),
+    ['us-e']
+  );
+});
+
+runTest('buildPlaybackVoicePool placement mode always uses the full pool, even at easy difficulty', () => {
+  const pool = prioritizedFour();
+  const full = ['us-e', 'us-d', 'gb-e', 'au-d'];
+  for (const difficulty of [1, 3, 5, undefined]) {
+    assert.deepStrictEqual(
+      plain(buildPlaybackVoicePool(pool, { mode: 'placement', difficulty }).map((x) => x.identifier)),
+      full
+    );
+  }
+});
+
+runTest('buildPlaybackVoicePool legacy callers without a context receive the full pool', () => {
+  const pool = prioritizedFour();
+  const full = ['us-e', 'us-d', 'gb-e', 'au-d'];
+  assert.deepStrictEqual(
+    plain(buildPlaybackVoicePool(pool, undefined).map((x) => x.identifier)),
+    full
+  );
+  assert.deepStrictEqual(
+    plain(buildPlaybackVoicePool(pool, {}).map((x) => x.identifier)),
+    full
+  );
+});
+
+runTest('buildPlaybackVoicePool handles empty pools and never mutates its input', () => {
+  assert.deepStrictEqual(plain(buildPlaybackVoicePool([], { mode: 'placement' })), []);
+  assert.deepStrictEqual(plain(buildPlaybackVoicePool([], { difficulty: 1 })), []);
+  const pool = prioritizedFour();
+  const before = plain(pool);
+  buildPlaybackVoicePool(pool, { mode: 'placement', difficulty: 1 });
+  buildPlaybackVoicePool(pool, { difficulty: 1 });
+  assert.deepStrictEqual(plain(pool), before);
 });

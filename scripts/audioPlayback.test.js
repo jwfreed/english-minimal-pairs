@@ -78,7 +78,7 @@ runTest('buildSpeechOptions preserves the app speech defaults and selected voice
   assert.strictEqual(typeof options.onError, 'function');
 });
 
-runTest('buildSpeechOptions omits voice when using the system default', () => {
+runTest('buildSpeechOptions omits voice and falls back to en-US when using the system default', () => {
   const options = buildSpeechOptions({
     rate: 1,
     voice: null,
@@ -88,4 +88,59 @@ runTest('buildSpeechOptions omits voice when using the system default', () => {
   });
 
   assert.strictEqual(Object.prototype.hasOwnProperty.call(options, 'voice'), false);
+  assert.strictEqual(options.language, 'en-US');
+});
+
+runTest('buildSpeechOptions uses a selected en-GB voice\'s own language, not a hardcoded en-US', () => {
+  const voice = {
+    identifier: 'voice-gb',
+    name: 'Daniel',
+    language: 'en-GB',
+  };
+  const options = buildSpeechOptions({
+    rate: 1,
+    voice,
+    onDone: () => {},
+    onStopped: () => {},
+    onError: () => {},
+  });
+
+  assert.strictEqual(options.language, 'en-GB');
+  assert.strictEqual(options.voice, 'voice-gb');
+});
+
+runTest('buildSpeechOptions preserves a selected non-US English voice\'s own locale (en-AU)', () => {
+  const voice = {
+    identifier: 'voice-au',
+    name: 'Karen',
+    language: 'en-AU',
+  };
+  const options = buildSpeechOptions({
+    rate: 1,
+    voice,
+    onDone: () => {},
+    onStopped: () => {},
+    onError: () => {},
+  });
+
+  assert.strictEqual(options.language, 'en-AU');
+  assert.strictEqual(options.voice, 'voice-au');
+});
+
+runTest('buildSpeechOptions falls back to en-US when the selected voice has a blank language', () => {
+  const voice = {
+    identifier: 'voice-blank',
+    name: 'Mystery',
+    language: '',
+  };
+  const options = buildSpeechOptions({
+    rate: 1,
+    voice,
+    onDone: () => {},
+    onStopped: () => {},
+    onError: () => {},
+  });
+
+  assert.strictEqual(options.language, 'en-US');
+  assert.strictEqual(options.voice, 'voice-blank');
 });

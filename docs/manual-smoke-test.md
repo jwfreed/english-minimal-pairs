@@ -181,8 +181,22 @@ This runs: lint · typecheck · data validation · audio asset validation · uni
 
 ## 17. TEMPORARY — iOS Silent-Warmup Experiment (app-060 / PR 2)
 
+> **Status: PAUSED, pending a second physical device/iOS version.** PR 2 is
+> not complete and not closed-out — it is on hold. Variant B has passed the
+> full test matrix, including repeated first-utterance scenarios, on one
+> physical device (iPhone 16 Pro / iOS 26.5.2). The decision rule requires
+> confirmation on a second physical iPhone or iOS version before a
+> retain/remove decision can be made. `silent.mp3`, the warmup player, the
+> validator, and the `IOS_AUDIO_SESSION_EXPERIMENT` selector are all
+> deliberately left in place and unmodified so the experiment can be resumed
+> without re-implementation once that second-device evidence is available.
+> The selector is currently set to the safe ship default
+> (`'A-silent-warmup'`) so any incidental production build in the meantime
+> retains the workaround.
+>
 > **Temporary section.** Remove together with the `IOS_AUDIO_SESSION_EXPERIMENT`
-> selector in `src/hooks/useAudio.ts` once the experiment reaches a decision.
+> selector in `src/hooks/useAudio.ts` once the experiment reaches a final
+> decision (in a dedicated follow-up cleanup PR, not as part of this pause).
 > This experiment determines whether the `silent.mp3` warmup is still required
 > now that `expo-audio` configures the audio session.
 

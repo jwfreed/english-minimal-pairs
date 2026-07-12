@@ -256,13 +256,17 @@ reflect the actual submitted build number, and the same marketing version
 
 | Build no. | Version | Commit | Profile | Build date | Selector value at that commit | Verified via |
 |---|---|---|---|---|---|---|
+| 79 | 1.1.3 | `8e97b072facfdfe20e65cca2a03a91c60b659738` | production | 2026-07-12 | `B-no-warmup` (unchanged from build 78 — this commit only touched docs) | `eas build:list` + `git show <commit>:src/hooks/useAudio.ts` |
 | 78 | 1.1.3 | `5b83006280384eac68a5994ebe1398afcf0becde` | production | 2026-07-12 | `B-no-warmup` | `eas build:list` + `git show <commit>:src/hooks/useAudio.ts` |
 | 77 | 1.1.3 | `a3f4ef41062cf378af174a4bc9732e2b3eb92af2` | production | 2026-07-12 | `A-silent-warmup` | `eas build:list` + `git show <commit>:src/hooks/useAudio.ts` |
 | 76 | 1.1.3 | `0f168d3c99db2f1b049005975b8252eff9a03225` | production | 2026-07-11 | n/a — pre-experiment (PR 1 migration; selector did not exist yet) | `eas build:list` |
 
-**Build 78 is the Variant B build.** This is the first build with the warmup
-disabled — use it (and only it) to log results against the Variant B rows in
-the Results log below.
+**Build 79 is the build actually tested on device**, and it is confirmed
+Variant B: it was built from the doc-only commit immediately after 78, which
+made no changes to `src/hooks/useAudio.ts` (`git diff --stat 5b83006..8e97b07
+-- src/hooks/useAudio.ts` is empty) and has the identical native fingerprint
+(`f93faaf7...`) as build 78. Build 78 itself was never installed/tested.
+Log device results against **build 79**.
 
 Build 77 is the **baseline (A)** configuration — it predates any B or C
 build. Do not record device results for build 77 against variant B or C rows
@@ -273,7 +277,23 @@ behavior, not the experiment.
 
 | Variant | Device / iOS | Build no. | Commit | Scenario # | Attempt | Pass/Fail | Notes |
 |---|---|---|---|---|---|---|---|
-| | | | | | | | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 1 (cold launch, silent ON) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 2 (cold launch, silent OFF) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 3 (later utterances) | 1/1 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 4 (rapid repeated taps) | 1/1 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 5 (background/foreground) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 6 (interruption recovery) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 7 (Bluetooth route change) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 8 (headphones) | 1/1 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 9 (ducking during playback) | 1/1 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 10 (idle after playback, ducking recovery) | 1/1 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 11 (navigate away during/after) | 1/1 | Pass | |
+| B | iPhone 16 Pro / iOS 26.5.2 | 79 | `8e97b07` | 12 (force quit, relaunch) | 1/1 | Pass | Single attempt only — matrix calls for ≥3 |
+
+**Coverage so far: 1 of ≥2 required devices; all 12 scenarios attempted once
+each; 0 of 6 first-utterance scenarios repeated to the ≥3-attempt threshold
+the matrix and decision rule call for.** No failures observed in this pass.
+This is a genuinely positive first signal, not proof — see Decision rule.
 
 ### Decision rule
 

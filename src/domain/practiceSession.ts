@@ -187,14 +187,21 @@ export function advanceTrialCycleSeenIds({
   selectedPair,
   seenThisCycle = null,
 }: AdvanceTrialCycleSeenIdsInput): string[] {
-  const nextSeenIds = new Set(seenThisCycle ?? []);
-  nextSeenIds.add(buildTrialPairId(selectedPair));
-
   const activePairIds = activeGroupPairs.map(buildTrialPairId);
-  const hasSeenEveryActivePair =
-    activePairIds.length > 0 && activePairIds.every((pairId) => nextSeenIds.has(pairId));
+  if (activePairIds.length <= 1) return [];
 
-  return hasSeenEveryActivePair ? [] : Array.from(nextSeenIds);
+  const previousSeenIds = new Set(seenThisCycle ?? []);
+  const previousCycleComplete = activePairIds.every((pairId) => previousSeenIds.has(pairId));
+
+  // Reinforcement needs proof that normal coverage finished. Preserve that
+  // context through the next selection; clearing it here would erase the miss
+  // signal before the scheduler can use it.
+  if (previousCycleComplete) {
+    return [buildTrialPairId(selectedPair)];
+  }
+
+  previousSeenIds.add(buildTrialPairId(selectedPair));
+  return Array.from(previousSeenIds);
 }
 
 export function choosePlaybackForRound({

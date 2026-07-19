@@ -250,7 +250,7 @@ runTest('advanceTrialCycleSeenIds records selected pair without mutating existin
   );
 });
 
-runTest('advanceTrialCycleSeenIds starts a new cycle after every active-group pair has been seen', () => {
+runTest('advanceTrialCycleSeenIds retains completed coverage for the next selection', () => {
   const rightLight = makePair('rL', 1, 'right', 'light');
   const riceLice = makePair('rL', 1, 'rice', 'lice');
 
@@ -260,7 +260,23 @@ runTest('advanceTrialCycleSeenIds starts a new cycle after every active-group pa
     seenThisCycle: [buildTrialPairId(rightLight)],
   });
 
-  assert.strictEqual(JSON.stringify(nextSeen), JSON.stringify([]));
+  assert.strictEqual(
+    JSON.stringify(nextSeen.sort()),
+    JSON.stringify([buildTrialPairId(rightLight), buildTrialPairId(riceLice)].sort())
+  );
+});
+
+runTest('advanceTrialCycleSeenIds starts a new cycle after the post-coverage selection', () => {
+  const rightLight = makePair('rL', 1, 'right', 'light');
+  const riceLice = makePair('rL', 1, 'rice', 'lice');
+
+  const nextSeen = advanceTrialCycleSeenIds({
+    activeGroupPairs: [rightLight, riceLice],
+    selectedPair: riceLice,
+    seenThisCycle: [buildTrialPairId(rightLight), buildTrialPairId(riceLice)],
+  });
+
+  assert.strictEqual(JSON.stringify(nextSeen), JSON.stringify([buildTrialPairId(riceLice)]));
 });
 
 runTest('choosePlaybackForRound replays the same word during an unanswered round', () => {
@@ -514,27 +530,33 @@ runTest('mastery for two different groups is tracked independently', () => {
 // unavoidable. This is a DATASET LIMITATION, not a scheduler defect.
 // These tests document that boundary explicitly.
 
-runTest('single-pair tier: scheduler returns the sole pair on every call — dataset limitation, not a bug', () => {
+runTest('single-pair tier: repeated selections terminate and return the sole eligible pair', () => {
   // A group like bV (tier 1: ban/van only) cannot provide variety.
   // The scheduler correctly falls back to the only available pair.
   const onlyPair = makePair('bV', 1, 'ban', 'van');
+  let lastPairId = null;
+  let seenThisCycle = [];
 
-  const first = selectNextTrialPair({
-    eligiblePairs: [onlyPair],
-    activeGroup: 'bV',
-    random: () => 0,
-  });
-  // Supply the only pair as lastPairId to simulate consecutive plays
-  const second = selectNextTrialPair({
-    eligiblePairs: [onlyPair],
-    activeGroup: 'bV',
-    lastPairId: buildTrialPairId(onlyPair),
-    random: () => 0,
-  });
+  for (let i = 0; i < 10; i++) {
+    const next = selectNextTrialPair({
+      eligiblePairs: [onlyPair],
+      activeGroup: 'bV',
+      lastPairId,
+      seenThisCycle,
+      recentlyMissedPairId: buildTrialPairId(onlyPair),
+      random: () => 0,
+    });
 
-  assert.strictEqual(first, onlyPair, 'scheduler returns the only eligible pair');
-  assert.strictEqual(second, onlyPair, 'scheduler returns the same pair again — unavoidable with one pair at this tier');
-  assert.notStrictEqual(first, null, 'scheduler does not return null for a single-pair tier');
+    assert.strictEqual(next, onlyPair, `selection ${i + 1} returns the only eligible pair`);
+    lastPairId = buildTrialPairId(next);
+    seenThisCycle = advanceTrialCycleSeenIds({
+      activeGroupPairs: [onlyPair],
+      selectedPair: next,
+      seenThisCycle,
+    });
+  }
+
+  assert.strictEqual(JSON.stringify(seenThisCycle), '[]', 'single-pair cycles remain bounded');
 });
 
 runTest('single-pair tier: seenThisCycle resets immediately after the only pair is seen', () => {
@@ -550,6 +572,26 @@ runTest('single-pair tier: seenThisCycle resets immediately after the only pair 
 
   // Use JSON.stringify to avoid cross-realm array comparison issues (loadTsModule VM context).
   assert.strictEqual(JSON.stringify(nextSeen), '[]', 'cycle resets immediately when the only pair is seen');
+});
+
+runTest('single-pair tier: scheduling does not change mastery progression behavior', () => {
+  const onlyPair = makePair('bV', 3, 'berry', 'very');
+  const result = applyPracticeAnswer({
+    selectedPair: onlyPair,
+    category: 'Test',
+    answerIdx: 0,
+    playedIdx: 0,
+    startTime: 1000,
+    nowMs: 2500,
+    currentSpeed: 2,
+    fastStreak: 2,
+    longStreak: 2,
+    currentMasteryTier: 3,
+  });
+
+  assert.strictEqual(result.promoteMastery, true, 'existing mastery threshold still applies');
+  assert.strictEqual(result.promotedTier, 4, 'mastery still advances by one tier');
+  assert.strictEqual(result.nextSpeed, 0, 'speed still resets after mastery promotion');
 });
 
 // ─── Characterization: full cycle coverage with multiple same-tier pairs ──
@@ -588,8 +630,11 @@ runTest('full cycle with three same-tier pairs surfaces each exactly once before
   }
 
   assert.strictEqual(seenInCycle.size, 3, 'all three pairs appear exactly once per cycle');
-  // Use JSON.stringify to avoid cross-realm array comparison issues (loadTsModule VM context).
-  assert.strictEqual(JSON.stringify(seenThisCycle), '[]', 'cycle resets after all pairs have been seen');
+  assert.strictEqual(
+    JSON.stringify(seenThisCycle.sort()),
+    JSON.stringify(eligiblePairs.map(buildTrialPairId).sort()),
+    'completed coverage remains visible to the next selection',
+  );
 });
 
 // ─── Bounded missed-pair weighting ────────────────────────────────────────────
@@ -636,6 +681,49 @@ runTest('selectNextTrialPair: recently missed pair is preferred once all same-ti
   });
 
   assert.strictEqual(next, pairA, 'missed pair is preferred in all-seen phase');
+});
+
+runTest('scheduler flow covers all pairs, reinforces a miss, then resumes coverage', () => {
+  const pairA = makePair('rL', 2, 'rake', 'lake');
+  const pairB = makePair('rL', 2, 'rate', 'late');
+  const pairC = makePair('rL', 2, 'rip', 'lip');
+  const eligiblePairs = [pairA, pairB, pairC];
+  const missedPairId = buildTrialPairId(pairB);
+  let lastPairId = null;
+  let seenThisCycle = [];
+  const selections = [];
+
+  for (let i = 0; i < 6; i++) {
+    const next = selectNextTrialPair({
+      eligiblePairs,
+      activeGroup: 'rL',
+      lastPairId,
+      seenThisCycle,
+      recentlyMissedPairId: missedPairId,
+      random: () => 0,
+    });
+    assert.ok(next !== null, `trial ${i + 1}: scheduler returned a pair`);
+    selections.push(buildTrialPairId(next));
+    lastPairId = buildTrialPairId(next);
+    seenThisCycle = advanceTrialCycleSeenIds({
+      activeGroupPairs: eligiblePairs,
+      selectedPair: next,
+      seenThisCycle,
+    });
+  }
+
+  assert.strictEqual(
+    JSON.stringify(selections),
+    JSON.stringify([
+      buildTrialPairId(pairA),
+      buildTrialPairId(pairB),
+      buildTrialPairId(pairC),
+      buildTrialPairId(pairB),
+      buildTrialPairId(pairA),
+      buildTrialPairId(pairC),
+    ]),
+    'reinforcement occurs after coverage and cannot monopolize the next cycle',
+  );
 });
 
 runTest('selectNextTrialPair: missed pair is not chosen when it was the immediately previous pair', () => {

@@ -10,6 +10,10 @@ const practiceScreenSource = fs.readFileSync(
   path.join(__dirname, '..', 'app', '(tabs)', 'index.tsx'),
   'utf8'
 );
+const practiceSessionHookSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'hooks', 'usePracticeSession.ts'),
+  'utf8'
+);
 const pairSelectorSource = fs.readFileSync(
   path.join(
     __dirname,
@@ -154,8 +158,30 @@ runTest('practice emits all requested learning analytics events', () => {
     'pair_selected',
   ]) {
     assert.ok(
-      practiceScreenSource.includes(`name: '${eventName}'`),
+      practiceSessionHookSource.includes(`name: '${eventName}'`),
       `missing analytics event: ${eventName}`
+    );
+  }
+});
+
+runTest('practice workflow is owned by the session hook', () => {
+  assert.ok(
+    practiceScreenSource.includes('usePracticeSession({'),
+    'practice screen must compose the extracted session hook'
+  );
+  for (const workflowDependency of [
+    'applyPracticeAnswer',
+    'selectNextTrialPair',
+    'trackLearningEvent',
+    'useAudio',
+  ]) {
+    assert.ok(
+      practiceSessionHookSource.includes(workflowDependency),
+      `session hook must own practice workflow dependency: ${workflowDependency}`
+    );
+    assert.ok(
+      !practiceScreenSource.includes(workflowDependency),
+      `practice screen must not retain workflow dependency: ${workflowDependency}`
     );
   }
 });
@@ -182,7 +208,7 @@ runTest('contrast details stay presentation-only and emit selection actions', ()
 
 runTest('manual selection owns one round before contrast scheduling resumes', () => {
   assertInOrder(
-    practiceScreenSource,
+    practiceSessionHookSource,
     [
       'manualPairOverrideRef.current && selectedPair',
       '? selectedPair',
@@ -194,8 +220,8 @@ runTest('manual selection owns one round before contrast scheduling resumes', ()
     'manual pair override must remain one-shot and resume contrast scheduling'
   );
   assert.ok(
-    practiceScreenSource.includes('catObj.pairs.filter((pair) => pair.group === group)') &&
-      practiceScreenSource.includes('if (nextIndex === -1) return;'),
+    practiceSessionHookSource.includes('catObj.pairs.filter((pair) => pair.group === group)') &&
+      practiceSessionHookSource.includes('if (nextIndex === -1) return false;'),
     'contrast-detail selection must remain inside the active eligible contrast examples'
   );
 });
@@ -212,12 +238,12 @@ runTest('analytics payloads use canonical domain identifiers and relevant signal
     'correct: result.correct',
   ]) {
     assert.ok(
-      practiceScreenSource.includes(requiredPayload),
+      practiceSessionHookSource.includes(requiredPayload),
       `analytics payload lost canonical field: ${requiredPayload}`
     );
   }
   assert.ok(
-    !practiceScreenSource.includes('contrast_id: contrastTrainingTitle'),
+    !practiceSessionHookSource.includes('contrast_id: contrastTrainingTitle'),
     'localized contrast labels must not be used as analytics identifiers'
   );
 });
@@ -232,7 +258,7 @@ runTest('analytics remains outside the feedback component boundary', () => {
 
 runTest('answer state is committed before analytics observes the submission', () => {
   assertInOrder(
-    practiceScreenSource,
+    practiceSessionHookSource,
     [
       'setFeedback(result.feedback)',
       'recordAttempt(result.pairId, result.correct, result.durationMin)',

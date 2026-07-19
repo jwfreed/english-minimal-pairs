@@ -1,106 +1,88 @@
-// -----------------------------------------------------------------------------
-import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
-import type { SessionTimerHandle } from '@/src/components/SessionTimer';
-import { View, Text, Alert, TouchableOpacity } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useLanguage } from '@/src/context/LanguageContext';
-import { useCategory } from '@/src/context/CategoryContext';
-import { usePracticeTarget } from '@/src/context/PracticeTargetContext';
-import { usePairProgress } from '@/src/context/PairProgressContext';
-import { useSettings } from '@/src/context/SettingsContext';
-import { useAllThemeColors } from '@/src/context/theme';
-import createStyles from '@/src/constants/styles';
-import { minimalPairs, Pair } from '@/src/constants/minimalPairs';
-import { tKeys } from '@/src/constants/translationKeys';
 
+import { usePracticeSession } from '@/src/hooks/usePracticeSession';
 import AnswerButtons from '@/src/components/AnswerButtons';
 import HelpOverlay from '@/src/components/HelpOverlay';
-import SessionTimer from '@/src/components/SessionTimer';
-import PlacementTest from '@/src/components/PlacementTest';
 import LevelIndicator from '@/src/components/LevelIndicator';
-import PracticeHeader from '@/src/components/practice/PracticeHeader';
-import PracticePairSelector from '@/src/components/practice/PracticePairSelector';
+import OnboardingScreen from '@/src/components/OnboardingScreen';
+import PlacementTest from '@/src/components/PlacementTest';
+import SessionTimer from '@/src/components/SessionTimer';
+import ContrastDetailsModal from '@/src/components/practice/ContrastDetailsModal';
 import LevelUpCelebration from '@/src/components/practice/LevelUpCelebration';
 import ListenControls from '@/src/components/practice/ListenControls';
-import ContrastDetailsModal from '@/src/components/practice/ContrastDetailsModal';
-
-import { useContrastPairs } from '@/src/hooks/useContrastPairs';
-import { useAudio } from '@/src/hooks/useAudio';
-import { useHaptics } from '@/src/hooks/useHaptics';
-import {
-  advanceTrialCycleSeenIds,
-  applyPracticeAnswer,
-  buildTrialPairId,
-  choosePlaybackForRound,
-  selectNextTrialPair,
-  updateRecentMissState,
-  type RecentMissState,
-} from '@/src/domain/practiceSession';
+import PracticeHeader from '@/src/components/practice/PracticeHeader';
+import PracticePairSelector from '@/src/components/practice/PracticePairSelector';
+import { minimalPairs, type Pair } from '@/src/constants/minimalPairs';
+import createStyles from '@/src/constants/styles';
+import { tKeys } from '@/src/constants/translationKeys';
+import { useCategory } from '@/src/context/CategoryContext';
+import { useLanguage } from '@/src/context/LanguageContext';
+import { useAllThemeColors } from '@/src/context/theme';
 import {
   PLACEMENT_DONE_KEY,
   PLACEMENT_LEGACY_MIGRATION_KEY,
   buildPlacementStorageKey,
-  serializePlacementDone,
   resolvePlacementStateForCategory,
+  serializePlacementDone,
 } from '@/src/domain/masteryPersistence';
 import {
-  FAST_STREAK_NEEDED,
-  FAST_THRESHOLD_MS,
-  LONG_STREAK_NEEDED,
-  SPEED_TABLE,
-  SpeedTier,
-} from '@/src/learning/adaptiveProgression';
-import {
   ONBOARDING_SEEN_KEY,
-  shouldShowOnboarding,
   markOnboardingSeen,
+  shouldShowOnboarding,
 } from '@/src/storage/onboardingStorage';
-import OnboardingScreen from '@/src/components/OnboardingScreen';
 import { buildContrastTrainingTitle } from '@/utils/contrastLabel';
-import { buildPairId } from '@/utils/idHelpers';
-import { trackLearningEvent } from '@/src/analytics/learningAnalytics';
-
-/* Playback-rate steps per acoustic tier (0–2)
- * 3 tiers keeps the path to mastery promotion short:
- *   fast path  → 3 correct per tier × 3 tiers = 9 answers
- *   long path  → 6 correct per tier × 3 tiers = 18 answers
- * Wrong answers reset the current streak but do NOT demote speed,
- * so worst case with 1 wrong = 24 correct + 1 wrong = 25 total. */
 
 export default function HomeScreen() {
   const { translate } = useLanguage();
   const { categoryIndex } = useCategory();
-  const { targetGroup, consumeTarget } = usePracticeTarget();
-  const { recordAttempt } = usePairProgress();
-  const { getNextVoice } = useSettings();
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
-  const { triggerHaptic } = useHaptics();
-  const debugLog = useCallback(
-    (...args: Parameters<typeof console.log>) => {
-      if (__DEV__) {
-        console.log(...args);
-      }
-    },
-    []
-  );
 
-  /* ── Speed & streak tracking via refs (always-current, no stale closures) ── */
-  const groupSpeedRef = useRef<Record<string, SpeedTier>>({});
-  const groupStreakRef = useRef<Record<string, number>>({});
-  const groupLongStreakRef = useRef<Record<string, number>>({});
-  const [, forceRender] = useState(0);
-
-  // Placement test state
-  const [showPlacement, setShowPlacement] = useState<boolean | null>(null); // null = loading
-  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null); // null = loading
+  // Placement and onboarding remain screen-level entry flows.
+  const [showPlacement, setShowPlacement] = useState<boolean | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const [isContrastDetailsVisible, setIsContrastDetailsVisible] =
+    useState(false);
 
   const catObj = minimalPairs[categoryIndex];
-  const { visible, promote, mastery, setAllGroupsToTier, isLoading } = useContrastPairs(catObj.pairs, catObj.category);
-
   const catKey = catObj.category;
+  const {
+    activeGroupPairs,
+    audioModeReady,
+    contrastDetailPairs,
+    feedback,
+    handleAnswer,
+    handleCompareWord,
+    handleContrastDetailPairSelect: selectContrastDetailPair,
+    handlePairChange,
+    handlePickerScrollEnd,
+    handlePickerScrollStart,
+    handlePlay,
+    isLoading,
+    isSpeaking,
+    mastery,
+    playedIdx,
+    promotedTier,
+    safePairIndex,
+    selectedPair,
+    setAllGroupsToTier,
+    stableVisible,
+    timerRef,
+  } = usePracticeSession({
+    categoryIndex,
+    category: catObj,
+    isPracticeReady: showOnboarding === false && showPlacement === false,
+  });
+
+  const contrastTrainingTitle = useMemo(
+    () => buildContrastTrainingTitle(selectedPair, translate),
+    [selectedPair, translate]
+  );
 
   // Re-check placement each time the category changes.
   // Delegates the migration decision to a pure helper so the logic is testable
@@ -113,26 +95,45 @@ export default function HomeScreen() {
       AsyncStorage.getItem(PLACEMENT_DONE_KEY),
       AsyncStorage.getItem(PLACEMENT_LEGACY_MIGRATION_KEY),
       AsyncStorage.getItem(ONBOARDING_SEEN_KEY),
-    ]).then(async ([categoryRaw, legacyRaw, sentinelRaw, onboardingRaw]) => {
-      const decision = resolvePlacementStateForCategory({ categoryRaw, legacyRaw, sentinelRaw });
-      if (decision.shouldSeedCurrentCategoryFromLegacy) {
-        await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(() => {});
-      }
-      if (decision.shouldWriteLegacyMigrationSentinel) {
-        await AsyncStorage.setItem(PLACEMENT_LEGACY_MIGRATION_KEY, serializePlacementDone()).catch(() => {});
-      }
-      if (!cancelled) {
-        setShowOnboarding(shouldShowOnboarding(onboardingRaw));
-        setShowPlacement(decision.shouldShowPlacement);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setShowOnboarding(false);
-        setShowPlacement(false);
-      }
-    });
-    return () => { cancelled = true; };
+    ])
+      .then(async ([categoryRaw, legacyRaw, sentinelRaw, onboardingRaw]) => {
+        const decision = resolvePlacementStateForCategory({
+          categoryRaw,
+          legacyRaw,
+          sentinelRaw,
+        });
+        if (decision.shouldSeedCurrentCategoryFromLegacy) {
+          await AsyncStorage.setItem(
+            perCatKey,
+            serializePlacementDone()
+          ).catch(() => {});
+        }
+        if (decision.shouldWriteLegacyMigrationSentinel) {
+          await AsyncStorage.setItem(
+            PLACEMENT_LEGACY_MIGRATION_KEY,
+            serializePlacementDone()
+          ).catch(() => {});
+        }
+        if (!cancelled) {
+          setShowOnboarding(shouldShowOnboarding(onboardingRaw));
+          setShowPlacement(decision.shouldShowPlacement);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setShowOnboarding(false);
+          setShowPlacement(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [catKey]);
+
+  // Contrast details are purely visual state and should not survive a category change.
+  useEffect(() => {
+    setIsContrastDetailsVisible(false);
+  }, [categoryIndex]);
 
   const handleOnboardingDismiss = useCallback(async () => {
     try {
@@ -144,449 +145,42 @@ export default function HomeScreen() {
     setShowOnboarding(false);
   }, []);
 
-  const handlePlacementComplete = useCallback(async (startTier: number) => {
-    const perCatKey = buildPlacementStorageKey(catKey);
-    setAllGroupsToTier(startTier);
-    await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(() => {});
-    setShowPlacement(false);
-  }, [catKey, setAllGroupsToTier]);
+  const handlePlacementComplete = useCallback(
+    async (startTier: number) => {
+      const perCatKey = buildPlacementStorageKey(catKey);
+      setAllGroupsToTier(startTier);
+      await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(
+        () => {}
+      );
+      setShowPlacement(false);
+    },
+    [catKey, setAllGroupsToTier]
+  );
 
   const handlePlacementSkip = useCallback(async () => {
     const perCatKey = buildPlacementStorageKey(catKey);
-    await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(() => {});
+    await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(
+      () => {}
+    );
     setShowPlacement(false);
   }, [catKey]);
 
-  const timerRef = useRef<SessionTimerHandle | null>(null);
-
-  const [pairIndex, setPairIndex] = useState(0);
-  const [activeGroup, setActiveGroup] = useState<string | null>(null);
-  const [isHelpVisible, setIsHelpVisible] = useState(false);
-  const [isContrastDetailsVisible, setIsContrastDetailsVisible] = useState(false);
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
-    null
-  );
-  const [playedIdx, setPlayedIdx] = useState<0 | 1 | null>(null);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [pendingPlayback, setPendingPlayback] = useState<{
-    pairId: string;
-    playedIdx: 0 | 1;
-  } | null>(null);
-  /** Tier the user just promoted to — drives inline celebration in AnswerButtons */
-  const [promotedTier, setPromotedTier] = useState<number | null>(null);
-  const lastPairIdRef = useRef<string | null>(null);
-  const seenThisCycleRef = useRef<string[]>([]);
-  const recentMissStateRef = useRef<RecentMissState>({ recentlyMissedPairId: null, trialsSinceMiss: 0 });
-  // A manual choice owns exactly the next round. Once presented, normal
-  // contrast-scoped scheduling resumes on the following round.
-  const manualPairOverrideRef = useRef(false);
-  const lastStartedContrastRef = useRef<string | null>(null);
-
-  // Reset round state when the category changes so stale startTime / playedIdx
-  // from a previous category can't bleed into a new one.
-  useEffect(() => {
-    setPairIndex(0);
-    setActiveGroup(null);
-    setFeedback(null);
-    setPlayedIdx(null);
-    setStartTime(null);
-    setPendingPlayback(null);
-    setIsContrastDetailsVisible(false);
-    lastPairIdRef.current = null;
-    seenThisCycleRef.current = [];
-    recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
-    manualPairOverrideRef.current = false;
-    lastStartedContrastRef.current = null;
-  }, [categoryIndex]);
-
-  // Jump to a pair requested from the Results "Practice this next" card.
-  // The target is a group id. visible may include multiple same-tier examples
-  // for a group, while mastery remains group-based.
-  useEffect(() => {
-    if (!targetGroup || isLoading) return;
-    const idx = visible.findIndex((p) => p.group === targetGroup);
-    if (idx === -1) return;
-    setActiveGroup(targetGroup);
-    setPairIndex(idx);
-    setFeedback(null);
-    setPlayedIdx(null);
-    setStartTime(null);
-    setPendingPlayback(null);
-    lastPairIdRef.current = null;
-    seenThisCycleRef.current = [];
-    recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
-    manualPairOverrideRef.current = false;
-    consumeTarget();
-  }, [targetGroup, visible, isLoading, consumeTarget]);
-
-  // Clamp pairIndex when visible list shrinks
-  const safePairIndex = visible.length > 0 ? Math.min(pairIndex, visible.length - 1) : 0;
-  const selectedPair: Pair | undefined = visible[safePairIndex];
-  const contrastTrainingTitle = useMemo(
-    () => buildContrastTrainingTitle(selectedPair, translate),
-    [selectedPair, translate]
-  );
-
-  const activeGroupPairs = useMemo(() => {
-    if (!activeGroup) return [];
-    return visible.filter((pair) => pair.group === activeGroup);
-  }, [activeGroup, visible]);
-
-  const contrastDetailPairs = useMemo(() => {
-    const group = activeGroup ?? selectedPair?.group;
-    if (!group) return [];
-    return catObj.pairs.filter((pair) => pair.group === group);
-  }, [activeGroup, catObj.pairs, selectedPair]);
-
-  const activeGroupPairIdsKey = useMemo(
-    () => activeGroupPairs.map(buildTrialPairId).join('|'),
-    [activeGroupPairs]
-  );
-
-  useEffect(() => {
-    if (isLoading || !selectedPair) return;
-    if (!activeGroup || !visible.some((pair) => pair.group === activeGroup)) {
-      setActiveGroup(selectedPair.group);
-    }
-  }, [activeGroup, isLoading, selectedPair, visible]);
-
-  useEffect(() => {
-    if (
-      isLoading ||
-      showOnboarding !== false ||
-      showPlacement !== false ||
-      !selectedPair ||
-      !activeGroup ||
-      lastStartedContrastRef.current === activeGroup
-    ) {
-      return;
-    }
-
-    lastStartedContrastRef.current = activeGroup;
-    trackLearningEvent({
-      name: 'contrast_practice_started',
-      properties: {
-        contrast_id: activeGroup,
-        mastery_level: mastery[activeGroup] ?? 1,
-      },
-    });
-  }, [activeGroup, isLoading, mastery, selectedPair, showOnboarding, showPlacement]);
-
-  useEffect(() => {
-    seenThisCycleRef.current = [];
-    recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
-    if (
-      lastPairIdRef.current &&
-      !activeGroupPairs.some((pair) => buildTrialPairId(pair) === lastPairIdRef.current)
-    ) {
-      lastPairIdRef.current = null;
-    }
-  }, [activeGroup, activeGroupPairs, activeGroupPairIdsKey]);
-
-  // Keep a stable snapshot of items — only update when the picker is NOT being scrolled
-  const [stableVisible, setStableVisible] = useState<Pair[]>(visible);
-  const scrollingRef = useRef(false);
-  useEffect(() => {
-    if (!scrollingRef.current && !isLoading) {
-      setStableVisible(visible);
-    }
-  }, [visible, isLoading]);
-
-  const speedTier: SpeedTier = selectedPair
-    ? (groupSpeedRef.current[selectedPair.group] ?? 0)
-    : 0;
-  const { play, audioModeReady, isSpeaking } = useAudio(
-    selectedPair,
-    SPEED_TABLE[speedTier],
-    getNextVoice
-  );
-
-  useEffect(() => {
-    if (!pendingPlayback || !selectedPair) return;
-    if (buildTrialPairId(selectedPair) !== pendingPlayback.pairId) return;
-
-    const playback = pendingPlayback;
-    setPendingPlayback(null);
-    play(playback.playedIdx).catch((error) => {
-      console.error('Audio playback error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
-      Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
-    });
-  }, [pendingPlayback, play, selectedPair, translate]);
-
-  const markScheduledPair = useCallback(
+  const handleContrastDetailPairSelect = useCallback(
     (pair: Pair) => {
-      const pairId = buildTrialPairId(pair);
-      const groupPairs = visible.filter((candidate) => candidate.group === pair.group);
-      lastPairIdRef.current = pairId;
-      seenThisCycleRef.current = advanceTrialCycleSeenIds({
-        activeGroupPairs: groupPairs,
-        selectedPair: pair,
-        seenThisCycle: seenThisCycleRef.current,
-      });
-      if (activeGroup !== pair.group) {
-        setActiveGroup(pair.group);
+      if (selectContrastDetailPair(pair)) {
+        setIsContrastDetailsVisible(false);
       }
-      return pairId;
     },
-    [activeGroup, visible]
+    [selectContrastDetailPair]
   );
 
-  const findVisiblePairIndex = useCallback(
-    (pair: Pair) => {
-      const pairId = buildTrialPairId(pair);
-      return visible.findIndex((candidate) => buildTrialPairId(candidate) === pairId);
-    },
-    [visible]
-  );
-
-  const handlePlay = useCallback(async () => {
-    timerRef.current?.poke();
-    debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
-    if (!audioModeReady) {
-      debugLog('❌ Audio not ready - showing error alert');
-      Alert.alert(translate(tKeys.audioError) || 'Audio Error', translate(tKeys.audioInitializing) || 'Audio system is still initializing. Please try again.');
-      return;
-    }
-    triggerHaptic('light');
-
-    const playback = choosePlaybackForRound({
-      playedIdx,
-      feedback,
-      randomValue: Math.random(),
-    });
-
-    if (playback.startsNewRound) {
-      setFeedback(null);
-      setPromotedTier(null);
-      setStartTime(Date.now());
-      setPlayedIdx(playback.playedIdx);
-
-      const group = activeGroup ?? selectedPair?.group ?? null;
-      const nextPair =
-        manualPairOverrideRef.current && selectedPair
-          ? selectedPair
-          : group
-            ? selectNextTrialPair({
-                eligiblePairs: visible,
-                activeGroup: group,
-                lastPairId: lastPairIdRef.current,
-                seenThisCycle: seenThisCycleRef.current,
-                recentlyMissedPairId: recentMissStateRef.current.recentlyMissedPairId,
-                random: Math.random,
-              })
-            : selectedPair;
-      manualPairOverrideRef.current = false;
-
-      if (nextPair) {
-        const nextPairId = markScheduledPair(nextPair);
-        trackLearningEvent({
-          name: 'pair_presented',
-          properties: {
-            contrast_id: nextPair.group,
-            pair_id: buildPairId(nextPair, catObj.category),
-            difficulty_tier: nextPair.difficulty,
-          },
-        });
-        const nextPairIndex = findVisiblePairIndex(nextPair);
-        if (nextPairIndex !== -1 && nextPairIndex !== safePairIndex) {
-          setPairIndex(nextPairIndex);
-          setPendingPlayback({ pairId: nextPairId, playedIdx: playback.playedIdx });
-          return;
-        }
-      }
-    }
-
-    try {
-      await play(playback.playedIdx);
-    } catch (error) {
-      console.error('Audio playback error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Cannot play clip';
-      Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
-    }
-  }, [
-    activeGroup,
-    audioModeReady,
-    catObj.category,
-    debugLog,
-    feedback,
-    findVisiblePairIndex,
-    markScheduledPair,
-    play,
-    playedIdx,
-    safePairIndex,
-    selectedPair,
-    translate,
-    triggerHaptic,
-    visible,
-  ]);
-
-  /** Play a specific word from the rendered pair after feedback compare. */
-  const handleCompareWord = useCallback(async (idx: 0 | 1) => {
-    if (!audioModeReady) return;
-    try {
-      await play(idx);
-    } catch (error) {
-      console.error('Compare playback error:', error);
-    }
-  }, [play, audioModeReady]);
-
-  const handleAnswer = useCallback(
-    (idx: 0 | 1) => {
-      if (playedIdx === null || !selectedPair) return;
-      timerRef.current?.poke();
-      const g = selectedPair.group;
-      const curSpeed: SpeedTier = groupSpeedRef.current[g] ?? 0;
-      const longStreak = groupLongStreakRef.current[g] ?? 0;
-      const fastStreak = groupStreakRef.current[g] ?? 0;
-
-      const result = applyPracticeAnswer({
-        selectedPair,
-        category: catObj.category,
-        answerIdx: idx,
-        playedIdx,
-        startTime,
-        nowMs: Date.now(),
-        currentSpeed: curSpeed,
-        fastStreak,
-        longStreak,
-        currentMasteryTier: mastery[g] ?? 1,
-      });
-      if (!result) return;
-
-      setFeedback(result.feedback);
-      recordAttempt(result.pairId, result.correct, result.durationMin);
-      trackLearningEvent({
-        name: 'pair_answered',
-        properties: {
-          contrast_id: result.group,
-          pair_id: result.pairId,
-          correct: result.correct,
-          response_time_ms: result.responseTimeMs,
-        },
-      });
-      if (!result.correct) {
-        const chosenWord = idx === 0 ? selectedPair.word1 : selectedPair.word2;
-        const correctWord = playedIdx === 0 ? selectedPair.word1 : selectedPair.word2;
-        trackLearningEvent({
-          name: 'compare_mode_opened',
-          properties: {
-            contrast_id: result.group,
-            pair_id: result.pairId,
-            incorrect_attempt_context: {
-              chosen_word: chosenWord,
-              correct_word: correctWord,
-              response_time_ms: result.responseTimeMs,
-            },
-          },
-        });
-      }
-      recentMissStateRef.current = updateRecentMissState({
-        state: recentMissStateRef.current,
-        answeredPairId: buildTrialPairId(selectedPair),
-        wasCorrect: result.correct,
-      });
-
-      groupLongStreakRef.current[g] = result.nextLongStreak;
-      groupStreakRef.current[g] = result.nextFastStreak;
-
-      if (__DEV__) {
-        const isFast = result.responseTimeMs < FAST_THRESHOLD_MS;
-        console.log(
-          `📊 ${g} | ${result.correct ? '✓' : '✗'} | rt=${result.responseTimeMs}ms (${isFast ? 'fast' : 'slow'})` +
-          ` | speed=${curSpeed} | fastStreak=${result.nextFastStreak}/${FAST_STREAK_NEEDED}` +
-          ` | longStreak=${result.nextLongStreak}/${LONG_STREAK_NEEDED}`
-        );
-      }
-
-      if (!result.promoteSpeed && !result.promoteMastery) {
-        // Wrong answers reset streaks (above) but do NOT demote speed.
-        // Demoting speed was double-punishment that made mastery promotion
-        // unreachable within a reasonable session (~30 answers needed for
-        // long-streak path + 1 wrong answer).
-        return;
-      }
-
-      // ── Promote speed or mastery ──
-      if (result.promoteSpeed) {
-        groupSpeedRef.current[g] = result.nextSpeed;
-        if (__DEV__) console.log(`⬆ Speed ${g}: ${curSpeed} → ${result.nextSpeed}`);
-      } else {
-        groupSpeedRef.current[g] = result.nextSpeed;
-        promote(g);
-        setPromotedTier(result.promotedTier);
-        if (result.resetPairIndex) {
-          setPairIndex(0);
-          setFeedback(null);
-          setPlayedIdx(null);
-          setStartTime(null);
-        }
-        if (__DEV__) console.log(`🎓 Mastery up for ${g}! Speed reset to 0 → tier ${result.promotedTier}`);
-      }
-
-      // Reset streaks after promotion
-      groupStreakRef.current[g] = result.nextFastStreak;
-      groupLongStreakRef.current[g] = result.nextLongStreak;
-      forceRender((v) => v + 1);
-    },
-    [playedIdx, startTime, selectedPair, promote, mastery, recordAttempt, catObj.category]
-  );
-
-  const selectPairManually = useCallback((nextPair: Pair, i: number) => {
-    timerRef.current?.poke();
-    const groupChanged = nextPair.group !== activeGroup;
-    setActiveGroup(nextPair.group);
-    if (groupChanged) {
-      lastPairIdRef.current = null;
-      seenThisCycleRef.current = [];
-      recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
-    }
-    manualPairOverrideRef.current = true;
-    setPairIndex(i);
-    setFeedback(null);
-    setPlayedIdx(null);
-    setStartTime(null);
-    setPendingPlayback(null);
-    trackLearningEvent({
-      name: 'pair_selected',
-      properties: {
-        contrast_id: nextPair.group,
-        pair_id: buildPairId(nextPair, catObj.category),
-      },
-    });
-  }, [activeGroup, catObj.category]);
-
-  const handlePairChange = useCallback((i: number) => {
-    const nextPair = stableVisible[i] ?? visible[i];
-    if (!nextPair) return;
-    selectPairManually(nextPair, i);
-  }, [selectPairManually, stableVisible, visible]);
-
-  const handleContrastDetailPairSelect = useCallback((pair: Pair) => {
-    const nextIndex = visible.findIndex(
-      (candidate) => buildTrialPairId(candidate) === buildTrialPairId(pair)
-    );
-    if (nextIndex === -1) return;
-    selectPairManually(pair, nextIndex);
-    setIsContrastDetailsVisible(false);
-  }, [selectPairManually, visible]);
-
-  /** Tell us when the user starts / stops scrolling the picker */
-  const handlePickerScrollStart = useCallback(() => {
-    scrollingRef.current = true;
-  }, []);
-  const handlePickerScrollEnd = useCallback(() => {
-    scrollingRef.current = false;
-    // Flush any pending visible update
-    setStableVisible(visible);
-  }, [visible]);
-
-  // Show PlacementTest if the user hasn't completed it yet
+  // Show PlacementTest if the user hasn't completed it yet.
   if (showPlacement === null || showOnboarding === null) {
-    // Still checking AsyncStorage
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
-        <Text style={{ color: theme.textSecondary }}>{translate(tKeys.loading)}</Text>
+        <Text style={{ color: theme.textSecondary }}>
+          {translate(tKeys.loading)}
+        </Text>
       </View>
     );
   }
@@ -623,7 +217,10 @@ export default function HomeScreen() {
             {contrastTrainingTitle}
           </Text>
           {selectedPair && (
-            <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} showCriteria />
+            <LevelIndicator
+              currentTier={mastery[selectedPair.group] ?? 1}
+              showCriteria
+            />
           )}
           {selectedPair && (
             <TouchableOpacity
@@ -631,7 +228,11 @@ export default function HomeScreen() {
               onPress={() => setIsContrastDetailsVisible(true)}
               style={styles.contrastDetailsButton}
             >
-              <Ionicons name="information-circle-outline" size={17} color={theme.primary} />
+              <Ionicons
+                name="information-circle-outline"
+                size={17}
+                color={theme.primary}
+              />
               <Text style={styles.contrastDetailsButtonText}>
                 {translate(tKeys.viewContrastDetails)}
               </Text>

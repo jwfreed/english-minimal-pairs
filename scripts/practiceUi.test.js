@@ -21,6 +21,21 @@ const pairSelectorSource = fs.readFileSync(
   ),
   'utf8'
 );
+const answerButtonsSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'components', 'AnswerButtons.tsx'),
+  'utf8'
+);
+const contrastDetailsSource = fs.readFileSync(
+  path.join(
+    __dirname,
+    '..',
+    'src',
+    'components',
+    'practice',
+    'ContrastDetailsModal.tsx'
+  ),
+  'utf8'
+);
 
 function runTest(name, fn) {
   try {
@@ -98,5 +113,131 @@ runTest('pair selector renders the optional example-selection copy', () => {
     copyUsages.length,
     3,
     'toggle text, toggle accessibility label, and picker label must share the example copy'
+  );
+});
+
+runTest('contrast details remain a supporting modal with mastery and availability', () => {
+  assert.ok(
+    practiceScreenSource.includes('tKeys.viewContrastDetails') &&
+      practiceScreenSource.includes('<ContrastDetailsModal'),
+    'practice must expose a contrast-details entry point'
+  );
+  assert.ok(
+    contrastDetailsSource.includes('<LevelIndicator currentTier={masteryLevel}') &&
+      contrastDetailsSource.includes('availablePairIds.has(pairId)') &&
+      contrastDetailsSource.includes('tKeys.availableNow'),
+    'contrast details must show group mastery and current pair availability'
+  );
+});
+
+runTest('incorrect feedback identifies the choice, correction, and contrast', () => {
+  assertInOrder(
+    answerButtonsSource,
+    [
+      'tKeys.youChose',
+      'feedbackCopy.contrastWord',
+      'tKeys.correct',
+      'feedbackCopy.correctWord',
+      'tKeys.compareTheSounds',
+      'contrastLabel',
+    ],
+    'incorrect compare context changed'
+  );
+});
+
+runTest('practice emits all requested learning analytics events', () => {
+  for (const eventName of [
+    'contrast_practice_started',
+    'pair_presented',
+    'pair_answered',
+    'compare_mode_opened',
+    'pair_selected',
+  ]) {
+    assert.ok(
+      practiceScreenSource.includes(`name: '${eventName}'`),
+      `missing analytics event: ${eventName}`
+    );
+  }
+});
+
+runTest('contrast details stay presentation-only and emit selection actions', () => {
+  for (const forbiddenDependency of [
+    'useContrastPairs',
+    'selectNextTrialPair',
+    'trackLearningEvent',
+    'AsyncStorage',
+    'promote(',
+  ]) {
+    assert.ok(
+      !contrastDetailsSource.includes(forbiddenDependency),
+      `contrast details must not own domain behavior: ${forbiddenDependency}`
+    );
+  }
+  assert.ok(
+    contrastDetailsSource.includes('availablePairIds.has(pairId)') &&
+      contrastDetailsSource.includes('onPress={() => onSelectPair(pair)}'),
+    'contrast details must limit itself to availability presentation and selection callbacks'
+  );
+});
+
+runTest('manual selection owns one round before contrast scheduling resumes', () => {
+  assertInOrder(
+    practiceScreenSource,
+    [
+      'manualPairOverrideRef.current && selectedPair',
+      '? selectedPair',
+      ': group',
+      'selectNextTrialPair({',
+      'activeGroup: group',
+      'manualPairOverrideRef.current = false',
+    ],
+    'manual pair override must remain one-shot and resume contrast scheduling'
+  );
+  assert.ok(
+    practiceScreenSource.includes('catObj.pairs.filter((pair) => pair.group === group)') &&
+      practiceScreenSource.includes('if (nextIndex === -1) return;'),
+    'contrast-detail selection must remain inside the active eligible contrast examples'
+  );
+});
+
+runTest('analytics payloads use canonical domain identifiers and relevant signals', () => {
+  for (const requiredPayload of [
+    'contrast_id: activeGroup',
+    'mastery_level: mastery[activeGroup] ?? 1',
+    'contrast_id: nextPair.group',
+    'pair_id: buildPairId(nextPair, catObj.category)',
+    'difficulty_tier: nextPair.difficulty',
+    'contrast_id: result.group',
+    'pair_id: result.pairId',
+    'correct: result.correct',
+  ]) {
+    assert.ok(
+      practiceScreenSource.includes(requiredPayload),
+      `analytics payload lost canonical field: ${requiredPayload}`
+    );
+  }
+  assert.ok(
+    !practiceScreenSource.includes('contrast_id: contrastTrainingTitle'),
+    'localized contrast labels must not be used as analytics identifiers'
+  );
+});
+
+runTest('analytics remains outside the feedback component boundary', () => {
+  assert.ok(
+    !answerButtonsSource.includes('learningAnalytics') &&
+      !answerButtonsSource.includes('trackLearningEvent'),
+    'AnswerButtons must remain presentation and interaction only'
+  );
+});
+
+runTest('answer state is committed before analytics observes the submission', () => {
+  assertInOrder(
+    practiceScreenSource,
+    [
+      'setFeedback(result.feedback)',
+      'recordAttempt(result.pairId, result.correct, result.durationMin)',
+      "name: 'pair_answered'",
+    ],
+    'answer state must not depend on analytics delivery'
   );
 });

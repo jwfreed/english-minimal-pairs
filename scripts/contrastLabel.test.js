@@ -2,7 +2,7 @@ const assert = require('assert');
 const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
-const { buildContrastTrainingTitle } = loadTsModule(
+const { buildContrastLabel, buildContrastTrainingTitle } = loadTsModule(
   path.join(__dirname, '..', 'utils', 'contrastLabel.ts')
 );
 
@@ -49,6 +49,14 @@ runTest('buildContrastTrainingTitle falls back to readable group labels', () => 
 
 runTest('buildContrastTrainingTitle handles missing pairs safely', () => {
   assert.strictEqual(buildContrastTrainingTitle(undefined), 'Train this contrast');
+});
+
+runTest('buildContrastLabel renders the contrast without practice-action copy', () => {
+  assert.strictEqual(buildContrastLabel(makePair()), '/r/ vs /l/');
+  assert.strictEqual(
+    buildContrastLabel(makePair({ contrastPhoneme1: '', contrastPhoneme2: ' ', group: 'iVsI' })),
+    'i Vs I'
+  );
 });
 
 console.log('\nAll contrastLabel tests passed.');

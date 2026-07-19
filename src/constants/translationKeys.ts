@@ -100,6 +100,13 @@ export const tKeys = {
   // Contrast training title
   trainThisContrast: 'trainThisContrast',
   trainContrast: 'trainContrast',
+  contrastDetails: 'contrastDetails',
+  viewContrastDetails: 'viewContrastDetails',
+  practiceExamples: 'practiceExamples',
+  availableNow: 'availableNow',
+  youChose: 'youChose',
+  compareTheSounds: 'compareTheSounds',
+  closeContrastDetails: 'closeContrastDetails',
 } as const;
 
 export type TranslationKey = keyof typeof tKeys;

@@ -33,11 +33,18 @@ export function buildContrastTrainingTitle(
 
   if (!pair) return t(tKeys.trainThisContrast, DEFAULT_CONTRAST_TITLE);
 
+  return `${t(tKeys.trainContrast, 'Train')} ${buildContrastLabel(pair)}`;
+}
+
+export function buildContrastLabel(pair: Pair | undefined): string {
+  if (!pair) return DEFAULT_CONTRAST_TITLE;
+
   const first = normalizePhonemeForDisplay(pair.contrastPhoneme1);
   const second = normalizePhonemeForDisplay(pair.contrastPhoneme2);
   if (first && second) {
-    return `${t(tKeys.trainContrast, 'Train')} /${first}/ vs /${second}/`;
+    return `/${first}/ vs /${second}/`;
   }
 
-  return formatGroupFallback(pair.group, t);
+  return formatGroupFallback(pair.group, (_key, fallback) => fallback)
+    .replace(/^Train\s+/, '');
 }

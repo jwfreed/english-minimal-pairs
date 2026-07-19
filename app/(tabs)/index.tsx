@@ -1,7 +1,8 @@
 // -----------------------------------------------------------------------------
 import React, { useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import type { SessionTimerHandle } from '@/src/components/SessionTimer';
-import { View, Text, Alert } from 'react-native';
+import { View, Text, Alert, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useCategory } from '@/src/context/CategoryContext';
@@ -22,6 +23,7 @@ import PracticeHeader from '@/src/components/practice/PracticeHeader';
 import PracticePairSelector from '@/src/components/practice/PracticePairSelector';
 import LevelUpCelebration from '@/src/components/practice/LevelUpCelebration';
 import ListenControls from '@/src/components/practice/ListenControls';
+import ContrastDetailsModal from '@/src/components/practice/ContrastDetailsModal';
 
 import { useContrastPairs } from '@/src/hooks/useContrastPairs';
 import { useAudio } from '@/src/hooks/useAudio';
@@ -56,6 +58,8 @@ import {
 } from '@/src/storage/onboardingStorage';
 import OnboardingScreen from '@/src/components/OnboardingScreen';
 import { buildContrastTrainingTitle } from '@/utils/contrastLabel';
+import { buildPairId } from '@/utils/idHelpers';
+import { trackLearningEvent } from '@/src/analytics/learningAnalytics';
 
 /* Playback-rate steps per acoustic tier (0–2)
  * 3 tiers keeps the path to mastery promotion short:
@@ -158,6 +162,7 @@ export default function HomeScreen() {
   const [pairIndex, setPairIndex] = useState(0);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [isHelpVisible, setIsHelpVisible] = useState(false);
+  const [isContrastDetailsVisible, setIsContrastDetailsVisible] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(
     null
   );
@@ -172,7 +177,10 @@ export default function HomeScreen() {
   const lastPairIdRef = useRef<string | null>(null);
   const seenThisCycleRef = useRef<string[]>([]);
   const recentMissStateRef = useRef<RecentMissState>({ recentlyMissedPairId: null, trialsSinceMiss: 0 });
+  // A manual choice owns exactly the next round. Once presented, normal
+  // contrast-scoped scheduling resumes on the following round.
   const manualPairOverrideRef = useRef(false);
+  const lastStartedContrastRef = useRef<string | null>(null);
 
   // Reset round state when the category changes so stale startTime / playedIdx
   // from a previous category can't bleed into a new one.
@@ -183,10 +191,12 @@ export default function HomeScreen() {
     setPlayedIdx(null);
     setStartTime(null);
     setPendingPlayback(null);
+    setIsContrastDetailsVisible(false);
     lastPairIdRef.current = null;
     seenThisCycleRef.current = [];
     recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
     manualPairOverrideRef.current = false;
+    lastStartedContrastRef.current = null;
   }, [categoryIndex]);
 
   // Jump to a pair requested from the Results "Practice this next" card.
@@ -222,6 +232,12 @@ export default function HomeScreen() {
     return visible.filter((pair) => pair.group === activeGroup);
   }, [activeGroup, visible]);
 
+  const contrastDetailPairs = useMemo(() => {
+    const group = activeGroup ?? selectedPair?.group;
+    if (!group) return [];
+    return catObj.pairs.filter((pair) => pair.group === group);
+  }, [activeGroup, catObj.pairs, selectedPair]);
+
   const activeGroupPairIdsKey = useMemo(
     () => activeGroupPairs.map(buildTrialPairId).join('|'),
     [activeGroupPairs]
@@ -233,6 +249,28 @@ export default function HomeScreen() {
       setActiveGroup(selectedPair.group);
     }
   }, [activeGroup, isLoading, selectedPair, visible]);
+
+  useEffect(() => {
+    if (
+      isLoading ||
+      showOnboarding !== false ||
+      showPlacement !== false ||
+      !selectedPair ||
+      !activeGroup ||
+      lastStartedContrastRef.current === activeGroup
+    ) {
+      return;
+    }
+
+    lastStartedContrastRef.current = activeGroup;
+    trackLearningEvent({
+      name: 'contrast_practice_started',
+      properties: {
+        contrast_id: activeGroup,
+        mastery_level: mastery[activeGroup] ?? 1,
+      },
+    });
+  }, [activeGroup, isLoading, mastery, selectedPair, showOnboarding, showPlacement]);
 
   useEffect(() => {
     seenThisCycleRef.current = [];
@@ -342,6 +380,14 @@ export default function HomeScreen() {
 
       if (nextPair) {
         const nextPairId = markScheduledPair(nextPair);
+        trackLearningEvent({
+          name: 'pair_presented',
+          properties: {
+            contrast_id: nextPair.group,
+            pair_id: buildPairId(nextPair, catObj.category),
+            difficulty_tier: nextPair.difficulty,
+          },
+        });
         const nextPairIndex = findVisiblePairIndex(nextPair);
         if (nextPairIndex !== -1 && nextPairIndex !== safePairIndex) {
           setPairIndex(nextPairIndex);
@@ -361,6 +407,7 @@ export default function HomeScreen() {
   }, [
     activeGroup,
     audioModeReady,
+    catObj.category,
     debugLog,
     feedback,
     findVisiblePairIndex,
@@ -409,6 +456,31 @@ export default function HomeScreen() {
 
       setFeedback(result.feedback);
       recordAttempt(result.pairId, result.correct, result.durationMin);
+      trackLearningEvent({
+        name: 'pair_answered',
+        properties: {
+          contrast_id: result.group,
+          pair_id: result.pairId,
+          correct: result.correct,
+          response_time_ms: result.responseTimeMs,
+        },
+      });
+      if (!result.correct) {
+        const chosenWord = idx === 0 ? selectedPair.word1 : selectedPair.word2;
+        const correctWord = playedIdx === 0 ? selectedPair.word1 : selectedPair.word2;
+        trackLearningEvent({
+          name: 'compare_mode_opened',
+          properties: {
+            contrast_id: result.group,
+            pair_id: result.pairId,
+            incorrect_attempt_context: {
+              chosen_word: chosenWord,
+              correct_word: correctWord,
+              response_time_ms: result.responseTimeMs,
+            },
+          },
+        });
+      }
       recentMissStateRef.current = updateRecentMissState({
         state: recentMissStateRef.current,
         answeredPairId: buildTrialPairId(selectedPair),
@@ -460,25 +532,44 @@ export default function HomeScreen() {
     [playedIdx, startTime, selectedPair, promote, mastery, recordAttempt, catObj.category]
   );
 
-  const handlePairChange = useCallback((i: number) => {
+  const selectPairManually = useCallback((nextPair: Pair, i: number) => {
     timerRef.current?.poke();
-    const nextPair = stableVisible[i] ?? visible[i];
-    if (nextPair) {
-      const groupChanged = nextPair.group !== activeGroup;
-      setActiveGroup(nextPair.group);
-      if (groupChanged) {
-        lastPairIdRef.current = null;
-        seenThisCycleRef.current = [];
-        recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
-      }
-      manualPairOverrideRef.current = true;
+    const groupChanged = nextPair.group !== activeGroup;
+    setActiveGroup(nextPair.group);
+    if (groupChanged) {
+      lastPairIdRef.current = null;
+      seenThisCycleRef.current = [];
+      recentMissStateRef.current = { recentlyMissedPairId: null, trialsSinceMiss: 0 };
     }
+    manualPairOverrideRef.current = true;
     setPairIndex(i);
     setFeedback(null);
     setPlayedIdx(null);
     setStartTime(null);
     setPendingPlayback(null);
-  }, [activeGroup, stableVisible, visible]);
+    trackLearningEvent({
+      name: 'pair_selected',
+      properties: {
+        contrast_id: nextPair.group,
+        pair_id: buildPairId(nextPair, catObj.category),
+      },
+    });
+  }, [activeGroup, catObj.category]);
+
+  const handlePairChange = useCallback((i: number) => {
+    const nextPair = stableVisible[i] ?? visible[i];
+    if (!nextPair) return;
+    selectPairManually(nextPair, i);
+  }, [selectPairManually, stableVisible, visible]);
+
+  const handleContrastDetailPairSelect = useCallback((pair: Pair) => {
+    const nextIndex = visible.findIndex(
+      (candidate) => buildTrialPairId(candidate) === buildTrialPairId(pair)
+    );
+    if (nextIndex === -1) return;
+    selectPairManually(pair, nextIndex);
+    setIsContrastDetailsVisible(false);
+  }, [selectPairManually, visible]);
 
   /** Tell us when the user starts / stops scrolling the picker */
   const handlePickerScrollStart = useCallback(() => {
@@ -534,6 +625,18 @@ export default function HomeScreen() {
           {selectedPair && (
             <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} showCriteria />
           )}
+          {selectedPair && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => setIsContrastDetailsVisible(true)}
+              style={styles.contrastDetailsButton}
+            >
+              <Ionicons name="information-circle-outline" size={17} color={theme.primary} />
+              <Text style={styles.contrastDetailsButtonText}>
+                {translate(tKeys.viewContrastDetails)}
+              </Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.contrastInstruction}>
             {translate(tKeys.listenForSoundDifference)}
           </Text>
@@ -586,6 +689,15 @@ export default function HomeScreen() {
       <HelpOverlay
         visible={isHelpVisible}
         onClose={() => setIsHelpVisible(false)}
+      />
+      <ContrastDetailsModal
+        visible={isContrastDetailsVisible}
+        representativePair={selectedPair}
+        pairs={contrastDetailPairs}
+        availablePairs={activeGroupPairs}
+        masteryLevel={selectedPair ? mastery[selectedPair.group] ?? 1 : 1}
+        onSelectPair={handleContrastDetailPairSelect}
+        onClose={() => setIsContrastDetailsVisible(false)}
       />
     </View>
   );

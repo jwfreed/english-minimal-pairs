@@ -7,6 +7,7 @@ import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
 import type { Pair } from '@/src/constants/minimalPairs';
 import { buildPracticeFeedbackCopy } from '@/utils/practiceFeedback';
+import { buildContrastLabel } from '@/utils/contrastLabel';
 
 interface Props {
   pair: Pair;
@@ -57,6 +58,7 @@ export default function AnswerButtons({
         : null,
     [feedback, pair, playedIdx, translate]
   );
+  const contrastLabel = useMemo(() => buildContrastLabel(pair), [pair]);
   const ipaSegments = feedbackCopy
     ? highlightPhoneme(feedbackCopy.correctIpa, feedbackCopy.correctPhoneme ?? '')
     : [];
@@ -69,10 +71,10 @@ export default function AnswerButtons({
     } else if (feedback === 'incorrect' && feedbackCopy) {
       triggerHaptic('error');
       AccessibilityInfo.announceForAccessibility(
-        `${translate(tKeys.incorrect)}. ${feedbackCopy.headline} ${feedbackCopy.detail ?? ''}`.trim()
+        `${translate(tKeys.incorrect)}. ${translate(tKeys.youChose)} ${feedbackCopy.contrastWord}. ${translate(tKeys.correct)}: ${feedbackCopy.correctWord}. ${translate(tKeys.compareTheSounds)}: ${contrastLabel}.`
       );
     }
-  }, [feedback, feedbackCopy, triggerHaptic, translate]);
+  }, [contrastLabel, feedback, feedbackCopy, triggerHaptic, translate]);
 
   const handlePress = (idx: 0 | 1) => {
     if (disabled) return;
@@ -131,28 +133,57 @@ export default function AnswerButtons({
           >
             {feedback === 'correct' ? '✓' : '✗'}
           </Text>
-          <Text style={styles.feedbackWord}>{feedbackCopy.headline}</Text>
-          {feedbackCopy.detail && (
-            <Text style={styles.feedbackDetail}>{feedbackCopy.detail}</Text>
+          {feedback === 'correct' ? (
+            <>
+              <Text style={styles.feedbackWord}>{feedbackCopy.headline}</Text>
+              <Text
+                style={styles.feedbackIPA}
+                importantForAccessibility="no"
+                accessibilityElementsHidden={true}
+              >
+                {ipaSegments.map((seg, i) =>
+                  seg.highlight ? (
+                    <Text key={i} style={styles.feedbackHighlight}>
+                      {seg.text}
+                    </Text>
+                  ) : (
+                    <Text key={i}>{seg.text}</Text>
+                  )
+                )}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.feedbackWord}>{translate(tKeys.incorrect)}</Text>
+              <View style={styles.feedbackAttemptRows}>
+                <View style={styles.feedbackAttemptRow}>
+                  <Text style={styles.feedbackAttemptLabel}>
+                    {translate(tKeys.youChose)}
+                  </Text>
+                  <Text style={styles.feedbackAttemptValue}>
+                    {feedbackCopy.contrastWord} {feedbackCopy.contrastIpa}
+                  </Text>
+                </View>
+                <View style={styles.feedbackAttemptRow}>
+                  <Text style={styles.feedbackAttemptLabel}>
+                    {translate(tKeys.correct)}
+                  </Text>
+                  <Text style={styles.feedbackAttemptValue}>
+                    {feedbackCopy.correctWord} {feedbackCopy.correctIpa}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.compareTitle}>{translate(tKeys.compareTheSounds)}</Text>
+              <Text style={styles.contrastContext}>
+                {contrastLabel}
+              </Text>
+            </>
           )}
-          <Text
-            style={styles.feedbackIPA}
-            importantForAccessibility="no"
-            accessibilityElementsHidden={true}
-          >
-            {ipaSegments.map((seg, i) =>
-              seg.highlight ? (
-                <Text key={i} style={styles.feedbackHighlight}>
-                  {seg.text}
-                </Text>
-              ) : (
-                <Text key={i}>{seg.text}</Text>
-              )
-            )}
-          </Text>
           {feedback === 'incorrect' && onCompareWord && (
             <View style={styles.compareContainer}>
-              <Text style={styles.compareTitle}>{translate(tKeys.compareTheTwoWords)}</Text>
+              <Text style={styles.feedbackDetail}>
+                {translate(tKeys.listenForSoundDifference)}
+              </Text>
               <View style={styles.compareButtonRow}>
                 {[
                   { idx: 0 as const, word: pair.word1, ipa: pair.ipa1 },

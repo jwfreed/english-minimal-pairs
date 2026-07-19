@@ -15,7 +15,7 @@ function resolveTsModule(request, parentFile) {
   return null;
 }
 
-function loadTsModule(entryPath, cache = new Map()) {
+function loadTsModule(entryPath, cache = new Map(), moduleMocks = {}) {
   const resolvedEntry = entryPath.endsWith('.ts') ? entryPath : `${entryPath}.ts`;
   if (cache.has(resolvedEntry)) return cache.get(resolvedEntry).exports;
 
@@ -33,11 +33,14 @@ function loadTsModule(entryPath, cache = new Map()) {
   cache.set(resolvedEntry, module);
 
   const localRequire = (request) => {
+    if (Object.prototype.hasOwnProperty.call(moduleMocks, request)) {
+      return moduleMocks[request];
+    }
     const tsModulePath = resolveTsModule(request, resolvedEntry);
     if (tsModulePath) {
       const withTsExtension = tsModulePath.endsWith('.ts') ? tsModulePath : `${tsModulePath}.ts`;
       if (fs.existsSync(withTsExtension)) {
-        return loadTsModule(withTsExtension, cache);
+        return loadTsModule(withTsExtension, cache, moduleMocks);
       }
     }
     return require(request);

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import * as Speech from 'expo-speech';
-import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
+import { setAudioModeAsync } from 'expo-audio';
 import type { AudioMode } from 'expo-audio';
 import type { Pair } from '@/src/constants/minimalPairs';
 import {
@@ -10,6 +10,7 @@ import {
   getPlaybackWord,
   requireIosVoicesForPlayback,
 } from '@/src/domain/audioPlayback';
+import { useSilentWarmupPlayer } from '@/src/hooks/useSilentWarmupPlayer';
 
 // Audio-session configuration for TTS playback. `playsInSilentMode` is the
 // critical setting: without it, iOS mutes TTS when the ring/silent switch is on.
@@ -91,11 +92,10 @@ export const useAudio = (
   // previous audio library deliberately never deactivated the session while
   // the app was foregrounded (see expo/expo#15873), and deactivation would
   // undo the silent-mode workaround before TTS runs.
-  const silentWarmupPlayer = useAudioPlayer(
+  const silentWarmupPlayer = useSilentWarmupPlayer(
     Platform.OS === 'ios' && IOS_SILENT_WARMUP_ENABLED
       ? SILENT_WARMUP_SOURCE
-      : null,
-    { keepAudioSessionActive: true }
+      : null
   );
 
   const debugLog = useCallback(

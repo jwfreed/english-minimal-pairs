@@ -68,7 +68,7 @@ runTest('per-category key present with any non-null value → skip placement', (
 
 runTest('no per-category key → show placement regardless of what legacy key holds', () => {
   // The per-category helper does not check the legacy key.
-  // Migration logic (in component) handles seeding the per-category key once.
+  // Migration logic in the entry-state hook seeds the per-category key once.
   // After migration, the legacy key has no role in this pure helper.
   assert.strictEqual(shouldShowPlacementTestForCategory(null), true);
 });

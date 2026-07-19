@@ -104,7 +104,7 @@ export interface PlacementMigrationDecision {
 }
 
 /**
- * Pure decision function for the Practice screen's placement-loading effect.
+ * Pure decision function for the practice entry-state loading effect.
  * Takes the three raw AsyncStorage values and returns what actions to take and
  * whether to show placement — with no side effects.
  *

@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { usePracticeEntryState } from '@/src/hooks/usePracticeEntryState';
 import { usePracticeSession } from '@/src/hooks/usePracticeSession';
 import AnswerButtons from '@/src/components/AnswerButtons';
 import HelpOverlay from '@/src/components/HelpOverlay';
@@ -21,18 +21,6 @@ import { tKeys } from '@/src/constants/translationKeys';
 import { useCategory } from '@/src/context/CategoryContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useAllThemeColors } from '@/src/context/theme';
-import {
-  PLACEMENT_DONE_KEY,
-  PLACEMENT_LEGACY_MIGRATION_KEY,
-  buildPlacementStorageKey,
-  resolvePlacementStateForCategory,
-  serializePlacementDone,
-} from '@/src/domain/masteryPersistence';
-import {
-  ONBOARDING_SEEN_KEY,
-  markOnboardingSeen,
-  shouldShowOnboarding,
-} from '@/src/storage/onboardingStorage';
 import { buildContrastTrainingTitle } from '@/utils/contrastLabel';
 
 export default function HomeScreen() {
@@ -42,15 +30,21 @@ export default function HomeScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
 
-  // Placement and onboarding remain screen-level entry flows.
-  const [showPlacement, setShowPlacement] = useState<boolean | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isHelpVisible, setIsHelpVisible] = useState(false);
   const [isContrastDetailsVisible, setIsContrastDetailsVisible] =
     useState(false);
 
   const catObj = minimalPairs[categoryIndex];
   const catKey = catObj.category;
+  const {
+    showOnboarding,
+    showPlacement,
+    completeOnboarding,
+    completePlacement,
+    skipPlacement,
+    isLoading: isEntryLoading,
+    isPracticeReady,
+  } = usePracticeEntryState(catKey);
   const {
     activeGroupPairs,
     audioModeReady,
@@ -76,7 +70,7 @@ export default function HomeScreen() {
   } = usePracticeSession({
     categoryIndex,
     category: catObj,
-    isPracticeReady: showOnboarding === false && showPlacement === false,
+    isPracticeReady,
   });
 
   const contrastTrainingTitle = useMemo(
@@ -84,86 +78,18 @@ export default function HomeScreen() {
     [selectedPair, translate]
   );
 
-  // Re-check placement each time the category changes.
-  // Delegates the migration decision to a pure helper so the logic is testable
-  // without relying on component behavior.
-  useEffect(() => {
-    let cancelled = false;
-    const perCatKey = buildPlacementStorageKey(catKey);
-    Promise.all([
-      AsyncStorage.getItem(perCatKey),
-      AsyncStorage.getItem(PLACEMENT_DONE_KEY),
-      AsyncStorage.getItem(PLACEMENT_LEGACY_MIGRATION_KEY),
-      AsyncStorage.getItem(ONBOARDING_SEEN_KEY),
-    ])
-      .then(async ([categoryRaw, legacyRaw, sentinelRaw, onboardingRaw]) => {
-        const decision = resolvePlacementStateForCategory({
-          categoryRaw,
-          legacyRaw,
-          sentinelRaw,
-        });
-        if (decision.shouldSeedCurrentCategoryFromLegacy) {
-          await AsyncStorage.setItem(
-            perCatKey,
-            serializePlacementDone()
-          ).catch(() => {});
-        }
-        if (decision.shouldWriteLegacyMigrationSentinel) {
-          await AsyncStorage.setItem(
-            PLACEMENT_LEGACY_MIGRATION_KEY,
-            serializePlacementDone()
-          ).catch(() => {});
-        }
-        if (!cancelled) {
-          setShowOnboarding(shouldShowOnboarding(onboardingRaw));
-          setShowPlacement(decision.shouldShowPlacement);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setShowOnboarding(false);
-          setShowPlacement(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [catKey]);
-
   // Contrast details are purely visual state and should not survive a category change.
   useEffect(() => {
     setIsContrastDetailsVisible(false);
   }, [categoryIndex]);
 
-  const handleOnboardingDismiss = useCallback(async () => {
-    try {
-      await markOnboardingSeen();
-    } catch {
-      // Write failure: onboarding may reappear on next cold launch.
-      // User continues in the current session.
-    }
-    setShowOnboarding(false);
-  }, []);
-
   const handlePlacementComplete = useCallback(
     async (startTier: number) => {
-      const perCatKey = buildPlacementStorageKey(catKey);
       setAllGroupsToTier(startTier);
-      await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(
-        () => {}
-      );
-      setShowPlacement(false);
+      await completePlacement();
     },
-    [catKey, setAllGroupsToTier]
+    [completePlacement, setAllGroupsToTier]
   );
-
-  const handlePlacementSkip = useCallback(async () => {
-    const perCatKey = buildPlacementStorageKey(catKey);
-    await AsyncStorage.setItem(perCatKey, serializePlacementDone()).catch(
-      () => {}
-    );
-    setShowPlacement(false);
-  }, [catKey]);
 
   const handleContrastDetailPairSelect = useCallback(
     (pair: Pair) => {
@@ -175,7 +101,7 @@ export default function HomeScreen() {
   );
 
   // Show PlacementTest if the user hasn't completed it yet.
-  if (showPlacement === null || showOnboarding === null) {
+  if (isEntryLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
         <Text style={{ color: theme.textSecondary }}>
@@ -186,7 +112,7 @@ export default function HomeScreen() {
   }
 
   if (showOnboarding) {
-    return <OnboardingScreen onDismiss={handleOnboardingDismiss} />;
+    return <OnboardingScreen onDismiss={completeOnboarding} />;
   }
 
   if (showPlacement) {
@@ -194,7 +120,7 @@ export default function HomeScreen() {
       <PlacementTest
         pairs={catObj.pairs}
         onComplete={handlePlacementComplete}
-        onSkip={handlePlacementSkip}
+        onSkip={skipPlacement}
       />
     );
   }

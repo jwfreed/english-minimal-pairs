@@ -6,7 +6,12 @@ const testFiles = fs
   .filter((file) => file.endsWith('.test.js'))
   .sort((a, b) => a.localeCompare(b));
 
-for (const testFile of testFiles) {
-  console.log(`\n${testFile}`);
-  require(path.join(__dirname, testFile));
-}
+(async () => {
+  for (const testFile of testFiles) {
+    console.log(`\n${testFile}`);
+    await require(path.join(__dirname, testFile));
+  }
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

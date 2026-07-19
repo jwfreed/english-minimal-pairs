@@ -314,7 +314,8 @@ const createStyles = (colors: ThemeColors) =>
     contrastHeader: {
       width: '100%',
       alignItems: 'center',
-      marginBottom: 12,
+      gap: 8,
+      marginBottom: 16,
     },
     contrastTitle: {
       fontSize: isTablet ? 34 : 24,
@@ -326,19 +327,47 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: isTablet ? 18 : 14,
       color: colors.textSecondary,
       textAlign: 'center',
-      marginTop: 4,
     },
     pickerOverrideContainer: {
       width: '100%',
-      marginTop: 16,
+      marginTop: 20,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
       alignItems: 'center',
     },
-    pickerOverrideLabel: {
-      fontSize: isTablet ? 18 : 14,
-      fontWeight: '700',
+    practicePairLabel: {
+      fontSize: isTablet ? 16 : 12,
+      fontWeight: '600',
       color: colors.textSecondary,
       textAlign: 'center',
-      marginBottom: 4,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    practicePairWords: {
+      fontSize: isTablet ? 24 : 18,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    pairPickerToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      minHeight: 44,
+      paddingHorizontal: 12,
+      marginTop: 2,
+    },
+    pairPickerToggleText: {
+      fontSize: isTablet ? 18 : 14,
+      fontWeight: '700',
+      color: colors.primary,
+      textAlign: 'center',
+    },
+    pairPickerPanel: {
+      width: '100%',
     },
     answerPrompt: {
       fontSize: isTablet ? 20 : 16,

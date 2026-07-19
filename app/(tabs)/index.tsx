@@ -527,16 +527,17 @@ export default function HomeScreen() {
       <SessionTimer timerRef={timerRef} />
 
       <View style={styles.mainCard}>
-        <View style={styles.contrastHeader} accessibilityRole="header">
-          <Text style={styles.contrastTitle}>{contrastTrainingTitle}</Text>
+        <View style={styles.contrastHeader}>
+          <Text accessibilityRole="header" style={styles.contrastTitle}>
+            {contrastTrainingTitle}
+          </Text>
+          {selectedPair && (
+            <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} showCriteria />
+          )}
           <Text style={styles.contrastInstruction}>
             {translate(tKeys.listenForSoundDifference)}
           </Text>
         </View>
-
-        {selectedPair && (
-          <LevelIndicator currentTier={mastery[selectedPair.group] ?? 1} showCriteria />
-        )}
 
         <LevelUpCelebration
           promotedTier={promotedTier}
@@ -574,6 +575,7 @@ export default function HomeScreen() {
           index={safePairIndex}
           onIndexChange={handlePairChange}
           color={theme.text}
+          accentColor={theme.primary}
           loadingTextColor={theme.textSecondary}
           styles={styles}
           onScrollStart={handlePickerScrollStart}

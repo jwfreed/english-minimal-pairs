@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
+import { practiceAnalytics } from '@/src/analytics/practiceAnalytics';
 import type { SessionTimerHandle } from '@/src/components/SessionTimer';
 import type { Category, Pair } from '@/src/constants/minimalPairs';
 import { tKeys } from '@/src/constants/translationKeys';
@@ -27,8 +28,6 @@ import {
   SPEED_TABLE,
   type SpeedTier,
 } from '@/src/learning/adaptiveProgression';
-import { trackLearningEvent } from '@/src/analytics/learningAnalytics';
-import { buildPairId } from '@/utils/idHelpers';
 
 interface UsePracticeSessionOptions {
   categoryIndex: number;
@@ -169,12 +168,9 @@ export function usePracticeSession({
     }
 
     lastStartedContrastRef.current = activeGroup;
-    trackLearningEvent({
-      name: 'contrast_practice_started',
-      properties: {
-        contrast_id: activeGroup,
-        mastery_level: mastery[activeGroup] ?? 1,
-      },
+    practiceAnalytics.practiceStarted({
+      contrast: activeGroup,
+      masteryLevel: mastery[activeGroup] ?? 1,
     });
   }, [activeGroup, isLoading, isPracticeReady, mastery, selectedPair]);
 
@@ -301,13 +297,9 @@ export function usePracticeSession({
 
       if (nextPair) {
         const nextPairId = markScheduledPair(nextPair);
-        trackLearningEvent({
-          name: 'pair_presented',
-          properties: {
-            contrast_id: nextPair.group,
-            pair_id: buildPairId(nextPair, catObj.category),
-            difficulty_tier: nextPair.difficulty,
-          },
+        practiceAnalytics.pairPresented({
+          pair: nextPair,
+          category: catObj.category,
         });
         const nextPairIndex = findVisiblePairIndex(nextPair);
         if (nextPairIndex !== -1 && nextPairIndex !== safePairIndex) {
@@ -384,30 +376,19 @@ export function usePracticeSession({
 
       setFeedback(result.feedback);
       recordAttempt(result.pairId, result.correct, result.durationMin);
-      trackLearningEvent({
-        name: 'pair_answered',
-        properties: {
-          contrast_id: result.group,
-          pair_id: result.pairId,
-          correct: result.correct,
-          response_time_ms: result.responseTimeMs,
-        },
+      practiceAnalytics.answerSubmitted({
+        pair: selectedPair,
+        category: catObj.category,
+        correct: result.correct,
+        responseTimeMs: result.responseTimeMs,
       });
       if (!result.correct) {
-        const chosenWord = idx === 0 ? selectedPair.word1 : selectedPair.word2;
-        const correctWord =
-          playedIdx === 0 ? selectedPair.word1 : selectedPair.word2;
-        trackLearningEvent({
-          name: 'compare_mode_opened',
-          properties: {
-            contrast_id: result.group,
-            pair_id: result.pairId,
-            incorrect_attempt_context: {
-              chosen_word: chosenWord,
-              correct_word: correctWord,
-              response_time_ms: result.responseTimeMs,
-            },
-          },
+        practiceAnalytics.comparisonOpened({
+          pair: selectedPair,
+          category: catObj.category,
+          chosenIndex: idx,
+          correctIndex: playedIdx,
+          responseTimeMs: result.responseTimeMs,
         });
       }
       recentMissStateRef.current = updateRecentMissState({
@@ -493,12 +474,9 @@ export function usePracticeSession({
       setPlayedIdx(null);
       setStartTime(null);
       setPendingPlayback(null);
-      trackLearningEvent({
-        name: 'pair_selected',
-        properties: {
-          contrast_id: nextPair.group,
-          pair_id: buildPairId(nextPair, catObj.category),
-        },
+      practiceAnalytics.pairSelected({
+        pair: nextPair,
+        category: catObj.category,
       });
     },
     [activeGroup, catObj.category]

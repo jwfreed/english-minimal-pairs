@@ -14,6 +14,10 @@ const practiceSessionHookSource = fs.readFileSync(
   path.join(__dirname, '..', 'src', 'hooks', 'usePracticeSession.ts'),
   'utf8'
 );
+const practiceAnalyticsSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'analytics', 'practiceAnalytics.ts'),
+  'utf8'
+);
 const pairSelectorSource = fs.readFileSync(
   path.join(
     __dirname,
@@ -150,15 +154,20 @@ runTest('incorrect feedback identifies the choice, correction, and contrast', ()
 });
 
 runTest('practice emits all requested learning analytics events', () => {
-  for (const eventName of [
-    'contrast_practice_started',
-    'pair_presented',
-    'pair_answered',
-    'compare_mode_opened',
-    'pair_selected',
-  ]) {
+  const eventMappings = [
+    ['practiceStarted', 'contrast_practice_started'],
+    ['pairPresented', 'pair_presented'],
+    ['answerSubmitted', 'pair_answered'],
+    ['comparisonOpened', 'compare_mode_opened'],
+    ['pairSelected', 'pair_selected'],
+  ];
+  for (const [practiceAction, eventName] of eventMappings) {
     assert.ok(
-      practiceSessionHookSource.includes(`name: '${eventName}'`),
+      practiceSessionHookSource.includes(`practiceAnalytics.${practiceAction}({`),
+      `missing practice analytics action: ${practiceAction}`
+    );
+    assert.ok(
+      practiceAnalyticsSource.includes(`name: '${eventName}'`),
       `missing analytics event: ${eventName}`
     );
   }
@@ -172,7 +181,7 @@ runTest('practice workflow is owned by the session hook', () => {
   for (const workflowDependency of [
     'applyPracticeAnswer',
     'selectNextTrialPair',
-    'trackLearningEvent',
+    'practiceAnalytics',
     'useAudio',
   ]) {
     assert.ok(
@@ -226,25 +235,27 @@ runTest('manual selection owns one round before contrast scheduling resumes', ()
   );
 });
 
-runTest('analytics payloads use canonical domain identifiers and relevant signals', () => {
+runTest('practice analytics owns canonical identifiers and payload translation', () => {
   for (const requiredPayload of [
-    'contrast_id: activeGroup',
-    'mastery_level: mastery[activeGroup] ?? 1',
-    'contrast_id: nextPair.group',
-    'pair_id: buildPairId(nextPair, catObj.category)',
-    'difficulty_tier: nextPair.difficulty',
-    'contrast_id: result.group',
-    'pair_id: result.pairId',
-    'correct: result.correct',
+    'contrast_id: contrast',
+    'mastery_level: masteryLevel',
+    'contrast_id: pair.group',
+    'pair_id: buildPairId(pair, category)',
+    'difficulty_tier: pair.difficulty',
+    'response_time_ms: responseTimeMs',
   ]) {
     assert.ok(
-      practiceSessionHookSource.includes(requiredPayload),
+      practiceAnalyticsSource.includes(requiredPayload),
       `analytics payload lost canonical field: ${requiredPayload}`
     );
   }
   assert.ok(
-    !practiceSessionHookSource.includes('contrast_id: contrastTrainingTitle'),
-    'localized contrast labels must not be used as analytics identifiers'
+    !practiceSessionHookSource.includes('trackLearningEvent') &&
+      !practiceSessionHookSource.includes('buildPairId') &&
+      !practiceSessionHookSource.includes('contrast_id') &&
+      !practiceSessionHookSource.includes('pair_id') &&
+      !practiceSessionHookSource.includes("name: '"),
+    'practice workflow must not construct analytics events or identifiers'
   );
 });
 
@@ -262,7 +273,7 @@ runTest('answer state is committed before analytics observes the submission', ()
     [
       'setFeedback(result.feedback)',
       'recordAttempt(result.pairId, result.correct, result.durationMin)',
-      "name: 'pair_answered'",
+      'practiceAnalytics.answerSubmitted({',
     ],
     'answer state must not depend on analytics delivery'
   );

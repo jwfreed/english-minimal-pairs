@@ -81,6 +81,7 @@ export const tKeys = {
   play: 'play',
   practicePair: 'practicePair',
   chooseAnotherExample: 'chooseAnotherExample',
+  close: 'close',
   loading: 'loading',
   listenForSoundDifference: 'listenForSoundDifference',
   contrastMovedToLevel: 'contrastMovedToLevel',

@@ -84,39 +84,41 @@ export default function AnswerButtons({
 
   return (
     <View style={styles.answerContainer}>
-      <Text style={styles.answerPrompt}>{translate(tKeys.whichWordDidYouHear)}</Text>
-      <View style={styles.buttonRow}>
-        {[0, 1].map((idx) => {
-          const word = idx ? pair.word2 : pair.word1;
-          return (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.button,
-                { flex: 1, marginTop: 0 },
-                feedback !== null && { opacity: 0.5 },
-              ]}
-              onPress={() => handlePress(idx as 0 | 1)}
-              disabled={disabled}
-              accessibilityRole="button"
-              accessibilityLabel={word}
-              accessibilityHint={translate(tKeys.doubleTapToSelectWord)}
-              accessibilityState={{ disabled }}
-            >
-              <Text style={styles.buttonText} importantForAccessibility="no">
-                {word}
-              </Text>
-              <Text
-                style={styles.ipaText}
-                importantForAccessibility="no"
-                accessibilityElementsHidden={true}
-              >
-                {idx ? pair.ipa2 : pair.ipa1}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {!feedbackCopy && (
+        <>
+          <Text style={styles.answerPrompt}>
+            {translate(tKeys.whichWordDidYouHear)}
+          </Text>
+          <View style={styles.buttonRow}>
+            {[0, 1].map((idx) => {
+              const word = idx ? pair.word2 : pair.word1;
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.button, { flex: 1, marginTop: 0 }]}
+                  onPress={() => handlePress(idx as 0 | 1)}
+                  disabled={disabled}
+                  accessibilityRole="button"
+                  accessibilityLabel={word}
+                  accessibilityHint={translate(tKeys.doubleTapToSelectWord)}
+                  accessibilityState={{ disabled }}
+                >
+                  <Text style={styles.buttonText} importantForAccessibility="no">
+                    {word}
+                  </Text>
+                  <Text
+                    style={styles.ipaText}
+                    importantForAccessibility="no"
+                    accessibilityElementsHidden={true}
+                  >
+                    {idx ? pair.ipa2 : pair.ipa1}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       {/* Rich feedback panel — shown after answering */}
       {feedbackCopy && (

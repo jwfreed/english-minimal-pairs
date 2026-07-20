@@ -198,19 +198,21 @@ export default function HomeScreen() {
           />
         )}
 
-        <PracticePairSelector
-          isLoading={isLoading}
-          selectedPair={selectedPair}
-          pairs={stableVisible}
-          index={safePairIndex}
-          onIndexChange={handlePairChange}
-          color={theme.text}
-          accentColor={theme.primary}
-          loadingTextColor={theme.textSecondary}
-          styles={styles}
-          onScrollStart={handlePickerScrollStart}
-          onScrollEnd={handlePickerScrollEnd}
-        />
+        {feedback === null && (
+          <PracticePairSelector
+            isLoading={isLoading}
+            selectedPair={selectedPair}
+            pairs={stableVisible}
+            index={safePairIndex}
+            onIndexChange={handlePairChange}
+            color={theme.text}
+            accentColor={theme.primary}
+            loadingTextColor={theme.textSecondary}
+            styles={styles}
+            onScrollStart={handlePickerScrollStart}
+            onScrollEnd={handlePickerScrollEnd}
+          />
+        )}
       </View>
 
       <HelpOverlay

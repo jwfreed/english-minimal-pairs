@@ -383,6 +383,40 @@ const createStyles = (colors: ThemeColors) =>
     pairPickerPanel: {
       width: '100%',
     },
+    pairPickerModalBackdrop: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+      backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    },
+    pairPickerModalCard: {
+      maxWidth: isTablet ? 700 : 500,
+      paddingTop: 12,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: colors.cardBackground,
+      ...getShadowStyles(),
+    },
+    pairPickerModalHeader: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingLeft: 12,
+    },
+    pairPickerModalTitle: {
+      flex: 1,
+      fontSize: isTablet ? 22 : 17,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    pairPickerModalClose: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     answerPrompt: {
       fontSize: isTablet ? 20 : 16,
       fontWeight: '700',

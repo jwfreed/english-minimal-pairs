@@ -110,8 +110,21 @@ runTest('pair selector exposes its expanded and collapsed state', () => {
     'pair selector toggle must identify the controlled picker'
   );
   assert.ok(
-    pairSelectorSource.includes('{isPickerVisible && ('),
-    'pair picker must render only while the disclosure is expanded'
+    pairSelectorSource.includes('visible={isPickerVisible}'),
+    'pair picker modal must track the disclosure state'
+  );
+});
+
+runTest('overflowing practice controls use viewport-safe presentation states', () => {
+  assert.ok(
+    pairSelectorSource.includes('<Modal') &&
+      pairSelectorSource.includes('presentationStyle="overFullScreen"'),
+    'the expanded pair picker must not increase the practice card height'
+  );
+  assert.ok(
+    practiceScreenSource.includes('{feedback === null && (') &&
+      answerButtonsSource.includes('{!feedbackCopy && ('),
+    'feedback must replace inactive controls instead of extending below them'
   );
 });
 
@@ -119,8 +132,8 @@ runTest('pair selector renders the optional example-selection copy', () => {
   const copyUsages = pairSelectorSource.match(/tKeys\.chooseAnotherExample/g) || [];
   assert.strictEqual(
     copyUsages.length,
-    3,
-    'toggle text, toggle accessibility label, and picker label must share the example copy'
+    4,
+    'toggle text, toggle accessibility label, modal title, and picker label must share the example copy'
   );
 });
 

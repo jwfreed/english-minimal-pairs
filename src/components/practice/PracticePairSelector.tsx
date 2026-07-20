@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import PairPicker from '@/src/components/PairPicker';
 import type { Pair } from '@/src/constants/minimalPairs';
@@ -15,6 +15,11 @@ type PracticePairSelectorStyles = Pick<
   | 'pairPickerToggle'
   | 'pairPickerToggleText'
   | 'pairPickerPanel'
+  | 'pairPickerModalBackdrop'
+  | 'pairPickerModalCard'
+  | 'pairPickerModalHeader'
+  | 'pairPickerModalTitle'
+  | 'pairPickerModalClose'
 >;
 
 interface PracticePairSelectorProps {
@@ -47,11 +52,18 @@ export default function PracticePairSelector({
   const { translate } = useLanguage();
   const [isPickerVisible, setIsPickerVisible] = useState(false);
 
+  const closePicker = () => {
+    onScrollEnd();
+    setIsPickerVisible(false);
+  };
+
   const handleTogglePicker = () => {
     if (isPickerVisible) {
-      onScrollEnd();
+      closePicker();
+      return;
     }
-    setIsPickerVisible((visible) => !visible);
+    onScrollStart();
+    setIsPickerVisible(true);
   };
 
   if (isLoading || !selectedPair) {
@@ -92,19 +104,46 @@ export default function PracticePairSelector({
           color={accentColor}
         />
       </TouchableOpacity>
-      {isPickerVisible && (
-        <View nativeID="practice-pair-picker" style={styles.pairPickerPanel}>
-          <PairPicker
-            pairs={pairs}
-            index={index}
-            setIndex={onIndexChange}
-            color={color}
-            onScrollStart={onScrollStart}
-            onScrollEnd={onScrollEnd}
-            accessibilityLabel={translate(tKeys.chooseAnotherExample)}
-          />
+      <Modal
+        animationType="fade"
+        onRequestClose={closePicker}
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
+        transparent
+        visible={isPickerVisible}
+      >
+        <View style={styles.pairPickerModalBackdrop}>
+          <View
+            accessibilityViewIsModal
+            nativeID="practice-pair-picker"
+            style={[styles.pairPickerPanel, styles.pairPickerModalCard]}
+          >
+            <View style={styles.pairPickerModalHeader}>
+              <Text style={styles.pairPickerModalTitle}>
+                {translate(tKeys.chooseAnotherExample)}
+              </Text>
+              <TouchableOpacity
+                accessibilityLabel={translate(tKeys.close)}
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={closePicker}
+                style={styles.pairPickerModalClose}
+              >
+                <Ionicons name="close" size={24} color={color} />
+              </TouchableOpacity>
+            </View>
+            <PairPicker
+              pairs={pairs}
+              index={index}
+              setIndex={onIndexChange}
+              color={color}
+              onScrollStart={onScrollStart}
+              onScrollEnd={onScrollEnd}
+              accessibilityLabel={translate(tKeys.chooseAnotherExample)}
+            />
+          </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }

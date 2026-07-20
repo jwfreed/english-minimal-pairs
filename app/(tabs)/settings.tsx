@@ -129,8 +129,8 @@ export default function SettingsScreen() {
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
                 name="language-outline"
-                size={isTablet ? 32 : 24}
-                color={theme.primary}
+                size={19}
+                color={theme.primaryText}
                 style={styles.sectionIcon}
               />
               <View style={localStyles.languageTextContainer}>
@@ -178,10 +178,9 @@ export default function SettingsScreen() {
               })}
             </View>
           )}
-        </View>
+          <View style={localStyles.insetSeparator} />
 
-        {/* English UI Toggle */}
-        <View style={styles.section}>
+          {/* English UI Toggle */}
           <TouchableOpacity
             style={styles.sectionHeader}
             onPress={handleEnglishUIToggle}
@@ -190,8 +189,8 @@ export default function SettingsScreen() {
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
                 name="globe-outline"
-                size={isTablet ? 32 : 24}
-                color={theme.primary}
+                size={19}
+                color={theme.primaryText}
                 style={styles.sectionIcon}
               />
               <View>
@@ -225,8 +224,8 @@ export default function SettingsScreen() {
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
                 name={themeMode === 'dark' ? 'moon-outline' : themeMode === 'light' ? 'sunny-outline' : 'phone-portrait-outline'}
-                size={isTablet ? 32 : 24}
-                color={theme.primary}
+                size={19}
+                color={theme.primaryText}
                 style={styles.sectionIcon}
               />
               <View>
@@ -250,7 +249,7 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           {expandedSection === 'theme' && (
-            <View style={styles.sectionContent}>
+            <View style={[styles.sectionContent, localStyles.appearanceContent]}>
               {(['system', 'light', 'dark'] as const).map((mode, index) => {
                 const isSelected = themeMode === mode;
                 const modeLabels = {
@@ -269,6 +268,7 @@ export default function SettingsScreen() {
                     key={mode}
                     style={[
                       styles.listOption,
+                      localStyles.appearanceOption,
                       isSelected && styles.selectedListOption,
                       index === 2 && styles.lastListOption,
                     ]}
@@ -308,8 +308,8 @@ export default function SettingsScreen() {
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
                 name="mic-outline"
-                size={isTablet ? 32 : 24}
-                color={theme.primary}
+                size={19}
+                color={theme.primaryText}
                 style={styles.sectionIcon}
               />
               <View>
@@ -325,7 +325,7 @@ export default function SettingsScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <TouchableOpacity onPress={refreshVoices} style={{ padding: 8 }}>
-                <Ionicons name="refresh" size={isTablet ? 24 : 18} color={theme.primary} />
+                <Ionicons name="refresh" size={18} color={theme.primaryText} />
               </TouchableOpacity>
               <Ionicons
                 name={expandedSection === 'voice' ? 'chevron-up' : 'chevron-down'}
@@ -388,10 +388,9 @@ export default function SettingsScreen() {
               })}
             </View>
           )}
-        </View>
+          <View style={localStyles.insetSeparator} />
 
-        {/* Placement Test Section */}
-        <View style={styles.section}>
+          {/* Placement Test Section */}
           <TouchableOpacity
             style={styles.sectionHeader}
             onPress={handleRetakePlacement}
@@ -400,8 +399,8 @@ export default function SettingsScreen() {
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
                 name="school-outline"
-                size={isTablet ? 32 : 24}
-                color={theme.primary}
+                size={19}
+                color={theme.primaryText}
                 style={styles.sectionIcon}
               />
               <View>
@@ -448,9 +447,22 @@ export default function SettingsScreen() {
 const createLocalStyles = (theme: any, isTablet: boolean) =>
   StyleSheet.create({
     languageTextContainer: {
-      minWidth: isTablet ? 300 : 200,
-      minHeight: isTablet ? 80 : 60,
+      flex: 1,
       justifyContent: 'center',
+    },
+    insetSeparator: {
+      height: StyleSheet.hairlineWidth,
+      marginLeft: 64,
+      backgroundColor: theme.hairline,
+    },
+    appearanceContent: {
+      borderTopWidth: 0,
+      paddingBottom: 6,
+    },
+    appearanceOption: {
+      marginHorizontal: 8,
+      borderBottomWidth: 0,
+      borderRadius: 12,
     },
     toggleSwitch: {
       width: isTablet ? 70 : 50,
@@ -464,7 +476,7 @@ const createLocalStyles = (theme: any, isTablet: boolean) =>
       width: isTablet ? 36 : 26,
       height: isTablet ? 36 : 26,
       borderRadius: isTablet ? 18 : 13,
-      backgroundColor: theme.card,
+      backgroundColor: theme.surface,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,

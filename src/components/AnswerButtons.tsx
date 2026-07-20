@@ -1,5 +1,6 @@
-import React, { useMemo, useEffect } from 'react';
-import { View, TouchableOpacity, Text, AccessibilityInfo } from 'react-native';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { View, TouchableOpacity, Text, AccessibilityInfo, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import createStyles from '@/src/constants/styles';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useHaptics } from '@/src/hooks/useHaptics';
@@ -19,6 +20,7 @@ interface Props {
   /** Play a specific word from the rendered pair for post-answer compare. */
   onCompareWord?: (idx: 0 | 1) => void;
   compareDisabled?: boolean;
+  isPlaybackActive?: boolean;
 }
 
 /**
@@ -45,11 +47,21 @@ export default function AnswerButtons({
   playedIdx,
   onCompareWord,
   compareDisabled = false,
+  isPlaybackActive = false,
 }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { triggerHaptic } = useHaptics();
   const { translate } = useLanguage();
+  const answerOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(answerOpacity, {
+      toValue: isPlaybackActive ? 0.6 : 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [answerOpacity, isPlaybackActive]);
 
   const feedbackCopy = useMemo(
     () =>
@@ -89,13 +101,13 @@ export default function AnswerButtons({
           <Text style={styles.answerPrompt}>
             {translate(tKeys.whichWordDidYouHear)}
           </Text>
-          <View style={styles.buttonRow}>
+          <Animated.View style={[styles.buttonRow, { opacity: answerOpacity }]}> 
             {[0, 1].map((idx) => {
               const word = idx ? pair.word2 : pair.word1;
               return (
                 <TouchableOpacity
                   key={idx}
-                  style={[styles.button, { flex: 1, marginTop: 0 }]}
+                  style={styles.answerTile}
                   onPress={() => handlePress(idx as 0 | 1)}
                   disabled={disabled}
                   accessibilityRole="button"
@@ -103,11 +115,11 @@ export default function AnswerButtons({
                   accessibilityHint={translate(tKeys.doubleTapToSelectWord)}
                   accessibilityState={{ disabled }}
                 >
-                  <Text style={styles.buttonText} importantForAccessibility="no">
+                  <Text style={styles.answerTileWord} importantForAccessibility="no">
                     {word}
                   </Text>
                   <Text
-                    style={styles.ipaText}
+                    style={styles.answerTileIpa}
                     importantForAccessibility="no"
                     accessibilityElementsHidden={true}
                   >
@@ -116,25 +128,29 @@ export default function AnswerButtons({
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </Animated.View>
         </>
       )}
 
       {/* Rich feedback panel — shown after answering */}
       {feedbackCopy && (
         <View style={styles.feedbackPanel}>
-          <Text
+          <View
             style={[
-              styles.feedbackSymbol,
+              styles.feedbackStatusCircle,
               feedback === 'correct'
-                ? styles.correctFeedback
-                : styles.incorrectFeedback,
+                ? styles.correctFeedbackCircle
+                : styles.incorrectFeedbackCircle,
             ]}
             importantForAccessibility="no"
             accessibilityElementsHidden={true}
           >
-            {feedback === 'correct' ? '✓' : '✗'}
-          </Text>
+            <Ionicons
+              name={feedback === 'correct' ? 'checkmark' : 'close'}
+              size={20}
+              color="#FFFFFF"
+            />
+          </View>
           {feedback === 'correct' ? (
             <>
               <Text style={styles.feedbackWord}>{feedbackCopy.headline}</Text>

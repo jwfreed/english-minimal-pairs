@@ -28,13 +28,34 @@ export default function LevelIndicator({ currentTier, compact = false, showCrite
   const { translate } = useLanguage();
 
   const isMastered = currentTier >= TOTAL_TIERS;
-  const dotSize = compact ? 8 : 10;
   const levelText = isMastered
     ? translate(tKeys.mastered)
-    : `${translate(tKeys.levelOf)} ${currentTier} / ${TOTAL_TIERS}`;
+    : compact
+      ? `Lv ${currentTier}`
+      : `Level ${currentTier} of ${TOTAL_TIERS}`;
 
   return (
     <View style={styles.levelIndicatorRow}>
+      <View style={styles.levelDotsRow}>
+        {Array.from({ length: TOTAL_TIERS }, (_, i) => {
+          const tier = i + 1;
+          const isFilled = tier <= currentTier;
+          return (
+            <View
+              key={tier}
+              style={[
+                styles.levelDot,
+                {
+                  width: compact ? 16 : 26,
+                  height: compact ? 4 : 5,
+                  borderRadius: 3,
+                  backgroundColor: isFilled ? '#E67E22' : theme.track,
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
       <Text
         accessibilityLabel={levelText}
         style={[
@@ -46,27 +67,6 @@ export default function LevelIndicator({ currentTier, compact = false, showCrite
           ? `✔ ${levelText}`
           : levelText}
       </Text>
-      <View style={styles.levelDotsRow}>
-        {Array.from({ length: TOTAL_TIERS }, (_, i) => {
-          const tier = i + 1;
-          const isFilled = tier <= currentTier;
-          return (
-            <View
-              key={tier}
-              style={[
-                styles.levelDot,
-                {
-                  width: dotSize,
-                  height: dotSize,
-                  borderRadius: dotSize / 2,
-                  backgroundColor: isFilled ? theme.primary : 'transparent',
-                  borderColor: isFilled ? theme.primary : theme.border,
-                },
-              ]}
-            />
-          );
-        })}
-      </View>
       {showCriteria && !isMastered && (
         <Text style={styles.levelCriteriaText}>
           {translate(tKeys.levelCriteria)}

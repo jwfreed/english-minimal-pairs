@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import { usePracticeEntryState } from '@/src/hooks/usePracticeEntryState';
 import { usePracticeSession } from '@/src/hooks/usePracticeSession';
@@ -9,7 +8,6 @@ import HelpOverlay from '@/src/components/HelpOverlay';
 import LevelIndicator from '@/src/components/LevelIndicator';
 import OnboardingScreen from '@/src/components/OnboardingScreen';
 import PlacementTest from '@/src/components/PlacementTest';
-import SessionTimer from '@/src/components/SessionTimer';
 import ContrastDetailsModal from '@/src/components/practice/ContrastDetailsModal';
 import LevelUpCelebration from '@/src/components/practice/LevelUpCelebration';
 import ListenControls from '@/src/components/practice/ListenControls';
@@ -21,7 +19,7 @@ import { tKeys } from '@/src/constants/translationKeys';
 import { useCategory } from '@/src/context/CategoryContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useAllThemeColors } from '@/src/context/theme';
-import { buildContrastTrainingTitle } from '@/utils/contrastLabel';
+import { buildContrastLabel } from '@/utils/contrastLabel';
 
 export default function HomeScreen() {
   const { translate } = useLanguage();
@@ -73,9 +71,9 @@ export default function HomeScreen() {
     isPracticeReady,
   });
 
-  const contrastTrainingTitle = useMemo(
-    () => buildContrastTrainingTitle(selectedPair, translate),
-    [selectedPair, translate]
+  const contrastLabel = useMemo(
+    () => buildContrastLabel(selectedPair),
+    [selectedPair]
   );
 
   // Contrast details are purely visual state and should not survive a category change.
@@ -131,21 +129,20 @@ export default function HomeScreen() {
         title={translate(tKeys.practicePairs)}
         helpAccessibilityLabel={translate(tKeys.helpLabel)}
         onHelpPress={() => setIsHelpVisible(true)}
-        primaryColor={theme.primary}
+        primaryColor={theme.primaryText}
         styles={styles}
+        timerRef={timerRef}
       />
-
-      <SessionTimer timerRef={timerRef} />
 
       <View style={styles.mainCard}>
         <View style={styles.contrastHeader}>
+          <Text style={styles.eyebrow}>{translate(tKeys.trainContrast)}</Text>
           <Text accessibilityRole="header" style={styles.contrastTitle}>
-            {contrastTrainingTitle}
+            {contrastLabel}
           </Text>
           {selectedPair && (
             <LevelIndicator
               currentTier={mastery[selectedPair.group] ?? 1}
-              showCriteria
             />
           )}
           {selectedPair && (
@@ -154,19 +151,11 @@ export default function HomeScreen() {
               onPress={() => setIsContrastDetailsVisible(true)}
               style={styles.contrastDetailsButton}
             >
-              <Ionicons
-                name="information-circle-outline"
-                size={17}
-                color={theme.primary}
-              />
               <Text style={styles.contrastDetailsButtonText}>
                 {translate(tKeys.viewContrastDetails)}
               </Text>
             </TouchableOpacity>
           )}
-          <Text style={styles.contrastInstruction}>
-            {translate(tKeys.listenForSoundDifference)}
-          </Text>
         </View>
 
         <LevelUpCelebration
@@ -183,15 +172,21 @@ export default function HomeScreen() {
           label={playAudioText}
           onPlay={handlePlay}
           disabled={!audioModeReady || isSpeaking}
+          isPlaying={isSpeaking}
           styles={styles}
         />
+
+        <Text style={styles.contrastInstruction}>
+          {translate(tKeys.listenForSoundDifference)}
+        </Text>
 
         {selectedPair && (
           <AnswerButtons
             pair={selectedPair}
             onAnswer={handleAnswer}
             feedback={feedback}
-            disabled={playedIdx === null || feedback !== null}
+            disabled={playedIdx === null || feedback !== null || isSpeaking}
+            isPlaybackActive={isSpeaking}
             playedIdx={playedIdx}
             onCompareWord={handleCompareWord}
             compareDisabled={!audioModeReady || isSpeaking}

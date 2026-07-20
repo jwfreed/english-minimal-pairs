@@ -5,7 +5,7 @@
 // seconds of no user interaction and resumes on the next touch / play / answer.
 // Persists today's total to AsyncStorage.
 // -----------------------------------------------------------------------------
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createStyles from '@/src/constants/styles';
@@ -52,9 +52,11 @@ export async function getCumulativeSeconds(): Promise<number> {
 interface Props {
   /** Optional ref so the parent can call poke() */
   timerRef?: React.MutableRefObject<SessionTimerHandle | null>;
+  leading?: ReactNode;
+  trailing?: ReactNode;
 }
 
-export default function SessionTimer({ timerRef }: Props) {
+export default function SessionTimer({ timerRef, leading, trailing }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -199,13 +201,20 @@ export default function SessionTimer({ timerRef }: Props) {
 
   return (
     <View style={styles.sessionTimerContainer}>
-      <View style={styles.sessionTimerRow}>
-        <Text style={styles.sessionTimerText}>
-          {formatTime(elapsedToday)}
-        </Text>
-        <Text style={styles.sessionTimerGoal}>
-          / {DAILY_GOAL_MINUTES}:00{pausedRef.current ? '  ⏸' : ''}
-        </Text>
+      <View style={styles.practiceHeaderTopRow}>
+        {leading}
+        <View style={styles.practiceHeaderActions}>
+          <View style={styles.sessionTimerRow}>
+            <View style={styles.sessionTimerDot} />
+            <Text style={styles.sessionTimerText}>
+              {formatTime(elapsedToday)}
+            </Text>
+            <Text style={styles.sessionTimerGoal}>
+              / {DAILY_GOAL_MINUTES}:00{pausedRef.current ? '  ⏸' : ''}
+            </Text>
+          </View>
+          {trailing}
+        </View>
       </View>
       <View style={styles.sessionTimerBarBg}>
         <View

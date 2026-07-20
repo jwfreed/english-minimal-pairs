@@ -2,10 +2,11 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AppStyles } from '@/src/constants/styles';
+import SessionTimer, { type SessionTimerHandle } from '@/src/components/SessionTimer';
 
 type PracticeHeaderStyles = Pick<
   AppStyles,
-  'practiceHeader' | 'practiceHeaderSpacer' | 'practiceTitle' | 'helpButton'
+  'practiceHeader' | 'practiceTitle' | 'helpButton'
 >;
 
 interface PracticeHeaderProps {
@@ -14,6 +15,7 @@ interface PracticeHeaderProps {
   primaryColor: string;
   styles: PracticeHeaderStyles;
   helpAccessibilityLabel?: string;
+  timerRef: React.MutableRefObject<SessionTimerHandle | null>;
 }
 
 export default function PracticeHeader({
@@ -22,25 +24,30 @@ export default function PracticeHeader({
   primaryColor,
   styles,
   helpAccessibilityLabel,
+  timerRef,
 }: PracticeHeaderProps) {
   return (
     <View style={styles.practiceHeader}>
-      <View style={styles.practiceHeaderSpacer} />
-      <Text style={styles.practiceTitle}>{title}</Text>
-      <TouchableOpacity
-        accessibilityLabel={helpAccessibilityLabel ?? 'Help'}
-        accessibilityRole="button"
-        activeOpacity={0.8}
-        hitSlop={8}
-        onPress={onHelpPress}
-        style={styles.helpButton}
-      >
-        <Ionicons
-          name="information-circle-outline"
-          size={24}
-          color={primaryColor}
-        />
-      </TouchableOpacity>
+      <SessionTimer
+        timerRef={timerRef}
+        leading={<Text style={styles.practiceTitle}>{title}</Text>}
+        trailing={
+          <TouchableOpacity
+            accessibilityLabel={helpAccessibilityLabel ?? 'Help'}
+            accessibilityRole="button"
+            activeOpacity={0.8}
+            hitSlop={8}
+            onPress={onHelpPress}
+            style={styles.helpButton}
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color={primaryColor}
+            />
+          </TouchableOpacity>
+        }
+      />
     </View>
   );
 }

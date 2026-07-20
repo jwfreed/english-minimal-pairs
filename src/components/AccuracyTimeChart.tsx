@@ -4,6 +4,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { useThemeColor } from '@/src/hooks/useThemeColor';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
+import { FontFamily } from '@/src/constants/typography';
 
 interface PracticeData {
   accuracy: number;
@@ -23,7 +24,9 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
     text: useThemeColor({}, 'text'),
     success: useThemeColor({}, 'success'),
     error: useThemeColor({}, 'error'),
-    primary: useThemeColor({}, 'primary'),
+    primaryText: useThemeColor({}, 'primaryText'),
+    surface: useThemeColor({}, 'surface'),
+    hairline: useThemeColor({}, 'hairline'),
     buttonText: useThemeColor({}, 'buttonText'),
     cardBackground: useThemeColor({}, 'cardBackground'),
     shadow: useThemeColor({}, 'shadow'),
@@ -46,11 +49,11 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         {
           data: smoothedData.map((v) => v * 100),
           strokeWidth: 2,
-          color: () => themeColors.primary,
+          color: () => themeColors.primaryText,
         },
       ],
     }),
-    [practiceData, smoothedData, themeColors.primary]
+    [practiceData, smoothedData, themeColors.primaryText]
   );
 
   return (
@@ -59,6 +62,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         style={{
           fontSize: 14,
           fontWeight: '600',
+          fontFamily: FontFamily.semibold,
           marginBottom: 4,
           color: themeColors.text,
         }}
@@ -71,16 +75,16 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
           width={chartWidth}
           height={160}
           chartConfig={{
-            backgroundGradientFrom: themeColors.background,
-            backgroundGradientTo: themeColors.background,
-            color: () => themeColors.primary,
+            backgroundGradientFrom: themeColors.surface,
+            backgroundGradientTo: themeColors.surface,
+            color: () => themeColors.primaryText,
             labelColor: () => themeColors.text,
             propsForDots: {
               r: '1',
               strokeWidth: '1',
-              stroke: themeColors.primary,
+              stroke: themeColors.primaryText,
             },
-            propsForBackgroundLines: { stroke: '#ddd' },
+            propsForBackgroundLines: { stroke: themeColors.hairline },
             decimalPlaces: 0,
           }}
           yAxisSuffix=""

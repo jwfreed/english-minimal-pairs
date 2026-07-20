@@ -12,6 +12,7 @@ type PracticePairSelectorStyles = Pick<
   | 'pickerOverrideContainer'
   | 'practicePairLabel'
   | 'practicePairWords'
+  | 'practicePairCopy'
   | 'pairPickerToggle'
   | 'pairPickerToggleText'
   | 'pairPickerPanel'
@@ -78,13 +79,15 @@ export default function PracticePairSelector({
 
   return (
     <View style={styles.pickerOverrideContainer}>
-      <Text style={styles.practicePairLabel}>{translate(tKeys.practicePair)}</Text>
-      <Text
-        accessibilityLabel={`${translate(tKeys.practicePair)}: ${selectedPair.word1}, ${selectedPair.word2}`}
-        style={styles.practicePairWords}
-      >
-        {selectedPair.word1} ↔ {selectedPair.word2}
-      </Text>
+      <View style={styles.practicePairCopy}>
+        <Text style={styles.practicePairLabel}>{translate(tKeys.practicePair)}</Text>
+        <Text
+          accessibilityLabel={`${translate(tKeys.practicePair)}: ${selectedPair.word1}, ${selectedPair.word2}`}
+          style={styles.practicePairWords}
+        >
+          {selectedPair.word1} ↔ {selectedPair.word2}
+        </Text>
+      </View>
       <TouchableOpacity
         aria-controls="practice-pair-picker"
         aria-expanded={isPickerVisible}

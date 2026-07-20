@@ -1,5 +1,6 @@
 // styles.ts
-import { StyleSheet, Platform, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+import { FontFamily } from '@/src/constants/typography';
 
 const { width } = Dimensions.get('window');
 const isTablet = width > 700;
@@ -8,6 +9,12 @@ export type ThemeColors = {
   background: string;
   text: string;
   textSecondary: string;
+  primaryText: string;
+  surface: string;
+  surfaceTint: string;
+  hairline: string;
+  track: string;
+  trackStrong: string;
   success: string;
   error: string;
   primary: string;
@@ -33,22 +40,23 @@ function baseFont(color: string) {
   };
 }
 
-function getShadowStyles() {
-  if (Platform.OS === 'android') {
-    return {
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.22,
-      shadowRadius: 3,
-    };
-  }
+export function getCardShadowStyles(colors: ThemeColors) {
   return {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.22,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: colors.background === '#2C3E50' ? 0.35 : 0.18,
+    shadowRadius: 14,
+    elevation: 4,
+  };
+}
+
+export function getButtonShadowStyles() {
+  return {
+    shadowColor: '#E67E22',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 6,
   };
 }
 
@@ -71,31 +79,34 @@ const createStyles = (colors: ThemeColors) =>
     practiceHeader: {
       width: '100%',
       maxWidth: isTablet ? 800 : 600,
+      marginBottom: 12,
+    },
+    practiceHeaderTopRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: 8,
+      marginBottom: 10,
     },
-    practiceHeaderSpacer: {
-      width: isTablet ? 52 : 44,
-      height: isTablet ? 52 : 44,
+    practiceHeaderActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
     },
     practiceTitle: {
-      flex: 1,
-      fontSize: isTablet ? 42 : 28,
-      fontWeight: '700',
+      fontFamily: FontFamily.extraBold,
+      fontSize: 22,
+      fontWeight: '800',
+      letterSpacing: -0.4,
       color: colors.text,
-      textAlign: 'center',
+      textAlign: 'left',
     },
     helpButton: {
-      width: isTablet ? 52 : 44,
-      height: isTablet ? 52 : 44,
-      borderRadius: isTablet ? 26 : 22,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.cardBackground,
-      borderWidth: 1,
-      borderColor: colors.border,
+      backgroundColor: colors.surface,
     },
     paragraph: {
       ...baseFont(colors.text),
@@ -187,7 +198,6 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: 8,
       width: '100%',
       maxWidth: isTablet ? 700 : 500,
-      ...getShadowStyles(),
     },
     buttonText: {
       color: colors.buttonText,
@@ -224,6 +234,20 @@ const createStyles = (colors: ThemeColors) =>
       fontWeight: 'bold',
       marginBottom: 2,
     },
+    feedbackStatusCircle: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 6,
+    },
+    correctFeedbackCircle: {
+      backgroundColor: colors.success,
+    },
+    incorrectFeedbackCircle: {
+      backgroundColor: colors.error,
+    },
     correctFeedback: {
       color: colors.success,
     },
@@ -252,19 +276,40 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.background,
       borderRadius: 12,
       paddingVertical: 10,
-      ...getShadowStyles(),
+      ...getCardShadowStyles(colors),
     },
     pairItemContainer: {
-      marginBottom: 24,
-      borderRadius: 12,
-      padding: isTablet ? 20 : 12,
-      backgroundColor: 'rgba(255, 255, 255, 0.125)',
+      marginBottom: 12,
+      borderRadius: 16,
+      padding: isTablet ? 20 : 16,
+      backgroundColor: colors.surface,
+      ...getCardShadowStyles(colors),
     },
     pairItemRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
+    },
+    pairItemHeadingRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    pairItemTitle: {
+      flex: 1,
+      fontFamily: FontFamily.extraBold,
+      fontSize: 17,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    pairItemAccuracy: {
+      fontFamily: FontFamily.bold,
+      fontSize: 15,
+      fontWeight: '700',
+      textAlign: 'right',
+      fontVariant: ['tabular-nums'],
     },
     pairItemLeftColumn: {
       flexGrow: 1,
@@ -278,21 +323,42 @@ const createStyles = (colors: ThemeColors) =>
       maxWidth: '100%',
     },
     pairItemStatsText: {
-      fontSize: isTablet ? 18 : 14,
-      color: colors.text,
-      marginTop: 4,
+      fontFamily: FontFamily.regular,
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 6,
     },
     timePracticedText: {
-      fontSize: isTablet ? 18 : 14,
-      marginBottom: 6,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
+      marginBottom: 0,
       fontWeight: '600',
       color: colors.text,
+      fontVariant: ['tabular-nums'],
+    },
+    pairTimeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginTop: 12,
+    },
+    unpracticedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 8,
+    },
+    unpracticedText: {
+      fontFamily: FontFamily.regular,
+      fontSize: 12,
+      color: colors.textSecondary,
     },
     progressBarOuter: {
-      height: 12,
+      flex: 1,
+      height: 6,
       width: '100%',
-      backgroundColor: colors.border,
-      borderRadius: 6,
+      backgroundColor: colors.track,
+      borderRadius: 3,
       overflow: 'hidden',
     },
     progressBarInner: {
@@ -304,65 +370,84 @@ const createStyles = (colors: ThemeColors) =>
     mainCard: {
       width: '100%',
       maxWidth: isTablet ? 800 : 600,
-      backgroundColor: colors.cardBackground,
+      backgroundColor: colors.surface,
       borderRadius: 24,
-      padding: isTablet ? 32 : 16,
+      paddingTop: 28,
+      paddingHorizontal: 20,
+      paddingBottom: 22,
       alignItems: 'center',
-      ...getShadowStyles(),
+      ...getCardShadowStyles(colors),
       marginTop: 6,
     },
     contrastHeader: {
       width: '100%',
       alignItems: 'center',
-      gap: 8,
-      marginBottom: 16,
+      gap: 10,
+      marginBottom: 14,
+    },
+    eyebrow: {
+      fontFamily: FontFamily.bold,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1.5,
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
     },
     contrastTitle: {
-      fontSize: isTablet ? 34 : 24,
+      fontFamily: FontFamily.extraBold,
+      fontSize: 30,
       fontWeight: '800',
       color: colors.text,
       textAlign: 'center',
     },
     contrastInstruction: {
-      fontSize: isTablet ? 18 : 14,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
+      fontWeight: '600',
       color: colors.textSecondary,
       textAlign: 'center',
+      marginTop: 10,
     },
     contrastDetailsButton: {
-      minHeight: 36,
-      flexDirection: 'row',
-      alignItems: 'center',
+      minHeight: 28,
       justifyContent: 'center',
-      gap: 5,
-      paddingHorizontal: 10,
-      borderRadius: 10,
     },
     contrastDetailsButtonText: {
-      fontSize: isTablet ? 17 : 13,
-      fontWeight: '700',
-      color: colors.primary,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      textDecorationLine: 'underline',
     },
     pickerOverrideContainer: {
       width: '100%',
       marginTop: 20,
       paddingTop: 16,
       borderTopWidth: 1,
-      borderTopColor: colors.border,
+      borderTopColor: colors.hairline,
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    practicePairCopy: {
+      flex: 1,
+      alignItems: 'flex-start',
     },
     practicePairLabel: {
-      fontSize: isTablet ? 16 : 12,
-      fontWeight: '600',
+      fontFamily: FontFamily.bold,
+      fontSize: 11,
+      fontWeight: '700',
       color: colors.textSecondary,
-      textAlign: 'center',
+      textAlign: 'left',
       textTransform: 'uppercase',
       letterSpacing: 0.8,
     },
     practicePairWords: {
-      fontSize: isTablet ? 24 : 18,
+      fontFamily: FontFamily.bold,
+      fontSize: 15,
       fontWeight: '700',
       color: colors.text,
-      textAlign: 'center',
+      textAlign: 'left',
       marginTop: 4,
     },
     pairPickerToggle: {
@@ -375,9 +460,10 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: 2,
     },
     pairPickerToggleText: {
-      fontSize: isTablet ? 18 : 14,
+      fontFamily: FontFamily.bold,
+      fontSize: 13,
       fontWeight: '700',
-      color: colors.primary,
+      color: colors.primaryText,
       textAlign: 'center',
     },
     pairPickerPanel: {
@@ -396,7 +482,7 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: 16,
       borderRadius: 20,
       backgroundColor: colors.cardBackground,
-      ...getShadowStyles(),
+      ...getCardShadowStyles(colors),
     },
     pairPickerModalHeader: {
       minHeight: 44,
@@ -418,22 +504,74 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     answerPrompt: {
-      fontSize: isTablet ? 20 : 16,
+      fontFamily: FontFamily.bold,
+      fontSize: 14,
       fontWeight: '700',
       color: colors.text,
       textAlign: 'center',
-      marginBottom: 10,
+      marginTop: 26,
+      marginBottom: 12,
+    },
+    answerTile: {
+      flex: 1,
+      paddingVertical: 20,
+      paddingHorizontal: 10,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.background === '#2C3E50' ? '#41566D' : colors.surfaceTint,
+      borderWidth: colors.background === '#2C3E50' ? 1 : 0,
+      borderColor: colors.background === '#2C3E50' ? '#57708A' : 'transparent',
+    },
+    answerTileWord: {
+      fontFamily: FontFamily.extraBold,
+      fontSize: 22,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    answerTileIpa: {
+      fontFamily: FontFamily.regular,
+      fontSize: 13,
+      color: colors.primaryText,
+      marginTop: 4,
+    },
+    playButton: {
+      width: '100%',
+      minHeight: 62,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      padding: 16,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+      ...getButtonShadowStyles(),
+    },
+    playButtonPlaying: {
+      backgroundColor: '#B9640F',
+    },
+    playIconCircle: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+      backgroundColor: 'rgba(255,255,255,0.25)',
+    },
+    playButtonLabel: {
+      fontFamily: FontFamily.bold,
+      fontSize: 17,
+      fontWeight: '700',
+      color: colors.buttonText,
     },
     section: {
-      borderRadius: 12,
-      marginBottom: 16,
+      borderRadius: 18,
+      marginBottom: 12,
       overflow: 'hidden',
-      backgroundColor: colors.cardBackground,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
+      backgroundColor: colors.surface,
+      ...getCardShadowStyles(colors),
     },
     sectionHeader: {
       flexDirection: 'row',
@@ -447,40 +585,52 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
     },
     sectionIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 11,
       marginRight: 12,
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      lineHeight: 36,
+      backgroundColor: colors.surfaceTint,
     },
     sectionTitle: {
-      fontSize: isTablet ? 24 : 18,
-      fontWeight: '600',
+      fontFamily: FontFamily.bold,
+      fontSize: 15,
+      fontWeight: '700',
       color: colors.text,
     },
     sectionSubtitle: {
-      fontSize: isTablet ? 18 : 14,
+      fontFamily: FontFamily.regular,
+      fontSize: 12,
       marginTop: 2,
       color: colors.text,
     },
     sectionContent: {
       borderTopWidth: 1,
-      borderTopColor: colors.shadow,
+      borderTopColor: colors.hairline,
     },
 
     // ========== Header Styles ==========
     header: {
-      marginBottom: 24,
+      marginBottom: 20,
       paddingTop: 8,
-      alignItems: 'center',
+      alignItems: 'flex-start',
     },
     headerTitle: {
-      fontSize: isTablet ? 48 : 32,
-      fontWeight: 'bold',
+      fontFamily: FontFamily.extraBold,
+      fontSize: 22,
+      fontWeight: '800',
+      letterSpacing: -0.4,
       marginBottom: 4,
       color: colors.text,
-      textAlign: 'center',
+      textAlign: 'left',
     },
     headerSubtitle: {
-      fontSize: isTablet ? 24 : 16,
+      fontFamily: FontFamily.regular,
+      fontSize: 13,
       color: colors.text,
-      textAlign: 'center',
+      textAlign: 'left',
     },
 
     // ========== List Item Styles ==========
@@ -490,10 +640,10 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'space-between',
       padding: isTablet ? 24 : 16,
       borderBottomWidth: 1,
-      borderBottomColor: colors.shadow,
+      borderBottomColor: colors.hairline,
     },
     selectedListOption: {
-      backgroundColor: colors.primary + '15',
+      backgroundColor: colors.surfaceTint,
     },
     lastListOption: {
       borderBottomWidth: 0,
@@ -503,8 +653,9 @@ const createStyles = (colors: ThemeColors) =>
       marginRight: 12,
     },
     listItemName: {
-      fontSize: isTablet ? 24 : 16,
-      fontWeight: '500',
+      fontFamily: FontFamily.bold,
+      fontSize: 15,
+      fontWeight: '700',
       marginBottom: 4,
       color: colors.text,
     },
@@ -579,11 +730,11 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: 6,
       paddingVertical: 6,
       paddingHorizontal: 16,
-      backgroundColor: colors.cardBackground,
-      borderRadius: 12,
+      backgroundColor: colors.surface,
+      borderRadius: 16,
       alignItems: 'center' as const,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.hairline,
     },
     feedbackWord: {
       fontSize: isTablet ? 22 : 17,
@@ -677,7 +828,7 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 8,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
-      backgroundColor: colors.primary + '22',
+      backgroundColor: colors.surfaceTint,
     },
     compareButtonDisabled: {
       opacity: 0.55,
@@ -685,7 +836,7 @@ const createStyles = (colors: ThemeColors) =>
     compareButtonText: {
       fontSize: isTablet ? 18 : 14,
       fontWeight: '700' as const,
-      color: colors.primary,
+      color: colors.primaryText,
       textAlign: 'center' as const,
     },
     compareButtonIpa: {
@@ -697,59 +848,76 @@ const createStyles = (colors: ThemeColors) =>
 
     // ========== Session Timer ==========
     sessionTimerContainer: {
-      marginBottom: 4,
-      paddingHorizontal: 4,
+      width: '100%',
     },
     sessionTimerRow: {
       flexDirection: 'row' as const,
-      alignItems: 'baseline' as const,
-      marginBottom: 4,
+      alignItems: 'center' as const,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 999,
+      backgroundColor: colors.surface,
+    },
+    sessionTimerDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      marginRight: 7,
+      backgroundColor: colors.success,
     },
     sessionTimerText: {
-      fontSize: isTablet ? 18 : 14,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
       fontWeight: '600' as const,
+      fontVariant: ['tabular-nums'] as const,
       color: colors.text,
     },
     sessionTimerGoal: {
-      fontSize: isTablet ? 14 : 11,
-      color: colors.textSecondary,
-      marginLeft: 4,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
+      fontWeight: '600' as const,
+      fontVariant: ['tabular-nums'] as const,
+      color: colors.text,
+      marginLeft: 3,
     },
     sessionTimerBarBg: {
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.border,
+      width: '100%',
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.track,
       overflow: 'hidden' as const,
     },
     sessionTimerBarFill: {
       height: '100%' as const,
-      borderRadius: 3,
+      borderRadius: 2,
       backgroundColor: colors.success,
     },
 
     // ========== Level Indicator ==========
     levelIndicatorRow: {
-      flexDirection: 'column' as const,
+      flexDirection: 'row' as const,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
-      gap: 4,
+      gap: 8,
       marginBottom: 4,
     },
     levelDotsRow: {
       flexDirection: 'row' as const,
       alignItems: 'center' as const,
-      gap: 4,
+      gap: 3,
     },
     levelDot: {
-      borderWidth: 1.5,
+      borderWidth: 0,
     },
     levelLabel: {
-      fontSize: isTablet ? 16 : 13,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
       fontWeight: '600' as const,
       color: colors.textSecondary,
     },
     levelLabelCompact: {
-      fontSize: isTablet ? 14 : 11,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
       fontWeight: '600' as const,
       color: colors.textSecondary,
     },
@@ -788,12 +956,12 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row' as const,
       justifyContent: 'space-around' as const,
       alignItems: 'center' as const,
-      backgroundColor: colors.cardBackground,
-      borderRadius: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 18,
       paddingVertical: isTablet ? 16 : 12,
       paddingHorizontal: isTablet ? 24 : 16,
       marginBottom: 12,
-      ...getShadowStyles(),
+      ...getCardShadowStyles(colors),
     },
     masterySummaryItem: {
       alignItems: 'center' as const,

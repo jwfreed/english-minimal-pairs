@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import AccuracyTimeChart from './AccuracyTimeChart';
-import LevelIndicator from './LevelIndicator';
 import {
   getWeightedAccuracy,
   getAccuracyAndTimeOverTime,
@@ -24,15 +23,13 @@ interface FlattenedPair {
 interface Props {
   item: FlattenedPair;
   stats: PairStats;
-  /** Mastery tier (1–6) for this contrast group */
-  tier?: number;
   translate: (key: TranslationKey) => string;
   themeColors: Record<string, string>;
   styles: any;
 }
 
 const PairItem: React.FC<Props> = React.memo(
-  ({ item, stats, tier, translate, themeColors, styles }) => {
+  ({ item, stats, translate, themeColors, styles }) => {
     const attempts = useMemo(() => stats.attempts ?? [], [stats.attempts]);
 
     // Compute averages and trend data
@@ -41,6 +38,7 @@ const PairItem: React.FC<Props> = React.memo(
       weightedAvg,
       trendData,
       displayPracticeMin,
+      correctCount,
     } = useMemo(() => {
       const total = attempts.length;
       const correctCount = attempts.filter((a) => a.isCorrect).length;
@@ -58,6 +56,7 @@ const PairItem: React.FC<Props> = React.memo(
         weightedAvg: weightedAvgValue,
         trendData: trend,
         displayPracticeMin: cappedMin,
+        correctCount,
       };
     }, [attempts]);
 
@@ -65,52 +64,50 @@ const PairItem: React.FC<Props> = React.memo(
 
     return (
       <View style={styles.pairItemContainer}>
-        <View style={styles.pairItemRow}>
-          <View style={styles.pairItemLeftColumn}>
-            <Text style={[styles.title, { color: themeColors.text }]}>
-              {`${item.word1} - ${item.word2}`}
+        <View style={styles.pairItemHeadingRow}>
+          <Text style={styles.pairItemTitle}>{`${item.word1} · ${item.word2}`}</Text>
+          {attempts.length > 0 && (
+            <Text
+              style={[
+                styles.pairItemAccuracy,
+                { color: rawAvg >= 70 ? themeColors.success : themeColors.primaryText },
+              ]}
+            >
+              {rawAvg.toFixed(1)}%
             </Text>
-            {tier != null && attempts.length > 0 && (
-              <View style={styles.masteryBadge}>
-                <LevelIndicator currentTier={tier} compact />
-              </View>
-            )}
-            <Text style={styles.pairItemStatsText}>
-              {`${translate(tKeys.total)}: ${
-                attempts.filter((a) => a.isCorrect).length
-              }/${attempts.length} (${rawAvg.toFixed(1)}%) — ${translate(
-                tKeys.weightedAverage
-              )}: ${weightedAvg.toFixed(1)}%`}
-            </Text>
-          </View>
-
-          {trendData.length > 0 && (
-            <View style={styles.pairItemRightColumn}>
-              <AccuracyTimeChart practiceData={trendData} />
-              <View style={{ marginTop: 10 }}>
-                <Text style={styles.timePracticedText}>
-                  {`${translate(tKeys.timePracticed)}: ${displayPracticeMin.toFixed(
-                    1
-                  )} / ${MAX_PRACTICE_MIN} ${translate(tKeys.min)}`}
-                </Text>
-                <View style={styles.progressBarOuter}>
-                  <View
-                    style={[
-                      styles.progressBarInner,
-                      {
-                        width: `${percentFilled * 100}%`, // smooth fractional width
-                        backgroundColor:
-                          percentFilled >= 1
-                            ? themeColors.success
-                            : themeColors.primary,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            </View>
           )}
         </View>
+
+        {attempts.length === 0 ? (
+          <View style={styles.unpracticedRow}>
+            <Text style={styles.unpracticedText}>Not practiced yet</Text>
+            <Text style={styles.unpracticedText}>—</Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.pairItemStatsText}>
+              {`${correctCount} of ${attempts.length} correct · weighted ${weightedAvg.toFixed(1)}%`}
+            </Text>
+            {trendData.length > 0 && <AccuracyTimeChart practiceData={trendData} />}
+            <View style={styles.pairTimeRow}>
+              <View style={styles.progressBarOuter}>
+                <View
+                  style={[
+                    styles.progressBarInner,
+                    {
+                      width: `${percentFilled * 100}%`,
+                      backgroundColor:
+                        percentFilled >= 1 ? themeColors.success : themeColors.primaryText,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.timePracticedText}>
+                {`${displayPracticeMin.toFixed(1)} / ${MAX_PRACTICE_MIN} ${translate(tKeys.min)}`}
+              </Text>
+            </View>
+          </>
+        )}
       </View>
     );
   }

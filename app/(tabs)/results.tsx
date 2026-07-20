@@ -1,12 +1,14 @@
 // app/(tabs)/results.tsx
 import React, { useMemo, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation, useRouter } from 'expo-router';
 import { minimalPairs } from '@/src/constants/minimalPairs';
 import { usePairProgress } from '@/src/context/PairProgressContext';
 import { useAllThemeColors } from '@/src/context/theme';
-import createStyles from '@/src/constants/styles';
+import createStyles, { getCardShadowStyles, type ThemeColors } from '@/src/constants/styles';
+import { FontFamily } from '@/src/constants/typography';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useCategory } from '@/src/context/CategoryContext';
 import { tKeys } from '@/src/constants/translationKeys';
@@ -41,6 +43,7 @@ export default function ResultsScreen() {
   const { categoryIndex } = useCategory();
   const themeColors = useAllThemeColors();
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
+  const resultsStyles = useMemo(() => createResultsStyles(themeColors), [themeColors]);
   const { width } = useWindowDimensions();
   const isTablet = width > 700;
 
@@ -157,9 +160,9 @@ export default function ResultsScreen() {
     ({ item }: { item: ListItem }) => {
       if (item.type === 'header') {
         return (
-          <View style={[styles.sectionHeader, { marginTop: 8, marginBottom: 0, paddingHorizontal: 0 }]}>
-            <View style={styles.sectionHeaderLeft}>
-              <Text style={styles.sectionTitle}>
+          <View style={resultsStyles.pairSectionHeader}>
+            <View>
+              <Text style={resultsStyles.pairSectionTitle}>
                 {`/${item.phoneme1}/ – /${item.phoneme2}/`}
               </Text>
             </View>
@@ -185,7 +188,7 @@ export default function ResultsScreen() {
         </View>
       );
     },
-    [progress, mastery, translate, themeColors, styles, numColumns, gap],
+    [progress, mastery, translate, themeColors, styles, resultsStyles, numColumns, gap],
   );
 
   if (!catObj || catObj.pairs.length === 0) {
@@ -203,30 +206,32 @@ export default function ResultsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       <View style={{ width: '100%', maxWidth: isTablet ? 800 : 600, alignSelf: 'center', flex: 1 }}>
-        <Text style={[styles.headerTitle, { marginTop: 16, marginBottom: 8 }]}>
-          {translate(tKeys.accuracyTrend)}
-        </Text>
-        <Text style={[styles.timePracticedText, { textAlign: 'center', marginBottom: 12, paddingHorizontal: 16 }]}>
-          {`${translate(tKeys.timePracticed)}: ${totalPracticeMin < 60
-            ? `${totalPracticeMin.toFixed(1)} ${translate(tKeys.min)}`
-            : `${(totalPracticeMin / 60).toFixed(1)} ${translate(tKeys.hr) || 'hr'}`}`}
-        </Text>
-
-        {/* Mastery Summary Card */}
-        <View style={[styles.masterySummaryCard, { marginHorizontal: 16 }]}>    
-          <View style={styles.masterySummaryItem}>
-            <Text style={styles.masterySummaryValue}>
-              {masterySummary.masteredGroups} / {masterySummary.totalGroups}
+        <View style={resultsStyles.header}>
+          <Text style={resultsStyles.screenTitle}>{translate(tKeys.results)}</Text>
+          <Text style={resultsStyles.practicedLabel}>
+            Practiced{' '}
+            <Text style={resultsStyles.practicedValue}>
+              {totalPracticeMin.toFixed(1)} {translate(tKeys.min)}
             </Text>
-            <Text style={styles.masterySummaryLabel}>
+          </Text>
+        </View>
+
+        <View style={resultsStyles.statsRow}>
+          <View style={resultsStyles.statCard}>
+            <Text style={resultsStyles.statValue}>
+              {masterySummary.masteredGroups}
+              <Text style={resultsStyles.statDenominator}> / {masterySummary.totalGroups}</Text>
+            </Text>
+            <Text style={resultsStyles.statLabel}>
               {translate(tKeys.pairsMastered)}
             </Text>
           </View>
-          <View style={styles.masterySummaryItem}>
-            <Text style={styles.masterySummaryValue}>
-              {masterySummary.completedLevels} / {masterySummary.totalLevels}
+          <View style={resultsStyles.statCard}>
+            <Text style={resultsStyles.statValue}>
+              {masterySummary.completedLevels}
+              <Text style={resultsStyles.statDenominator}> / {masterySummary.totalLevels}</Text>
             </Text>
-            <Text style={styles.masterySummaryLabel}>
+            <Text style={resultsStyles.statLabel}>
               {translate(tKeys.levelsCompleted)}
             </Text>
           </View>
@@ -244,27 +249,25 @@ export default function ResultsScreen() {
               : translate(tKeys.practiceThisNextEmpty)
           }
           style={({ pressed }) => [
-            styles.masterySummaryCard,
-            { marginHorizontal: 16, flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start' },
+            resultsStyles.nextCard,
             pressed && recommendation ? { opacity: 0.7 } : null,
           ]}
         >
-          <Text style={styles.masterySummaryLabel}>
-            {translate(tKeys.practiceThisNext)}
-          </Text>
-          {recommendation ? (
-            <>
-              <Text style={[styles.masterySummaryValue, { marginTop: 4 }]}>
-                {recommendation.label}
-              </Text>
-              <Text style={[styles.masterySummaryLabel, { marginTop: 4 }]}>
-                {reasonText}
-              </Text>
-            </>
-          ) : (
-            <Text style={[styles.masterySummaryLabel, { marginTop: 4 }]}>
-              {reasonText}
-            </Text>
+          <View style={resultsStyles.nextContent}>
+            <Text style={resultsStyles.nextBadge}>{translate(tKeys.practiceThisNext)}</Text>
+            {recommendation ? (
+              <>
+                <Text style={resultsStyles.nextTitle}>{recommendation.label}</Text>
+                <Text style={resultsStyles.nextReason}>{reasonText}</Text>
+              </>
+            ) : (
+              <Text style={resultsStyles.nextReason}>{reasonText}</Text>
+            )}
+          </View>
+          {recommendation && (
+            <View style={resultsStyles.nextArrow}>
+              <Ionicons name="arrow-forward" size={17} color={themeColors.primaryText} />
+            </View>
           )}
         </Pressable>
 
@@ -284,3 +287,132 @@ export default function ResultsScreen() {
     </View>
   );
 }
+
+const createResultsStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 16,
+      marginBottom: 16,
+      paddingHorizontal: 16,
+    },
+    screenTitle: {
+      fontFamily: FontFamily.extraBold,
+      fontSize: 22,
+      fontWeight: '800',
+      letterSpacing: -0.4,
+      color: colors.text,
+    },
+    practicedLabel: {
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      fontVariant: ['tabular-nums'],
+    },
+    practicedValue: {
+      color: colors.primaryText,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 12,
+      paddingHorizontal: 16,
+    },
+    statCard: {
+      flex: 1,
+      minHeight: 94,
+      justifyContent: 'center',
+      padding: 16,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      ...getCardShadowStyles(colors),
+    },
+    statValue: {
+      fontFamily: FontFamily.extraBold,
+      fontSize: 26,
+      fontWeight: '800',
+      color: colors.primaryText,
+      fontVariant: ['tabular-nums'],
+    },
+    statDenominator: {
+      fontFamily: FontFamily.bold,
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textSecondary,
+    },
+    statLabel: {
+      marginTop: 4,
+      fontFamily: FontFamily.semibold,
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    nextCard: {
+      minHeight: 104,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      marginHorizontal: 16,
+      marginBottom: 14,
+      padding: 16,
+      borderRadius: 18,
+      backgroundColor: colors.surface,
+      ...getCardShadowStyles(colors),
+    },
+    nextContent: {
+      flex: 1,
+      alignItems: 'flex-start',
+    },
+    nextBadge: {
+      marginBottom: 7,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 999,
+      overflow: 'hidden',
+      backgroundColor: colors.surfaceTint,
+      fontFamily: FontFamily.bold,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+      color: colors.primaryText,
+    },
+    nextTitle: {
+      fontFamily: FontFamily.extraBold,
+      fontSize: 20,
+      fontWeight: '800',
+      color: colors.text,
+    },
+    nextReason: {
+      marginTop: 3,
+      fontFamily: FontFamily.regular,
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    nextArrow: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surfaceTint,
+    },
+    pairSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 10,
+      marginBottom: 8,
+      paddingHorizontal: 2,
+    },
+    pairSectionTitle: {
+      fontFamily: FontFamily.bold,
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.text,
+    },
+  });

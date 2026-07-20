@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { AppStyles } from '@/src/constants/styles';
 import { useLanguage } from '@/src/context/LanguageContext';
@@ -31,29 +31,43 @@ export default function ListenControls({
     new Animated.Value(0.4),
     new Animated.Value(0.4),
   ]).current;
-  const barLoops = useMemo(
-    () =>
-      barScales.map((scale, index) =>
-        Animated.loop(
-          Animated.sequence([
-            Animated.delay(index * 200),
-            Animated.timing(scale, { toValue: 1, duration: 260, useNativeDriver: true }),
-            Animated.timing(scale, { toValue: 0.4, duration: 260, useNativeDriver: true }),
-            Animated.delay((2 - index) * 200),
-          ])
-        )
-      ),
-    [barScales]
-  );
 
   useEffect(() => {
-    if (isPlaying) {
-      barLoops.forEach((loop) => loop.start());
-      return () => barLoops.forEach((loop) => loop.stop());
+    if (!isPlaying) {
+      barScales.forEach((scale) => scale.setValue(0.4));
+      return;
     }
-    barLoops.forEach((loop) => loop.stop());
-    barScales.forEach((scale) => scale.setValue(0.4));
-  }, [barLoops, barScales, isPlaying]);
+    // Build the loops fresh on each playback. A stopped Animated.loop keeps its
+    // internal "finished" flag set, and on the JS driver (which a sequence-backed
+    // loop always uses) start() returns immediately once finished — so a reused
+    // loop animates only the first time. Recreating guarantees every play pulses.
+    const animations = barScales.map((scale, index) =>
+      Animated.sequence([
+        Animated.delay(index * 200),
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(scale, {
+              toValue: 1,
+              duration: 500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(scale, {
+              toValue: 0.4,
+              duration: 500,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ])
+        ),
+      ])
+    );
+    animations.forEach((animation) => animation.start());
+    return () => {
+      animations.forEach((animation) => animation.stop());
+      barScales.forEach((scale) => scale.setValue(0.4));
+    };
+  }, [barScales, isPlaying]);
 
   return (
     <TouchableOpacity

@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Localization from 'expo-localization';
-import { alternateLanguages, englishTranslations } from '@/src/constants/alternateLanguages';
+import { alternateLanguages } from '@/src/constants/alternateLanguages';
 import {
   DEFAULT_LANGUAGE_CODE,
   englishSpeakingRegions,
@@ -17,6 +17,7 @@ import {
   regionLanguageMap,
 } from '@/src/constants/languageSelection';
 import { TranslationKey } from '@/src/constants/translationKeys';
+import { resolveTranslation } from '@/utils/resolveTranslation';
 
 const STORAGE_KEY = '@userLanguage';
 const ENGLISH_UI_OVERRIDE_KEY = '@useEnglishUI';
@@ -243,15 +244,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       // If English UI override is enabled, always use English translations
       const targetLanguage = useEnglishUI ? 'English' : language;
 
-      const value =
-        alternateLanguages[targetLanguage]?.[key] ??
-        englishTranslations[key];
-
-      if (__DEV__ && alternateLanguages[targetLanguage]?.[key] === undefined) {
-        console.warn(`Missing translation for "${key}" in "${targetLanguage}"`);
-      }
-
-      return value;
+      return resolveTranslation(targetLanguage, key, {
+        isDevelopment: __DEV__,
+        onMissing: __DEV__ ? (message) => console.warn(message) : undefined,
+      });
     },
     [language, useEnglishUI]
   );

@@ -14,7 +14,7 @@ interface PracticeHeaderProps {
   onHelpPress: () => void;
   primaryColor: string;
   styles: PracticeHeaderStyles;
-  helpAccessibilityLabel?: string;
+  helpAccessibilityLabel: string;
   timerRef: React.MutableRefObject<SessionTimerHandle | null>;
 }
 
@@ -33,7 +33,7 @@ export default function PracticeHeader({
         leading={<Text style={styles.practiceTitle}>{title}</Text>}
         trailing={
           <TouchableOpacity
-            accessibilityLabel={helpAccessibilityLabel ?? 'Help'}
+            accessibilityLabel={helpAccessibilityLabel}
             accessibilityRole="button"
             activeOpacity={0.8}
             hitSlop={8}

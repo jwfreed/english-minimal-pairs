@@ -1,13 +1,7 @@
 import type { Pair } from '@/src/constants/minimalPairs';
 import { tKeys, TranslationKey } from '@/src/constants/translationKeys';
 import type { PlayedIndex, PracticeFeedback } from '@/src/domain/practiceSession';
-
-const EN_FALLBACK: Partial<Record<TranslationKey, string>> = {
-  correctYouHeard: 'Correct — you heard',
-  correctThatWas: 'Correct — that was',
-  incorrectThisWas: 'This was',
-  listenAndCompareWith: 'Listen again and compare it with',
-};
+import { formatTranslation } from '@/utils/formatTranslation';
 
 export interface PracticeFeedbackCopy {
   headline: string;
@@ -23,7 +17,7 @@ export interface PracticeFeedbackCopyInput {
   pair: Pair;
   feedback: PracticeFeedback;
   playedIdx: PlayedIndex;
-  translate?: (key: TranslationKey) => string;
+  translate: (key: TranslationKey) => string;
 }
 
 function normalizePhonemeForDisplay(value: string | undefined): string | null {
@@ -37,9 +31,6 @@ export function buildPracticeFeedbackCopy({
   playedIdx,
   translate,
 }: PracticeFeedbackCopyInput): PracticeFeedbackCopy {
-  const t = (key: TranslationKey): string =>
-    translate ? translate(key) : (EN_FALLBACK[key] ?? key);
-
   const isWord1 = playedIdx === 0;
   const correctWord = isWord1 ? pair.word1 : pair.word2;
   const correctIpa = isWord1 ? pair.ipa1 : pair.ipa2;
@@ -52,8 +43,11 @@ export function buildPracticeFeedbackCopy({
   if (feedback === 'correct') {
     return {
       headline: correctPhoneme
-        ? `${t(tKeys.correctYouHeard)} ${correctPhoneme} in ${correctWord}.`
-        : `${t(tKeys.correctThatWas)} ${correctWord}.`,
+        ? formatTranslation(translate(tKeys.correctYouHeardIn), {
+            phoneme: correctPhoneme,
+            word: correctWord,
+          })
+        : `${translate(tKeys.correctThatWas)} ${correctWord}.`,
       detail: null,
       correctWord,
       correctIpa,
@@ -64,8 +58,8 @@ export function buildPracticeFeedbackCopy({
   }
 
   return {
-    headline: `${t(tKeys.incorrectThisWas)} ${correctWord}.`,
-    detail: `${t(tKeys.listenAndCompareWith)} ${contrastWord}.`,
+    headline: `${translate(tKeys.incorrectThisWas)} ${correctWord}.`,
+    detail: `${translate(tKeys.listenAndCompareWith)} ${contrastWord}.`,
     correctWord,
     correctIpa,
     correctPhoneme,

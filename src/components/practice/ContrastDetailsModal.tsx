@@ -17,6 +17,7 @@ import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { buildTrialPairId } from '@/src/domain/practiceSession';
 import { buildContrastLabel } from '@/utils/contrastLabel';
+import { formatTranslation } from '@/utils/formatTranslation';
 
 interface ContrastDetailsModalProps {
   visible: boolean;
@@ -136,7 +137,9 @@ export default function ContrastDetailsModal({
                   >
                     {isAvailable
                       ? translate(tKeys.availableNow)
-                      : `${translate(tKeys.levelOf)} ${pair.difficulty}`}
+                      : formatTranslation(translate(tKeys.levelAt), {
+                          level: pair.difficulty,
+                        })}
                   </Text>
                 </>
               );
@@ -154,7 +157,10 @@ export default function ContrastDetailsModal({
                 </TouchableOpacity>
               ) : (
                 <View
-                  accessibilityLabel={`${pair.word1}, ${pair.word2}. ${translate(tKeys.levelOf)} ${pair.difficulty}`}
+                  accessibilityLabel={`${pair.word1}, ${pair.word2}. ${formatTranslation(
+                    translate(tKeys.levelAt),
+                    { level: pair.difficulty }
+                  )}`}
                   key={pairId}
                   style={styles.pairRow}
                 >

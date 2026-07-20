@@ -145,8 +145,11 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
       await play(playedIdx);
       setHasPlayed(true);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Cannot play clip';
-      Alert.alert(translate(tKeys.audioError) || 'Audio Error', msg);
+      console.error('Placement audio playback error:', error);
+      Alert.alert(
+        translate(tKeys.audioError),
+        translate(tKeys.audioPlaybackFailed)
+      );
     }
   }, [playDisabled, playedIdx, play, translate]);
 
@@ -157,7 +160,7 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   return (
     <View style={[styles.container, { justifyContent: 'center' }]}>
       <Text style={[styles.title, { marginBottom: 8 }]}>
-        {translate(tKeys.placementTest) || 'Placement Test'}
+        {translate(tKeys.placementTest)}
       </Text>
       <Text style={[styles.ipaText, { marginBottom: 24, textAlign: 'center' }]}>
         {`${qIndex + 1} / ${testItems.length}`}
@@ -196,7 +199,7 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
         disabled={answered}
       >
         <Text style={[styles.ipaText, { textDecorationLine: 'underline', opacity: answered ? 0.4 : 1 }]}>
-          {translate(tKeys.skip) || 'Skip'}
+          {translate(tKeys.skip)}
         </Text>
       </TouchableOpacity>
     </View>

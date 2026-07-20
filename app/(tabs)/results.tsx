@@ -19,6 +19,7 @@ import { estimateActivePracticeTime } from '@/src/storage/progressStorage';
 import { useContrastPairs } from '@/src/hooks/useContrastPairs';
 import { computePracticeNextRecommendation } from '@/utils/recommendNextPractice';
 import { usePracticeTarget } from '@/src/context/PracticeTargetContext';
+import { formatTranslation } from '@/utils/formatTranslation';
 
 type ContrastHeader = {
   type: 'header';
@@ -209,10 +210,10 @@ export default function ResultsScreen() {
         <View style={resultsStyles.header}>
           <Text style={resultsStyles.screenTitle}>{translate(tKeys.results)}</Text>
           <Text style={resultsStyles.practicedLabel}>
-            Practiced{' '}
-            <Text style={resultsStyles.practicedValue}>
-              {totalPracticeMin.toFixed(1)} {translate(tKeys.min)}
-            </Text>
+            {formatTranslation(translate(tKeys.practicedTime), {
+              minutes: totalPracticeMin.toFixed(1),
+              unit: translate(tKeys.min),
+            })}
           </Text>
         </View>
 

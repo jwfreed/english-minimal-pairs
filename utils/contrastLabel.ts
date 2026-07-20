@@ -7,12 +7,9 @@ function normalizePhonemeForDisplay(value: string | undefined): string {
   return (value ?? '').trim().replace(/^\/+|\/+$/g, '').trim();
 }
 
-function formatGroupFallback(
-  group: string | undefined,
-  t: (key: TranslationKey, fallback: string) => string,
-): string {
+function formatGroupFallback(group: string | undefined): string {
   const compact = (group ?? '').trim();
-  if (!compact) return t(tKeys.trainThisContrast, DEFAULT_CONTRAST_TITLE);
+  if (!compact) return '';
 
   const spaced = compact
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -21,7 +18,7 @@ function formatGroupFallback(
     .replace(/\s+/g, ' ')
     .trim();
 
-  return spaced ? `${t(tKeys.trainContrast, 'Train')} ${spaced}` : t(tKeys.trainThisContrast, DEFAULT_CONTRAST_TITLE);
+  return spaced;
 }
 
 export function buildContrastTrainingTitle(
@@ -37,7 +34,7 @@ export function buildContrastTrainingTitle(
 }
 
 export function buildContrastLabel(pair: Pair | undefined): string {
-  if (!pair) return DEFAULT_CONTRAST_TITLE;
+  if (!pair) return '';
 
   const first = normalizePhonemeForDisplay(pair.contrastPhoneme1);
   const second = normalizePhonemeForDisplay(pair.contrastPhoneme2);
@@ -45,6 +42,5 @@ export function buildContrastLabel(pair: Pair | undefined): string {
     return `/${first}/ vs /${second}/`;
   }
 
-  return formatGroupFallback(pair.group, (_key, fallback) => fallback)
-    .replace(/^Train\s+/, '');
+  return formatGroupFallback(pair.group);
 }

@@ -4,9 +4,13 @@ export const tKeys = {
   settings: 'settings',
   practicePairs: 'practicePairs',
   playAudio: 'playAudio',
+  listening: 'listening',
   total: 'total',
   weightedAverage: 'weightedAverage',
   timePracticed: 'timePracticed',
+  practicedTime: 'practicedTime',
+  notPracticedYet: 'notPracticedYet',
+  correctOfWeighted: 'correctOfWeighted',
   min: 'min',
   accuracyTrend: 'accuracyTrend',
   configureApp: 'configureApp',
@@ -40,6 +44,9 @@ export const tKeys = {
   dailyGoal: 'dailyGoal',
   // Mastery progression
   levelOf: 'levelOf',
+  levelProgress: 'levelProgress',
+  levelCompact: 'levelCompact',
+  levelAt: 'levelAt',
   mastered: 'mastered',
   levelUnlocked: 'levelUnlocked',
   levelCriteria: 'levelCriteria',
@@ -49,6 +56,7 @@ export const tKeys = {
   placementCompleted: 'placementCompleted',
   // Audio & time
   audioError: 'audioError',
+  audioPlaybackFailed: 'audioPlaybackFailed',
   audioInitializing: 'audioInitializing',
   hr: 'hr',
   // Voice selection
@@ -95,6 +103,7 @@ export const tKeys = {
   doubleTapToHear: 'doubleTapToHear',
   // Feedback copy (label-prefix pattern)
   correctYouHeard: 'correctYouHeard',
+  correctYouHeardIn: 'correctYouHeardIn',
   correctThatWas: 'correctThatWas',
   incorrectThisWas: 'incorrectThisWas',
   listenAndCompareWith: 'listenAndCompareWith',

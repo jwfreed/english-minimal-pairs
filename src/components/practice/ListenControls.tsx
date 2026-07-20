@@ -98,7 +98,7 @@ export default function ListenControls({
         )}
       </View>
       <Text style={styles.playButtonLabel} importantForAccessibility="no">
-        {isPlaying ? 'Listening…' : label}
+        {isPlaying ? translate(tKeys.listening) : label}
       </Text>
     </TouchableOpacity>
   );

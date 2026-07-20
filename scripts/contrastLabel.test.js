@@ -59,4 +59,8 @@ runTest('buildContrastLabel renders the contrast without practice-action copy', 
   );
 });
 
+runTest('buildContrastLabel stays empty when learning content is unavailable', () => {
+  assert.strictEqual(buildContrastLabel(undefined), '');
+});
+
 console.log('\nAll contrastLabel tests passed.');

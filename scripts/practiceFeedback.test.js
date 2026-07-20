@@ -5,6 +5,15 @@ const { loadTsModule } = require('./load-ts-module');
 const { buildPracticeFeedbackCopy } = loadTsModule(
   path.join(__dirname, '..', 'utils', 'practiceFeedback.ts')
 );
+const { englishTranslations } = loadTsModule(
+  path.join(__dirname, '..', 'src', 'constants', 'alternateLanguages.ts')
+);
+
+const buildEnglishFeedback = (input) =>
+  buildPracticeFeedbackCopy({
+    ...input,
+    translate: (key) => englishTranslations[key],
+  });
 
 function runTest(name, fn) {
   try {
@@ -35,7 +44,7 @@ const makePair = (overrides = {}) => ({
 
 runTest('buildPracticeFeedbackCopy renders correct feedback for word1 with phoneme', () => {
   assertJsonEqual(
-    buildPracticeFeedbackCopy({ pair: makePair(), feedback: 'correct', playedIdx: 0 }),
+    buildEnglishFeedback({ pair: makePair(), feedback: 'correct', playedIdx: 0 }),
     {
       headline: 'Correct — you heard /r/ in right.',
       detail: null,
@@ -50,7 +59,7 @@ runTest('buildPracticeFeedbackCopy renders correct feedback for word1 with phone
 
 runTest('buildPracticeFeedbackCopy renders correct feedback for word2 with phoneme', () => {
   assertJsonEqual(
-    buildPracticeFeedbackCopy({ pair: makePair(), feedback: 'correct', playedIdx: 1 }),
+    buildEnglishFeedback({ pair: makePair(), feedback: 'correct', playedIdx: 1 }),
     {
       headline: 'Correct — you heard /l/ in light.',
       detail: null,
@@ -65,7 +74,7 @@ runTest('buildPracticeFeedbackCopy renders correct feedback for word2 with phone
 
 runTest('buildPracticeFeedbackCopy renders incorrect feedback identifying the correct word', () => {
   assertJsonEqual(
-    buildPracticeFeedbackCopy({ pair: makePair(), feedback: 'incorrect', playedIdx: 0 }),
+    buildEnglishFeedback({ pair: makePair(), feedback: 'incorrect', playedIdx: 0 }),
     {
       headline: 'This was right.',
       detail: 'Listen again and compare it with light.',
@@ -80,7 +89,7 @@ runTest('buildPracticeFeedbackCopy renders incorrect feedback identifying the co
 
 runTest('buildPracticeFeedbackCopy falls back when phoneme is missing', () => {
   assertJsonEqual(
-    buildPracticeFeedbackCopy({
+    buildEnglishFeedback({
       pair: makePair({ contrastPhoneme1: ' ' }),
       feedback: 'correct',
       playedIdx: 0,
@@ -99,7 +108,7 @@ runTest('buildPracticeFeedbackCopy falls back when phoneme is missing', () => {
 
 runTest('buildPracticeFeedbackCopy normalizes phoneme display slashes', () => {
   assert.strictEqual(
-    buildPracticeFeedbackCopy({
+    buildEnglishFeedback({
       pair: makePair({ contrastPhoneme1: ' /r/ ' }),
       feedback: 'correct',
       playedIdx: 0,
@@ -112,7 +121,7 @@ runTest('buildPracticeFeedbackCopy does not mutate pair input', () => {
   const pair = makePair({ contrastPhoneme1: ' /r/ ' });
   const before = JSON.stringify(pair);
 
-  buildPracticeFeedbackCopy({ pair, feedback: 'correct', playedIdx: 0 });
+  buildEnglishFeedback({ pair, feedback: 'correct', playedIdx: 0 });
 
   assert.strictEqual(JSON.stringify(pair), before);
 });

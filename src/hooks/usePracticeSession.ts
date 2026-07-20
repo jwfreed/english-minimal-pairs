@@ -216,9 +216,10 @@ export function usePracticeSession({
     setPendingPlayback(null);
     play(playback.playedIdx).catch((error) => {
       console.error('Audio playback error:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Cannot play clip';
-      Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
+      Alert.alert(
+        translate(tKeys.audioError),
+        translate(tKeys.audioPlaybackFailed)
+      );
     });
   }, [pendingPlayback, play, selectedPair, translate]);
 
@@ -258,9 +259,8 @@ export function usePracticeSession({
     if (!audioModeReady) {
       debugLog('❌ Audio not ready - showing error alert');
       Alert.alert(
-        translate(tKeys.audioError) || 'Audio Error',
-        translate(tKeys.audioInitializing) ||
-          'Audio system is still initializing. Please try again.'
+        translate(tKeys.audioError),
+        translate(tKeys.audioInitializing)
       );
       return;
     }
@@ -317,9 +317,10 @@ export function usePracticeSession({
       await play(playback.playedIdx);
     } catch (error) {
       console.error('Audio playback error:', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Cannot play clip';
-      Alert.alert(translate(tKeys.audioError) || 'Audio Error', errorMessage);
+      Alert.alert(
+        translate(tKeys.audioError),
+        translate(tKeys.audioPlaybackFailed)
+      );
     }
   }, [
     activeGroup,

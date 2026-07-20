@@ -12,6 +12,11 @@ const { englishTranslations, alternateLanguages } = loadTsModule(
 const allTKeys = Object.values(tKeys);
 const locales = Object.entries(alternateLanguages);
 
+const getPlaceholders = (value) =>
+  [...new Set(
+    [...String(value).matchAll(/\{(\w+)\}/g)].map((match) => match[1])
+  )].sort();
+
 let failed = false;
 
 // Check englishTranslations separately (it's the source of truth)
@@ -33,6 +38,18 @@ for (const [localeName, localeObj] of locales) {
     failed = true;
   } else {
     console.log(`ok - ${localeName} covers all ${allTKeys.length} tKeys`);
+  }
+
+  for (const key of allTKeys) {
+    const expectedPlaceholders = getPlaceholders(englishTranslations[key]);
+    const actualPlaceholders = getPlaceholders(localeObj[key]);
+    if (JSON.stringify(actualPlaceholders) !== JSON.stringify(expectedPlaceholders)) {
+      console.error(
+        `FAIL - ${localeName}.${key} placeholders differ: expected ` +
+          `[${expectedPlaceholders.join(', ')}], received [${actualPlaceholders.join(', ')}]`
+      );
+      failed = true;
+    }
   }
 }
 

@@ -10,6 +10,7 @@ import createStyles from '@/src/constants/styles';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
+import { formatTranslation } from '@/utils/formatTranslation';
 
 const TOTAL_TIERS = 6;
 
@@ -31,8 +32,11 @@ export default function LevelIndicator({ currentTier, compact = false, showCrite
   const levelText = isMastered
     ? translate(tKeys.mastered)
     : compact
-      ? `Lv ${currentTier}`
-      : `Level ${currentTier} of ${TOTAL_TIERS}`;
+      ? formatTranslation(translate(tKeys.levelCompact), { level: currentTier })
+      : formatTranslation(translate(tKeys.levelProgress), {
+          level: currentTier,
+          total: TOTAL_TIERS,
+        });
 
   return (
     <View style={styles.levelIndicatorRow}>

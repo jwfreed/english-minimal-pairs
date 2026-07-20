@@ -98,8 +98,8 @@ export default function SettingsScreen() {
     await AsyncStorage.setItem(PLACEMENT_LEGACY_MIGRATION_KEY, serializePlacementDone()).catch(() => {});
     setPlacementDone(false);
     Alert.alert(
-      translate(tKeys.placementTest) || 'Placement Test',
-      translate(tKeys.placementResetConfirm) || 'The placement test will run when you return to the Practice tab.',
+      translate(tKeys.placementTest),
+      translate(tKeys.placementResetConfirm),
     );
   }, [triggerHaptic, translate, currentCatKey]);
 
@@ -319,7 +319,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
                   {isLoadingVoices
                     ? translate(tKeys.loadingVoices)
-                    : `${voiceCount} ${translate(tKeys.voiceActive) || 'active'} / ${allVoices.length} ${translate(tKeys.total)}`}
+                    : `${voiceCount} ${translate(tKeys.voiceActive)} / ${allVoices.length} ${translate(tKeys.total)}`}
                 </Text>
               </View>
             </View>
@@ -339,7 +339,7 @@ export default function SettingsScreen() {
             <View style={styles.sectionContent}>
               {allVoices.length === 0 && !isLoadingVoices && (
                 <Text style={[styles.sectionSubtitle, { padding: 12, color: theme.textSecondary }]}>
-                  No English voices found on this device.
+                  {translate(tKeys.noVoicesAvailable)}
                 </Text>
               )}
               {isLoadingVoices && (
@@ -405,24 +405,24 @@ export default function SettingsScreen() {
               />
               <View>
                 <Text style={styles.sectionTitle}>
-                  {translate(tKeys.placementTest) || 'Placement Test'}
+                  {translate(tKeys.placementTest)}
                 </Text>
                 <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                  {translate(tKeys.placementDescription) || 'Determine your starting level'}
+                  {translate(tKeys.placementDescription)}
                 </Text>
                 <View style={styles.placementStatusRow}>
                   {placementDone ? (
                     <>
                       <Ionicons name="checkmark-circle" size={isTablet ? 18 : 14} color={theme.success} />
                       <Text style={[styles.placementStatusText, { color: theme.success }]}>
-                        {translate(tKeys.placementCompleted) || 'Completed'}
+                        {translate(tKeys.placementCompleted)}
                       </Text>
                     </>
                   ) : (
                     <>
                       <Ionicons name="ellipse-outline" size={isTablet ? 18 : 14} color={theme.textSecondary} />
                       <Text style={[styles.placementStatusText, { color: theme.textSecondary }]}>
-                        {translate(tKeys.retakePlacement) || 'Retake on next practice session'}
+                        {translate(tKeys.retakePlacement)}
                       </Text>
                     </>
                   )}

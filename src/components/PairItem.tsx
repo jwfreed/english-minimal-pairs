@@ -8,6 +8,7 @@ import {
   PairStats,
 } from '@/src/storage/progressStorage';
 import { tKeys, TranslationKey } from '@/src/constants/translationKeys';
+import { formatTranslation } from '@/utils/formatTranslation';
 
 // Maximum minutes to display in the progress bar
 const MAX_PRACTICE_MIN = 60;
@@ -80,13 +81,17 @@ const PairItem: React.FC<Props> = React.memo(
 
         {attempts.length === 0 ? (
           <View style={styles.unpracticedRow}>
-            <Text style={styles.unpracticedText}>Not practiced yet</Text>
+            <Text style={styles.unpracticedText}>{translate(tKeys.notPracticedYet)}</Text>
             <Text style={styles.unpracticedText}>—</Text>
           </View>
         ) : (
           <>
             <Text style={styles.pairItemStatsText}>
-              {`${correctCount} of ${attempts.length} correct · weighted ${weightedAvg.toFixed(1)}%`}
+              {formatTranslation(translate(tKeys.correctOfWeighted), {
+                correct: correctCount,
+                total: attempts.length,
+                accuracy: weightedAvg.toFixed(1),
+              })}
             </Text>
             {trendData.length > 0 && <AccuracyTimeChart practiceData={trendData} />}
             <View style={styles.pairTimeRow}>

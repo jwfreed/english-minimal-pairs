@@ -7,6 +7,7 @@ import type { AudioMode } from 'expo-audio';
 import type { Pair } from '@/src/constants/minimalPairs';
 import {
   buildSpeechOptions,
+  getPlaybackRate,
   getPlaybackWord,
   requireIosVoicesForPlayback,
 } from '@/src/domain/audioPlayback';
@@ -239,6 +240,7 @@ export const useAudio = (
       }
 
       const word = getPlaybackWord(selectedPair, idx);
+      const playbackRate = getPlaybackRate(word, rate);
 
       // Pick the next voice from the rotation pool for this utterance; the
       // pair's difficulty stages how much of the pool is eligible.
@@ -246,7 +248,7 @@ export const useAudio = (
         ? getNextVoice({ difficulty: selectedPair.difficulty })
         : null;
 
-      debugLog(`🔊 Attempting to speak: "${word}" at rate ${rate}`);
+      debugLog(`🔊 Attempting to speak: "${word}" at rate ${playbackRate}`);
       if (voice) {
         debugLog(`🎤 Using voice: ${voice.name} (${voice.identifier})`);
       }
@@ -255,7 +257,7 @@ export const useAudio = (
 
       const speechOptions: Speech.SpeechOptions = {
         ...buildSpeechOptions({
-          rate,
+          rate: playbackRate,
           voice,
           onDone: () => {
             setIsSpeaking(false);

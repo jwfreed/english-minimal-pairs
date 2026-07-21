@@ -5,6 +5,7 @@ const { loadTsModule } = require('./load-ts-module');
 const {
   IOS_TTS_UNAVAILABLE_MESSAGE,
   buildSpeechOptions,
+  getPlaybackRate,
   getPlaybackWord,
   requireIosVoicesForPlayback,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'audioPlayback.ts'));
@@ -41,6 +42,18 @@ runTest('getPlaybackWord rejects missing selected pair before TTS calls', () => 
     () => getPlaybackWord(undefined, 0),
     /No pair selected/
   );
+});
+
+runTest('getPlaybackRate keeps slow initial r and l words at natural speed', () => {
+  assert.strictEqual(getPlaybackRate('right', 0.85), 1);
+  assert.strictEqual(getPlaybackRate('light', 0.85), 1);
+  assert.strictEqual(getPlaybackRate(' Rake', 0.85), 1);
+});
+
+runTest('getPlaybackRate preserves adaptive rates for other onsets and faster tiers', () => {
+  assert.strictEqual(getPlaybackRate('ship', 0.85), 0.85);
+  assert.strictEqual(getPlaybackRate('right', 1), 1);
+  assert.strictEqual(getPlaybackRate('light', 1.15), 1.15);
 });
 
 runTest('requireIosVoicesForPlayback rejects iOS playback when no TTS voices exist', () => {

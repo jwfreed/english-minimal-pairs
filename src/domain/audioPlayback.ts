@@ -15,6 +15,7 @@ export interface SpeechOptionCallbacks {
 }
 
 const FALLBACK_LANGUAGE = 'en-US';
+const NATURAL_SPEECH_RATE = 1;
 
 export interface SpeechOptions extends SpeechOptionCallbacks {
   language: string;
@@ -36,6 +37,19 @@ export function getPlaybackWord(
   }
 
   return idx === 0 ? selectedPair.word1 : selectedPair.word2;
+}
+
+/**
+ * Slowing an isolated word can make continuous initial /r/ and /l/ sounds
+ * unnaturally long in device TTS (for example, "rr-right" or "ll-light").
+ * Keep those onsets at the synthesizer's natural rate while leaving the
+ * session's adaptive rate unchanged for other words and faster tiers.
+ */
+export function getPlaybackRate(word: string, requestedRate: number): number {
+  const startsWithLiquid = /^[rl]/i.test(word.trimStart());
+  return startsWithLiquid && requestedRate < NATURAL_SPEECH_RATE
+    ? NATURAL_SPEECH_RATE
+    : requestedRate;
 }
 
 export function requireIosVoicesForPlayback(

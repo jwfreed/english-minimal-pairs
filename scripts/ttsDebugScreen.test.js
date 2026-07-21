@@ -81,3 +81,16 @@ runTest('debug screen selects voices through the production rotation (exclusions
     'no ad-hoc first-English-voice selection'
   );
 });
+
+runTest('debug screen pins the five-word stutter sample and twenty repetitions', () => {
+  for (const word of ['right', 'light', 'three', 'cat', 'dog']) {
+    assert.ok(
+      debugScreenSource.includes(`'${word}'`),
+      `stutter diagnostic must include ${word}`
+    );
+  }
+  assert.ok(
+    debugScreenSource.includes('STUTTER_DIAGNOSTIC_REPETITIONS = 20'),
+    'stutter diagnostic must run twenty repetitions per word'
+  );
+});

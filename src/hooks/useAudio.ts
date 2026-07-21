@@ -7,10 +7,14 @@ import type { AudioMode } from 'expo-audio';
 import type { Pair } from '@/src/constants/minimalPairs';
 import {
   buildSpeechOptions,
-  getPlaybackRate,
   getPlaybackWord,
   requireIosVoicesForPlayback,
 } from '@/src/domain/audioPlayback';
+import {
+  speechPlaybackCoordinator,
+  type SpeechPlaybackAttempt,
+  type SpeechPlaybackRequest,
+} from '@/src/domain/speechPlaybackCoordinator';
 import { useSilentWarmupPlayer } from '@/src/hooks/useSilentWarmupPlayer';
 
 // Audio-session configuration for TTS playback. `playsInSilentMode` is the
@@ -63,6 +67,46 @@ const IOS_AUDIO_SESSION_EXPERIMENT =
 const IOS_SILENT_WARMUP_ENABLED =
   IOS_AUDIO_SESSION_EXPERIMENT === 'A-silent-warmup';
 
+type SpeechDiagnosticPhase =
+  | 'requested'
+  | 'accepted'
+  | 'rejected-duplicate'
+  | 'submitted-to-native-speech'
+  | 'started'
+  | 'completed'
+  | 'cancelled'
+  | 'failed';
+
+function logSpeechDiagnostic({
+  phase,
+  request,
+  attempt,
+  eventTimestampMs,
+  isSpeaking,
+  activePlaybackOwnerRequestId,
+}: {
+  phase: SpeechDiagnosticPhase;
+  request: SpeechPlaybackRequest;
+  attempt?: SpeechPlaybackAttempt;
+  eventTimestampMs: number;
+  isSpeaking: boolean;
+  activePlaybackOwnerRequestId?: string;
+}) {
+  if (!__DEV__) return;
+  console.log('[tts-playback]', {
+    phase,
+    eventTimestampMs,
+    ...request,
+    ...(attempt ?? {}),
+    ...(activePlaybackOwnerRequestId
+      ? { activePlaybackOwnerRequestId }
+      : {}),
+    isSpeaking,
+    coordinatorObservedActivePlaybackOwnershipCount:
+      speechPlaybackCoordinator.getActivePlaybackOwnershipCount(),
+  });
+}
+
 /**
  * Custom hook for text-to-speech playback of minimal pairs
  * @param selectedPair  The currently displayed minimal‑pair object (may be undefined on first render)
@@ -78,6 +122,7 @@ export const useAudio = (
 ) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioModeReady, setAudioModeReady] = useState(false);
+  const isSpeakingRef = useRef(false);
   const availableVoicesRef = useRef<Speech.Voice[] | null>(null);
   const audioModeConfiguredRef = useRef(false);
 
@@ -121,6 +166,11 @@ export const useAudio = (
     },
     []
   );
+
+  const updateIsSpeaking = useCallback((nextIsSpeaking: boolean) => {
+    isSpeakingRef.current = nextIsSpeaking;
+    setIsSpeaking(nextIsSpeaking);
+  }, []);
 
   // Check if we're on a real device vs simulator
   useEffect(() => {
@@ -210,79 +260,155 @@ export const useAudio = (
         throw new Error('No pair selected');
       }
 
-      // Check if running on iOS Simulator
-      if (Platform.OS === 'ios') {
-        const voices =
-          availableVoicesRef.current ??
-          (availableVoicesRef.current = await Speech.getAvailableVoicesAsync());
-        requireIosVoicesForPlayback(Platform.OS, voices);
-
-        // Re-ensure audio mode is set before each playback to handle cases
-        // where the audio session might have been interrupted or reset
-        if (!audioModeConfiguredRef.current) {
-          try {
-            await setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE);
-            audioModeConfiguredRef.current = true;
-            debugLog('🔧 Audio mode re-confirmed before playback');
-          } catch (error) {
-            debugWarn('⚠️ Error re-setting audio mode (continuing anyway):', error);
-          }
-        }
-      }
-
-      // Stop any ongoing speech
-      if (isSpeaking) {
-        try {
-          await Speech.stop();
-        } catch (error) {
-          debugWarn('⚠️ Error stopping speech:', error);
-        }
-      }
-
       const word = getPlaybackWord(selectedPair, idx);
-      const playbackRate = getPlaybackRate(word, rate);
-
-      // Pick the next voice from the rotation pool for this utterance; the
-      // pair's difficulty stages how much of the pool is eligible.
-      const voice = getNextVoice
-        ? getNextVoice({ difficulty: selectedPair.difficulty })
-        : null;
-
-      debugLog(`🔊 Attempting to speak: "${word}" at rate ${playbackRate}`);
-      if (voice) {
-        debugLog(`🎤 Using voice: ${voice.name} (${voice.identifier})`);
+      const beginResult = speechPlaybackCoordinator.begin({
+        word,
+        difficulty: selectedPair.difficulty,
+      });
+      const request = beginResult.accepted
+        ? beginResult.attempt
+        : beginResult.request;
+      logSpeechDiagnostic({
+        phase: 'requested',
+        request,
+        eventTimestampMs: request.requestedAtMs,
+        isSpeaking: isSpeakingRef.current,
+      });
+      if (!beginResult.accepted) {
+        logSpeechDiagnostic({
+          phase: 'rejected-duplicate',
+          request: beginResult.request,
+          eventTimestampMs: beginResult.request.requestedAtMs,
+          isSpeaking: isSpeakingRef.current,
+          activePlaybackOwnerRequestId: beginResult.activeAttempt.requestId,
+        });
+        return;
       }
 
-      setIsSpeaking(true);
-
-      const speechOptions: Speech.SpeechOptions = {
-        ...buildSpeechOptions({
-          rate: playbackRate,
-          voice,
-          onDone: () => {
-            setIsSpeaking(false);
-            debugLog(`✅ Successfully spoke: "${word}"`);
-          },
-          onStopped: () => {
-            setIsSpeaking(false);
-            debugLog(`⏸️ Speech stopped for: "${word}"`);
-          },
-          onError: (error) => {
-            setIsSpeaking(false);
-            debugError(`❌ TTS Error for "${word}":`, error);
-          },
-        }),
-        // Experiment variant C only: hand the speech audio session to iOS.
-        // AVSpeechSynthesizer latches this on its first utterance, so it must
-        // be identical for every utterance in a build — the build-time
-        // constant guarantees that.
-        ...(Platform.OS === 'ios' &&
-        IOS_AUDIO_SESSION_EXPERIMENT === 'C-system-speech-session'
-          ? { useApplicationAudioSession: false }
-          : {}),
-      };
+      const { requestId } = beginResult.attempt;
+      logSpeechDiagnostic({
+        phase: 'accepted',
+        request: beginResult.attempt,
+        attempt: beginResult.attempt,
+        eventTimestampMs: beginResult.attempt.requestedAtMs,
+        isSpeaking: isSpeakingRef.current,
+      });
+      updateIsSpeaking(true);
 
       try {
+        // Check if running on iOS Simulator
+        if (Platform.OS === 'ios') {
+          const voices =
+            availableVoicesRef.current ??
+            (availableVoicesRef.current = await Speech.getAvailableVoicesAsync());
+          requireIosVoicesForPlayback(Platform.OS, voices);
+
+          // Re-ensure audio mode is set before each playback to handle cases
+          // where the audio session might have been interrupted or reset
+          if (!audioModeConfiguredRef.current) {
+            try {
+              await setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE);
+              audioModeConfiguredRef.current = true;
+              debugLog('🔧 Audio mode re-confirmed before playback');
+            } catch (error) {
+              debugWarn('⚠️ Error re-setting audio mode (continuing anyway):', error);
+            }
+          }
+        }
+
+        // Pick the next voice from the rotation pool for this utterance; the
+        // pair's difficulty stages how much of the pool is eligible.
+        const voice = getNextVoice
+          ? getNextVoice({ difficulty: selectedPair.difficulty })
+          : null;
+        speechPlaybackCoordinator.selectVoice(requestId, voice?.identifier ?? null);
+
+        debugLog(`🔊 Attempting to speak: "${word}" at rate ${rate}`);
+        if (voice) {
+          debugLog(`🎤 Using voice: ${voice.name} (${voice.identifier})`);
+        }
+
+        const speechOptions: Speech.SpeechOptions = {
+          ...buildSpeechOptions({
+            rate,
+            voice,
+            onDone: () => {
+              const finishedAtMs = Date.now();
+              const finishedAttempt = speechPlaybackCoordinator.finish(
+                requestId,
+                finishedAtMs
+              );
+              if (!finishedAttempt) return;
+              updateIsSpeaking(false);
+              logSpeechDiagnostic({
+                phase: 'completed',
+                request: finishedAttempt,
+                attempt: finishedAttempt,
+                eventTimestampMs: finishedAtMs,
+                isSpeaking: isSpeakingRef.current,
+              });
+              debugLog(`✅ Successfully spoke: "${word}"`);
+            },
+            onStopped: () => {
+              const cancelledAtMs = Date.now();
+              const cancelledAttempt = speechPlaybackCoordinator.cancel(
+                requestId,
+                cancelledAtMs
+              );
+              if (!cancelledAttempt) return;
+              updateIsSpeaking(false);
+              logSpeechDiagnostic({
+                phase: 'cancelled',
+                request: cancelledAttempt,
+                attempt: cancelledAttempt,
+                eventTimestampMs: cancelledAtMs,
+                isSpeaking: isSpeakingRef.current,
+              });
+              debugLog(`⏸️ Speech stopped for: "${word}"`);
+            },
+            onError: (error) => {
+              const failedAtMs = Date.now();
+              const failedAttempt = speechPlaybackCoordinator.fail(
+                requestId,
+                failedAtMs
+              );
+              if (!failedAttempt) return;
+              updateIsSpeaking(false);
+              logSpeechDiagnostic({
+                phase: 'failed',
+                request: failedAttempt,
+                attempt: failedAttempt,
+                eventTimestampMs: failedAtMs,
+                isSpeaking: isSpeakingRef.current,
+              });
+              debugError(`❌ TTS Error for "${word}":`, error);
+            },
+          }),
+          onStart: () => {
+            const startedAtMs = Date.now();
+            const startedAttempt = speechPlaybackCoordinator.start(
+              requestId,
+              startedAtMs
+            );
+            if (!startedAttempt) return;
+            logSpeechDiagnostic({
+              phase: 'started',
+              request: startedAttempt,
+              attempt: startedAttempt,
+              eventTimestampMs: startedAtMs,
+              isSpeaking: isSpeakingRef.current,
+            });
+          },
+          // Experiment variant C only: hand the speech audio session to iOS.
+          // AVSpeechSynthesizer latches this on its first utterance, so it must
+          // be identical for every utterance in a build — the build-time
+          // constant guarantees that.
+          ...(Platform.OS === 'ios' &&
+          IOS_AUDIO_SESSION_EXPERIMENT === 'C-system-speech-session'
+            ? { useApplicationAudioSession: false }
+            : {}),
+        };
+
         // Log speech attempt details
         debugLog('📋 Speech options:', {
           word,
@@ -294,13 +420,49 @@ export const useAudio = (
         });
 
         Speech.speak(word, speechOptions);
+        const submittedAtMs = Date.now();
+        const submittedAttempt = speechPlaybackCoordinator.submitSpeech(
+          requestId,
+          submittedAtMs
+        );
+        if (submittedAttempt) {
+          logSpeechDiagnostic({
+            phase: 'submitted-to-native-speech',
+            request: submittedAttempt,
+            attempt: submittedAttempt,
+            eventTimestampMs: submittedAtMs,
+            isSpeaking: isSpeakingRef.current,
+          });
+        }
       } catch (error) {
-        setIsSpeaking(false);
+        const failedAtMs = Date.now();
+        const failedAttempt = speechPlaybackCoordinator.fail(
+          requestId,
+          failedAtMs
+        );
+        if (failedAttempt) {
+          updateIsSpeaking(false);
+          logSpeechDiagnostic({
+            phase: 'failed',
+            request: failedAttempt,
+            attempt: failedAttempt,
+            eventTimestampMs: failedAtMs,
+            isSpeaking: isSpeakingRef.current,
+          });
+        }
         debugError(`❌ Exception during speech playback: "${word}"`, error);
         throw error;
       }
     },
-    [debugError, debugLog, debugWarn, isSpeaking, rate, selectedPair, getNextVoice]
+    [
+      debugError,
+      debugLog,
+      debugWarn,
+      rate,
+      selectedPair,
+      getNextVoice,
+      updateIsSpeaking,
+    ]
   );
 
   return { play, audioModeReady, isSpeaking };

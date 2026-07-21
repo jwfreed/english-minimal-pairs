@@ -12,21 +12,15 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform } from '
 import * as Speech from 'expo-speech';
 import { buildSpeechOptions, type SpeechOptions } from '@/src/domain/audioPlayback';
 import { useSettings } from '@/src/context/SettingsContext';
-import { minimalPairs } from '@/src/constants/minimalPairs';
 
 // Same rate the placement test uses; production practice varies it per user.
 const DEBUG_RATE = 1.0;
 
-// Deterministic pronunciation-audit sample: both words of the first two pairs
-// of the first category, with their intended IPA so a listener can compare
-// what the voice says against what the dataset claims. Flagged pairs from
-// docs/pronunciation-risk-audit.md can be checked the same way.
-const AUDIT_SAMPLE: { word: string; ipa: string }[] = minimalPairs[0].pairs
-  .slice(0, 2)
-  .flatMap((pair) => [
-    { word: pair.word1, ipa: pair.ipa1 },
-    { word: pair.word2, ipa: pair.ipa2 },
-  ]);
+// Fixed controls for the stutter investigation. The first three exercise the
+// reported onsets; cat and dog are non-liquid controls. Holding one voice and
+// one rate across the batch isolates generated speech from app orchestration.
+const STUTTER_DIAGNOSTIC_WORDS = ['right', 'light', 'three', 'cat', 'dog'];
+const STUTTER_DIAGNOSTIC_REPETITIONS = 20;
 
 export default function TTSDebugScreen() {
   const { getNextVoice } = useSettings();
@@ -36,7 +30,7 @@ export default function TTSDebugScreen() {
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 50));
+    setLogs(prev => [`[${timestamp}] ${message}`, ...prev].slice(0, 500));
     if (__DEV__) {
       console.log(message);
     }
@@ -128,15 +122,25 @@ export default function TTSDebugScreen() {
   };
 
   const testMinimalPairWords = async () => {
-    addLog('📚 Testing dataset minimal-pair words with rotating production voices...');
-
-    for (const { word, ipa } of AUDIT_SAMPLE) {
-      addLog(`   Speaking: ${word} — intended IPA ${ipa}`);
-      await speakWord(word, getNextVoice());
-      // Wait 500ms between words
-      await new Promise(resolve => setTimeout(resolve, 500));
+    const voice = getNextVoice();
+    if (!voice) {
+      addLog('❌ Rotation pool is empty (no en-* voices, or all excluded)');
+      return;
     }
-    addLog('✅ Minimal pair test complete');
+
+    addLog(
+      `📚 Starting ${STUTTER_DIAGNOSTIC_REPETITIONS} repetitions per word with ` +
+        `${voice.name} (${voice.identifier}) at rate ${DEBUG_RATE}`
+    );
+
+    for (const word of STUTTER_DIAGNOSTIC_WORDS) {
+      for (let repetition = 1; repetition <= STUTTER_DIAGNOSTIC_REPETITIONS; repetition += 1) {
+        addLog(`   ${word} ${repetition}/${STUTTER_DIAGNOSTIC_REPETITIONS}`);
+        await speakWord(word, voice);
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    }
+    addLog('✅ Stutter diagnostic batch complete');
   };
 
   const clearLogs = () => {
@@ -166,7 +170,7 @@ export default function TTSDebugScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.button} onPress={testMinimalPairWords}>
-          <Text style={styles.buttonText}>5. Test Minimal Pairs</Text>
+          <Text style={styles.buttonText}>5. Run Stutter Batch (5 × 20)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.button, styles.clearButton]} onPress={clearLogs}>

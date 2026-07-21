@@ -216,6 +216,33 @@ module.exports = (async () => {
     assert.strictEqual(entry.isPracticeReady, true);
   });
 
+  await runTest('focus refresh observes a placement reset while the practice tab stays mounted', async () => {
+    const storage = createStorage({
+      '@hasSeenOnboarding': 'true',
+      '@placementDone_Thai': '1',
+      '@placementDoneLegacyMigrated': '1',
+    });
+    const harness = createHookHarness();
+    const usePracticeEntryState = loadHook(storage, harness);
+    const renderHook = () => usePracticeEntryState('Thai');
+
+    harness.render(renderHook);
+    await harness.settle();
+    let entry = harness.render(renderHook);
+    assert.strictEqual(entry.showPlacement, false);
+
+    // Settings resets the current category while this hook remains mounted.
+    storage.values.delete('@placementDone_Thai');
+    entry.refreshEntryState();
+    entry = harness.render(renderHook);
+    assert.strictEqual(entry.isLoading, true);
+
+    await harness.settle();
+    entry = harness.render(renderHook);
+    assert.strictEqual(entry.showPlacement, true);
+    assert.strictEqual(entry.isPracticeReady, false);
+  });
+
   await runTest('entry write failures do not block completion in the current session', async () => {
     const storage = createStorage({ '@hasSeenOnboarding': 'true' });
     storage.setItem = async () => {
@@ -259,6 +286,10 @@ module.exports = (async () => {
       practiceScreenSource.indexOf('setAllGroupsToTier(startTier)') <
         practiceScreenSource.indexOf('await completePlacement()'),
       'placement completion must apply the recommended tier before opening practice'
+    );
+    assert.ok(
+      practiceScreenSource.includes("navigation.addListener('focus', refreshEntryState)"),
+      'practice tab focus must refresh persisted entry state'
     );
   });
 })();

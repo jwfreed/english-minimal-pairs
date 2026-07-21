@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { useNavigation } from 'expo-router';
 
 import { usePracticeEntryState } from '@/src/hooks/usePracticeEntryState';
 import { usePracticeSession } from '@/src/hooks/usePracticeSession';
@@ -40,9 +41,18 @@ export default function HomeScreen() {
     completeOnboarding,
     completePlacement,
     skipPlacement,
+    refreshEntryState,
     isLoading: isEntryLoading,
     isPracticeReady,
   } = usePracticeEntryState(catKey);
+  const navigation = useNavigation();
+
+  // The Practice tab remains mounted while Settings clears placement state.
+  // Re-read the entry gate whenever this tab regains focus.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', refreshEntryState);
+    return unsubscribe;
+  }, [navigation, refreshEntryState]);
   const {
     activeGroupPairs,
     audioModeReady,

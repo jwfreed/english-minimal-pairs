@@ -69,6 +69,7 @@ async function markPlacementDone(categoryKey: string): Promise<void> {
 export function usePracticeEntryState(categoryKey: string) {
   const [showPlacement, setShowPlacement] = useState<boolean | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
 
   // Re-check placement each time the category changes. Legacy placement is
   // allowed to seed only the first category opened after migration.
@@ -92,7 +93,16 @@ export function usePracticeEntryState(categoryKey: string) {
     return () => {
       cancelled = true;
     };
-  }, [categoryKey]);
+  }, [categoryKey, refreshToken]);
+
+  const refreshEntryState = useCallback(() => {
+    // Tabs remain mounted while the user visits Settings. Return to the
+    // loading gate before rereading storage so stale practice content cannot
+    // flash after a placement reset.
+    setShowPlacement(null);
+    setShowOnboarding(null);
+    setRefreshToken((current) => current + 1);
+  }, []);
 
   const completeOnboarding = useCallback(async () => {
     try {
@@ -120,6 +130,7 @@ export function usePracticeEntryState(categoryKey: string) {
     completeOnboarding,
     completePlacement,
     skipPlacement,
+    refreshEntryState,
     isLoading: showPlacement === null || showOnboarding === null,
     isPracticeReady: showOnboarding === false && showPlacement === false,
   };

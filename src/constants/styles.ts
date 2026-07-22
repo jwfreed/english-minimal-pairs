@@ -60,6 +60,30 @@ export function getButtonShadowStyles() {
   };
 }
 
+// Idle "breathing" pulse on the Play button: a sharp ring plus a soft outer
+// glow expanding together, one beat per 4.5s cycle (quiet from 64% onward).
+const ambientGlowLight = {
+  '0%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
+  '12%': { boxShadow: '0 0 0 4px rgba(191, 87, 0, 0.85), 0 0 18px 6px rgba(230, 126, 34, 0.6)' },
+  '38%': { boxShadow: '0 0 0 13px rgba(191, 87, 0, 0.3), 0 0 32px 13px rgba(230, 126, 34, 0.28)' },
+  '46%': { boxShadow: '0 0 0 22px rgba(191, 87, 0, 0), 0 0 36px 18px rgba(230, 126, 34, 0)' },
+  '64%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
+  '100%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
+};
+
+const ambientGlowDark = {
+  '0%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
+  '12%': { boxShadow: '0 0 0 4px rgba(247, 158, 74, 0.85), 0 0 18px 6px rgba(247, 158, 74, 0.6)' },
+  '38%': { boxShadow: '0 0 0 13px rgba(247, 158, 74, 0.32), 0 0 32px 13px rgba(247, 158, 74, 0.3)' },
+  '46%': { boxShadow: '0 0 0 22px rgba(247, 158, 74, 0), 0 0 36px 18px rgba(247, 158, 74, 0)' },
+  '64%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
+  '100%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
+};
+
+export function getAmbientGlowKeyframes(colors: ThemeColors) {
+  return colors.background === '#2C3E50' ? ambientGlowDark : ambientGlowLight;
+}
+
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: {
@@ -549,6 +573,14 @@ const createStyles = (colors: ThemeColors) =>
     },
     playButtonPlaying: {
       backgroundColor: '#B9640F',
+    },
+    playButtonGlow: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 16,
     },
     playIconCircle: {
       width: 30,

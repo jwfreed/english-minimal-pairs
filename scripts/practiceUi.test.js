@@ -137,6 +137,58 @@ runTest('pair selector renders the optional example-selection copy', () => {
   );
 });
 
+const stylesSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'constants', 'styles.ts'),
+  'utf8'
+);
+const listenControlsSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'components', 'practice', 'ListenControls.tsx'),
+  'utf8'
+);
+
+runTest('play button ambient glow matches the design keyframes', () => {
+  assert.ok(
+    stylesSource.includes('getAmbientGlowKeyframes'),
+    'styles must export the ambient glow keyframes helper'
+  );
+  // Light mode: sharp ring rgb(191,87,0) + soft glow rgb(230,126,34)
+  for (const stop of [
+    '0 0 0 4px rgba(191, 87, 0, 0.85), 0 0 18px 6px rgba(230, 126, 34, 0.6)',
+    '0 0 0 13px rgba(191, 87, 0, 0.3), 0 0 32px 13px rgba(230, 126, 34, 0.28)',
+    '0 0 0 22px rgba(191, 87, 0, 0), 0 0 36px 18px rgba(230, 126, 34, 0)',
+  ]) {
+    assert.ok(
+      stylesSource.includes(stop),
+      `ambient glow light keyframe changed: ${stop}`
+    );
+  }
+  // Dark mode: both layers rgb(247,158,74), 38% stop at .32/.3
+  assert.ok(
+    stylesSource.includes(
+      '0 0 0 13px rgba(247, 158, 74, 0.32), 0 0 32px 13px rgba(247, 158, 74, 0.3)'
+    ),
+    'ambient glow dark keyframe changed'
+  );
+});
+
+runTest('ambient glow pulses only while the play button is idle', () => {
+  assert.ok(
+    listenControlsSource.includes('{!isPlaying && (') ||
+      listenControlsSource.includes('{!isPlaying ? ('),
+    'glow overlay must be suppressed during playback'
+  );
+  assert.ok(
+    listenControlsSource.includes("animationDuration: '4.5s'") &&
+      listenControlsSource.includes("animationIterationCount: 'infinite'") &&
+      listenControlsSource.includes("animationTimingFunction: 'ease-in-out'"),
+    'glow must loop on the 4.5s ease-in-out cycle from the design'
+  );
+  assert.ok(
+    listenControlsSource.includes('pointerEvents="none"'),
+    'glow overlay must not intercept touches'
+  );
+});
+
 runTest('contrast details remain a supporting modal with mastery and availability', () => {
   assert.ok(
     practiceScreenSource.includes('tKeys.viewContrastDetails') &&

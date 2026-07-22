@@ -1,13 +1,19 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Text, TouchableOpacity, View } from 'react-native';
+import Reanimated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import type { AppStyles } from '@/src/constants/styles';
+import { getAmbientGlowKeyframes, type AppStyles } from '@/src/constants/styles';
+import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
 
 type ListenControlsStyles = Pick<
   AppStyles,
-  'playButton' | 'playButtonPlaying' | 'playIconCircle' | 'playButtonLabel'
+  | 'playButton'
+  | 'playButtonPlaying'
+  | 'playButtonGlow'
+  | 'playIconCircle'
+  | 'playButtonLabel'
 >;
 
 interface ListenControlsProps {
@@ -26,6 +32,8 @@ export default function ListenControls({
   styles,
 }: ListenControlsProps) {
   const { translate } = useLanguage();
+  const theme = useAllThemeColors();
+  const glowKeyframes = useMemo(() => getAmbientGlowKeyframes(theme), [theme]);
   const barScales = useRef([
     new Animated.Value(0.4),
     new Animated.Value(0.4),
@@ -79,6 +87,21 @@ export default function ListenControls({
       accessibilityHint={translate(tKeys.doubleTapToHearAWord)}
       accessibilityState={{ disabled }}
     >
+      {!isPlaying && (
+        <Reanimated.View
+          pointerEvents="none"
+          importantForAccessibility="no"
+          style={[
+            styles.playButtonGlow,
+            {
+              animationName: glowKeyframes,
+              animationDuration: '4.5s',
+              animationTimingFunction: 'ease-in-out',
+              animationIterationCount: 'infinite',
+            },
+          ]}
+        />
+      )}
       <View style={styles.playIconCircle} importantForAccessibility="no">
         {isPlaying ? (
           barScales.map((scale, index) => (

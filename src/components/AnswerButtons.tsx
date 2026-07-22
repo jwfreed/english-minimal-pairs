@@ -1,7 +1,13 @@
-import React, { useMemo, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Text, AccessibilityInfo, Animated } from 'react-native';
+import React, { useCallback, useMemo, useEffect, useRef } from 'react';
+import { View, TouchableOpacity, Pressable, Text, AccessibilityInfo, Animated } from 'react-native';
+import Reanimated, { useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import createStyles from '@/src/constants/styles';
+import {
+  badgePopAnimation,
+  feedbackRowAnimation,
+  panelEntryAnimation,
+} from '@/src/constants/motion';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useHaptics } from '@/src/hooks/useHaptics';
 import { useLanguage } from '@/src/context/LanguageContext';
@@ -53,7 +59,15 @@ export default function AnswerButtons({
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { triggerHaptic } = useHaptics();
   const { translate } = useLanguage();
+  const reduceMotion = useReducedMotion();
   const answerOpacity = useRef(new Animated.Value(1)).current;
+
+  // Each feedback row slides + fades up 50ms after the previous one
+  // (mock: swBannerIn on .sw-fbrow with nth-child delays).
+  const cascade = useCallback(
+    (row: number) => (reduceMotion ? null : feedbackRowAnimation(row)),
+    [reduceMotion]
+  );
 
   useEffect(() => {
     Animated.timing(answerOpacity, {
@@ -132,15 +146,18 @@ export default function AnswerButtons({
         </>
       )}
 
-      {/* Rich feedback panel — shown after answering */}
+      {/* Rich feedback panel — slides + fades up in place of the tiles */}
       {feedbackCopy && (
-        <View style={styles.feedbackPanel}>
-          <View
+        <Reanimated.View
+          style={[styles.feedbackPanel, !reduceMotion && panelEntryAnimation]}
+        >
+          <Reanimated.View
             style={[
               styles.feedbackStatusCircle,
               feedback === 'correct'
                 ? styles.correctFeedbackCircle
                 : styles.incorrectFeedbackCircle,
+              !reduceMotion && badgePopAnimation,
             ]}
             importantForAccessibility="no"
             accessibilityElementsHidden={true}
@@ -150,12 +167,14 @@ export default function AnswerButtons({
               size={20}
               color="#FFFFFF"
             />
-          </View>
+          </Reanimated.View>
           {feedback === 'correct' ? (
             <>
-              <Text style={styles.feedbackWord}>{feedbackCopy.headline}</Text>
-              <Text
-                style={styles.feedbackIPA}
+              <Reanimated.Text style={[styles.feedbackWord, cascade(1)]}>
+                {feedbackCopy.headline}
+              </Reanimated.Text>
+              <Reanimated.Text
+                style={[styles.feedbackIPA, cascade(2)]}
                 importantForAccessibility="no"
                 accessibilityElementsHidden={true}
               >
@@ -168,50 +187,55 @@ export default function AnswerButtons({
                     <Text key={i}>{seg.text}</Text>
                   )
                 )}
-              </Text>
+              </Reanimated.Text>
             </>
           ) : (
             <>
-              <Text style={styles.feedbackWord}>{translate(tKeys.incorrect)}</Text>
+              <Reanimated.Text style={[styles.feedbackWord, cascade(1)]}>
+                {translate(tKeys.incorrect)}
+              </Reanimated.Text>
               <View style={styles.feedbackAttemptRows}>
-                <View style={styles.feedbackAttemptRow}>
+                <Reanimated.View style={[styles.feedbackAttemptRow, cascade(2)]}>
                   <Text style={styles.feedbackAttemptLabel}>
                     {translate(tKeys.youChose)}
                   </Text>
                   <Text style={styles.feedbackAttemptValue}>
                     {feedbackCopy.contrastWord} {feedbackCopy.contrastIpa}
                   </Text>
-                </View>
-                <View style={styles.feedbackAttemptRow}>
+                </Reanimated.View>
+                <Reanimated.View style={[styles.feedbackAttemptRow, cascade(3)]}>
                   <Text style={styles.feedbackAttemptLabel}>
                     {translate(tKeys.correct)}
                   </Text>
                   <Text style={styles.feedbackAttemptValue}>
                     {feedbackCopy.correctWord} {feedbackCopy.correctIpa}
                   </Text>
-                </View>
+                </Reanimated.View>
               </View>
-              <Text style={styles.compareTitle}>{translate(tKeys.compareTheSounds)}</Text>
-              <Text style={styles.contrastContext}>
+              <Reanimated.Text style={[styles.compareTitle, cascade(4)]}>
+                {translate(tKeys.compareTheSounds)}
+              </Reanimated.Text>
+              <Reanimated.Text style={[styles.contrastContext, cascade(5)]}>
                 {contrastLabel}
-              </Text>
+              </Reanimated.Text>
             </>
           )}
           {feedback === 'incorrect' && onCompareWord && (
             <View style={styles.compareContainer}>
-              <Text style={styles.feedbackDetail}>
+              <Reanimated.Text style={[styles.feedbackDetail, cascade(6)]}>
                 {translate(tKeys.listenForSoundDifference)}
-              </Text>
-              <View style={styles.compareButtonRow}>
+              </Reanimated.Text>
+              <Reanimated.View style={[styles.compareButtonRow, cascade(7)]}>
                 {[
                   { idx: 0 as const, word: pair.word1, ipa: pair.ipa1 },
                   { idx: 1 as const, word: pair.word2, ipa: pair.ipa2 },
                 ].map((item) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={item.idx}
-                    style={[
+                    style={({ pressed }) => [
                       styles.compareButton,
                       compareDisabled && styles.compareButtonDisabled,
+                      pressed && !compareDisabled && styles.compareButtonPressed,
                     ]}
                     onPress={() => onCompareWord(item.idx)}
                     disabled={compareDisabled}
@@ -226,12 +250,12 @@ export default function AnswerButtons({
                     <Text style={styles.compareButtonIpa} importantForAccessibility="no">
                       {item.ipa}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
-              </View>
+              </Reanimated.View>
             </View>
           )}
-        </View>
+        </Reanimated.View>
       )}
     </View>
   );

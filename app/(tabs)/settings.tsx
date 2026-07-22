@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AnimatedToggle from '@/src/components/ui/AnimatedToggle';
+import FlashPressable from '@/src/components/ui/FlashPressable';
 import { useSettings } from '@/src/context/SettingsContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useCategory } from '@/src/context/CategoryContext';
@@ -121,10 +123,9 @@ export default function SettingsScreen() {
 
         {/* Language Selection Section */}
         <View style={styles.section}>
-          <TouchableOpacity
+          <FlashPressable
             style={styles.sectionHeader}
             onPress={() => toggleSection('language')}
-            activeOpacity={0.7}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -147,15 +148,15 @@ export default function SettingsScreen() {
               size={isTablet ? 28 : 20}
               color={theme.textSecondary}
             />
-          </TouchableOpacity>
+          </FlashPressable>
 
           {expandedSection === 'language' && (
             <View style={styles.sectionContent}>
               {minimalPairs.map((cat, index) => {
                 const isSelected = categoryIndex === index;
-                
+
                 return (
-                  <TouchableOpacity
+                  <FlashPressable
                     key={cat.category}
                     style={[
                       styles.listOption,
@@ -163,7 +164,6 @@ export default function SettingsScreen() {
                       index === minimalPairs.length - 1 && styles.lastListOption,
                     ]}
                     onPress={() => handleLanguageSelect(index)}
-                    activeOpacity={0.7}
                   >
                     <View style={styles.listItemInfo}>
                       <Text style={styles.listItemName}>
@@ -173,7 +173,7 @@ export default function SettingsScreen() {
                     {isSelected && (
                       <Ionicons name="checkmark-circle" size={isTablet ? 32 : 24} color={theme.success} />
                     )}
-                  </TouchableOpacity>
+                  </FlashPressable>
                 );
               })}
             </View>
@@ -181,10 +181,9 @@ export default function SettingsScreen() {
           <View style={localStyles.insetSeparator} />
 
           {/* English UI Toggle */}
-          <TouchableOpacity
+          <FlashPressable
             style={styles.sectionHeader}
             onPress={handleEnglishUIToggle}
-            activeOpacity={0.7}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -202,24 +201,22 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </View>
-            <View style={[
-              localStyles.toggleSwitch,
-              effectiveUseEnglishUI && { backgroundColor: theme.success }
-            ]}>
-              <View style={[
-                localStyles.toggleThumb,
-                effectiveUseEnglishUI && localStyles.toggleThumbActive
-              ]} />
-            </View>
-          </TouchableOpacity>
+            <AnimatedToggle
+              value={effectiveUseEnglishUI}
+              onColor={theme.success}
+              offColor={theme.border}
+              thumbTravel={isTablet ? 28 : 20}
+              trackStyle={localStyles.toggleSwitch}
+              thumbStyle={localStyles.toggleThumb}
+            />
+          </FlashPressable>
         </View>
 
         {/* Appearance/Theme Section */}
         <View style={styles.section}>
-          <TouchableOpacity
+          <FlashPressable
             style={styles.sectionHeader}
             onPress={() => toggleSection('theme')}
-            activeOpacity={0.7}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -246,7 +243,7 @@ export default function SettingsScreen() {
               size={isTablet ? 28 : 20}
               color={theme.textSecondary}
             />
-          </TouchableOpacity>
+          </FlashPressable>
 
           {expandedSection === 'theme' && (
             <View style={[styles.sectionContent, localStyles.appearanceContent]}>
@@ -264,7 +261,7 @@ export default function SettingsScreen() {
                 };
                 
                 return (
-                  <TouchableOpacity
+                  <FlashPressable
                     key={mode}
                     style={[
                       styles.listOption,
@@ -272,8 +269,8 @@ export default function SettingsScreen() {
                       isSelected && styles.selectedListOption,
                       index === 2 && styles.lastListOption,
                     ]}
+                    highlightRadius={12}
                     onPress={() => handleThemeChange(mode)}
-                    activeOpacity={0.7}
                   >
                     <View style={styles.listItemInfo}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -291,7 +288,7 @@ export default function SettingsScreen() {
                     {isSelected && (
                       <Ionicons name="checkmark-circle" size={isTablet ? 32 : 24} color={theme.success} />
                     )}
-                  </TouchableOpacity>
+                  </FlashPressable>
                 );
               })}
             </View>
@@ -300,10 +297,9 @@ export default function SettingsScreen() {
 
         {/* Voice Management Section */}
         <View style={styles.section}>
-          <TouchableOpacity
+          <FlashPressable
             style={styles.sectionHeader}
             onPress={() => toggleSection('voice')}
-            activeOpacity={0.7}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -333,7 +329,7 @@ export default function SettingsScreen() {
                 color={theme.textSecondary}
               />
             </View>
-          </TouchableOpacity>
+          </FlashPressable>
 
           {expandedSection === 'voice' && (
             <View style={styles.sectionContent}>
@@ -351,7 +347,7 @@ export default function SettingsScreen() {
                   ? ' ★'
                   : '';
                 return (
-                  <TouchableOpacity
+                  <FlashPressable
                     key={voice.identifier}
                     style={[
                       styles.listOption,
@@ -362,7 +358,6 @@ export default function SettingsScreen() {
                       triggerHaptic('selection');
                       toggleVoice(voice.identifier);
                     }}
-                    activeOpacity={0.7}
                   >
                     <View style={styles.listItemInfo}>
                       <Text
@@ -383,7 +378,7 @@ export default function SettingsScreen() {
                       size={isTablet ? 28 : 22}
                       color={excluded ? theme.error : theme.success}
                     />
-                  </TouchableOpacity>
+                  </FlashPressable>
                 );
               })}
             </View>
@@ -391,10 +386,9 @@ export default function SettingsScreen() {
           <View style={localStyles.insetSeparator} />
 
           {/* Placement Test Section */}
-          <TouchableOpacity
+          <FlashPressable
             style={styles.sectionHeader}
             onPress={handleRetakePlacement}
-            activeOpacity={0.7}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -434,7 +428,7 @@ export default function SettingsScreen() {
               size={isTablet ? 28 : 20}
               color={theme.textSecondary}
             />
-          </TouchableOpacity>
+          </FlashPressable>
         </View>
 
         {/* Footer Spacer */}
@@ -482,8 +476,5 @@ const createLocalStyles = (theme: any, isTablet: boolean) =>
       shadowOpacity: 0.2,
       shadowRadius: 2,
       elevation: 2,
-    },
-    toggleThumbActive: {
-      transform: [{ translateX: isTablet ? 28 : 20 }],
     },
   });

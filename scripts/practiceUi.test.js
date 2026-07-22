@@ -343,3 +343,155 @@ runTest('answer state is committed before analytics observes the submission', ()
     'answer state must not depend on analytics delivery'
   );
 });
+
+// ========== Soundwise Glow-up micro-interactions ==========
+const motionSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'constants', 'motion.ts'),
+  'utf8'
+);
+const sessionTimerSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'components', 'SessionTimer.tsx'),
+  'utf8'
+);
+const levelIndicatorSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'components', 'LevelIndicator.tsx'),
+  'utf8'
+);
+const settingsScreenSource = fs.readFileSync(
+  path.join(__dirname, '..', 'app', '(tabs)', 'settings.tsx'),
+  'utf8'
+);
+const flashPressableSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'components', 'ui', 'FlashPressable.tsx'),
+  'utf8'
+);
+const animatedToggleSource = fs.readFileSync(
+  path.join(__dirname, '..', 'src', 'components', 'ui', 'AnimatedToggle.tsx'),
+  'utf8'
+);
+
+runTest('motion tokens match the design keyframes', () => {
+  // Easings: entrance cubic-bezier(.22,1,.36,1), spring cubic-bezier(.34,1.56,.64,1)
+  assert.ok(
+    motionSource.includes('cubicBezier(0.22, 1, 0.36, 1)') &&
+      motionSource.includes('cubicBezier(0.34, 1.56, 0.64, 1)'),
+    'design easings changed'
+  );
+  // swBannerIn rises 14px; swBadgePop overshoots to 1.18 at 60%;
+  // swPop peaks at 1.55 at 45%; swDot breathes to 1.55 at half opacity.
+  assert.ok(
+    motionSource.includes('translateY: 14') &&
+      motionSource.includes("'60%': { transform: [{ scale: 1.18 }] }") &&
+      motionSource.includes("'45%': { transform: [{ scale: 1.55 }] }") &&
+      motionSource.includes("'50%': { opacity: 0.5, transform: [{ scale: 1.55 }] }"),
+    'design keyframe values changed'
+  );
+});
+
+runTest('feedback panel, badge, and rows animate in with the design cascade', () => {
+  assert.ok(
+    answerButtonsSource.includes('panelEntryAnimation') &&
+      answerButtonsSource.includes('badgePopAnimation'),
+    'feedback panel entry and badge pop must use the shared motion tokens'
+  );
+  // Correct: headline + IPA stagger. Incorrect: rows cascade through index 7.
+  for (const row of ['cascade(1)', 'cascade(2)', 'cascade(3)', 'cascade(4)', 'cascade(5)', 'cascade(6)', 'cascade(7)']) {
+    assert.ok(
+      answerButtonsSource.includes(row),
+      `feedback cascade lost a row: ${row}`
+    );
+  }
+  assert.ok(
+    motionSource.includes('FEEDBACK_ROW_STAGGER_MS = 50'),
+    'feedback rows must stagger by 50ms as in the mock'
+  );
+});
+
+runTest('compare mini-buttons expose a press state', () => {
+  assert.ok(
+    answerButtonsSource.includes('styles.compareButtonPressed'),
+    'compare mini-buttons lost their pressed style'
+  );
+  assert.ok(
+    stylesSource.includes('compareButtonPressed') &&
+      stylesSource.includes('scale: 0.96'),
+    'pressed mini-buttons must scale to 0.96 as in the mock'
+  );
+});
+
+runTest('goal bar surges forward on a correct answer and animates its width', () => {
+  assert.ok(
+    practiceScreenSource.includes(
+      "progressBoost={feedback === 'correct' ? PROGRESS_SURGE_FRACTION : 0}"
+    ),
+    'practice screen must surge the goal bar only while correct feedback shows'
+  );
+  assert.ok(
+    sessionTimerSource.includes('progressBoost') &&
+      sessionTimerSource.includes('barFillTransition'),
+    'session timer must accept the surge and animate width changes'
+  );
+});
+
+runTest('level indicator pops the next segment on a correct answer', () => {
+  assert.ok(
+    practiceScreenSource.includes("previewNextTier={feedback === 'correct'}"),
+    'practice screen must preview the next tier only while correct feedback shows'
+  );
+  assert.ok(
+    levelIndicatorSource.includes('levelPopAnimation') &&
+      levelIndicatorSource.includes('tier === currentTier + 1'),
+    'level indicator must pop exactly the next empty segment'
+  );
+});
+
+runTest('play triangle nudges on press and the timer dot pulses', () => {
+  assertInOrder(
+    listenControlsSource,
+    ['const handlePress', 'toValue: -3', 'toValue: 2', 'toValue: 0', 'onPlay()'],
+    'play icon nudge sequence changed'
+  );
+  assert.ok(
+    sessionTimerSource.includes('liveDotAnimation'),
+    'session timer dot must use the live-dot pulse'
+  );
+});
+
+runTest('settings rows flash warm on tap and toggles spring on flip', () => {
+  assert.ok(
+    !settingsScreenSource.includes('<TouchableOpacity\n            style={styles.sectionHeader}'),
+    'settings rows must use FlashPressable, not TouchableOpacity'
+  );
+  const flashRowCount = (settingsScreenSource.match(/<FlashPressable/g) || []).length;
+  assert.ok(
+    flashRowCount >= 8,
+    `all settings rows must flash on tap (found ${flashRowCount})`
+  );
+  assert.ok(
+    flashPressableSource.includes("'rgba(230, 126, 34, 0.16)'") &&
+      flashPressableSource.includes('FADE_MS = 400'),
+    'row flash must be the warm highlight fading over 400ms'
+  );
+  assert.ok(
+    settingsScreenSource.includes('<AnimatedToggle') &&
+      animatedToggleSource.includes('toValue: 0.84') &&
+      animatedToggleSource.includes('toValue: 1.12') &&
+      animatedToggleSource.includes('Easing.bezier(0.34, 1.56, 0.64, 1)'),
+    'toggle knob must squash (.84×1.12) and travel on the overshoot bezier'
+  );
+});
+
+runTest('micro-interactions respect reduced motion', () => {
+  for (const [name, source] of [
+    ['AnswerButtons', answerButtonsSource],
+    ['SessionTimer', sessionTimerSource],
+    ['LevelIndicator', levelIndicatorSource],
+    ['ListenControls', listenControlsSource],
+    ['AnimatedToggle', animatedToggleSource],
+  ]) {
+    assert.ok(
+      source.includes('useReducedMotion'),
+      `${name} must gate its animation on useReducedMotion`
+    );
+  }
+});

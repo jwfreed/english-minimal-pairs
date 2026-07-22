@@ -865,6 +865,9 @@ const createStyles = (colors: ThemeColors) =>
     compareButtonDisabled: {
       opacity: 0.55,
     },
+    compareButtonPressed: {
+      transform: [{ scale: 0.96 }],
+    },
     compareButtonText: {
       fontSize: isTablet ? 18 : 14,
       fontWeight: '700' as const,

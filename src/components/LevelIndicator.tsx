@@ -6,7 +6,9 @@
 // -----------------------------------------------------------------------------
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
+import Reanimated, { useReducedMotion } from 'react-native-reanimated';
 import createStyles from '@/src/constants/styles';
+import { levelPopAnimation } from '@/src/constants/motion';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
@@ -21,12 +23,23 @@ interface Props {
   compact?: boolean;
   /** Show leveling-criteria hint below the dots (practice screen only) */
   showCriteria?: boolean;
+  /**
+   * Fill the next empty segment orange with a spring pop — the level-up
+   * moment while correct-answer feedback is showing. Reverts when cleared.
+   */
+  previewNextTier?: boolean;
 }
 
-export default function LevelIndicator({ currentTier, compact = false, showCriteria = false }: Props) {
+export default function LevelIndicator({
+  currentTier,
+  compact = false,
+  showCriteria = false,
+  previewNextTier = false,
+}: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { translate } = useLanguage();
+  const reduceMotion = useReducedMotion();
 
   const isMastered = currentTier >= TOTAL_TIERS;
   const levelText = isMastered
@@ -44,8 +57,10 @@ export default function LevelIndicator({ currentTier, compact = false, showCrite
         {Array.from({ length: TOTAL_TIERS }, (_, i) => {
           const tier = i + 1;
           const isFilled = tier <= currentTier;
+          const isPreview =
+            previewNextTier && !isMastered && tier === currentTier + 1;
           return (
-            <View
+            <Reanimated.View
               key={tier}
               style={[
                 styles.levelDot,
@@ -53,8 +68,10 @@ export default function LevelIndicator({ currentTier, compact = false, showCrite
                   width: compact ? 16 : 26,
                   height: compact ? 4 : 5,
                   borderRadius: 3,
-                  backgroundColor: isFilled ? '#E67E22' : theme.track,
+                  backgroundColor:
+                    isFilled || isPreview ? '#E67E22' : theme.track,
                 },
+                isPreview && !reduceMotion && levelPopAnimation,
               ]}
             />
           );

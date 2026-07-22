@@ -151,21 +151,22 @@ runTest('play button ambient glow matches the design keyframes', () => {
     stylesSource.includes('getAmbientGlowKeyframes'),
     'styles must export the ambient glow keyframes helper'
   );
-  // Light mode: sharp ring rgb(191,87,0) + soft glow rgb(230,126,34)
+  // Light mode: soft ring rgb(191,87,0) + faint glow rgb(230,126,34),
+  // toned down (peak ring .4, tight 14px max spread) per user request.
   for (const stop of [
-    '0 0 0 4px rgba(191, 87, 0, 0.85), 0 0 18px 6px rgba(230, 126, 34, 0.6)',
-    '0 0 0 13px rgba(191, 87, 0, 0.3), 0 0 32px 13px rgba(230, 126, 34, 0.28)',
-    '0 0 0 22px rgba(191, 87, 0, 0), 0 0 36px 18px rgba(230, 126, 34, 0)',
+    '0 0 0 3px rgba(191, 87, 0, 0.4), 0 0 12px 4px rgba(230, 126, 34, 0.3)',
+    '0 0 0 9px rgba(191, 87, 0, 0.15), 0 0 22px 9px rgba(230, 126, 34, 0.14)',
+    '0 0 0 14px rgba(191, 87, 0, 0), 0 0 26px 12px rgba(230, 126, 34, 0)',
   ]) {
     assert.ok(
       stylesSource.includes(stop),
       `ambient glow light keyframe changed: ${stop}`
     );
   }
-  // Dark mode: both layers rgb(247,158,74), 38% stop at .32/.3
+  // Dark mode: both layers rgb(247,158,74), 38% stop at .16/.15
   assert.ok(
     stylesSource.includes(
-      '0 0 0 13px rgba(247, 158, 74, 0.32), 0 0 32px 13px rgba(247, 158, 74, 0.3)'
+      '0 0 0 9px rgba(247, 158, 74, 0.16), 0 0 22px 9px rgba(247, 158, 74, 0.15)'
     ),
     'ambient glow dark keyframe changed'
   );

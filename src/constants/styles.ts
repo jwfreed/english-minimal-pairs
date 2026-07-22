@@ -60,22 +60,23 @@ export function getButtonShadowStyles() {
   };
 }
 
-// Idle "breathing" pulse on the Play button: a sharp ring plus a soft outer
+// Idle "breathing" pulse on the Play button: a soft ring plus a faint outer
 // glow expanding together, one beat per 4.5s cycle (quiet from 64% onward).
+// Deliberately subtle — an invitation, not an alarm.
 const ambientGlowLight = {
   '0%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
-  '12%': { boxShadow: '0 0 0 4px rgba(191, 87, 0, 0.85), 0 0 18px 6px rgba(230, 126, 34, 0.6)' },
-  '38%': { boxShadow: '0 0 0 13px rgba(191, 87, 0, 0.3), 0 0 32px 13px rgba(230, 126, 34, 0.28)' },
-  '46%': { boxShadow: '0 0 0 22px rgba(191, 87, 0, 0), 0 0 36px 18px rgba(230, 126, 34, 0)' },
+  '12%': { boxShadow: '0 0 0 3px rgba(191, 87, 0, 0.4), 0 0 12px 4px rgba(230, 126, 34, 0.3)' },
+  '38%': { boxShadow: '0 0 0 9px rgba(191, 87, 0, 0.15), 0 0 22px 9px rgba(230, 126, 34, 0.14)' },
+  '46%': { boxShadow: '0 0 0 14px rgba(191, 87, 0, 0), 0 0 26px 12px rgba(230, 126, 34, 0)' },
   '64%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
   '100%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
 };
 
 const ambientGlowDark = {
   '0%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
-  '12%': { boxShadow: '0 0 0 4px rgba(247, 158, 74, 0.85), 0 0 18px 6px rgba(247, 158, 74, 0.6)' },
-  '38%': { boxShadow: '0 0 0 13px rgba(247, 158, 74, 0.32), 0 0 32px 13px rgba(247, 158, 74, 0.3)' },
-  '46%': { boxShadow: '0 0 0 22px rgba(247, 158, 74, 0), 0 0 36px 18px rgba(247, 158, 74, 0)' },
+  '12%': { boxShadow: '0 0 0 3px rgba(247, 158, 74, 0.4), 0 0 12px 4px rgba(247, 158, 74, 0.3)' },
+  '38%': { boxShadow: '0 0 0 9px rgba(247, 158, 74, 0.16), 0 0 22px 9px rgba(247, 158, 74, 0.15)' },
+  '46%': { boxShadow: '0 0 0 14px rgba(247, 158, 74, 0), 0 0 26px 12px rgba(247, 158, 74, 0)' },
   '64%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
   '100%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
 };

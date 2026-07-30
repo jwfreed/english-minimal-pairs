@@ -10,9 +10,10 @@ Accepted
 
 ## **Context**
 
-The application currently represents learning progress primarily through minimal pairs.
+The static data and pair-progress identity primarily represent minimal pairs.
 
-However, product behavior treats contrast groups as the true learning unit.
+However, product behavior already treats contrast groups as the true learning
+unit.
 
 Examples:
 
@@ -26,6 +27,9 @@ Examples:
 Contrast is a first-class domain entity.
 
 Pairs are examples belonging to contrasts.
+
+This is the target domain direction. It does not claim that an explicit
+Contrast model has already been implemented.
 
 ---
 
@@ -60,51 +64,125 @@ This prevents future agents from reopening the same architectural debate.
 
 ---
 
-# **First Agent Task**
+# **Decision 002**
 
-I would **not** start with implementation.
+Date:  
+2026-07-30
 
-First task:
+Status:  
+Accepted
 
-## **Agent reconnaissance \+ plan validation**
+## **Context**
 
-Give Codex/Claude this task:
+Repository reconnaissance confirmed that the highest-risk failure mode is not
+the absence of a Contrast type. It is corrupting or orphaning learner history
+while changing identifiers.
 
----
+## **Decision**
 
-## **Task**
+Identity foundation comes before domain or persistence migration.
 
-Review the current repository against:
+Phase 1 introduces explicit ID types, freezes historical identifiers, and adds
+identity validation without changing user-visible behavior.
 
-docs/Contrast Domain Architecture Evolution Plan.md
+## **Reason**
 
-Do not modify code.
-
-Validate:
-
-1. Current domain boundaries  
-2. Existing identity assumptions  
-3. Persistence formats  
-4. Migration risks  
-5. First implementation slice
-
-Return:
-
-* confirmed assumptions  
-* contradictions  
-* missing information  
-* recommended Phase 1 implementation plan
+Stable identity is a prerequisite for safely migrating Contrast ownership,
+progress, mastery, analytics, or recommendations.
 
 ---
 
-Why?
+# **Decision 003**
 
-Because AI agents are excellent at execution, but we want to avoid:
+Date:  
+2026-07-30
 
-> "The plan said X, but the repo actually works differently."
+Status:  
+Accepted
 
-The Codex knowledge base specifically emphasizes inspecting before modifying and verifying against repository truth.  
-Claude's guidance similarly emphasizes source-of-truth grounding and context before action.
+## **Context**
+
+Existing group values and content-derived persistence keys may already appear
+in learner data and analytics history. Some identifiers could be made cleaner
+or normalized, but doing so would change historical identity.
+
+## **Decision**
+
+Do not rename, merge, reverse, or otherwise normalize existing identifiers as
+part of the identity foundation.
+
+## **Reason**
+
+Cleaner identifiers are less important than preserving historical continuity.
+Any future normalization requires an explicit, tested compatibility migration.
+
+---
+
+# **Decision 004**
+
+Date:  
+2026-07-30
+
+Status:  
+Accepted
+
+## **Context**
+
+The current application works and already has contrast-centric behavior in
+mastery, scheduling, recommendations, analytics, and UI vocabulary.
+
+## **Decision**
+
+Contrast migration must be incremental and compatibility-first.
+
+## **Reason**
+
+The system should evolve without a rewrite. Each phase must preserve existing
+behavior and keep old learner data readable before the next phase begins.
+
+---
+
+# **Decision 005**
+
+Date:  
+2026-07-30
+
+Status:  
+Accepted
+
+## **Title**
+
+Compatibility Over Purity
+
+## **Context**
+
+During migration, temporary compatibility layers and duplicated
+representations may exist.
+
+## **Decision**
+
+Prefer explicit compatibility boundaries over premature cleanup.
+
+## **Reason**
+
+Temporary complexity is acceptable when it prevents risky coordinated
+migrations across identity, persistence, analytics, and learner history.
+
+---
+
+# **Reconnaissance Status**
+
+Architecture reconnaissance and plan validation are complete.
+
+Confirmed findings:
+
+* Contrast already exists implicitly through `Pair.group`  
+* pair progress and mastery still depend on mutable labels or content  
+* identity safety is the first implementation priority  
+* persistence migration must follow, not accompany, the identity foundation
+
+Future agents should verify current code before editing, but should not reopen
+these accepted architectural decisions without new repository evidence.
 
 ---
 
@@ -112,16 +190,12 @@ Claude's guidance similarly emphasizes source-of-truth grounding and context bef
 
 ## **Step 0 — Architecture Lock**
 
-Create:
-
-docs/architecture/  
-    contrast-domain-decisions.md
-
-No code.
+Maintain the current evolution plan and decisions document as the authoritative
+constraints. No application code.
 
 ---
 
-## **Step 1 — Identity Stabilization**
+## **Step 1 — Identity Foundation**
 
 Smallest valuable code change.
 
@@ -134,47 +208,43 @@ Add tests.
 
 No behavior changes.
 
+Do not migrate persistence, migrate Pair to Contrast, rename groups, or
+normalize data.
+
 Goal:
 
-Prevent future identity drift.
+Protect learner history and prevent future identity drift.
 
 ---
 
-## **Step 2 — Introduce Contrast Types**
+## **Step 2 — Introduce Contrast Domain**
 
 Add:
 
 src/domain/contrast/
 
-Only types \+ validation.
-
-No migration yet.
-
----
-
-## **Step 3 — Migrate Read Paths**
-
-Change:
-
-group
-
-usage toward:
-
-contrastId
-
-Keep compatibility.
+Introduce ownership and relationships while keeping `Pair.group`
+compatibility. No persistence migration yet.
 
 ---
 
-## **Step 4 — Migrate Persistence**
+## **Step 3 — Evolve Progress and Mastery**
 
-Only after identity is stable.
+Migrate read and write paths only after identity is stable. Preserve legacy
+reads and require idempotent migration behavior.
 
 ---
 
-## **Step 5 — Practice Engine Boundary**
+## **Step 4 — Practice Engine Boundary**
 
 Only after domain concepts settle.
+
+---
+
+## **Step 5 — Reliability Improvements**
+
+Harden playback lifecycle and data governance without combining them with
+identity or persistence changes.
 
 ---
 
@@ -199,7 +269,7 @@ Yes, begin.
 But begin with:
 
 **Phase 0: Architecture alignment**  
-→ **Phase 1: Stable identity**
+→ **Phase 1: Identity foundation**
 
 Not:
 
@@ -215,4 +285,3 @@ The first commit should feel almost boring:
 That is the right first move for a production app.
 
 The system is already healthy; the goal is to make its architecture catch up with the product's domain.
-

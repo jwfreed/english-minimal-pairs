@@ -1,0 +1,101 @@
+historicalCategoryLabel	legacyGroup	languageId	contrastId
+Bahasa Indonesia	aVsUh	lang.indonesian	contrast.indonesian.aVsUh
+Bahasa Indonesia	ethD	lang.indonesian	contrast.indonesian.ethD
+Bahasa Indonesia	iVsI	lang.indonesian	contrast.indonesian.iVsI
+Bahasa Indonesia	thetaT	lang.indonesian	contrast.indonesian.thetaT
+Bahasa Indonesia	vF	lang.indonesian	contrast.indonesian.vF
+Español	aVsE	lang.spanish	contrast.spanish.aVsE
+Español	bV	lang.spanish	contrast.spanish.bV
+Español	iVsI	lang.spanish	contrast.spanish.iVsI
+Español	thetaS	lang.spanish	contrast.spanish.thetaS
+Español	uhVsAh	lang.spanish	contrast.spanish.uhVsAh
+Português	aVsE	lang.portuguese	contrast.portuguese.aVsE
+Português	ethD	lang.portuguese	contrast.portuguese.ethD
+Português	iVsI	lang.portuguese	contrast.portuguese.iVsI
+Português	thetaT	lang.portuguese	contrast.portuguese.thetaT
+Português	uVsU	lang.portuguese	contrast.portuguese.uVsU
+Tiếng Việt	aVsUh	lang.vietnamese	contrast.vietnamese.aVsUh
+Tiếng Việt	ethD	lang.vietnamese	contrast.vietnamese.ethD
+Tiếng Việt	rL	lang.vietnamese	contrast.vietnamese.rL
+Tiếng Việt	thetaT	lang.vietnamese	contrast.vietnamese.thetaT
+Tiếng Việt	zS	lang.vietnamese	contrast.vietnamese.zS
+Türkçe	aVsUh	lang.turkish	contrast.turkish.aVsUh
+Türkçe	ethD	lang.turkish	contrast.turkish.ethD
+Türkçe	iVsI	lang.turkish	contrast.turkish.iVsI
+Türkçe	thetaT	lang.turkish	contrast.turkish.thetaT
+Türkçe	uVsU	lang.turkish	contrast.turkish.uVsU
+bahasa Indo	aVsUh	lang.indonesian	contrast.indonesian.aVsUh
+bahasa Indo	ethD	lang.indonesian	contrast.indonesian.ethD
+bahasa Indo	iVsI	lang.indonesian	contrast.indonesian.iVsI
+bahasa Indo	thetaT	lang.indonesian	contrast.indonesian.thetaT
+bahasa Indo	vF	lang.indonesian	contrast.indonesian.vF
+idioma español	aVsE	lang.spanish	contrast.spanish.aVsE
+idioma español	bV	lang.spanish	contrast.spanish.bV
+idioma español	iVsI	lang.spanish	contrast.spanish.iVsI
+idioma español	thetaS	lang.spanish	contrast.spanish.thetaS
+idioma español	uhVsAh	lang.spanish	contrast.spanish.uhVsAh
+Русский	aVsUh	lang.russian	contrast.russian.aVsUh
+Русский	hZero	lang.russian	contrast.russian.hZero
+Русский	iVsI	lang.russian	contrast.russian.iVsI
+Русский	thetaS	lang.russian	contrast.russian.thetaS
+Русский	wV	lang.russian	contrast.russian.wV
+русский язык	aVsUh	lang.russian	contrast.russian.aVsUh
+русский язык	hZero	lang.russian	contrast.russian.hZero
+русский язык	iVsI	lang.russian	contrast.russian.iVsI
+русский язык	thetaS	lang.russian	contrast.russian.thetaS
+русский язык	wV	lang.russian	contrast.russian.wV
+العربية	ethD	lang.arabic	contrast.arabic.ethD
+العربية	iVsI	lang.arabic	contrast.arabic.iVsI
+العربية	pB	lang.arabic	contrast.arabic.pB
+العربية	thetaS	lang.arabic	contrast.arabic.thetaS
+العربية	vF	lang.arabic	contrast.arabic.vF
+اللغة العربية	ethD	lang.arabic	contrast.arabic.ethD
+اللغة العربية	iVsI	lang.arabic	contrast.arabic.iVsI
+اللغة العربية	pB	lang.arabic	contrast.arabic.pB
+اللغة العربية	thetaS	lang.arabic	contrast.arabic.thetaS
+اللغة العربية	vF	lang.arabic	contrast.arabic.vF
+زبان فارسی	aVsE	lang.farsi	contrast.farsi.aVsE
+زبان فارسی	ethD	lang.farsi	contrast.farsi.ethD
+زبان فارسی	iVsI	lang.farsi	contrast.farsi.iVsI
+زبان فارسی	thetaT	lang.farsi	contrast.farsi.thetaT
+زبان فارسی	wV	lang.farsi	contrast.farsi.wV
+فارسی	aVsE	lang.farsi	contrast.farsi.aVsE
+فارسی	ethD	lang.farsi	contrast.farsi.ethD
+فارسی	iVsI	lang.farsi	contrast.farsi.iVsI
+فارسی	thetaT	lang.farsi	contrast.farsi.thetaT
+فارسی	wV	lang.farsi	contrast.farsi.wV
+हिंदी/اردو	aVsE	lang.hindi-urdu	contrast.hindi-urdu.aVsE
+हिंदी/اردو	ethD	lang.hindi-urdu	contrast.hindi-urdu.ethD
+हिंदी/اردو	thetaT	lang.hindi-urdu	contrast.hindi-urdu.thetaT
+हिंदी/اردو	wV	lang.hindi-urdu	contrast.hindi-urdu.wV
+हिंदी/اردو	zS	lang.hindi-urdu	contrast.hindi-urdu.zS
+हिन्दी / اردو	aVsE	lang.hindi-urdu	contrast.hindi-urdu.aVsE
+हिन्दी / اردو	ethD	lang.hindi-urdu	contrast.hindi-urdu.ethD
+हिन्दी / اردو	thetaT	lang.hindi-urdu	contrast.hindi-urdu.thetaT
+हिन्दी / اردو	wV	lang.hindi-urdu	contrast.hindi-urdu.wV
+हिन्दी / اردو	zS	lang.hindi-urdu	contrast.hindi-urdu.zS
+ภาษาไทย	ethD	lang.thai	contrast.thai.ethD
+ภาษาไทย	rL	lang.thai	contrast.thai.rL
+ภาษาไทย	thetaT	lang.thai	contrast.thai.thetaT
+ภาษาไทย	vF	lang.thai	contrast.thai.vF
+ภาษาไทย	zS	lang.thai	contrast.thai.zS
+中文	iVsI	lang.mandarin	contrast.mandarin.iVsI
+中文	rL	lang.mandarin	contrast.mandarin.rL
+中文	thetaS	lang.mandarin	contrast.mandarin.thetaS
+中文	uVsU	lang.mandarin	contrast.mandarin.uVsU
+中文	vW	lang.mandarin	contrast.mandarin.vW
+廣東話	ethD	lang.cantonese	contrast.cantonese.ethD
+廣東話	iVsI	lang.cantonese	contrast.cantonese.iVsI
+廣東話	rL	lang.cantonese	contrast.cantonese.rL
+廣東話	thetaT	lang.cantonese	contrast.cantonese.thetaT
+廣東話	vW	lang.cantonese	contrast.cantonese.vW
+日本語	aVsUh	lang.japanese	contrast.japanese.aVsUh
+日本語	bV	lang.japanese	contrast.japanese.bV
+日本語	iVsI	lang.japanese	contrast.japanese.iVsI
+日本語	rL	lang.japanese	contrast.japanese.rL
+日本語	sTheta	lang.japanese	contrast.japanese.sTheta
+한국어	fP	lang.korean	contrast.korean.fP
+한국어	iVsI	lang.korean	contrast.korean.iVsI
+한국어	rL	lang.korean	contrast.korean.rL
+한국어	thetaS	lang.korean	contrast.korean.thetaS
+한국어	vB	lang.korean	contrast.korean.vB

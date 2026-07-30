@@ -505,13 +505,23 @@ Date: 2026-07-30
   Decision 007 (`LanguageId` is an application-owned identity)  
 * migration strategy documented — Decision 008 and the Phase 3 sections below  
 * rollback strategy documented — Compatibility and Rollback Strategy below  
-* progress preservation verified — verification requirements and completion
-  criteria below are defined; PR 3.3 delivers the harness that executes them,
+* progress preservation verified — Phase 3.3 provides the executable harness,
   and PR 3.7 may not ship until that harness reports a clean audit
 
 Design review is satisfied, so implementation may begin at PR 3.0. The
 progress-preservation evidence itself is produced during the phase and gates the
 only learner-visible release.
+
+Phase 3.3 is complete.
+
+The verification harness proves:
+
+* identity mappings are deterministic  
+* learner history can be projected without loss  
+* rollback compatibility assumptions hold  
+* migration invariants are executable
+
+Phase 3.4 may begin only against these verified assumptions.
 
 ---
 
@@ -771,7 +781,7 @@ revertable.
 
 3.2 Legacy identity mapping + golden file
 
-3.3 Snapshot and verification harness
+3.3 Snapshot and verification harness — complete
 
 3.4 Pair-progress read projection
 

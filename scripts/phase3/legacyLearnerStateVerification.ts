@@ -17,8 +17,19 @@ export interface LegacyStorageEntry {
   readonly value: string | null;
 }
 
+export type LegacyFixtureCategory =
+  | 'baseline'
+  | 'alias-reconciliation'
+  | 'corruption-handling'
+  | 'progress-conservation'
+  | 'reset-semantics'
+  | 'placement-semantics'
+  | 'rollback-compatibility';
+
 export interface LegacyLearnerStateFixture {
   readonly name: string;
+  readonly category: LegacyFixtureCategory;
+  readonly purpose: string;
   readonly storageEntries: readonly LegacyStorageEntry[];
 }
 
@@ -119,6 +130,8 @@ export interface SnapshotAttemptIdentity {
 
 export interface LegacyLearnerAuditSnapshot {
   readonly fixtureName: string;
+  readonly fixtureCategory: LegacyFixtureCategory;
+  readonly fixturePurpose: string;
   readonly sourceEntryCount: number;
   readonly sourceKeys: readonly {
     readonly key: string;
@@ -165,6 +178,8 @@ export interface ProjectedAttemptIdentity {
 
 export interface LegacyLearnerProjection {
   readonly fixtureName: string;
+  readonly fixtureCategory: LegacyFixtureCategory;
+  readonly fixturePurpose: string;
   readonly mastery: readonly ProjectedMasteryIdentity[];
   readonly attempts: readonly ProjectedAttemptIdentity[];
   readonly unmappedMastery: readonly UnmappedMasteryRecord[];
@@ -179,6 +194,9 @@ export interface LegacyLearnerProjection {
 }
 
 export interface InvariantFailure {
+  readonly fixtureName: string;
+  readonly fixtureCategory: LegacyFixtureCategory;
+  readonly fixturePurpose: string;
   readonly code:
     | 'CONFLICTING_SOURCE_KEY'
     | 'MASTERY_RECORD_LOST'
@@ -195,10 +213,14 @@ export interface InvariantFailure {
     | 'ATTEMPT_TOTAL_MISMATCH'
     | 'ORDER_DEPENDENT_PROJECTION';
   readonly message: string;
+  readonly expected?: string | number | boolean;
+  readonly actual?: string | number | boolean;
 }
 
 export interface AuditReport {
   readonly fixtureName: string;
+  readonly fixtureCategory: LegacyFixtureCategory;
+  readonly fixturePurpose: string;
   readonly sourceEntryCount: number;
   readonly recognizedMasteryRecordCount: number;
   readonly mappedMasteryCount: number;
@@ -239,8 +261,12 @@ export interface VerifiedLegacyLearnerState {
 }
 
 export interface MasteryTransitionFailure {
+  readonly beforeFixtureName: string;
+  readonly afterFixtureName: string;
   readonly code: 'MASTERY_REMOVED' | 'MASTERY_TIER_LOWERED';
   readonly message: string;
+  readonly expected: string | number;
+  readonly actual: string | number;
 }
 
 export interface RollbackPracticeResult {
@@ -663,6 +689,8 @@ export function loadLegacyLearnerStateSnapshot(
   const sortedMappedAttempts = sortSourceRecords(mappedAttempts);
   return deepFreeze({
     fixtureName: fixture.name,
+    fixtureCategory: fixture.category,
+    fixturePurpose: fixture.purpose,
     sourceEntryCount: entries.length,
     sourceKeys: summarizeSourceKeys(entries),
     storageKeyCollisions: findStorageKeyCollisions(entries),
@@ -736,6 +764,15 @@ export function projectLegacyLearnerState(
             : 'duplicate-source-conflict',
         });
       }
+
+      /*
+       * `Math.max` models one narrowly approved operation: the initial
+       * reconciliation of pre-rename and post-rename mastery aliases.
+       *
+       * Highest-tier-wins is not a general mastery rule. It must not be reused
+       * for placement, learner reset, normal learning, or future conflict
+       * handling; those operations require their own revision-aware semantics.
+       */
       return {
         languageId: sortedRecords[0].languageId,
         contrastId: sortedRecords[0].contrastId,
@@ -766,6 +803,8 @@ export function projectLegacyLearnerState(
 
   return deepFreeze({
     fixtureName: snapshot.fixtureName,
+    fixtureCategory: snapshot.fixtureCategory,
+    fixturePurpose: snapshot.fixturePurpose,
     mastery,
     attempts,
     unmappedMastery: snapshot.unmappedMastery,
@@ -796,7 +835,26 @@ function recordCounts(records: readonly SourceRecord[]): Map<string, number> {
   return counts;
 }
 
+function invariantFailure(
+  fixture: LegacyLearnerStateFixture,
+  code: InvariantFailure['code'],
+  message: string,
+  expected?: InvariantFailure['expected'],
+  actual?: InvariantFailure['actual']
+): InvariantFailure {
+  return {
+    fixtureName: fixture.name,
+    fixtureCategory: fixture.category,
+    fixturePurpose: fixture.purpose,
+    code,
+    message,
+    ...(expected === undefined ? {} : { expected }),
+    ...(actual === undefined ? {} : { actual }),
+  };
+}
+
 function addCountFailures(
+  fixture: LegacyLearnerStateFixture,
   failures: InvariantFailure[],
   expectedRecords: readonly SourceRecord[],
   actualRecords: readonly SourceRecord[],
@@ -809,16 +867,26 @@ function addCountFailures(
   for (const [sourceRecordId, expectedCount] of expected) {
     const actualCount = actual.get(sourceRecordId) ?? 0;
     if (actualCount < expectedCount) {
-      failures.push({
-        code: lostCode,
-        message: `${recordKind} "${sourceRecordId}" disappeared from projection`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          lostCode,
+          `${recordKind} "${sourceRecordId}" disappeared from projection`,
+          expectedCount,
+          actualCount
+        )
+      );
     }
     if (actualCount > expectedCount) {
-      failures.push({
-        code: duplicatedCode,
-        message: `${recordKind} "${sourceRecordId}" was duplicated by projection`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          duplicatedCode,
+          `${recordKind} "${sourceRecordId}" was duplicated by projection`,
+          expectedCount,
+          actualCount
+        )
+      );
     }
   }
 }
@@ -861,14 +929,20 @@ export function evaluateProjectionInvariants({
     (collision) => collision.kind === 'conflict'
   );
   for (const collision of conflictingKeys) {
-    failures.push({
-      code: 'CONFLICTING_SOURCE_KEY',
-      message: `Source key "${collision.key}" has ${collision.entryCount} conflicting captured values`,
-    });
+    failures.push(
+      invariantFailure(
+        fixture,
+        'CONFLICTING_SOURCE_KEY',
+        `Source key "${collision.key}" has conflicting captured values`,
+        1,
+        collision.entryCount
+      )
+    );
   }
 
   const projectedMasteryRecords = projectionMasteryRecords(projection);
   addCountFailures(
+    fixture,
     failures,
     snapshot.mappedMastery,
     projectedMasteryRecords,
@@ -880,10 +954,15 @@ export function evaluateProjectionInvariants({
   for (const identity of projection.mastery) {
     for (const sourceRecord of identity.sourceRecords) {
       if (identity.tier < sourceRecord.tier) {
-        failures.push({
-          code: 'MASTERY_TIER_LOWERED',
-          message: `Projected mastery "${identity.contrastId}" tier ${identity.tier} is below source tier ${sourceRecord.tier}`,
-        });
+        failures.push(
+          invariantFailure(
+            fixture,
+            'MASTERY_TIER_LOWERED',
+            `Projected mastery "${identity.contrastId}" is below its source tier`,
+            sourceRecord.tier,
+            identity.tier
+          )
+        );
       }
     }
   }
@@ -898,6 +977,7 @@ export function evaluateProjectionInvariants({
     ...projection.unmappedAttempts,
   ];
   addCountFailures(
+    fixture,
     failures,
     expectedAttempts,
     actualAttempts,
@@ -907,25 +987,38 @@ export function evaluateProjectionInvariants({
   );
 
   if (captureLegacyFixtureBytes(fixture) !== sourceFixtureBefore) {
-    failures.push({
-      code: 'SOURCE_FIXTURE_MUTATED',
-      message: 'Source legacy fixture changed while loading or projecting',
-    });
+    failures.push(
+      invariantFailure(
+        fixture,
+        'SOURCE_FIXTURE_MUTATED',
+        'Source legacy fixture changed while loading or projecting',
+        'unchanged',
+        'mutated'
+      )
+    );
   }
 
   for (const record of snapshot.mappedMastery) {
+    const resolvedLanguage = mapping.resolveCategoryLabel(
+      record.historicalCategoryLabel
+    );
+    const resolvedContrast = mapping.resolveContrast(
+      record.historicalCategoryLabel,
+      record.legacyGroup
+    );
     if (
-      mapping.resolveCategoryLabel(record.historicalCategoryLabel) !==
-        record.languageId ||
-      mapping.resolveContrast(
-        record.historicalCategoryLabel,
-        record.legacyGroup
-      ) !== record.contrastId
+      resolvedLanguage !== record.languageId ||
+      resolvedContrast !== record.contrastId
     ) {
-      failures.push({
-        code: 'NON_DETERMINISTIC_MAPPING',
-        message: `Mastery identity "${record.sourceRecordId}" no longer resolves to its captured stable identity`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          'NON_DETERMINISTIC_MAPPING',
+          `Mastery identity "${record.sourceRecordId}" no longer resolves to its captured stable identity`,
+          `${record.languageId}/${record.contrastId}`,
+          `${resolvedLanguage ?? 'unmapped'}/${resolvedContrast ?? 'unmapped'}`
+        )
+      );
     }
   }
   for (const record of snapshot.mappedAttempts) {
@@ -936,18 +1029,30 @@ export function evaluateProjectionInvariants({
       assignment?.languageId !== record.languageId ||
       assignment.contrastId !== record.contrastId
     ) {
-      failures.push({
-        code: 'NON_DETERMINISTIC_MAPPING',
-        message: `Pair identity "${record.sourceRecordId}" no longer resolves to its captured stable identity`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          'NON_DETERMINISTIC_MAPPING',
+          `Pair identity "${record.sourceRecordId}" no longer resolves to its captured stable identity`,
+          `${record.languageId}/${record.contrastId}`,
+          assignment
+            ? `${assignment.languageId}/${assignment.contrastId}`
+            : 'unmapped'
+        )
+      );
     }
   }
 
   if (stableProjection(repeatedProjection) !== stableProjection(projection)) {
-    failures.push({
-      code: 'NON_IDEMPOTENT_PROJECTION',
-      message: 'Repeated projection did not converge on the same result',
-    });
+    failures.push(
+      invariantFailure(
+        fixture,
+        'NON_IDEMPOTENT_PROJECTION',
+        'Repeated projection did not converge on the same result',
+        'same projection',
+        'different projection'
+      )
+    );
   }
 
   const aliasTargets = new Map<string, Set<ContrastId>>();
@@ -959,10 +1064,15 @@ export function evaluateProjectionInvariants({
   }
   for (const [identity, targets] of aliasTargets) {
     if (targets.size > 1) {
-      failures.push({
-        code: 'ALIAS_IDENTITY_DIVERGED',
-        message: `Historical aliases for "${identity}" resolved to multiple ContrastIds`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          'ALIAS_IDENTITY_DIVERGED',
+          `Historical aliases for "${identity}" resolved to multiple ContrastIds`,
+          1,
+          targets.size
+        )
+      );
     }
   }
 
@@ -979,10 +1089,15 @@ export function evaluateProjectionInvariants({
   );
   for (const record of expectedUnknowns) {
     if (!projectedUnknownIds.has(record.sourceRecordId)) {
-      failures.push({
-        code: 'UNKNOWN_RECORD_DISAPPEARED',
-        message: `Unknown record "${record.sourceRecordId}" disappeared from diagnostics`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          'UNKNOWN_RECORD_DISAPPEARED',
+          `Unknown record "${record.sourceRecordId}" disappeared from diagnostics`,
+          'preserved as unknown',
+          'missing'
+        )
+      );
     }
   }
 
@@ -1003,40 +1118,65 @@ export function evaluateProjectionInvariants({
   );
   for (const sourceRecordId of malformedIds) {
     if (projectedValidIds.has(sourceRecordId)) {
-      failures.push({
-        code: 'MALFORMED_RECORD_CONVERTED',
-        message: `Malformed record "${sourceRecordId}" was converted into a valid identity`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          'MALFORMED_RECORD_CONVERTED',
+          `Malformed record "${sourceRecordId}" was converted into a valid identity`,
+          'remain malformed',
+          'converted to valid identity'
+        )
+      );
     }
   }
 
+  const expectedAttemptTotal =
+    snapshot.mappedAttempts.length + snapshot.unmappedAttempts.length;
+  const actualProjectedAttemptTotal =
+    projection.attempts.reduce(
+      (sum, identity) => sum + identity.attempts.length,
+      0
+    ) + projection.unmappedAttempts.length;
   if (
     projection.aggregateAttemptCountBeforeProjection !==
-      snapshot.mappedAttempts.length + snapshot.unmappedAttempts.length ||
+      expectedAttemptTotal ||
     projection.aggregateAttemptCountAfterProjection !==
-      projection.attempts.reduce(
-        (sum, identity) => sum + identity.attempts.length,
-        0
-      ) +
-        projection.unmappedAttempts.length ||
+      actualProjectedAttemptTotal ||
     projection.aggregateAttemptCountBeforeProjection !==
       projection.aggregateAttemptCountAfterProjection
   ) {
-    failures.push({
-      code: 'ATTEMPT_TOTAL_MISMATCH',
-      message:
-        'Global valid attempt total does not equal projected plus explicitly unmapped attempts',
-    });
+    failures.push(
+      invariantFailure(
+        fixture,
+        'ATTEMPT_TOTAL_MISMATCH',
+        `Global valid attempt total does not equal projected plus explicitly unmapped attempts; declared before=${projection.aggregateAttemptCountBeforeProjection}, declared after=${projection.aggregateAttemptCountAfterProjection}`,
+        expectedAttemptTotal,
+        actualProjectedAttemptTotal
+      )
+    );
   }
 
   if (stableProjection(reorderedProjection) !== stableProjection(projection)) {
-    failures.push({
-      code: 'ORDER_DEPENDENT_PROJECTION',
-      message: 'Projection changed when fixture entries were enumerated in reverse',
-    });
+    failures.push(
+      invariantFailure(
+        fixture,
+        'ORDER_DEPENDENT_PROJECTION',
+        'Projection changed when fixture entries were enumerated in reverse',
+        'same projection',
+        'different projection'
+      )
+    );
   }
 
   return deepFreeze(failures);
+}
+
+export function formatInvariantFailure(failure: InvariantFailure): string {
+  const comparison =
+    failure.expected === undefined && failure.actual === undefined
+      ? ''
+      : ` Expected: ${JSON.stringify(failure.expected)}; actual: ${JSON.stringify(failure.actual)}.`;
+  return `[fixture=${failure.fixtureName}] [category=${failure.fixtureCategory}] [${failure.code}] ${failure.message}.${comparison} Intent: ${failure.fixturePurpose}`;
 }
 
 export function assertProjectionInvariants(
@@ -1045,8 +1185,8 @@ export function assertProjectionInvariants(
   const failures = evaluateProjectionInvariants(input);
   if (failures.length > 0) {
     throw new Error(
-      `Legacy learner-state verification failed:\n${failures
-        .map((failure) => `- [${failure.code}] ${failure.message}`)
+      `Legacy learner-state verification failed for fixture "${input.fixture.name}" (${input.fixture.category}).\nPurpose: ${input.fixture.purpose}\n${failures
+        .map((failure) => `- ${formatInvariantFailure(failure)}`)
         .join('\n')}`
     );
   }
@@ -1062,6 +1202,8 @@ export function createAuditReport(
     snapshot.unmappedMastery.filter((record) => record.languageId).length;
   return deepFreeze({
     fixtureName: snapshot.fixtureName,
+    fixtureCategory: snapshot.fixtureCategory,
+    fixturePurpose: snapshot.fixturePurpose,
     sourceEntryCount: snapshot.sourceEntryCount,
     recognizedMasteryRecordCount,
     mappedMasteryCount: snapshot.mappedMastery.length,
@@ -1129,6 +1271,11 @@ export function evaluateMasteryTransition(
   after: LegacyLearnerProjection,
   operation: 'migration' | 'reset' | 'placement'
 ): readonly MasteryTransitionFailure[] {
+  /*
+   * Reset and placement are explicit learner/domain operations with legitimate
+   * downward semantics. They must never be routed through the initial alias
+   * reconciliation's highest-tier rule.
+   */
   if (operation === 'reset' || operation === 'placement') return [];
   const afterByIdentity = new Map(
     after.mastery.map((record) => [
@@ -1143,13 +1290,21 @@ export function evaluateMasteryTransition(
     );
     if (!afterRecord) {
       failures.push({
+        beforeFixtureName: before.fixtureName,
+        afterFixtureName: after.fixtureName,
         code: 'MASTERY_REMOVED',
         message: `Migration removed mastery identity "${record.contrastId}"`,
+        expected: `tier ${record.tier} or higher`,
+        actual: 'missing',
       });
     } else if (afterRecord.tier < record.tier) {
       failures.push({
+        beforeFixtureName: before.fixtureName,
+        afterFixtureName: after.fixtureName,
         code: 'MASTERY_TIER_LOWERED',
         message: `Migration lowered mastery "${record.contrastId}" from tier ${record.tier} to ${afterRecord.tier}`,
+        expected: record.tier,
+        actual: afterRecord.tier,
       });
     }
   }
@@ -1166,7 +1321,7 @@ function addLegacyPracticeAttempt(
   );
   if (pairEntries.length > 1) {
     throw new Error(
-      'Rollback simulation requires at most one legacy pair-progress entry'
+      `Rollback fixture "${fixture.name}" (${fixture.category}) requires at most one legacy pair-progress entry. Intent: ${fixture.purpose}`
     );
   }
 
@@ -1175,7 +1330,7 @@ function addLegacyPracticeAttempt(
     const parsed = parseJson(pairEntries[0].value);
     if (!parsed.ok || !isRecord(parsed.value)) {
       throw new Error(
-        'Rollback simulation requires a valid legacy pair-progress payload'
+        `Rollback fixture "${fixture.name}" (${fixture.category}) requires a valid legacy pair-progress payload. Intent: ${fixture.purpose}`
       );
     }
     progress = JSON.parse(JSON.stringify(parsed.value)) as Record<
@@ -1206,7 +1361,7 @@ function addLegacyPracticeAttempt(
           entry.key === LEGACY_PAIR_PROGRESS_STORAGE_KEY ? nextEntry : entry
         );
   return deepFreeze({
-    name: fixture.name,
+    ...fixture,
     storageEntries,
   });
 }
@@ -1240,17 +1395,27 @@ export function simulateRollbackPracticeReprojection(
   );
   for (const sourceRecordId of beforeAttemptIds) {
     if (!afterAttemptIds.has(sourceRecordId)) {
-      failures.push({
-        code: 'ATTEMPT_LOST',
-        message: `Rollback/practice/reprojection lost prior attempt "${sourceRecordId}"`,
-      });
+      failures.push(
+        invariantFailure(
+          fixture,
+          'ATTEMPT_LOST',
+          `Rollback/practice/reprojection lost prior attempt "${sourceRecordId}"`,
+          'preserved',
+          'missing'
+        )
+      );
     }
   }
   if (captureLegacyFixtureBytes(fixture) !== sourceFixtureBefore) {
-    failures.push({
-      code: 'SOURCE_FIXTURE_MUTATED',
-      message: 'Rollback simulation mutated its source fixture',
-    });
+    failures.push(
+      invariantFailure(
+        fixture,
+        'SOURCE_FIXTURE_MUTATED',
+        'Rollback simulation mutated its source fixture',
+        'unchanged',
+        'mutated'
+      )
+    );
   }
   failures.push(
     ...before.report.invariantFailures,
@@ -1260,10 +1425,15 @@ export function simulateRollbackPracticeReprojection(
   const priorAttemptCount = before.projection.aggregateAttemptCountAfterProjection;
   const finalAttemptCount = after.projection.aggregateAttemptCountAfterProjection;
   if (finalAttemptCount !== priorAttemptCount + 1) {
-    failures.push({
-      code: 'ATTEMPT_TOTAL_MISMATCH',
-      message: `Rollback/practice/reprojection expected ${priorAttemptCount + 1} attempts but found ${finalAttemptCount}`,
-    });
+    failures.push(
+      invariantFailure(
+        fixture,
+        'ATTEMPT_TOTAL_MISMATCH',
+        'Rollback/practice/reprojection did not add exactly one valid legacy attempt',
+        priorAttemptCount + 1,
+        finalAttemptCount
+      )
+    );
   }
 
   return deepFreeze({

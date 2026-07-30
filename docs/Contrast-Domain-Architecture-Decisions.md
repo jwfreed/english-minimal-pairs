@@ -392,6 +392,21 @@ these accepted architectural decisions without new repository evidence.
 
 ---
 
+# **Phase 3.3 Status**
+
+Phase 3.3 is complete.
+
+The verification harness proves:
+
+* identity mappings are deterministic  
+* learner history can be projected without loss  
+* rollback compatibility assumptions hold  
+* migration invariants are executable
+
+Phase 3.4 may begin only against these verified assumptions.
+
+---
+
 # **Proposed Execution Sequence**
 
 ## **Step 0 — Architecture Lock**

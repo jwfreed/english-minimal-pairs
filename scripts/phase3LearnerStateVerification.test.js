@@ -17,6 +17,7 @@ const {
   createAuditReport,
   evaluateMasteryTransition,
   evaluateProjectionInvariants,
+  formatInvariantFailure,
   loadLegacyLearnerStateSnapshot,
   projectLegacyLearnerState,
   simulateRollbackPracticeReprojection,
@@ -107,18 +108,56 @@ runTest('all required Phase 3.3 scenario fixtures execute cleanly', () => {
 
   for (const fixture of LEGACY_LEARNER_STATE_FIXTURES) {
     const result = verifyLegacyLearnerStateFixture(fixture);
-    assert.deepStrictEqual(
-      plain(result.report.invariantFailures),
-      [],
-      fixture.name
+    if (result.report.invariantFailures.length > 0) {
+      throw new Error(
+        `Fixture "${fixture.name}" (${fixture.category}) failed.\nPurpose: ${fixture.purpose}\n${result.report.invariantFailures
+          .map(formatInvariantFailure)
+          .join('\n')}`
+      );
+    }
+  }
+});
+
+runTest('every fixture declares explicit category and purpose metadata', () => {
+  const expectedCategories = {
+    'fresh-learner': 'baseline',
+    'one-language-learner': 'baseline',
+    'multi-language-learner': 'baseline',
+    'historical-alias-only-mastery': 'alias-reconciliation',
+    'historical-and-current-alias-mastery': 'alias-reconciliation',
+    'conflicting-tiers-across-aliases': 'alias-reconciliation',
+    'unknown-group-recognized-label': 'corruption-handling',
+    'recognized-group-unknown-label': 'corruption-handling',
+    'malformed-mastery-payload': 'corruption-handling',
+    'malformed-pair-progress-key': 'corruption-handling',
+    'valid-attempts-across-contrasts': 'progress-conservation',
+    'capped-attempt-history': 'progress-conservation',
+    'partial-corrupt-global-pair-progress': 'corruption-handling',
+    'learner-reset-state': 'reset-semantics',
+    'placement-lowered-mastery-state': 'placement-semantics',
+    'post-rollback-divergence': 'rollback-compatibility',
+  };
+
+  for (const fixture of LEGACY_LEARNER_STATE_FIXTURES) {
+    assert.strictEqual(
+      fixture.category,
+      expectedCategories[fixture.name],
+      `fixture "${fixture.name}" has the wrong intent category`
     );
+    assert(
+      fixture.purpose.length > 20,
+      `fixture "${fixture.name}" requires a descriptive purpose`
+    );
+    const result = verifyLegacyLearnerStateFixture(fixture);
+    assert.strictEqual(result.snapshot.fixturePurpose, fixture.purpose);
+    assert.strictEqual(result.projection.fixtureCategory, fixture.category);
+    assert.strictEqual(result.report.fixtureName, fixture.name);
   }
 });
 
 runTest('alias reconciliation is initial-only and uses the highest tier', () => {
-  const result = verifyLegacyLearnerStateFixture(
-    fixtureNamed('conflicting-tiers-across-aliases')
-  );
+  const fixture = fixtureNamed('conflicting-tiers-across-aliases');
+  const result = verifyLegacyLearnerStateFixture(fixture);
   assert.strictEqual(result.projection.mastery.length, 1);
   assert.strictEqual(result.projection.mastery[0].tier, 5);
   assert.strictEqual(
@@ -129,6 +168,18 @@ runTest('alias reconciliation is initial-only and uses the highest tier', () => 
   assert.strictEqual(
     result.projection.masteryConflicts[0].kind,
     'initial-alias-conflict'
+  );
+
+  // This is deliberately an initial alias migration rule, not a general
+  // mastery merge rule. Reset, placement, and normal learning must not reuse
+  // highest-tier-wins.
+  assert.strictEqual(fixture.category, 'alias-reconciliation');
+  const singleSource = verifyLegacyLearnerStateFixture(
+    fixtureNamed('historical-alias-only-mastery')
+  );
+  assert.strictEqual(
+    singleSource.projection.mastery[0].reconciliation,
+    'single-source'
   );
 });
 
@@ -293,18 +344,33 @@ runTest('intentionally invalid projections fail with precise diagnostics', () =>
   assert(codes.has('ATTEMPT_LOST'));
   assert(codes.has('ATTEMPT_DUPLICATED'));
   assert(codes.has('ATTEMPT_TOTAL_MISMATCH'));
-  assert.throws(
-    () =>
-      assertProjectionInvariants({
-        fixture,
-        sourceFixtureBefore,
-        snapshot,
-        projection: invalidProjection,
-        repeatedProjection: invalidProjection,
-        reorderedProjection: invalidProjection,
-      }),
-    /MASTERY_RECORD_LOST/
+  const lostMastery = failures.find(
+    (failure) => failure.code === 'MASTERY_RECORD_LOST'
   );
+  assert.strictEqual(lostMastery.fixtureName, fixture.name);
+  assert.strictEqual(lostMastery.fixtureCategory, fixture.category);
+  assert.strictEqual(lostMastery.fixturePurpose, fixture.purpose);
+  assert.strictEqual(lostMastery.expected, 1);
+  assert.strictEqual(lostMastery.actual, 0);
+
+  let diagnostic;
+  try {
+    assertProjectionInvariants({
+      fixture,
+      sourceFixtureBefore,
+      snapshot,
+      projection: invalidProjection,
+      repeatedProjection: invalidProjection,
+      reorderedProjection: invalidProjection,
+    });
+  } catch (error) {
+    diagnostic = error.message;
+  }
+  assert(diagnostic.includes(`fixture "${fixture.name}"`));
+  assert(diagnostic.includes(`(${fixture.category})`));
+  assert(diagnostic.includes(`Purpose: ${fixture.purpose}`));
+  assert(diagnostic.includes('[MASTERY_RECORD_LOST]'));
+  assert(diagnostic.includes('Expected: 1; actual: 0'));
 });
 
 runTest('malformed source records cannot be relabeled as valid projection rows', () => {
@@ -343,6 +409,8 @@ runTest('malformed source records cannot be relabeled as valid projection rows',
 runTest('conflicting duplicate storage captures fail instead of being guessed', () => {
   const fixture = {
     name: 'conflicting-storage-capture',
+    category: 'corruption-handling',
+    purpose: 'Prove conflicting captures fail with scenario-specific diagnostics.',
     storageEntries: [
       { key: '@mastery_日本語', value: JSON.stringify({ rL: 2 }) },
       { key: '@mastery_日本語', value: JSON.stringify({ rL: 5 }) },
@@ -379,6 +447,14 @@ runTest('reset and placement lowering are domain operations, not migration loss'
   assert.deepStrictEqual(
     plain(evaluateMasteryTransition(before, placement, 'placement')),
     []
+  );
+  assert.strictEqual(
+    fixtureNamed('learner-reset-state').category,
+    'reset-semantics'
+  );
+  assert.strictEqual(
+    fixtureNamed('placement-lowered-mastery-state').category,
+    'placement-semantics'
   );
 });
 

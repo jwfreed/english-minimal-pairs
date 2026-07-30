@@ -89,10 +89,32 @@ This does not prove that every historical learner record was lost. It does
 confirm that a label or content change can make existing data unreachable
 unless compatibility is handled explicitly.
 
+## **Confirmed orphaned learner data**
+
+Repository review for Phase 3 confirmed a specific, recoverable case.
+
+The learner-language preference migrates across six historical label renames.
+Nothing re-points the learner data stored under those historical labels:
+
+* `@mastery_${historicalLabel}`  
+* `@placementDone_${historicalLabel}`  
+* pair-progress keys of the form `${historicalLabel}__${group}__${word1}_${word2}`
+
+For learners in those six languages, mastery, placement, and pair history
+recorded before the rename are still present on device but currently
+unreachable. Phase 3 recovers this data through read-side alias adoption.
+
 ## **Future risk**
 
 Future agents must not repeat this pattern. Renaming a label, correcting a word,
 or normalizing an identifier must never silently create a new learner identity.
+
+Two known unrepaired identity hazards remain after Phase 3:
+
+* pair-progress keys still embed word content, so a word correction can orphan
+  pair history until `PairId` is assigned  
+* the ephemeral trial identifier omits the category, so it collides across
+  languages. It must never become persisted identity
 
 ---
 
@@ -133,6 +155,23 @@ These rules apply before, during, and after the migration:
 * compatibility must be explicit whenever an identity representation changes
 
 Cleaner naming does not justify breaking historical continuity.
+
+## **Identity scope invariants**
+
+Established by Decision 006 and Decision 007:
+
+* `ContrastId` is language-scoped, for example `contrast.japanese.rL`  
+* `ContrastId` values are immutable after release  
+* cross-language contrast equivalence is a future modeling concern  
+* `LanguageId` is an application-owned identity, for example `lang.japanese`  
+* `LanguageId` is not a display label and not a locale standard identifier  
+* `LanguageId` is the stable namespace boundary for identity-based persistence  
+* historical category labels reach `LanguageId` only through an append-only
+  alias table
+
+The legacy `group` token cannot identify a contrast on its own. The shipped
+datasets use 25 distinct group tokens and 16 of them appear in more than one
+language, so legacy contrast identity requires the pair `(category label, group)`.
 
 ---
 
@@ -458,6 +497,22 @@ Before migrating persistence, the following review is required:
 
 Phase 3 must not begin until this gate is satisfied.
 
+## **Gate Status**
+
+Date: 2026-07-30
+
+* identity model approved — Decision 006 (`ContrastId` is language-scoped) and
+  Decision 007 (`LanguageId` is an application-owned identity)  
+* migration strategy documented — Decision 008 and the Phase 3 sections below  
+* rollback strategy documented — Compatibility and Rollback Strategy below  
+* progress preservation verified — verification requirements and completion
+  criteria below are defined; PR 3.3 delivers the harness that executes them,
+  and PR 3.7 may not ship until that harness reports a clean audit
+
+Design review is satisfied, so implementation may begin at PR 3.0. The
+progress-preservation evidence itself is produced during the phase and gates the
+only learner-visible release.
+
 ---
 
 # **Phase 3 — Progress/Mastery Evolution**
@@ -496,19 +551,283 @@ Never silently reset progress.
 
 ---
 
-Verification:
+## **Phase 3 Philosophy**
 
-* existing users retain progress  
-* new writes use new format  
-* migration is idempotent  
-* old identifiers remain readable for the supported compatibility period
+* Preserve legacy storage.  
+* Prefer projection over destructive migration.  
+* Introduce new identities additively.  
+* Keep rollback possible without data repair.  
+* Treat learner history as immutable evidence.
+
+The application is offline-first with no backend, so there is no remote kill
+switch and rollback latency equals a release cycle. The migration must therefore
+be non-destructive and self-healing by construction rather than reversible by
+operational action.
+
+---
+
+## **Mastery Migration Strategy**
+
+Mastery migrates.
+
+Approach:
+
+* new namespace keyed by `LanguageId` + `ContrastId`  
+* lazy per-language migration, performed when that language is loaded  
+* dual-read during the transition  
+* dual-write during the compatibility window  
+* legacy reads remain supported permanently  
+* legacy writes stop only after the validation period
+
+Read order during the transition:
+
+new namespace  
+        |  
+        v
+
+legacy namespace and historical label aliases (fallback and derivation source)
+
+New-namespace-first is deliberate. It exercises the new path from the first
+release while legacy remains authoritative, so defects surface while dual-write
+still protects the learner.
+
+Required properties:
+
+* idempotent  
+* non-destructive  
+* fingerprint validated  
+* revision-aware conflict handling
+
+Supporting rules:
+
+* migration is a pure function of legacy data, the alias table, and the
+  registry, so re-running it converges on the same result  
+* the fingerprint of the legacy source is stored alongside the derived data; a
+  mismatch means legacy changed out of band, which is the rollback-then-forward
+  case, and triggers re-derivation  
+* conflicts resolve by `revision`; where revisions are equal the higher tier
+  wins, so no migration step can lower an earned tier  
+* initial derivation across historical label aliases merges by highest tier  
+* the only permitted downward movement is learner-initiated: reset, and the
+  existing placement flow. Revision-aware resolution exists so that highest-tier
+  merging cannot resurrect state the learner deliberately cleared  
+* wall-clock values are metadata only and must never decide a conflict  
+* migration is scoped per language, so there is no cross-key transaction  
+* the derived data is written before the migration state record; a failure
+  between the two leaves the next load free to re-derive  
+* a migration-complete state must never be recorded when the legacy source was
+  unparseable  
+* mastery writes must be serialized and failure-visible, not fire-and-forget  
+* learner-initiated reset must clear the legacy namespace, the new namespace,
+  and the migration state together
+
+---
+
+## **Pair Progress Strategy**
+
+Pair progress does NOT migrate storage in Phase 3.
+
+Instead:
+
+* keep `@pairProgress_v2` unchanged  
+* add read-time projection  
+* resolve legacy pair keys into `ContrastId` relationships  
+* compute contrast-level progress from legacy history  
+* defer `PairId` assignment and storage rewrite to a later phase
+
+Reason:
+
+Pair attempt history is the highest-risk learner artifact and the only learner
+data in the application that cannot be re-derived. It should not be rewritten
+during this phase.
+
+Projection rules:
+
+* the projection performs no writes to learner progress storage  
+* alias expansion covers historical category labels so orphaned pair history
+  becomes readable  
+* records with no mapping are preserved, counted, and excluded from
+  contrast-level rollups  
+* unmapped records remain included in global lifetime aggregates so a learner's
+  lifetime totals never shrink  
+* attempt comparisons are evaluated after the existing per-pair history cap is
+  applied
+
+---
+
+## **Historical Identity Mapping Strategy**
+
+Historical identity mapping:
+
+legacy identity → ContrastId
+
+Source of truth:
+
+* code-owned registry  
+* immutable `ContrastId` assignments  
+* alias table for historical category labels  
+* CI validation
+
+The mapping is code, not device data. Nothing about the mapping is persisted on
+device; only the result of applying it is stored. A mapping defect is therefore
+fixed by a release rather than by repairing learner data.
+
+Required validations:
+
+* unique `ContrastId` values  
+* complete dataset coverage  
+* no ambiguous mappings  
+* aliases are append-only  
+* golden-file identity stability
+
+Additional required assertion:
+
+* every historical category label present in the learner-language migration
+  aliases must be covered by the contrast registry alias table
+
+Ambiguity is resolved at build time. The application must never choose between
+two candidate contrasts at runtime.
+
+---
+
+## **Compatibility and Rollback Strategy**
+
+Rollback strategy:
+
+* no destructive migration  
+* no legacy key deletion  
+* rollback achieved through code revert  
+* legacy storage remains available throughout the compatibility period
+
+Hard invariant:
+
+A previous application version must continue reading learner progress during
+Phase 3.
+
+Supporting rules:
+
+* the migration sits behind a single build flag, so disabling it is a one-line
+  change  
+* only additive keys are introduced: the contrast-keyed mastery namespace and
+  the migration state record  
+* legacy mastery, placement, pair-progress, and unrelated preference keys are
+  never renamed, rewritten in place, or deleted  
+* roll-forward after a rollback is automatic through fingerprint divergence and
+  revision-aware merging  
+* the migrate → revert → practice → re-migrate round trip is a required test,
+  not a manual check
+
+---
+
+## **Verification Requirements**
+
+Before migration, capture:
+
+* learner progress counts  
+* mastery values per legacy key, including historical label aliases  
+* completed exercises and attempt history summaries  
+* placement state  
+* the resolved identity mapping, including any unmapped records
+
+After migration, compare:
+
+* preserved progress  
+* migrated progress  
+* unresolved records  
+* mismatches
+
+Verification must include realistic fixtures for fresh installs, single- and
+multi-language learners, pre-rename labels only, pre- and post-rename labels
+together, post-reset state, tier ceilings, corrupt or out-of-range data, unknown
+group tokens, capped attempt history, interrupted migration, and post-rollback
+divergence.
 
 ## **Completion Criteria**
 
-* migration preserves existing users  
+Migration is complete only when:
+
+* no learner progress decreases  
+* no attempts are lost  
+* legacy keys remain intact  
+* mappings are deterministic  
 * migration is idempotent  
-* legacy reads remain supported during the compatibility period  
-* rollback and progress-preservation verification remain valid
+* rollback has been tested  
+* visible learner behavior is unchanged unless intentionally recovering
+  orphaned history
+
+Recovered orphaned history is the only permitted visible change, and any release
+that recovers it must state so explicitly.
+
+---
+
+## **Phase 3 PR Boundaries**
+
+Approved sequence. Each step is independently shippable and independently
+revertable.
+
+3.0 Architecture decisions/docs
+
+3.1 Contrast registry + LanguageId
+
+3.2 Legacy identity mapping + golden file
+
+3.3 Snapshot and verification harness
+
+3.4 Pair-progress read projection
+
+3.5 Contrast mastery store behind feature flag
+
+3.6 Historical orphan adoption
+
+3.7 Enable migration after verification gate
+
+3.8 Compatibility window close
+
+Sequencing rules:
+
+* verification tooling ships before any migration behavior  
+* the mastery store ships with its flag off, so enabling it is a one-line diff  
+* 3.7 is the only learner-visible release in the phase and requires a clean
+  audit on a real install carrying real history, including at least one renamed
+  language  
+* 3.8 closes legacy writes only; legacy reads and the alias table remain
+
+---
+
+## **Phase 3 Non-Goals**
+
+Phase 3 does NOT include:
+
+* PairProgress storage rewrite  
+* `PairId` assignment across all datasets  
+* analytics schema migration  
+* scheduler changes  
+* practice engine refactor  
+* UI redesign  
+* cross-language contrast unification  
+* persistence framework changes
+
+Analytics continue to report the existing legacy contrast value. Changing that
+field mid-migration would break continuity of historical analysis, and any
+future change should be additive.
+
+---
+
+## **Phase 3 Open Questions**
+
+These are tracked, non-blocking, and must not be silently resolved by
+implementation choice:
+
+* whether any abandoned earlier pair-progress payload still exists on device,
+  and in what format; nothing may delete it until this is answered  
+* the concrete length of the dual-write window, expressed in releases, given
+  that no adoption metric is available  
+* whether orphan recovery is surfaced to the learner or applied silently  
+* whether the verification audit surface ships in release builds behind a
+  development flag
+
+Documented defaults until decided: highest-tier merge when pre- and post-rename
+data both exist, and preservation over deletion in every ambiguous case.
 
 ---
 

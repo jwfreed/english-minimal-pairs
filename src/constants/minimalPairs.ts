@@ -30,7 +30,7 @@ export interface Pair {
   ipa1: string;
   ipa2: string;
   difficulty: Difficulty; // lexical/context tier
-  group: string; // contrast ID (e.g. 'rL', 'bV')
+  readonly group: string; // historical contrast identifier; compatibility reads only
   position: Position; // phonetic position of the contrast
   contrastPhoneme1: string; // e.g. 'r' for rake in rL group
   contrastPhoneme2: string; // e.g. 'l' for lake in rL group

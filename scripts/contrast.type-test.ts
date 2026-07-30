@@ -4,6 +4,7 @@ import {
   defineContrastId,
   definePairId,
 } from '@/src/domain/identity';
+import { LANGUAGE_IDS } from '@/src/domain/language/language';
 
 const pair: Pair = {
   word1: 'right',
@@ -18,7 +19,8 @@ const pair: Pair = {
 };
 
 const contrast: Contrast = defineContrast({
-  id: defineContrastId('contrast-r-l-001'),
+  id: defineContrastId('contrast.japanese.rL'),
+  languageId: LANGUAGE_IDS.japanese,
   phoneme1: 'r',
   phoneme2: 'l',
   examples: [pair],

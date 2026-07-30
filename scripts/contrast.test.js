@@ -8,6 +8,9 @@ const { defineContrast } = loadTsModule(
 const { defineContrastId } = loadTsModule(
   path.join(__dirname, '..', 'src', 'domain', 'identity.ts')
 );
+const { LANGUAGE_IDS } = loadTsModule(
+  path.join(__dirname, '..', 'src', 'domain', 'language', 'language.ts')
+);
 
 function runTest(name, fn) {
   try {
@@ -36,7 +39,8 @@ function makePair(overrides = {}) {
 
 function makeContrast(overrides = {}) {
   return {
-    id: defineContrastId('contrast-r-l-001'),
+    id: defineContrastId('contrast.japanese.rL'),
+    languageId: LANGUAGE_IDS.japanese,
     phoneme1: 'r',
     phoneme2: 'l',
     examples: [makePair()],
@@ -49,7 +53,8 @@ runTest('Contrast owns stable identity, metadata, and Pair examples', () => {
   const pair = makePair();
   const contrast = defineContrast(makeContrast({ examples: [pair] }));
 
-  assert.strictEqual(contrast.id, 'contrast-r-l-001');
+  assert.strictEqual(contrast.id, 'contrast.japanese.rL');
+  assert.strictEqual(contrast.languageId, 'lang.japanese');
   assert.strictEqual(contrast.phoneme1, 'r');
   assert.strictEqual(contrast.phoneme2, 'l');
   assert.strictEqual(contrast.examples[0], pair);

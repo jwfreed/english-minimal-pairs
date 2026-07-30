@@ -6,9 +6,12 @@ const { loadRepoData } = require('./validate-data');
 
 const {
   assertUniqueContrastIds,
+  assertUniqueLanguageIds,
   assertUniquePairIds,
   defineContrastId,
+  defineLanguageId,
   definePairId,
+  SUPPORTED_LANGUAGE_IDS,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'identity.ts'));
 const { buildPairId } = loadTsModule(
   path.join(__dirname, '..', 'utils', 'idHelpers.ts')
@@ -99,12 +102,37 @@ function getIdentityInventory() {
 }
 
 runTest('display-label changes do not change contrast identity', () => {
-  const contrastId = defineContrastId('contrast-r-l-001');
+  const contrastId = defineContrastId('contrast.japanese.rL');
   const original = { id: contrastId, displayLabel: '/r/ vs /l/' };
   const relabeled = { ...original, displayLabel: 'R and L sounds' };
 
   assert.strictEqual(relabeled.id, original.id);
   assert.notStrictEqual(relabeled.displayLabel, original.displayLabel);
+});
+
+runTest('LanguageIds are stable and independent from display labels', () => {
+  const languageId = defineLanguageId('lang.japanese');
+  const original = { id: languageId, displayLabel: '日本語' };
+  const relabeled = { ...original, displayLabel: 'Japanese' };
+
+  assert.strictEqual(relabeled.id, original.id);
+  assert.notStrictEqual(relabeled.displayLabel, original.displayLabel);
+  assert.deepStrictEqual(Array.from(SUPPORTED_LANGUAGE_IDS), [
+    'lang.arabic',
+    'lang.cantonese',
+    'lang.farsi',
+    'lang.hindi-urdu',
+    'lang.indonesian',
+    'lang.japanese',
+    'lang.korean',
+    'lang.mandarin',
+    'lang.portuguese',
+    'lang.russian',
+    'lang.spanish',
+    'lang.thai',
+    'lang.turkish',
+    'lang.vietnamese',
+  ]);
 });
 
 runTest('word-content changes do not change explicit pair identity', () => {
@@ -155,8 +183,11 @@ runTest('non-identity metadata changes do not affect legacy pair progress identi
   );
 });
 
-runTest('identity definitions preserve exact opaque values without normalization', () => {
-  assert.strictEqual(defineContrastId('Contrast-R/L-001'), 'Contrast-R/L-001');
+runTest('identity definitions preserve exact values without normalization', () => {
+  assert.strictEqual(
+    defineContrastId('contrast.japanese.rL'),
+    'contrast.japanese.rL'
+  );
   assert.strictEqual(definePairId('Pair_R-L.001'), 'Pair_R-L.001');
 });
 
@@ -220,16 +251,52 @@ runTest('historical identity fingerprints are independent of dataset ordering', 
 
 runTest('blank identity values fail validation', () => {
   assert.throws(() => defineContrastId(''), /contrast ID must be a non-empty string/);
+  assert.throws(() => defineLanguageId('   '), /language ID must be a non-empty string/);
   assert.throws(() => definePairId('   '), /pair ID must be a non-empty string/);
 });
 
-runTest('duplicate contrast and pair IDs fail validation', () => {
-  const contrastId = defineContrastId('contrast-r-l-001');
+runTest('ContrastIds require an explicit supported language scope', () => {
+  assert.throws(
+    () => defineContrastId('contrast.rL'),
+    /Contrast ID must be language-scoped/
+  );
+  assert.throws(
+    () => defineContrastId('contrast.japanese.r/L'),
+    /Contrast ID must be language-scoped/
+  );
+  assert.throws(
+    () => defineContrastId('contrast.french.rL'),
+    /unsupported language namespace/
+  );
+});
+
+runTest('unsupported LanguageIds fail validation', () => {
+  assert.throws(
+    () => defineLanguageId('lang.ja-JP'),
+    /Unsupported language ID/
+  );
+  assert.throws(
+    () => defineLanguageId('Japanese'),
+    /Unsupported language ID/
+  );
+  assert.throws(
+    () => defineLanguageId('lang.french'),
+    /Unsupported language ID/
+  );
+});
+
+runTest('duplicate contrast, language, and pair IDs fail validation', () => {
+  const contrastId = defineContrastId('contrast.japanese.rL');
+  const languageId = defineLanguageId('lang.japanese');
   const pairId = definePairId('pair-r-l-001');
 
   assert.throws(
     () => assertUniqueContrastIds([contrastId, contrastId]),
     /Duplicate contrast ID/
+  );
+  assert.throws(
+    () => assertUniqueLanguageIds([languageId, languageId]),
+    /Duplicate language ID/
   );
   assert.throws(
     () => assertUniquePairIds([pairId, pairId]),

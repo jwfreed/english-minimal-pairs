@@ -1,7 +1,8 @@
 import type { Pair } from '@/src/constants/minimalPairs';
 import {
-  defineContrastId,
+  assertContrastIdOwnedByLanguage,
   type ContrastId,
+  type LanguageId,
 } from '@/src/domain/identity';
 
 /**
@@ -13,6 +14,7 @@ import {
  */
 export interface Contrast {
   readonly id: ContrastId;
+  readonly languageId: LanguageId;
   readonly phoneme1: string;
   readonly phoneme2: string;
   readonly examples: readonly Pair[];
@@ -30,7 +32,7 @@ function isNonEmptyString(value: string): boolean {
  * only validates the metadata and relationships owned by Contrast.
  */
 export function defineContrast(contrast: Contrast): Contrast {
-  defineContrastId(contrast.id);
+  assertContrastIdOwnedByLanguage(contrast.id, contrast.languageId);
 
   if (!isNonEmptyString(contrast.phoneme1)) {
     throw new Error('Contrast phoneme1 must be a non-empty string');

@@ -124,6 +124,26 @@ runTest('parseStoredProgress handles pairs with missing attempts field without c
   assert.strictEqual(result['pair-x'].attempts.length, 0);
 });
 
+// Known Phase 3.4 diagnostic boundary: after production parsing, the raw
+// `invalid-attempt-container` reason is unrecoverable. The two inputs below
+// intentionally converge because neither contains valid attempt history.
+runTest('non-array attempt containers normalize to an indistinguishable empty history', () => {
+  const pairKey = 'Test__rL__right_light';
+  const nonArray = parseStoredProgress(
+    JSON.stringify({
+      [pairKey]: { attempts: 'not-an-array' },
+    })
+  );
+  const empty = parseStoredProgress(
+    JSON.stringify({
+      [pairKey]: { attempts: [] },
+    })
+  );
+
+  assert.deepStrictEqual(plain(nonArray), plain(empty));
+  assert.deepStrictEqual(plain(nonArray[pairKey].attempts), []);
+});
+
 runTest('multiple pairs are pruned independently', () => {
   const makeAttempts = (n) =>
     Array.from({ length: n }, (_, i) => ({ isCorrect: true, timestamp: i, durationMin: 0 }));

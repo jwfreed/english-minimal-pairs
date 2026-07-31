@@ -26,6 +26,12 @@ export function getDefaultProgress(): Record<string, PairStats> {
 /**
  * Caps a raw attempts value to the most recent MAX_ATTEMPTS_PER_PAIR entries.
  * Accepts any value — returns [] for non-arrays so callers never crash on bad data.
+ *
+ * This normalization intentionally cannot preserve the raw
+ * `invalid-attempt-container` diagnostic reason. Once parsed, a non-array
+ * container is indistinguishable from an empty history. That is known
+ * diagnostic information loss, not a progress-semantics mismatch: neither
+ * input contains a valid attempt array to project.
  */
 export function pruneAttemptHistory(attempts: unknown): PairAttempt[] {
   if (!Array.isArray(attempts)) return [];

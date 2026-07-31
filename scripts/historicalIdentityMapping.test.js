@@ -16,6 +16,7 @@ const {
   HISTORICAL_CATEGORY_LABELS,
   createHistoricalIdentityMapping,
   historicalIdentityMapping,
+  isStructurallyValidLegacyPairProgressKey,
   serializeHistoricalContrastAssignments,
   validateHistoricalIdentityAssignments,
 } = loadTsModule(
@@ -290,6 +291,41 @@ runTest('malformed legacy pair keys are never parsed or guessed', () => {
       );
     }
   }
+});
+
+runTest('legacy pair-key shape checks are diagnostic-only and exact', () => {
+  const known = historicalIdentityMapping.pairAssignments[0];
+
+  assert.strictEqual(
+    isStructurallyValidLegacyPairProgressKey(
+      known.legacyPairProgressKey
+    ),
+    true
+  );
+  assert.strictEqual(
+    isStructurallyValidLegacyPairProgressKey(
+      'Unknown__rL__right_light'
+    ),
+    true
+  );
+  assert.strictEqual(
+    historicalIdentityMapping.resolvePairProgressKey(
+      'Unknown__rL__right_light'
+    ),
+    undefined
+  );
+  assert.strictEqual(
+    isStructurallyValidLegacyPairProgressKey(
+      '日本語_rL_right_light'
+    ),
+    false
+  );
+  assert.strictEqual(
+    isStructurallyValidLegacyPairProgressKey(
+      '日本語__rL__broken'
+    ),
+    false
+  );
 });
 
 runTest('mapping output is independent from declaration and dataset order', () => {

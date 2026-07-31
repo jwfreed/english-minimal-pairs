@@ -59,6 +59,28 @@ export interface HistoricalIdentityMapping {
   ): HistoricalPairAssignment | undefined;
 }
 
+/**
+ * Checks only the released legacy pair-key shape for diagnostics.
+ *
+ * This must never be used to infer identity. Exact lookup through
+ * HistoricalIdentityMapping.resolvePairProgressKey remains the only supported
+ * way to map a learner record to stable LanguageId and ContrastId values.
+ */
+export function isStructurallyValidLegacyPairProgressKey(
+  legacyPairProgressKey: string
+): boolean {
+  const sections = legacyPairProgressKey.split('__');
+  if (
+    sections.length !== 3 ||
+    sections.some((section) => section.length === 0)
+  ) {
+    return false;
+  }
+
+  const wordSeparator = sections[2].indexOf('_');
+  return wordSeparator > 0 && wordSeparator < sections[2].length - 1;
+}
+
 interface HistoricalIdentityMappingInput {
   readonly categoryLabels: readonly HistoricalCategoryLabelAssignment[];
   readonly datasets: readonly Category[];

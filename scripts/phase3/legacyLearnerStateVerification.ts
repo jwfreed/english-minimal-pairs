@@ -1,6 +1,7 @@
 import type { ContrastId, LanguageId } from '@/src/domain/identity';
 import {
   historicalIdentityMapping,
+  isStructurallyValidLegacyPairProgressKey,
   type HistoricalIdentityMapping,
 } from '@/src/domain/compatibility/historicalIdentityMapping';
 
@@ -320,18 +321,6 @@ function isLegacyAttempt(value: unknown): value is LegacyAttempt {
   );
 }
 
-function looksLikeLegacyPairKey(value: string): boolean {
-  const sections = value.split('__');
-  if (
-    sections.length !== 3 ||
-    sections.some((section) => section.length === 0)
-  ) {
-    return false;
-  }
-  const wordSeparator = sections[2].indexOf('_');
-  return wordSeparator > 0 && wordSeparator < sections[2].length - 1;
-}
-
 function sortSourceRecords<T extends SourceRecord>(records: readonly T[]): T[] {
   return [...records].sort(
     (left, right) =>
@@ -599,7 +588,7 @@ export function loadLegacyLearnerStateSnapshot(
         effectiveAttemptSlotCount += retainedAttempts.length;
         const pairAssignment =
           mapping.resolvePairProgressKey(legacyPairProgressKey);
-        const pairKeyLooksValid = looksLikeLegacyPairKey(
+        const pairKeyLooksValid = isStructurallyValidLegacyPairProgressKey(
           legacyPairProgressKey
         );
 

@@ -582,6 +582,62 @@ duplicating adoption or drifting the stable revision.
 
 ---
 
+# **Decision 010**
+
+Date:
+
+2026-07-31
+
+Status:
+
+Accepted
+
+## **Title**
+
+Rollout Authority and Compatibility Window
+
+## **Context**
+
+The stable mastery architecture is implementation-complete. The system now
+supports stable mastery storage, compatibility reads and writes, shadow
+verification, safety diagnostics, and rollback.
+
+Implementation correctness does not equal production validation. Rollout
+remains controlled, and real-install shadow evidence is required before stable
+mastery advances to broader production use.
+
+## **Decision**
+
+Stable mastery is the future authoritative learner model.
+
+During the compatibility window, reads prefer stable mastery and fall back to
+legacy mastery only when stable state is unavailable and fallback is safe.
+Malformed, unsupported, or unreadable stable state is not safe fallback
+evidence.
+
+Writes preserve legacy compatibility and maintain stable mastery writes.
+Compatibility write ordering remains legacy-first, and partial failures remain
+explicit and retryable.
+
+Rollback remains possible without destructive cleanup or learner-data repair.
+Legacy mastery stays readable, stable mastery remains preserved, and disabling
+the rollout restores legacy runtime authority.
+
+The compatibility window remains open until the Phase 3.8 exit criteria are
+satisfied. Phase 3.7 completion does not close or shorten that window.
+
+## **Invariants**
+
+* Stable read authority and compatibility write ordering are separate
+  architectural decisions.
+* Deterministic shadow comparison does not imply automatic migration.
+* Shadow mode must not mutate learner state.
+* Legacy compatibility remains intentionally preserved until retirement
+  criteria are met.
+* Rollout state changes must remain controlled and reversible.
+
+---
+
 # **Phase 3.6 Status**
 
 Phase 3.6 is complete as an explicit, disabled-by-default recovery foundation.
@@ -642,6 +698,45 @@ and prevents the marker write.
 The stable mastery feature flag remains false. Phase 3.6 adds no startup,
 background, UI, analytics, scheduling, practice, pair-progress, or rollout
 integration.
+
+---
+
+# **Phase 3.7 Status**
+
+Phase 3.7 controlled-rollout support is implementation-complete. The production
+build remains in the `disabled` state until real-install shadow evidence passes
+the release gate.
+
+Rollout is a build-time state because the repository has no remote
+configuration convention:
+
+`disabled -> shadow -> internal-test -> limited -> enabled`
+
+`disabled` preserves the legacy-only runtime. `shadow` performs read-only
+stable/legacy comparison, records structured internal diagnostics, and never
+changes UI state or writes stable mastery. The three authoritative stages share
+stable-first reads, legacy fallback only when stable state is missing, and the
+Phase 3.5 legacy-first compatibility-write contract.
+
+Authoritative reads no longer invoke migration implicitly. Explicit
+`migrateLanguageMastery` and `adoptOrphanedMasteryForLanguage` operations remain
+available for measured per-language activation and recovery, but neither is
+wired to startup, background work, or the learner UI.
+
+Malformed, unsupported, or unreadable stable state is blocked rather than
+treated as missing. A blocked initial read is also prevented from triggering an
+empty persistence write.
+
+Internal diagnostics provide session counters and an isolated sink for stable
+read attempts/successes, legacy fallbacks, shadow divergences, unresolved
+mappings, reconciliation conflicts, blocked migrations, compatibility writes,
+partial writes, orphan-adoption operations, and storage failures. A pure safety
+gate requires shadow evidence and zero unsafe data, identity, storage, reset,
+placement, or practice outcomes before a broader rollout state is selected.
+
+Rollback remains code/config-only: dual writes preserve the legacy namespace,
+disabling rollout immediately returns reads and writes to legacy behavior, and
+stable records remain untouched. No cleanup or Phase 3.8 behavior is included.
 
 ---
 

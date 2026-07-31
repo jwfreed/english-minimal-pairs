@@ -1,4 +1,5 @@
 import type { LanguageId } from '@/src/domain/identity';
+import { reportMasteryRolloutDiagnostic } from '@/src/analytics/masteryRolloutDiagnostics';
 import {
   analyzeOrphanedMastery,
   proposeOrphanMasteryAdoption,
@@ -81,6 +82,18 @@ const EMPTY_DIAGNOSTICS = {
   malformed: [] as readonly LegacyMasteryDiagnostic[],
 };
 
+function reportOrphanAdoption(
+  result: OrphanAdoptionOperationResult
+): OrphanAdoptionOperationResult {
+  reportMasteryRolloutDiagnostic({
+    name: 'orphan-adoption',
+    status: result.status,
+    outcome: result.outcome,
+    adoptedRecords: result.counts.adoptedRecords,
+  });
+  return result;
+}
+
 /**
  * Explicit Phase 3.6 recovery operation. It scans exactly one language, never
  * deletes legacy data, and is intentionally not wired to startup or UI code.
@@ -91,7 +104,7 @@ export async function adoptOrphanedMasteryForLanguage(
 ): Promise<OrphanAdoptionOperationResult> {
   const stableRead = await readContrastMastery(storage, languageId);
   if (stableRead.status === 'storage-error') {
-    return {
+    return reportOrphanAdoption({
       status: 'failed',
       outcome: 'storage-failure',
       writeOrder: 'stable-then-migration-state',
@@ -103,10 +116,10 @@ export async function adoptOrphanedMasteryForLanguage(
       hasUnresolvedHistoricalEvidence: false,
       operation: 'read-stable',
       error: stableRead.error,
-    };
+    });
   }
   if (stableRead.status === 'missing') {
-    return {
+    return reportOrphanAdoption({
       status: 'failed',
       outcome: 'no-stable-state',
       writeOrder: 'stable-then-migration-state',
@@ -116,13 +129,13 @@ export async function adoptOrphanedMasteryForLanguage(
       counts: EMPTY_COUNTS,
       diagnostics: EMPTY_DIAGNOSTICS,
       hasUnresolvedHistoricalEvidence: false,
-    };
+    });
   }
   if (
     stableRead.status === 'malformed' ||
     stableRead.status === 'unsupported-version'
   ) {
-    return {
+    return reportOrphanAdoption({
       status: 'failed',
       outcome: 'blocked-by-unusable-stable',
       writeOrder: 'stable-then-migration-state',
@@ -133,7 +146,7 @@ export async function adoptOrphanedMasteryForLanguage(
       diagnostics: EMPTY_DIAGNOSTICS,
       hasUnresolvedHistoricalEvidence: false,
       stableStatus: stableRead.status,
-    };
+    });
   }
 
   const migrationRead = await readContrastMasteryMigrationState(
@@ -141,7 +154,7 @@ export async function adoptOrphanedMasteryForLanguage(
     languageId
   );
   if (migrationRead.status === 'storage-error') {
-    return {
+    return reportOrphanAdoption({
       status: 'failed',
       outcome: 'storage-failure',
       writeOrder: 'stable-then-migration-state',
@@ -154,12 +167,12 @@ export async function adoptOrphanedMasteryForLanguage(
       document: stableRead.value,
       operation: 'read-migration-state',
       error: migrationRead.error,
-    };
+    });
   }
 
   const legacyRead = await readLegacySourcesForLanguage(storage, languageId);
   if (legacyRead.status === 'storage-error') {
-    return {
+    return reportOrphanAdoption({
       status: 'failed',
       outcome: 'storage-failure',
       writeOrder: 'stable-then-migration-state',
@@ -172,7 +185,7 @@ export async function adoptOrphanedMasteryForLanguage(
       document: stableRead.value,
       operation: 'read-legacy',
       error: legacyRead.error,
-    };
+    });
   }
 
   const analysis = analyzeOrphanedMastery(
@@ -201,7 +214,7 @@ export async function adoptOrphanedMasteryForLanguage(
         status: 'failed',
         error: write.error,
       };
-      return {
+      return reportOrphanAdoption({
         ...common,
         counts: {
           ...plan.counts,
@@ -216,7 +229,7 @@ export async function adoptOrphanedMasteryForLanguage(
         document: stableRead.value,
         operation: 'write-stable',
         error: write.error,
-      };
+      });
     }
     stableWrite = { attempted: true, succeeded: true, status: 'written' };
   }
@@ -236,7 +249,7 @@ export async function adoptOrphanedMasteryForLanguage(
         status: 'failed',
         error: write.error,
       };
-      return {
+      return reportOrphanAdoption({
         ...common,
         status: stableWrite.succeeded ? 'partial' : 'failed',
         outcome: stableWrite.succeeded
@@ -248,7 +261,7 @@ export async function adoptOrphanedMasteryForLanguage(
         document: stableWrite.succeeded ? plan.document : stableRead.value,
         operation: 'write-migration-state',
         error: write.error,
-      };
+      });
     }
     migrationStateWrite = {
       attempted: true,
@@ -257,7 +270,7 @@ export async function adoptOrphanedMasteryForLanguage(
     };
   }
 
-  return {
+  return reportOrphanAdoption({
     ...common,
     status: 'complete',
     outcome:
@@ -270,5 +283,5 @@ export async function adoptOrphanedMasteryForLanguage(
     migrationStateWrite,
     retryRequired: false,
     document: plan.document,
-  };
+  });
 }

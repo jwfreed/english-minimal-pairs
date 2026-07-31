@@ -1,7 +1,11 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Pair } from '@/src/constants/minimalPairs';
-import { FEATURE_FLAGS } from '@/src/config/featureFlags';
+import {
+  FEATURE_FLAGS,
+  isContrastMasteryAuthoritative,
+  isContrastMasteryShadowEnabled,
+} from '@/src/config/featureFlags';
 import {
   buildMasteryForAllGroups,
   selectVisiblePairsByMastery,
@@ -13,6 +17,7 @@ import {
 } from '@/src/domain/masteryPersistence';
 import { historicalIdentityMapping } from '@/src/domain/compatibility/historicalIdentityMapping';
 import {
+  compareMasteryInShadow,
   readCompatibleMastery,
   writeCompatibleMastery,
 } from '@/src/storage/masteryCompatibility';
@@ -29,8 +34,13 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   const storageKey = buildMasteryStorageKey(categoryKey);
   const languageId =
     historicalIdentityMapping.resolveCategoryLabel(categoryKey);
+  const rolloutState = FEATURE_FLAGS.contrastMasteryRollout;
   const stablePathEnabled =
-    FEATURE_FLAGS.contrastMasteryStore && languageId !== undefined;
+    isContrastMasteryAuthoritative(rolloutState) &&
+    languageId !== undefined;
+  const shadowPathEnabled =
+    isContrastMasteryShadowEnabled(rolloutState) &&
+    languageId !== undefined;
 
   // Load persisted mastery on mount / category change
   useEffect(() => {
@@ -45,28 +55,48 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
             AsyncStorage,
             languageId,
             categoryKey,
-            true
+            rolloutState
           );
           if (!cancelled) {
             if (result.status === 'ready') {
               skipNextStableWrite.current = true;
               setMastery(result.mastery);
             } else {
+              // A blocked read must never be followed by an empty write that
+              // could erase still-readable legacy progress.
+              skipNextStableWrite.current = true;
               setPersistenceError(result);
             }
           }
         } else {
           const raw = await AsyncStorage.getItem(storageKey);
-          if (!cancelled) setMastery(parseStoredMastery(raw));
+          if (!cancelled) {
+            setMastery(parseStoredMastery(raw));
+            if (shadowPathEnabled && languageId) {
+              void compareMasteryInShadow(
+                AsyncStorage,
+                languageId,
+                categoryKey
+              ).catch(() => {});
+            }
+          }
         }
       } catch {
+        if (stablePathEnabled) skipNextStableWrite.current = true;
         // ignore – start fresh
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [categoryKey, languageId, stablePathEnabled, storageKey]);
+  }, [
+    categoryKey,
+    languageId,
+    rolloutState,
+    shadowPathEnabled,
+    stablePathEnabled,
+    storageKey,
+  ]);
 
   // Persist whenever mastery changes (after initial load)
   useEffect(() => {
@@ -86,7 +116,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
             categoryKey,
             mastery,
             provenance,
-            true
+            rolloutState
           );
           if (result.status !== 'complete') setPersistenceError(result);
         })
@@ -99,6 +129,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     isLoading,
     languageId,
     mastery,
+    rolloutState,
     stablePathEnabled,
     storageKey,
   ]);
@@ -137,14 +168,20 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
         categoryKey,
         {},
         'reset',
-        true
+        rolloutState
       );
       if (result.status !== 'complete') setPersistenceError(result);
       return;
     }
     setMastery({});
     await AsyncStorage.removeItem(storageKey).catch(() => {});
-  }, [categoryKey, languageId, stablePathEnabled, storageKey]);
+  }, [
+    categoryKey,
+    languageId,
+    rolloutState,
+    stablePathEnabled,
+    storageKey,
+  ]);
 
   /** Re-read mastery from AsyncStorage (e.g. when the tab gains focus). */
   const refresh = useCallback(async () => {
@@ -154,7 +191,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
           AsyncStorage,
           languageId,
           categoryKey,
-          true
+          rolloutState
         );
         if (result.status === 'ready') {
           skipNextStableWrite.current = true;
@@ -166,10 +203,24 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
       }
       const raw = await AsyncStorage.getItem(storageKey);
       setMastery((current) => parseStoredMastery(raw, current));
+      if (shadowPathEnabled && languageId) {
+        void compareMasteryInShadow(
+          AsyncStorage,
+          languageId,
+          categoryKey
+        ).catch(() => {});
+      }
     } catch {
       // ignore
     }
-  }, [categoryKey, languageId, stablePathEnabled, storageKey]);
+  }, [
+    categoryKey,
+    languageId,
+    rolloutState,
+    shadowPathEnabled,
+    stablePathEnabled,
+    storageKey,
+  ]);
 
   return {
     visible,

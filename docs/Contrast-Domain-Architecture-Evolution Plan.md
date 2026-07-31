@@ -599,6 +599,42 @@ Not implemented:
 background, UI, analytics, scheduling, practice, pair-progress, or Phase 3.7
 integration.
 
+### **Phase 3.7 Complete**
+
+Phase 3.7 is complete. It adds controlled rollout support without advancing the
+production build beyond `disabled`.
+
+Implemented:
+
+* build-time states: `disabled`, `shadow`, `internal-test`, `limited`, and
+  `enabled`
+* a non-mutating shadow comparison with explicit missing-record, tier, reset,
+  placement, alias, fallback, malformed, and unresolved diagnostics
+* stable-first authoritative reads with legacy fallback only for genuinely
+  missing stable state
+* existing legacy-first compatibility writes in every authoritative state
+* session metrics and an internal diagnostic sink for rollout operations and
+  failures
+* a pure measurable release gate covering data, error, identity, placement,
+  reset, and practice safety
+* rollback verification from enabled dual writes to disabled legacy reads
+
+Runtime reads do not activate migration, repair markers, or adopt orphans.
+Migration and adoption remain explicit per-language operations. No startup
+migration, background scan, bulk recovery, remote infrastructure, pair-progress
+write, learner-facing analytics, or UI behavior was added.
+
+Production state:
+
+* `FEATURE_FLAGS.contrastMasteryStore` remains disabled
+* real-install shadow evidence is outstanding
+* Phase 3.8 has not started
+
+A real install carrying real learner history must complete shadow verification
+with zero unresolved mappings and zero unexplained divergence before rollout
+advances. This is an operational release gate, not missing migration
+architecture.
+
 ---
 
 # **Phase 3 — Progress/Mastery Evolution**
@@ -832,6 +868,89 @@ changes can be ordered as newer legacy evidence.
 
 ---
 
+## **Phase 3.7 Controlled Rollout Strategy**
+
+### **Purpose**
+
+Validate stable mastery behavior safely before enabling broader production
+usage.
+
+### **Rollout Model**
+
+```text
+disabled
+    ↓
+shadow
+    ↓
+internal-test
+    ↓
+limited
+    ↓
+enabled
+```
+
+The rollout state is intentionally controlled. No remote configuration
+infrastructure was introduced.
+
+### **Shadow Verification**
+
+Shadow mode:
+
+* compares stable and legacy behavior
+* records divergence diagnostics
+* performs no migration
+* performs no repair
+* performs no stable writes
+* preserves learner-visible behavior
+
+### **Compatibility Rules**
+
+Read authority:
+
+```text
+stable mastery
+      ↓
+safe legacy fallback
+```
+
+Write compatibility:
+
+```text
+legacy compatibility write
+      ↓
+stable mastery write
+```
+
+Read authority and compatibility write ordering are separate decisions.
+Fallback is permitted only when stable state is unavailable and the fallback is
+safe. Compatibility writes retain explicit partial-failure reporting.
+
+### **Safety Gates**
+
+Rollout advancement requires measurable verification of:
+
+* lost mastery
+* duplicated mastery
+* unexpected tier changes
+* reset correctness
+* placement correctness
+* storage failures
+* partial writes
+* identity resolution
+* alias regressions
+* practice behavior
+
+### **Rollback**
+
+Rollback must preserve:
+
+* legacy readability
+* stable data preservation
+* no destructive cleanup
+* no repair requirement
+
+---
+
 ## **Pair Progress Strategy**
 
 Pair progress does NOT migrate storage in Phase 3.
@@ -988,7 +1107,8 @@ revertable.
 
 3.6 Historical orphan adoption — complete, explicit operation only
 
-3.7 Enable migration after verification gate
+3.7 Controlled stable mastery rollout — complete; production remains disabled
+pending real-install shadow evidence
 
 3.8 Compatibility window close
 
@@ -1017,6 +1137,21 @@ Sequencing rules:
   audit on a real install carrying real history, including at least one renamed
   language  
 * 3.8 closes legacy writes only; legacy reads and the alias table remain
+
+### **Phase 3.7 Exit Gate**
+
+Before Phase 3.8:
+
+* rollout mechanism exists — verified
+* shadow comparison exists — verified
+* shadow mode preserves learner-visible behavior — verified
+* compatibility reads and writes remain intact — verified
+* rollback behavior is verified
+* migration invariants remain green
+* production remains disabled pending real-install shadow evidence
+
+This gate records Phase 3.7 implementation completion. It does not enable
+production rollout, close the compatibility window, or begin Phase 3.8.
 
 ---
 

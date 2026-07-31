@@ -1,5 +1,6 @@
 import type { LanguageId } from '@/src/domain/identity';
 import { defineLanguageId } from '@/src/domain/identity';
+import { reportMasteryRolloutDiagnostic } from '@/src/analytics/masteryRolloutDiagnostics';
 import {
   CONTRAST_MASTERY_MIGRATION_SCHEMA_VERSION,
   CONTRAST_MASTERY_SCHEMA_VERSION,
@@ -91,16 +92,27 @@ async function readValidated<T>(
   }
 }
 
-export function readContrastMastery(
+export async function readContrastMastery(
   storage: MasteryKeyValueStorage,
   languageId: LanguageId
 ): Promise<MasteryStorageReadResult<ContrastMasteryDocument>> {
-  return readValidated(
+  const result = await readValidated(
     storage,
     buildContrastMasteryStorageKey(languageId),
     CONTRAST_MASTERY_SCHEMA_VERSION,
     validateContrastMasteryDocument
   );
+  reportMasteryRolloutDiagnostic({
+    name: 'stable-read',
+    status: result.status,
+  });
+  if (result.status === 'storage-error') {
+    reportMasteryRolloutDiagnostic({
+      name: 'storage-failure',
+      operation: 'read-stable',
+    });
+  }
+  return result;
 }
 
 export async function writeContrastMastery(
@@ -115,20 +127,31 @@ export async function writeContrastMastery(
     );
     return { status: 'written' };
   } catch (error) {
+    reportMasteryRolloutDiagnostic({
+      name: 'storage-failure',
+      operation: 'write-stable',
+    });
     return { status: 'storage-error', error };
   }
 }
 
-export function readContrastMasteryMigrationState(
+export async function readContrastMasteryMigrationState(
   storage: MasteryKeyValueStorage,
   languageId: LanguageId
 ): Promise<MasteryStorageReadResult<ContrastMasteryMigrationState>> {
-  return readValidated(
+  const result = await readValidated(
     storage,
     buildContrastMasteryMigrationKey(languageId),
     CONTRAST_MASTERY_MIGRATION_SCHEMA_VERSION,
     validateContrastMasteryMigrationState
   );
+  if (result.status === 'storage-error') {
+    reportMasteryRolloutDiagnostic({
+      name: 'storage-failure',
+      operation: 'read-migration-state',
+    });
+  }
+  return result;
 }
 
 export async function writeContrastMasteryMigrationState(
@@ -142,6 +165,10 @@ export async function writeContrastMasteryMigrationState(
     );
     return { status: 'written' };
   } catch (error) {
+    reportMasteryRolloutDiagnostic({
+      name: 'storage-failure',
+      operation: 'write-migration-state',
+    });
     return { status: 'storage-error', error };
   }
 }

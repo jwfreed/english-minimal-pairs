@@ -432,6 +432,86 @@ learner-visible behavior.
 
 ---
 
+# **Phase 3.5 Status**
+
+Phase 3.5 is complete.
+
+The `LanguageId` + `ContrastId` mastery store, schema validation, pure
+reconciliation policies, lazy per-language migration operation, compatibility
+reads and writes, reset tombstones, and partial-failure reporting are
+implementation-complete and testable.
+
+The feature remains disabled by default:
+
+`FEATURE_FLAGS.contrastMasteryStore = false`
+
+No learner migration, historical orphan adoption, startup scan, or
+learner-visible behavior is enabled by Phase 3.5.
+
+## **Stable-State Fallback Policy**
+
+| Stable state | Compatibility behavior |
+| --- | --- |
+| Missing | Legacy fallback and initial derivation are permitted. |
+| Valid | Stable state remains authoritative and normal reconciliation rules apply. |
+| Malformed | Return an explicit blocked result; do not fall back, repair, delete, or rewrite either representation. |
+| Unsupported schema version | Return an explicit blocked result; do not fall back, repair, delete, or rewrite either representation. |
+| Storage read failure | Return an explicit storage failure; do not silently report legacy fallback as success. |
+
+Malformed or unsupported stable state must never be treated as missing. This
+prevents stale legacy evidence from resurrecting mastery that may have been
+lowered by placement or practice, or cleared by a reset tombstone.
+
+## **Revision Semantics**
+
+Stable learner actions use monotonic stable-document revisions.
+
+Revisions reconstructed from legacy source fingerprints are migration
+observation revisions. They order changes observed by this migration system;
+they are not timestamps and do not prove the historical or causal order of the
+underlying legacy learner actions relative to stable actions that were not
+observed through the same migration-state ledger.
+
+Highest-tier-wins remains limited to initial alias reconciliation and
+equal-revision tie-breaking. It is not the steady-state conflict policy.
+
+## **Compatibility Write Ordering**
+
+Flag-on compatibility writes are legacy-first:
+
+1. If the legacy write fails, the stable write is not attempted and the result
+   is `failed`.
+2. If the legacy write succeeds and the stable write fails, the result is
+   `partial` and retry is required.
+3. Only successful writes to both required representations produce a
+   `complete` result.
+
+A valid stable document that existed before a failed legacy write is reported
+as pre-existing state, not as a stable success in the current invocation.
+Compatibility writes do not simulate transactions or perform destructive
+compensation.
+
+## **Migration Marker Contract**
+
+`@masteryByContrastMigration_${LanguageId}` is advisory metadata and an
+optimization; it is not the authoritative mastery state.
+
+A valid stable mastery document remains valid when the marker is missing,
+malformed, or unsupported. The marker may be recreated by baselining the
+currently visible legacy bytes without reconciling them over the stable
+document. This prevents marker loss from allowing stale legacy evidence to
+outrank a stable reset or lowering action.
+
+Known limitation:
+
+If the marker is lost, legacy actions that occurred while it was unavailable
+cannot be causally ordered. The safe policy is to preserve the valid stable
+document and treat the current legacy bytes as a new observation baseline.
+Only a subsequent fingerprint change observed after that baseline can
+participate as newer legacy evidence.
+
+---
+
 # **Proposed Execution Sequence**
 
 ## **Step 0 — Architecture Lock**

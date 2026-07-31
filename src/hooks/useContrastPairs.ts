@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Pair } from '@/src/constants/minimalPairs';
+import { FEATURE_FLAGS } from '@/src/config/featureFlags';
 import {
   buildMasteryForAllGroups,
   selectVisiblePairsByMastery,
@@ -10,13 +11,26 @@ import {
   parseStoredMastery,
   serializeMastery,
 } from '@/src/domain/masteryPersistence';
+import { historicalIdentityMapping } from '@/src/domain/compatibility/historicalIdentityMapping';
+import {
+  readCompatibleMastery,
+  writeCompatibleMastery,
+} from '@/src/storage/masteryCompatibility';
 
 export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   // map group → highest tier mastered (start at 1)
   const [mastery, setMastery] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [persistenceError, setPersistenceError] = useState<unknown>(null);
+  const nextWriteProvenance = useRef<'practice' | 'placement'>('practice');
+  const skipNextStableWrite = useRef(false);
+  const stableWriteQueue = useRef<Promise<void>>(Promise.resolve());
 
   const storageKey = buildMasteryStorageKey(categoryKey);
+  const languageId =
+    historicalIdentityMapping.resolveCategoryLabel(categoryKey);
+  const stablePathEnabled =
+    FEATURE_FLAGS.contrastMasteryStore && languageId !== undefined;
 
   // Load persisted mastery on mount / category change
   useEffect(() => {
@@ -26,8 +40,25 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     setMastery({});
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(storageKey);
-        if (!cancelled) setMastery(parseStoredMastery(raw));
+        if (stablePathEnabled && languageId) {
+          const result = await readCompatibleMastery(
+            AsyncStorage,
+            languageId,
+            categoryKey,
+            true
+          );
+          if (!cancelled) {
+            if (result.status === 'ready') {
+              skipNextStableWrite.current = true;
+              setMastery(result.mastery);
+            } else {
+              setPersistenceError(result);
+            }
+          }
+        } else {
+          const raw = await AsyncStorage.getItem(storageKey);
+          if (!cancelled) setMastery(parseStoredMastery(raw));
+        }
       } catch {
         // ignore – start fresh
       } finally {
@@ -35,46 +66,119 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
       }
     })();
     return () => { cancelled = true; };
-  }, [storageKey]);
+  }, [categoryKey, languageId, stablePathEnabled, storageKey]);
 
   // Persist whenever mastery changes (after initial load)
   useEffect(() => {
     if (isLoading) return;
+    if (stablePathEnabled && languageId) {
+      if (skipNextStableWrite.current) {
+        skipNextStableWrite.current = false;
+        return;
+      }
+      const provenance = nextWriteProvenance.current;
+      nextWriteProvenance.current = 'practice';
+      stableWriteQueue.current = stableWriteQueue.current
+        .then(async () => {
+          const result = await writeCompatibleMastery(
+            AsyncStorage,
+            languageId,
+            categoryKey,
+            mastery,
+            provenance,
+            true
+          );
+          if (result.status !== 'complete') setPersistenceError(result);
+        })
+        .catch(setPersistenceError);
+      return;
+    }
     AsyncStorage.setItem(storageKey, serializeMastery(mastery)).catch(() => {});
-  }, [mastery, storageKey, isLoading]);
+  }, [
+    categoryKey,
+    isLoading,
+    languageId,
+    mastery,
+    stablePathEnabled,
+    storageKey,
+  ]);
 
   const visible = useMemo(() => {
     return selectVisiblePairsByMastery(pairs, mastery);
   }, [pairs, mastery]);
 
   const promote = useCallback(
-    (group: string) =>
-      setMastery((m) => ({ ...m, [group]: Math.min((m[group] ?? 1) + 1, 6) })),
+    (group: string) => {
+      nextWriteProvenance.current = 'practice';
+      setMastery((m) => ({
+        ...m,
+        [group]: Math.min((m[group] ?? 1) + 1, 6),
+      }));
+    },
     []
   );
 
   /** Set every group to the given tier (clamped 1-6). Used by the placement test. */
   const setAllGroupsToTier = useCallback(
     (tier: number) => {
+      nextWriteProvenance.current = 'placement';
       setMastery(buildMasteryForAllGroups(pairs, tier));
     },
     [pairs]
   );
 
   const resetMastery = useCallback(async () => {
+    if (stablePathEnabled && languageId) {
+      skipNextStableWrite.current = true;
+      setMastery({});
+      const result = await writeCompatibleMastery(
+        AsyncStorage,
+        languageId,
+        categoryKey,
+        {},
+        'reset',
+        true
+      );
+      if (result.status !== 'complete') setPersistenceError(result);
+      return;
+    }
     setMastery({});
     await AsyncStorage.removeItem(storageKey).catch(() => {});
-  }, [storageKey]);
+  }, [categoryKey, languageId, stablePathEnabled, storageKey]);
 
   /** Re-read mastery from AsyncStorage (e.g. when the tab gains focus). */
   const refresh = useCallback(async () => {
     try {
+      if (stablePathEnabled && languageId) {
+        const result = await readCompatibleMastery(
+          AsyncStorage,
+          languageId,
+          categoryKey,
+          true
+        );
+        if (result.status === 'ready') {
+          skipNextStableWrite.current = true;
+          setMastery(result.mastery);
+        } else {
+          setPersistenceError(result);
+        }
+        return;
+      }
       const raw = await AsyncStorage.getItem(storageKey);
       setMastery((current) => parseStoredMastery(raw, current));
     } catch {
       // ignore
     }
-  }, [storageKey]);
+  }, [categoryKey, languageId, stablePathEnabled, storageKey]);
 
-  return { visible, promote, mastery, resetMastery, setAllGroupsToTier, refresh, isLoading };
+  return {
+    visible,
+    promote,
+    mastery,
+    resetMastery,
+    setAllGroupsToTier,
+    refresh,
+    isLoading,
+    persistenceError,
+  };
 };

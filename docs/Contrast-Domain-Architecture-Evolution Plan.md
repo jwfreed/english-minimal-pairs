@@ -544,6 +544,11 @@ The read-only production projection establishes:
 Storage keys, serialization, history caps, UI, analytics, scheduling,
 practice-session behavior, and mastery remain unchanged.
 
+### **Phase 3.5 Completion Record**
+
+Phase 3.5 is complete. Its stable-identity mastery foundation remains disabled
+by default and introduces no learner-visible migration behavior.
+
 ---
 
 # **Phase 3 — Progress/Mastery Evolution**
@@ -622,6 +627,20 @@ New-namespace-first is deliberate. It exercises the new path from the first
 release while legacy remains authoritative, so defects surface while dual-write
 still protects the learner.
 
+Stable-state fallback is intentionally asymmetric:
+
+| Stable state | Compatibility behavior |
+| --- | --- |
+| Missing | Legacy fallback and initial derivation are permitted. |
+| Valid | Use the stable document and normal stable/legacy reconciliation rules. |
+| Malformed | Block with diagnostics; do not fall back to legacy or modify either representation. |
+| Unsupported schema version | Block with diagnostics; do not fall back to legacy or modify either representation. |
+| Storage read failure | Return an explicit storage failure; do not silently downgrade to legacy success. |
+
+Malformed and unsupported stable documents are evidence, not absence. Blocking
+fallback prevents stale legacy tiers from undoing reset tombstones, placement
+lowering, or lower-tier stable practice updates.
+
 Required properties:
 
 * idempotent  
@@ -636,8 +655,13 @@ Supporting rules:
 * the fingerprint of the legacy source is stored alongside the derived data; a
   mismatch means legacy changed out of band, which is the rollback-then-forward
   case, and triggers re-derivation  
-* conflicts resolve by `revision`; where revisions are equal the higher tier
-  wins, so no migration step can lower an earned tier  
+* stable conflicts resolve by monotonic stable-document revision; where
+  comparable revisions are equal the higher tier is a deterministic
+  tie-breaker, so no migration step can lower an earned tier
+* revisions reconstructed from legacy fingerprints are observation revisions:
+  they order source changes observed by this migration system, but are not
+  timestamps and do not prove the true causal order of the underlying legacy
+  learner action relative to independently written stable actions
 * initial derivation across historical label aliases merges by highest tier  
 * the only permitted downward movement is learner-initiated: reset, and the
   existing placement flow. Revision-aware resolution exists so that highest-tier
@@ -645,12 +669,35 @@ Supporting rules:
 * wall-clock values are metadata only and must never decide a conflict  
 * migration is scoped per language, so there is no cross-key transaction  
 * the derived data is written before the migration state record; a failure
-  between the two leaves the next load free to re-derive  
+  between the two leaves a valid stable document that the next load preserves
+  while safely recreating the advisory marker
 * a migration-complete state must never be recorded when the legacy source was
   unparseable  
-* mastery writes must be serialized and failure-visible, not fire-and-forget  
-* learner-initiated reset must clear the legacy namespace, the new namespace,
-  and the migration state together
+* compatibility writes are serialized and legacy-first: a legacy failure stops
+  before the stable write, a stable failure after legacy success is explicitly
+  partial, and only both writes succeeding is complete
+* learner-initiated reset remains legacy-readable and is represented in stable
+  state by revisioned reset tombstones; stale migration metadata must never
+  resurrect the cleared records
+
+### **Migration-State Marker**
+
+`@masteryByContrastMigration_${LanguageId}` is advisory metadata and an
+optimization, not authoritative learner mastery.
+
+The stable mastery document contains the authoritative revisioned records and
+reset tombstones. Missing, malformed, or unsupported marker metadata does not
+invalidate or downgrade a valid stable document. The marker is recreated by
+baselining the currently visible legacy bytes without reconciling them over
+stable state.
+
+Known limitation:
+
+After marker loss, the migration system cannot establish when legacy actions
+that occurred while the marker was unavailable happened relative to stable
+actions. It therefore preserves the valid stable document and records current
+legacy bytes as an observation baseline. Only later observed fingerprint
+changes can be ordered as newer legacy evidence.
 
 ---
 
@@ -806,7 +853,7 @@ revertable.
 
 3.4 Pair-progress read projection — complete
 
-3.5 Contrast mastery store behind feature flag
+3.5 Contrast mastery store behind feature flag — complete, flag remains off
 
 3.6 Historical orphan adoption
 

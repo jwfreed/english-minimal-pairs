@@ -1,3 +1,26 @@
+import {
+  createPersistentDiagnosticSink,
+  DiagnosticQueueFullError,
+} from '@/src/storage/masteryRolloutDiagnosticStorage';
+
+export type OrphanAdoptionDiagnosticOutcome =
+  | 'no-stable-state'
+  | 'blocked-by-unusable-stable'
+  | 'no-candidates'
+  | 'candidates-adopted'
+  | 'candidates-partially-persisted'
+  | 'marker-only-repair'
+  | 'storage-failure';
+
+export type MasteryRolloutStorageFailureOperation =
+  | 'read-stable'
+  | 'write-stable'
+  | 'read-migration-state'
+  | 'write-migration-state'
+  | 'read-legacy'
+  | 'read-legacy-fallback'
+  | 'write-legacy';
+
 export type MasteryRolloutDiagnosticEvent =
   | {
       readonly name: 'stable-read';
@@ -40,12 +63,12 @@ export type MasteryRolloutDiagnosticEvent =
   | {
       readonly name: 'orphan-adoption';
       readonly status: 'complete' | 'partial' | 'failed';
-      readonly outcome: string;
+      readonly outcome: OrphanAdoptionDiagnosticOutcome;
       readonly adoptedRecords: number;
     }
   | {
       readonly name: 'storage-failure';
-      readonly operation: string;
+      readonly operation: MasteryRolloutStorageFailureOperation;
     };
 
 export interface MasteryRolloutMetrics {
@@ -61,6 +84,8 @@ export interface MasteryRolloutMetrics {
   readonly shadowComparisons: number;
   readonly shadowDivergences: number;
   readonly unresolvedMappings: number;
+  readonly diagnosticDeliveryFailures: number;
+  readonly diagnosticEventsDropped: number;
 }
 
 export type MasteryRolloutDiagnosticSink = (
@@ -82,12 +107,16 @@ const metrics: {
   shadowComparisons: 0,
   shadowDivergences: 0,
   unresolvedMappings: 0,
+  diagnosticDeliveryFailures: 0,
+  diagnosticEventsDropped: 0,
 };
 
+const persistentSink = createPersistentDiagnosticSink();
 const defaultSink: MasteryRolloutDiagnosticSink = (event) => {
   if (__DEV__) {
     console.debug('[mastery-rollout]', event.name, event);
   }
+  return persistentSink(event);
 };
 
 let sink: MasteryRolloutDiagnosticSink = defaultSink;
@@ -125,6 +154,10 @@ function updateMetrics(event: MasteryRolloutDiagnosticEvent): void {
 }
 
 function reportDeliveryFailure(error: unknown): void {
+  metrics.diagnosticDeliveryFailures += 1;
+  if (error instanceof DiagnosticQueueFullError) {
+    metrics.diagnosticEventsDropped += 1;
+  }
   if (__DEV__) {
     console.warn('[mastery-rollout] Diagnostic delivery failed', error);
   }

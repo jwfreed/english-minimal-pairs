@@ -2,9 +2,9 @@
 
 Date: 2026-07-31
 Branch: `docs/phase-3-migration-strategy` (evidence gathered at `276b714`)
-Status: **Authoritative planning document.** Documentation only — no source,
-test, or configuration files were modified to produce this plan. No package
-in this plan has been implemented or approved for implementation.
+Status: **Authoritative planning document.** WP-3.8A completion is recorded
+below. All other packages remain proposed and require their stated approval
+and evidence gates.
 
 This plan is a peer of `docs/Phase-3.8-Architecture-Audit.md` and is scoped by
 Decision 011 (`docs/Contrast-Domain-Architecture-Decisions.md`): compatibility
@@ -398,6 +398,42 @@ through the alias table.
 - **Completion evidence:** Counters survive a cold start; a snapshot can be
   exported from a device; the schema test proves no learner-state category
   can be persisted; tests green.
+
+#### Phase 3.8A completion status — 2026-07-31
+
+**Implemented:**
+
+- An isolated, versioned diagnostic storage boundary disjoint from every
+  learner-state key.
+- Bounded persistence: a 100-entry recent-event ring and a diagnostic write
+  backlog capped at one active write plus 100 pending events. New events are
+  dropped when the backlog is full; diagnostics never block learner work.
+- Failure-isolated, fire-and-forget writes with storage failures observable
+  through the existing in-memory diagnostic metrics.
+- Strict schema projection and validation that admit only enumerated
+  operational outcomes and counts and strip unknown payload fields.
+- Explicit `recordDiagnosticEvent(...)` and `getDiagnosticSnapshot(...)`
+  operational APIs with deterministic serialization and safe malformed-data
+  handling.
+
+Diagnostic loss is an accepted degradation mode and must never affect
+learner-state correctness.
+
+**Verified:**
+
+- Missing, malformed, unavailable, stalled, or process-lost diagnostics do
+  not fail or delay learner-state behavior.
+- Diagnostic persistence cannot store learner state or reconstruct mastery.
+- No learner-facing code reads diagnostics, so diagnostics cannot influence
+  mastery, migration, placement, or rollout decisions.
+- Rollout remains a human-controlled build-time decision and remains
+  `disabled` in the production configuration.
+
+**Deferred:**
+
+- Safety-gate evidence consumption and provenance mapping (WP-3.8B).
+- Any rollout advancement or migration orchestration.
+- Production evidence collection and release-window evaluation.
 
 ### WP-3.8B — Safety-gate evidence contract and human-controlled reporting
 

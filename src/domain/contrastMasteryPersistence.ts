@@ -90,6 +90,7 @@ export interface LegacyMasteryDiagnostic {
 
 export interface LegacyMasteryCandidate {
   readonly storageKey: string;
+  readonly legacyGroup: string;
   readonly contrastId: ContrastId;
   readonly tier: MasteryTier;
   /** Migration observation order, not authoritative legacy action causality. */
@@ -149,7 +150,33 @@ export function fingerprintLegacySources(
   return `legacy-source-v1:${canonical}`;
 }
 
-function inspectLegacyMastery(
+export function parseLegacySourceFingerprint(
+  fingerprint: string,
+  categoryLabel: string
+): LegacyMasterySource | undefined {
+  const prefix = 'legacy-source-v1:';
+  if (!fingerprint.startsWith(prefix)) return undefined;
+  try {
+    const row = JSON.parse(fingerprint.slice(prefix.length)) as unknown;
+    if (
+      !Array.isArray(row) ||
+      row.length !== 2 ||
+      typeof row[0] !== 'string' ||
+      (row[1] !== null && typeof row[1] !== 'string')
+    ) {
+      return undefined;
+    }
+    return {
+      storageKey: row[0],
+      categoryLabel,
+      raw: row[1],
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+export function inspectLegacyMastery(
   languageId: LanguageId,
   sources: readonly LegacyMasterySource[],
   observationRevisions: ReadonlyMap<string, number>,
@@ -226,6 +253,7 @@ function inspectLegacyMastery(
       }
       candidates.push({
         storageKey: source.storageKey,
+        legacyGroup,
         contrastId,
         tier,
         revision: defineMasteryRevision(
@@ -381,7 +409,9 @@ export function updateLegacySourceObservations(
   )) {
     const fingerprint = fingerprintLegacySources([source]);
     const prior = previousByKey.get(source.storageKey);
-    const changed = Boolean(previous && (!prior || prior.fingerprint !== fingerprint));
+    const changed = Boolean(
+      previous && (!prior || prior.fingerprint !== fingerprint)
+    );
     if (changed) changedKeys.add(source.storageKey);
     const revision = changed ? ++nextRevision : prior?.revision ?? 0;
     observationRevisions.set(source.storageKey, revision);

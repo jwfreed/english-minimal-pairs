@@ -17,6 +17,11 @@ export const CONTRAST_MASTERY_MIGRATION_KEY_PREFIX =
 
 export interface MasteryKeyValueStorage {
   getItem(key: string): Promise<string | null>;
+  /**
+   * setItem replaces one key with one complete string value. Stable mastery
+   * atomicity relies on this whole-value storage boundary; records are never
+   * persisted individually by this adapter.
+   */
   setItem(key: string, value: string): Promise<void>;
 }
 
@@ -103,9 +108,10 @@ export async function writeContrastMastery(
   document: ContrastMasteryDocument
 ): Promise<MasteryStorageWriteResult> {
   try {
+    const serializedDocument = serializeContrastMasteryDocument(document);
     await storage.setItem(
       buildContrastMasteryStorageKey(document.languageId),
-      serializeContrastMasteryDocument(document)
+      serializedDocument
     );
     return { status: 'written' };
   } catch (error) {

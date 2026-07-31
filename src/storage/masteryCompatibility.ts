@@ -103,7 +103,7 @@ function sourceLabelsForLanguage(languageId: LanguageId) {
   );
 }
 
-async function readLegacySourcesForLanguage(
+export async function readLegacySourcesForLanguage(
   storage: MasteryKeyValueStorage,
   languageId: LanguageId
 ): Promise<

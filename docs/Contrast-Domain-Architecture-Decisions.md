@@ -512,6 +512,139 @@ participate as newer legacy evidence.
 
 ---
 
+# **Decision 009**
+
+Date:  
+2026-07-31
+
+Status:  
+Accepted
+
+## **Title**
+
+Orphan Adoption Is Conservative Recovery, Not General Reconciliation
+
+## **Context**
+
+After stable mastery migration, legacy mastery evidence may appear that is not
+represented in the stable `LanguageId + ContrastId` document.
+
+This can result from:
+
+* rollback to an older application version
+* interrupted compatibility writes
+* legacy-only learner activity after migration
+* missing advisory migration metadata
+
+Blindly reconciling every visible legacy value over stable mastery could
+resurrect stale mastery, override reset tombstones, violate placement lowering,
+or invent causal ordering that the stored evidence cannot prove.
+
+## **Decision**
+
+Orphan adoption is an explicit, per-language, deterministic, conservative
+recovery operation. It remains disabled by default.
+
+An orphan candidate must:
+
+* map deterministically to exactly one `LanguageId + ContrastId`
+* contain valid mastery evidence
+* not already be represented by exact stable evidence, a persisted observation
+  batch, or a known observation fingerprint
+* not conflict with newer stable evidence
+* not violate reset or placement semantics
+
+Unknown, ambiguous, malformed, or causally uncertain evidence remains blocked.
+Orphan adoption is not a general reconciliation mechanism and does not infer a
+winner when the available evidence cannot establish one safely.
+
+## **Invariants**
+
+* Stable identity existence does not imply that legacy evidence is represented.
+* Observation revisions are migration observations, not historical timestamps.
+* Canonical ordering exists only to make output deterministic.
+* Deterministic ordering must not imply learner chronology.
+* Reset tombstones and placement lowering remain authoritative.
+* Orphan adoption never deletes legacy storage.
+* Failed adoption remains visible and eligible for a later retry.
+
+## **Persistence Rules**
+
+Write order:
+
+1. stable mastery document
+2. advisory migration metadata
+
+Stable mastery is authoritative; migration metadata is advisory. A stable write
+failure prevents the marker write. A marker failure after a successful stable
+write produces a recoverable partial state. Retrying must converge without
+duplicating adoption or drifting the stable revision.
+
+---
+
+# **Phase 3.6 Status**
+
+Phase 3.6 is complete as an explicit, disabled-by-default recovery foundation.
+
+An orphan candidate is exact legacy mastery evidence that:
+
+* resolves through the released historical mapping to one
+  `LanguageId + ContrastId`
+* has a valid tier
+* is not already represented by an exact stable tier, a persisted observation
+  batch result, or the exact per-source advisory fingerprint baseline
+* is newly observed by the migration ledger or is safely additive to an
+  identity absent from stable state
+* has not already been adopted
+
+Malformed tiers, unknown or ambiguous identities, known fingerprint evidence,
+unusable baselines, reset-protected evidence, and conflicts with stable
+placement or practice records are not adoptable.
+
+`analyzeOrphanedMastery` and `proposeOrphanMasteryAdoption` are pure,
+deterministic functions. Adoption may add an absent stable record or update
+migration-derived evidence after a later migration observation. It cannot
+override reset tombstones or conflicting stable placement/practice evidence.
+Sources changed in one scan share one observation revision; the existing
+equal-revision tie-break is used only within that observation.
+
+Stable identity existence is not evidence representation. A stable record alone
+never suppresses later evidence. An exact stable tier or an already-persisted
+observation-batch result may represent it; an exact advisory fingerprint is
+reported separately. A changed fingerprint for the same `ContrastId` remains
+newly observed and is adopted, represented by the batch result, or explicitly
+blocked by provenance/revision policy.
+
+Simultaneous alias evidence is grouped by `ContrastId + observation revision`
+before decisions are assigned. Equivalent tiers converge directly. Conflicting
+tiers within that single observation may use the existing equal-revision
+higher-tier tie-break. Canonical source ordering never creates a different
+revision or causal priority inside the batch.
+
+Phase 3.6 marker repair stores a represented-evidence projection, not an
+unqualified copy of all current legacy bytes. The projection includes exact
+already-represented evidence and proposed evidence only after its stable
+document write succeeds. It excludes blocked, reset-protected, unresolved,
+malformed, and unpersisted evidence. Excluded source evidence remains in legacy
+storage and is re-diagnosed on every retry.
+
+`adoptOrphanedMasteryForLanguage(storage, languageId)` is the only Phase 3.6
+storage operation. It is explicit, scans one language, writes the stable
+document before the advisory marker, reports complete/partial/failed outcomes,
+and is retry-safe. It never deletes or rewrites legacy mastery.
+
+Stable adoption is document-atomic at the application storage boundary:
+`writeContrastMastery` deterministically serializes one complete document and
+performs one whole-value `setItem`. No individual Contrast record is written.
+A rejected stable write leaves the previously stored document authoritative
+and prevents the marker write.
+
+The stable mastery feature flag remains false. Phase 3.6 adds no startup,
+background, UI, analytics, scheduling, practice, pair-progress, or rollout
+integration.
+
+---
+
 # **Proposed Execution Sequence**
 
 ## **Step 0 — Architecture Lock**

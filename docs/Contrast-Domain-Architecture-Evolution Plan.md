@@ -549,6 +549,56 @@ practice-session behavior, and mastery remain unchanged.
 Phase 3.5 is complete. Its stable-identity mastery foundation remains disabled
 by default and introduces no learner-visible migration behavior.
 
+### **Phase 3.6 Completion Record**
+
+Phase 3.6 is complete as an explicit historical orphan-adoption foundation.
+
+Implemented:
+
+* deterministic orphan detection
+* conservative orphan-adoption policy
+* rollback-era legacy recovery
+* retry-safe, explicit per-language adoption
+* represented-evidence-only marker repair
+* deterministic, whole-document stable persistence
+
+The pure analysis recognizes exact legacy evidence through the Phase 3.2
+mapping and Phase 3.5 fingerprint contracts, then reports adoptable,
+already-represented, blocked, unresolved, and malformed evidence with
+deterministic counts and decisions. The policy preserves valid stable state,
+reset tombstones, placement lowering, and stable practice updates. Newly
+observed evidence can update only migration-derived state; missing marker
+metadata permits additive recovery only where stable identity state is absent.
+
+The per-language operation is explicit and retry-safe. It writes the stable
+mastery document first and advisory migration metadata second, reports partial
+completion when only the first write succeeds, never deletes legacy data, and
+does not repair unusable stable payloads.
+
+The pre-merge hardening pass locks four additional invariants:
+
+* stable identity existence and exact legacy-evidence representation are
+  distinct analysis states
+* simultaneous aliases form one `ContrastId + observation revision` batch;
+  equal-tier evidence converges and conflicting tiers use only the existing
+  equal-revision tie-break
+* marker repair fingerprints only represented or successfully persisted
+  evidence; blocked, reset-protected, unresolved, malformed, and failed
+  adoption evidence remains excluded and visible on retry
+* stable persistence is one deterministic, whole-document `setItem`; a failed
+  stable write leaves prior bytes authoritative and stops before marker writing
+
+Not implemented:
+
+* production enablement
+* startup migration
+* background migration
+* automatic recovery execution
+
+`FEATURE_FLAGS.contrastMasteryStore` remains false. There is no startup,
+background, UI, analytics, scheduling, practice, pair-progress, or Phase 3.7
+integration.
+
 ---
 
 # **Phase 3 — Progress/Mastery Evolution**
@@ -599,6 +649,87 @@ The application is offline-first with no backend, so there is no remote kill
 switch and rollback latency equals a release cycle. The migration must therefore
 be non-destructive and self-healing by construction rather than reversible by
 operational action.
+
+---
+
+## **Phase 3.6 Orphan Adoption Strategy**
+
+### **Purpose**
+
+Recover safely from valid legacy mastery evidence that appears after stable
+mastery migration without weakening the authority of stable learner state.
+
+### **Non-goals**
+
+Phase 3.6 does not:
+
+* enable stable mastery
+* run automatically
+* scan all users or languages
+* delete legacy data
+* repair malformed records
+* infer unknown or ambiguous mappings
+
+### **Recovery Model**
+
+legacy mastery  
+        |  
+        v
+
+historical identity mapping  
+        |  
+        v
+
+orphan analysis  
+        |  
+        v
+
+adoption decision  
+        |  
+        v
+
+stable mastery document  
+        |  
+        v
+
+advisory marker update
+
+### **Evidence Classification**
+
+Orphan analysis classifies evidence as:
+
+* already represented
+* adoptable
+* blocked
+* unresolved
+* malformed
+
+Only adoptable evidence may modify the stable mastery document.
+
+### **Alias Handling**
+
+Aliases that map to one Contrast and are observed together are evaluated as one
+observation batch. Canonical ordering provides deterministic output only; it
+does not represent learner-action order or create causal priority.
+
+### **Failure Handling**
+
+If stable persistence fails:
+
+* the advisory marker is not updated
+* the previous stable document remains authoritative
+
+If marker persistence fails:
+
+* the operation returns `partial`
+* the successfully written stable document remains valid
+* retry repairs the marker without duplicating the stable adoption
+
+### **Known Limitation**
+
+If migration metadata is lost, historical causality cannot always be
+reconstructed. The system preserves correctness by blocking ambiguous
+conflicts rather than guessing.
 
 ---
 
@@ -855,11 +986,28 @@ revertable.
 
 3.5 Contrast mastery store behind feature flag — complete, flag remains off
 
-3.6 Historical orphan adoption
+3.6 Historical orphan adoption — complete, explicit operation only
 
 3.7 Enable migration after verification gate
 
 3.8 Compatibility window close
+
+### **Phase 3.6 Exit Gate**
+
+Before Phase 3.7:
+
+* orphan identity mapping is deterministic
+* rollback-era legacy evidence can be recovered
+* stale evidence cannot resurrect reset mastery
+* placement lowering remains protected
+* simultaneous aliases do not create artificial causality
+* marker repair excludes unresolved evidence
+* stable writes are complete document writes
+* retries converge without duplication
+* the mastery feature remains disabled
+
+This gate is verified. It records Phase 3.6 completion; it does not enable or
+begin Phase 3.7.
 
 Sequencing rules:
 

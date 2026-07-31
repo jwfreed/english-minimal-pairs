@@ -521,7 +521,28 @@ The verification harness proves:
 * rollback compatibility assumptions hold  
 * migration invariants are executable
 
-Phase 3.4 may begin only against these verified assumptions.
+Phase 3.4 was implemented against these verified assumptions and is complete.
+
+### **Phase 3.4 Completion Record**
+
+The read-only production projection establishes:
+
+* `@pairProgress_v2` remains the sole authoritative pair-attempt store
+* `getContrastProgress()` is additive and performs no writes
+* current and historical pair-key aliases converge on the same stable
+  `ContrastId` without overwriting either history or duplicating attempts
+* alias-derived history and aggregate ordering are deterministic and repeated
+  projection is idempotent
+* non-array attempt containers retain the existing production behavior of
+  normalizing to an empty history; the raw `invalid-attempt-container` reason
+  is therefore unrecoverable after parsing, which is documented diagnostic
+  information loss rather than a progress-semantics mismatch
+* projected histories, pair references, and attempts are copied and frozen,
+  providing deep reference isolation from parsed learner state
+* zero pair-progress write paths changed
+
+Storage keys, serialization, history caps, UI, analytics, scheduling,
+practice-session behavior, and mastery remain unchanged.
 
 ---
 
@@ -783,7 +804,7 @@ revertable.
 
 3.3 Snapshot and verification harness — complete
 
-3.4 Pair-progress read projection
+3.4 Pair-progress read projection — complete
 
 3.5 Contrast mastery store behind feature flag
 

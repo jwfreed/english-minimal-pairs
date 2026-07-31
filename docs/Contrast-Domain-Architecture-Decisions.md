@@ -403,7 +403,32 @@ The verification harness proves:
 * rollback compatibility assumptions hold  
 * migration invariants are executable
 
-Phase 3.4 may begin only against these verified assumptions.
+Phase 3.4 was implemented against these verified assumptions and is complete.
+
+---
+
+# **Phase 3.4 Status**
+
+Phase 3.4 is complete.
+
+The production pair-progress projection preserves the following boundaries:
+
+* `@pairProgress_v2` remains the authoritative pair-attempt store
+* `getContrastProgress()` is an additive, read-only API over the existing
+  parsed legacy state
+* current and historical alias keys that resolve to the same `ContrastId`
+  retain both histories, preserve deterministic ordering, and count every
+  attempt exactly once
+* the existing parser's normalization of a non-array attempt container to an
+  empty history is documented diagnostic information loss, not a
+  progress-semantics mismatch
+* projected nested histories, pair references, and attempts are copied and
+  frozen so they cannot mutate the parsed source state
+* zero pair-progress write paths changed
+* pair-progress storage format, serialization, caps, and keys remain unchanged
+
+Phase 3.4 adds no UI, analytics, scheduling, practice-session, mastery, or
+learner-visible behavior.
 
 ---
 
@@ -516,13 +541,13 @@ The system is already healthy; the goal is to make its architecture catch up wit
 
 # **Phase Status**
 
-As of 2026-07-30:
+As of 2026-07-31:
 
 * Phase 0 — complete  
 * Phase 1 — complete (identity foundation)  
 * Phase 2 — complete (Contrast domain boundary)  
 * Phase 3 — design approved and locked by Decisions 006, 007, and 008;
-  implementation begins at PR 3.0 of the sequence in
+  implementation is complete through Phase 3.4 of the sequence in
   `Contrast-Domain-Architecture-Evolution Plan.md`
 
 The "don't start yet" signals above still apply, and Decision 008 adds one more:

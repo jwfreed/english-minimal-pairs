@@ -861,3 +861,92 @@ As of 2026-07-31:
 The "don't start yet" signals above still apply, and Decision 008 adds one more:
 any proposal to rewrite pair-progress storage during Phase 3 is out of scope and
 should be rejected without new evidence.
+
+---
+
+# **Decision 011**
+
+Date:
+2026-07-31
+
+Status:
+Accepted
+
+## **Title**
+
+Compatibility Retirement Requires Operational Evidence
+
+## **Context**
+
+Phase 3.7 completed controlled-rollout support with production still in the
+`disabled` state. The Phase 3.8 architecture audit (`docs/Phase-3.8-Architecture-Audit.md`)
+confirmed that the migration and compatibility architecture is
+implementation-complete and internally consistent, but that no shipped install
+has ever written a stable mastery document, and that the repository has no
+wired mechanism to collect real-install rollout evidence: rollout diagnostics
+are in-memory and session-scoped, and the rollout safety gate has no caller in
+application code.
+
+The existing sequencing note that "3.8 closes legacy writes only" was written
+before this evidence gap was identified, and on its own could be read as
+authorizing retirement once Phase 3.8 is reached as a numbered phase. That
+reading is incorrect. Reaching Phase 3.8 records that the audit is complete; it
+does not by itself satisfy the conditions the audit found necessary before any
+compatibility component may be removed.
+
+## **Decision**
+
+Retirement of any Phase 3 compatibility component is gated on operational
+evidence collected from real installs, not on implementation completeness or
+on having reached a given phase number.
+
+Until the evidence gates recorded in the Phase 3.8 audit are satisfied, the
+following remain protected and must not be removed, disabled by default-off
+flag deletion, or otherwise retired:
+
+* legacy mastery reads and the historical identity mapping that resolves them
+* legacy mastery writes (the legacy leg of the compatibility write contract)
+* migration markers (`@masteryByContrastMigration_${LanguageId}`) and their
+  write paths
+* orphan recovery (`analyzeOrphanedMastery`, `proposeOrphanMasteryAdoption`,
+  `adoptOrphanedMasteryForLanguage`)
+
+Phase 3.8 is stabilization and evidence work: persisting rollout diagnostics,
+making the safety gate observable against real data, and advancing rollout
+state on internal builds while re-verifying rollback at each step. It is not a
+cleanup or deletion phase, and completing it does not by itself authorize
+removing any component listed above.
+
+## **Reason**
+
+An offline-first application with no remote kill switch and rollback latency
+equal to a release cycle cannot safely retire a compatibility mechanism on the
+strength of code review or test coverage alone. The mechanisms above are the
+only evidence the system has that a reverted or still-legacy install continues
+to read learner progress correctly. Removing any of them before real-install
+evidence exists would remove a proven safety mechanism to make room for one
+that has not yet been exercised against real learner data.
+
+## **Consequences**
+
+Positive:
+
+* retirement decisions are anchored to observable evidence rather than to
+  calendar or phase-number milestones
+* Decision 008's rollback invariant remains protected for the full duration of
+  the compatibility window, however long that turns out to be
+* future agents cannot infer retirement authorization from "Phase 3.8" alone
+
+Tradeoffs:
+
+* the compatibility window has no fixed end date; it ends when evidence gates
+  are satisfied, not on a schedule
+* dual-write and dual-read complexity persists for as long as retirement
+  remains ungated
+
+## **Required statements**
+
+* Reaching Phase 3.8 does not authorize retirement.
+* Retirement requires operational evidence gates to be satisfied, as recorded
+  in `docs/Phase-3.8-Architecture-Audit.md`.
+* This decision does not renumber or alter Decisions 001–010.

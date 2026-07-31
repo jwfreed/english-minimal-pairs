@@ -628,12 +628,34 @@ Production state:
 
 * `FEATURE_FLAGS.contrastMasteryStore` remains disabled
 * real-install shadow evidence is outstanding
-* Phase 3.8 has not started
+* Phase 3.8 status: architecture audit complete; retirement deferred (see
+  below and Decision 011)
 
 A real install carrying real learner history must complete shadow verification
 with zero unresolved mappings and zero unexplained divergence before rollout
 advances. This is an operational release gate, not missing migration
 architecture.
+
+### **Phase 3.8 Status**
+
+Phase 3.8's architecture audit is complete (`docs/Phase-3.8-Architecture-Audit.md`).
+Its findings:
+
+* the migration and compatibility architecture is implementation-complete and
+  internally consistent
+* production retirement of any compatibility component is deferred — see
+  Decision 011
+* rollout remains `disabled`; no shipped install has written a stable mastery
+  document
+* legacy reads, legacy writes, migration markers, and orphan recovery remain
+  protected until the operational evidence gates in the audit are satisfied
+* stabilization and evidence-collection work (persisting rollout diagnostics,
+  making the safety gate observable against real data, advancing rollout on
+  internal builds) is in scope for Phase 3.8; cleanup or deletion of
+  compatibility code is not
+
+No cleanup or deletion phase has begun. Phase 3.8 is stabilization and
+evidence work, not migration retirement.
 
 ---
 
@@ -1110,7 +1132,9 @@ revertable.
 3.7 Controlled stable mastery rollout — complete; production remains disabled
 pending real-install shadow evidence
 
-3.8 Compatibility window close
+3.8 Migration stabilization and operational evidence — architecture audit
+complete; retirement deferred pending evidence gates (Decision 011). Not a
+cleanup or deletion phase.
 
 ### **Phase 3.6 Exit Gate**
 
@@ -1136,7 +1160,10 @@ Sequencing rules:
 * 3.7 is the only learner-visible release in the phase and requires a clean
   audit on a real install carrying real history, including at least one renamed
   language  
-* 3.8 closes legacy writes only; legacy reads and the alias table remain
+* 3.8 does not close legacy writes on a fixed schedule; retirement of legacy
+  writes, legacy reads, migration markers, or orphan recovery requires the
+  operational evidence gates recorded in Decision 011 and the Phase 3.8 audit
+  to be satisfied first. The alias table remains permanent regardless.
 
 ### **Phase 3.7 Exit Gate**
 

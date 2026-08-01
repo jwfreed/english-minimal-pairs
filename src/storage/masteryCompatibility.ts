@@ -113,32 +113,53 @@ export async function readLegacySourcesForLanguage(
   storage: MasteryKeyValueStorage,
   languageId: LanguageId
 ): Promise<
-  | { readonly status: 'ok'; readonly sources: readonly LegacyMasterySource[] }
+  | {
+      readonly status: 'ok';
+      readonly sources: readonly LegacyMasterySource[];
+      readonly historicalIdentityResolutionObserved: number;
+    }
   | { readonly status: 'storage-error'; readonly error: unknown }
 > {
   const sources: LegacyMasterySource[] = [];
+  let historicalIdentityResolutionObserved = 0;
   for (const assignment of sourceLabelsForLanguage(languageId)) {
     const storageKey = buildMasteryStorageKey(
       assignment.historicalCategoryLabel
     );
     try {
+      const raw = await storage.getItem(storageKey);
       sources.push({
         storageKey,
         categoryLabel: assignment.historicalCategoryLabel,
-        raw: await storage.getItem(storageKey),
+        raw,
       });
+      if (!assignment.isCurrent && raw !== null) {
+        historicalIdentityResolutionObserved += 1;
+      }
     } catch (error) {
       reportMasteryRolloutDiagnostic({
         name: 'storage-failure',
+        languageId,
         operation: 'read-legacy',
       });
       return { status: 'storage-error', error };
     }
   }
-  return { status: 'ok', sources };
+  reportMasteryRolloutDiagnostic({
+    name: 'storage-operation',
+    languageId,
+    status: 'success',
+    operation: 'read-legacy',
+    historicalIdentityResolutionObserved,
+  });
+  return {
+    status: 'ok',
+    sources,
+    historicalIdentityResolutionObserved,
+  };
 }
 
-export async function migrateLanguageMastery(
+async function migrateLanguageMasteryInternal(
   storage: MasteryKeyValueStorage,
   languageId: LanguageId
 ): Promise<LazyMasteryMigrationResult> {
@@ -157,6 +178,7 @@ export async function migrateLanguageMastery(
   ) {
     reportMasteryRolloutDiagnostic({
       name: 'blocked-migration',
+      languageId,
       reason:
         masteryRead.status === 'malformed'
           ? 'malformed-stable'
@@ -224,6 +246,7 @@ export async function migrateLanguageMastery(
   if (initial.malformed.length > 0) {
     reportMasteryRolloutDiagnostic({
       name: 'blocked-migration',
+      languageId,
       reason: 'malformed-legacy',
     });
     if (priorDocument) {
@@ -347,6 +370,19 @@ export async function migrateLanguageMastery(
   };
 }
 
+export async function migrateLanguageMastery(
+  storage: MasteryKeyValueStorage,
+  languageId: LanguageId
+): Promise<LazyMasteryMigrationResult> {
+  const result = await migrateLanguageMasteryInternal(storage, languageId);
+  reportMasteryRolloutDiagnostic({
+    name: 'migration-outcome',
+    languageId,
+    status: result.status,
+  });
+  return result;
+}
+
 function stableDocumentToLegacyMap(
   document: ContrastMasteryDocument
 ): MasteryMap {
@@ -361,8 +397,11 @@ function stableDocumentToLegacyMap(
 }
 
 export type MasteryShadowDivergenceKind =
-  | 'missing-stable-record'
-  | 'tier-disagreement'
+  | 'stable-document-absent'
+  | 'stable-record-absent'
+  | 'legacy-record-absent'
+  | 'tier-disagreement-stable-higher'
+  | 'tier-disagreement-stable-lower'
   | 'reset-disagreement'
   | 'placement-disagreement'
   | 'alias-resolution-difference'
@@ -386,7 +425,7 @@ export interface MasteryShadowComparison {
     | 'storage-error';
   readonly divergences: readonly MasteryShadowDivergence[];
   readonly divergenceCount: number;
-  /** Missing stable records are expected before explicit migration. */
+  /** Only whole-document stable absence is expected before migration. */
   readonly unexplainedDivergenceCount: number;
   readonly unresolvedMappingCount: number;
   readonly malformedLegacyCount: number;
@@ -428,7 +467,9 @@ function compareMasteryMaps(
       divergences.push({
         kind: tombstone
           ? 'reset-disagreement'
-          : 'missing-stable-record',
+          : stableDocument
+            ? 'stable-record-absent'
+            : 'stable-document-absent',
         legacyGroup,
         contrastId: tombstone?.contrastId ?? contrastId,
         legacyTier,
@@ -437,19 +478,41 @@ function compareMasteryMaps(
     }
     if (stableTier === legacyTier) continue;
 
+    if (stableTier !== undefined && legacyTier === undefined) {
+      divergences.push({
+        kind: 'legacy-record-absent',
+        legacyGroup,
+        contrastId: stableRecord?.contrastId,
+        stableTier,
+      });
+      continue;
+    }
+
     divergences.push({
       kind:
         tombstone && legacyTier !== undefined
           ? 'reset-disagreement'
           : stableRecord?.provenance === 'placement'
             ? 'placement-disagreement'
-            : 'tier-disagreement',
+            : (stableTier ?? 0) > (legacyTier ?? 0)
+              ? 'tier-disagreement-stable-higher'
+              : 'tier-disagreement-stable-lower',
       legacyGroup,
       contrastId: stableRecord?.contrastId ?? tombstone?.contrastId,
       stableTier,
       legacyTier,
     });
   }
+}
+
+function countDivergencesByKind(
+  divergences: readonly MasteryShadowDivergence[]
+): Partial<Record<MasteryShadowDivergenceKind, number>> {
+  const counts: Partial<Record<MasteryShadowDivergenceKind, number>> = {};
+  for (const divergence of divergences) {
+    counts[divergence.kind] = (counts[divergence.kind] ?? 0) + 1;
+  }
+  return counts;
 }
 
 /**
@@ -465,6 +528,12 @@ export async function compareMasteryInShadow(
   const stableRead = await readContrastMastery(storage, languageId);
   const legacyRead = await readLegacySourcesForLanguage(storage, languageId);
   const divergences: MasteryShadowDivergence[] = [];
+  const stableDocumentPresent = stableRead.status === 'ok';
+  const currentLabelIsHistorical = sourceLabelsForLanguage(languageId).some(
+    (assignment) =>
+      assignment.historicalCategoryLabel === currentCategoryLabel &&
+      !assignment.isCurrent
+  );
 
   if (legacyRead.status === 'storage-error') {
     divergences.push({ kind: 'unexpected-fallback-behavior' });
@@ -480,10 +549,16 @@ export async function compareMasteryInShadow(
     };
     reportMasteryRolloutDiagnostic({
       name: 'shadow-comparison',
+      languageId,
       status: result.status,
+      stableDocumentPresent,
+      currentLabelIsHistorical,
+      historicalIdentityResolutionObserved: 0,
+      divergencesByKind: countDivergencesByKind(result.divergences),
       divergenceCount: result.divergenceCount,
       unexplainedDivergenceCount: result.unexplainedDivergenceCount,
       unresolvedMappingCount: result.unresolvedMappingCount,
+      malformedLegacyCount: result.malformedLegacyCount,
     });
     return result;
   }
@@ -547,7 +622,9 @@ export async function compareMasteryInShadow(
 
   const result: MasteryShadowComparison = {
     status:
-      stableRead.status === 'ok'
+      legacyProjection.malformed.length > 0
+        ? 'blocked'
+        : stableRead.status === 'ok'
         ? 'compared'
         : stableRead.status === 'missing'
           ? 'stable-missing'
@@ -556,7 +633,7 @@ export async function compareMasteryInShadow(
     divergences,
     divergenceCount: divergences.length,
     unexplainedDivergenceCount: divergences.filter(
-      (divergence) => divergence.kind !== 'missing-stable-record'
+      (divergence) => divergence.kind !== 'stable-document-absent'
     ).length,
     unresolvedMappingCount: legacyProjection.unresolved.length,
     malformedLegacyCount: legacyProjection.malformed.length,
@@ -564,14 +641,22 @@ export async function compareMasteryInShadow(
   };
   reportMasteryRolloutDiagnostic({
     name: 'shadow-comparison',
+    languageId,
     status: result.status,
+    stableDocumentPresent,
+    currentLabelIsHistorical,
+    historicalIdentityResolutionObserved:
+      legacyRead.historicalIdentityResolutionObserved,
+    divergencesByKind: countDivergencesByKind(result.divergences),
     divergenceCount: result.divergenceCount,
     unexplainedDivergenceCount: result.unexplainedDivergenceCount,
     unresolvedMappingCount: result.unresolvedMappingCount,
+    malformedLegacyCount: result.malformedLegacyCount,
   });
   if (result.unexplainedDivergenceCount > 0) {
     reportMasteryRolloutDiagnostic({
       name: 'reconciliation-conflict',
+      languageId,
       count: result.unexplainedDivergenceCount,
     });
   }
@@ -652,6 +737,7 @@ export async function readCompatibleMastery(
     } catch (error) {
       reportMasteryRolloutDiagnostic({
         name: 'storage-failure',
+        languageId,
         operation: 'read-legacy-fallback',
       });
       return {
@@ -667,7 +753,14 @@ export async function readCompatibleMastery(
       };
     }
     reportMasteryRolloutDiagnostic({
+      name: 'storage-operation',
+      languageId,
+      status: 'success',
+      operation: 'read-legacy-fallback',
+    });
+    reportMasteryRolloutDiagnostic({
       name: 'legacy-fallback',
+      languageId,
       reason: 'missing-stable',
       expected: true,
     });
@@ -811,6 +904,8 @@ export async function writeCompatibleMastery(
   ): CompatibleMasteryWriteResult => {
     reportMasteryRolloutDiagnostic({
       name: 'compatibility-write',
+      languageId,
+      provenance,
       status: result.status,
       legacyStatus: result.legacy.status,
       stableStatus: result.stable.status,
@@ -818,6 +913,7 @@ export async function writeCompatibleMastery(
     if (result.legacy.status === 'failed') {
       reportMasteryRolloutDiagnostic({
         name: 'storage-failure',
+        languageId,
         operation: 'write-legacy',
       });
     }

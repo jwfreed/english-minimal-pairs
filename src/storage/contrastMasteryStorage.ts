@@ -104,11 +104,13 @@ export async function readContrastMastery(
   );
   reportMasteryRolloutDiagnostic({
     name: 'stable-read',
+    languageId,
     status: result.status,
   });
   if (result.status === 'storage-error') {
     reportMasteryRolloutDiagnostic({
       name: 'storage-failure',
+      languageId,
       operation: 'read-stable',
     });
   }
@@ -125,10 +127,17 @@ export async function writeContrastMastery(
       buildContrastMasteryStorageKey(document.languageId),
       serializedDocument
     );
+    reportMasteryRolloutDiagnostic({
+      name: 'storage-operation',
+      languageId: document.languageId,
+      status: 'success',
+      operation: 'write-stable',
+    });
     return { status: 'written' };
   } catch (error) {
     reportMasteryRolloutDiagnostic({
       name: 'storage-failure',
+      languageId: document.languageId,
       operation: 'write-stable',
     });
     return { status: 'storage-error', error };
@@ -148,6 +157,14 @@ export async function readContrastMasteryMigrationState(
   if (result.status === 'storage-error') {
     reportMasteryRolloutDiagnostic({
       name: 'storage-failure',
+      languageId,
+      operation: 'read-migration-state',
+    });
+  } else {
+    reportMasteryRolloutDiagnostic({
+      name: 'storage-operation',
+      languageId,
+      status: 'success',
       operation: 'read-migration-state',
     });
   }
@@ -163,10 +180,17 @@ export async function writeContrastMasteryMigrationState(
       buildContrastMasteryMigrationKey(state.languageId),
       serializeContrastMasteryMigrationState(state)
     );
+    reportMasteryRolloutDiagnostic({
+      name: 'storage-operation',
+      languageId: state.languageId,
+      status: 'success',
+      operation: 'write-migration-state',
+    });
     return { status: 'written' };
   } catch (error) {
     reportMasteryRolloutDiagnostic({
       name: 'storage-failure',
+      languageId: state.languageId,
       operation: 'write-migration-state',
     });
     return { status: 'storage-error', error };

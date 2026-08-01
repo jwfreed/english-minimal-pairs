@@ -206,7 +206,7 @@ module.exports = (async () => {
     assert.strictEqual(result.unexplainedDivergenceCount, 0);
     assert.deepStrictEqual(
       plain(result.divergences.map((item) => item.kind)),
-      ['missing-stable-record']
+      ['stable-document-absent']
     );
     assert.strictEqual(storage.writes.length, 0);
   });
@@ -260,6 +260,88 @@ module.exports = (async () => {
       )
     );
     assert.strictEqual(alias.unresolvedMappingCount, 0);
+  });
+
+  await runTest('shadow classification preserves record side, tier direction, and malformed coverage', async () => {
+    const stableRecordAbsentStorage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 3, iVsI: 4 }),
+      '@masteryByContrast_lang.japanese': japaneseDocument({ tier: 3 }),
+    });
+    const stableRecordAbsent = await compatibility.compareMasteryInShadow(
+      stableRecordAbsentStorage,
+      LANGUAGE_IDS.japanese,
+      '日本語'
+    );
+    assert(
+      stableRecordAbsent.divergences.some(
+        (item) => item.kind === 'stable-record-absent'
+      )
+    );
+    assert.strictEqual(stableRecordAbsent.unexplainedDivergenceCount, 1);
+
+    const legacyRecordAbsentStorage = createStorage({
+      '@mastery_日本語': JSON.stringify({}),
+      '@masteryByContrast_lang.japanese': japaneseDocument({ tier: 3 }),
+    });
+    const legacyRecordAbsent = await compatibility.compareMasteryInShadow(
+      legacyRecordAbsentStorage,
+      LANGUAGE_IDS.japanese,
+      '日本語'
+    );
+    assert(
+      legacyRecordAbsent.divergences.some(
+        (item) => item.kind === 'legacy-record-absent'
+      )
+    );
+
+    const stableHigherStorage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 2 }),
+      '@masteryByContrast_lang.japanese': japaneseDocument({ tier: 5 }),
+    });
+    const stableHigher = await compatibility.compareMasteryInShadow(
+      stableHigherStorage,
+      LANGUAGE_IDS.japanese,
+      '日本語'
+    );
+    assert(
+      stableHigher.divergences.some(
+        (item) => item.kind === 'tier-disagreement-stable-higher'
+      )
+    );
+
+    const stableLowerStorage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 5 }),
+      '@masteryByContrast_lang.japanese': japaneseDocument({ tier: 2 }),
+    });
+    const stableLower = await compatibility.compareMasteryInShadow(
+      stableLowerStorage,
+      LANGUAGE_IDS.japanese,
+      '日本語'
+    );
+    assert(
+      stableLower.divergences.some(
+        (item) => item.kind === 'tier-disagreement-stable-lower'
+      )
+    );
+
+    const events = [];
+    const restoreSink = diagnostics.setMasteryRolloutDiagnosticSink((event) => {
+      events.push(event);
+    });
+    try {
+      const malformed = await compatibility.compareMasteryInShadow(
+        createStorage({ '@mastery_日本語': '{bad json' }),
+        LANGUAGE_IDS.japanese,
+        '日本語'
+      );
+      assert.strictEqual(malformed.status, 'blocked');
+      assert.strictEqual(malformed.malformedLegacyCount, 1);
+    } finally {
+      restoreSink();
+    }
+    const shadowEvent = events.find((event) => event.name === 'shadow-comparison');
+    assert.strictEqual(shadowEvent.status, 'blocked');
+    assert.strictEqual(shadowEvent.malformedLegacyCount, 1);
   });
 
   await runTest('authoritative read is stable-first and never activates migration', async () => {

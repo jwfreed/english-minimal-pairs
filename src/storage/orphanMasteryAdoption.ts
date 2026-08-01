@@ -83,10 +83,12 @@ const EMPTY_DIAGNOSTICS = {
 };
 
 function reportOrphanAdoption(
+  languageId: LanguageId,
   result: OrphanAdoptionOperationResult
 ): OrphanAdoptionOperationResult {
   reportMasteryRolloutDiagnostic({
     name: 'orphan-adoption',
+    languageId,
     status: result.status,
     outcome: result.outcome,
     adoptedRecords: result.counts.adoptedRecords,
@@ -104,7 +106,7 @@ export async function adoptOrphanedMasteryForLanguage(
 ): Promise<OrphanAdoptionOperationResult> {
   const stableRead = await readContrastMastery(storage, languageId);
   if (stableRead.status === 'storage-error') {
-    return reportOrphanAdoption({
+    return reportOrphanAdoption(languageId, {
       status: 'failed',
       outcome: 'storage-failure',
       writeOrder: 'stable-then-migration-state',
@@ -119,7 +121,7 @@ export async function adoptOrphanedMasteryForLanguage(
     });
   }
   if (stableRead.status === 'missing') {
-    return reportOrphanAdoption({
+    return reportOrphanAdoption(languageId, {
       status: 'failed',
       outcome: 'no-stable-state',
       writeOrder: 'stable-then-migration-state',
@@ -135,7 +137,7 @@ export async function adoptOrphanedMasteryForLanguage(
     stableRead.status === 'malformed' ||
     stableRead.status === 'unsupported-version'
   ) {
-    return reportOrphanAdoption({
+    return reportOrphanAdoption(languageId, {
       status: 'failed',
       outcome: 'blocked-by-unusable-stable',
       writeOrder: 'stable-then-migration-state',
@@ -154,7 +156,7 @@ export async function adoptOrphanedMasteryForLanguage(
     languageId
   );
   if (migrationRead.status === 'storage-error') {
-    return reportOrphanAdoption({
+    return reportOrphanAdoption(languageId, {
       status: 'failed',
       outcome: 'storage-failure',
       writeOrder: 'stable-then-migration-state',
@@ -172,7 +174,7 @@ export async function adoptOrphanedMasteryForLanguage(
 
   const legacyRead = await readLegacySourcesForLanguage(storage, languageId);
   if (legacyRead.status === 'storage-error') {
-    return reportOrphanAdoption({
+    return reportOrphanAdoption(languageId, {
       status: 'failed',
       outcome: 'storage-failure',
       writeOrder: 'stable-then-migration-state',
@@ -214,7 +216,7 @@ export async function adoptOrphanedMasteryForLanguage(
         status: 'failed',
         error: write.error,
       };
-      return reportOrphanAdoption({
+      return reportOrphanAdoption(languageId, {
         ...common,
         counts: {
           ...plan.counts,
@@ -249,7 +251,7 @@ export async function adoptOrphanedMasteryForLanguage(
         status: 'failed',
         error: write.error,
       };
-      return reportOrphanAdoption({
+      return reportOrphanAdoption(languageId, {
         ...common,
         status: stableWrite.succeeded ? 'partial' : 'failed',
         outcome: stableWrite.succeeded
@@ -270,7 +272,7 @@ export async function adoptOrphanedMasteryForLanguage(
     };
   }
 
-  return reportOrphanAdoption({
+  return reportOrphanAdoption(languageId, {
     ...common,
     status: 'complete',
     outcome:

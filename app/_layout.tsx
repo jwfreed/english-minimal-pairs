@@ -15,7 +15,9 @@ import {
   PublicSans_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/public-sans';
+import { useEffect } from 'react';
 
+import { recordMasteryRolloutColdStart } from '@/src/analytics/masteryRolloutDiagnostics';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { Colors } from '@/src/constants/Colors';
 
@@ -47,6 +49,10 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const selectedTheme =
     colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme;
+
+  useEffect(() => {
+    recordMasteryRolloutColdStart();
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 

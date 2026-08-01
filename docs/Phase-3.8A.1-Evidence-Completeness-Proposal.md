@@ -843,14 +843,20 @@ queue, never on a learner-state path.
 
 ### 7.2 Size budget
 
-Worst case, with sparse encoding: ring 100 events × ~180 B ≈ 18 KB;
+The proposal estimate was: ring 100 events × ~180 B ≈ 18 KB;
 `languageObservations` ~20 languages × ~90 B ≈ 1.8 KB; `openConditions`
-64 × ~90 B ≈ 5.8 KB; counters and manifest ≈ 2 KB. **≈ 28 KB**, against roughly
-8–10 KB today.
+64 × ~90 B ≈ 5.8 KB; counters and manifest ≈ 2 KB, or **≈ 28 KB**.
 
-That is acceptable for a single AsyncStorage value but is a real ~3× growth,
-and it is why `divergencesByKind` is sparse rather than dense. If measurement
-shows the ring dominating, the correct lever is reducing
+**Post-implementation measurement (2026-08-01):** the modeled typical snapshot
+is 5,930 bytes. A parser-valid, structurally saturated snapshot is 99,898 bytes
+(97.56 KiB), because the implemented largest event includes the complete
+divergence map and valid counters may use 16 digits. The reproducible method,
+timings, and 100 KiB regression ceiling are recorded in
+[Phase-3.8A.1-Boundary-Verification.md](./Phase-3.8A.1-Boundary-Verification.md).
+
+The measured value remains bounded, and it is why `divergencesByKind` is sparse
+rather than dense. If a future device measurement shows the ring dominating,
+the correct lever is reducing
 `MAX_RECENT_MASTERY_ROLLOUT_DIAGNOSTICS` — the ring is human-reading context,
 while the cumulative counters and the ledger are the evidence, and those are
 small.
@@ -1038,7 +1044,7 @@ WP-3.8A.1 is complete when all of the following hold:
 | **Write amplification** — success signals and ledger updates increase event volume, raising drop rate, which under §2.4 converts more zeros to `unknown` | Medium | Events are per category-load, not per attempt. The drop counter makes the effect *visible* rather than silent — a noisier pipeline honestly reports lower confidence instead of quietly reporting clean zeros. Measure drop rate in the first collection window before tuning. |
 | **Scope drift into evaluation** — a counter that "knows" a safe value has become a gate | High | §10.7 import-direction and export-surface tests; no threshold constants; explicit non-goal in §1.2. |
 | **Ledger correctness becomes load-bearing** — a wrong ledger produces wrong evidence | Medium | Ledger fails safe under drops (an unclosed entry blocks). Bounded with refuse-not-evict. Six dedicated tests in §10.2. |
-| **Snapshot size growth** (~3×) on constrained devices | Low | 28 KB worst case; sparse encoding; the ring is the tunable dial, not the evidence. |
+| **Snapshot size growth** on constrained devices | Low | Measured at 5.79 KiB for the modeled typical fixture and 97.56 KiB when structurally saturated; 100 KiB regression ceiling; sparse encoding; the ring is the tunable dial, not the evidence. |
 | **Divergence-kind split changes a test's expectations** and is mistaken for a behavior change | Low | Shadow performs no learner-state writes and has no production caller at `disabled`. §10.4 asserts classification explicitly. |
 | **Cold-start counter fires under test harness imports**, inflating coverage | Low | Explicit call from app root, guarded once per process; never a module side effect (§4.3). |
 | **An operator upgrades mid-collection** and loses the window | Low | Documented in §9; belongs in the WP-3.8E runbook as an export-before-upgrade step. |

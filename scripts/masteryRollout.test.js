@@ -24,8 +24,8 @@ const orphanStorage = loadTsModule(
   path.join(ROOT, 'src', 'storage', 'orphanMasteryAdoption.ts'),
   cache
 );
-const rolloutSafety = loadTsModule(
-  path.join(ROOT, 'src', 'domain', 'masteryRolloutSafety.ts'),
+const rolloutSafetyAdapter = loadTsModule(
+  path.join(ROOT, 'src', 'domain', 'masteryRolloutSafetyLegacyAdapter.ts'),
   cache
 );
 const { LANGUAGE_IDS } = loadTsModule(
@@ -143,11 +143,11 @@ module.exports = (async () => {
     };
     assert.deepStrictEqual(
       plain(
-        rolloutSafety.evaluateMasteryRolloutSafetyGate(cleanEvidence)
+        rolloutSafetyAdapter.evaluateMasteryRolloutSafetyGate(cleanEvidence)
       ),
       { passed: true, blockers: [] }
     );
-    const blocked = rolloutSafety.evaluateMasteryRolloutSafetyGate({
+    const blocked = rolloutSafetyAdapter.evaluateMasteryRolloutSafetyGate({
       ...cleanEvidence,
       shadowComparisons: 0,
       unexpectedMasteryDecreases: 1,

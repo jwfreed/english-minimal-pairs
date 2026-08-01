@@ -676,6 +676,8 @@ module.exports = (async () => {
     assert.strictEqual(new Set(manifest.producedFields).size, manifest.producedFields.length);
     assert(manifest.producedFields.includes('resetFailures'));
     assert(!manifest.producedFields.includes('lostMasteryRecords'));
+    assert(!manifest.producedFields.includes('duplicatedMasteryRecords'));
+    assert(!manifest.producedFields.includes('crossLanguageCollisions'));
     assert(!manifest.producedFields.includes('practiceBehaviorChanges'));
     assert.strictEqual(snapshot.metrics.lostMasteryRecords, undefined);
 

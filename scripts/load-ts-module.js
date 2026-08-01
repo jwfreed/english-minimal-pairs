@@ -15,7 +15,12 @@ function resolveTsModule(request, parentFile) {
   return null;
 }
 
-function loadTsModule(entryPath, cache = new Map(), moduleMocks = {}) {
+function loadTsModule(
+  entryPath,
+  cache = new Map(),
+  moduleMocks = {},
+  contextGlobals = {}
+) {
   const resolvedEntry = entryPath.endsWith('.ts') ? entryPath : `${entryPath}.ts`;
   if (cache.has(resolvedEntry)) return cache.get(resolvedEntry).exports;
 
@@ -40,7 +45,12 @@ function loadTsModule(entryPath, cache = new Map(), moduleMocks = {}) {
     if (tsModulePath) {
       const withTsExtension = tsModulePath.endsWith('.ts') ? tsModulePath : `${tsModulePath}.ts`;
       if (fs.existsSync(withTsExtension)) {
-        return loadTsModule(withTsExtension, cache, moduleMocks);
+        return loadTsModule(
+          withTsExtension,
+          cache,
+          moduleMocks,
+          contextGlobals
+        );
       }
     }
     return require(request);
@@ -48,13 +58,14 @@ function loadTsModule(entryPath, cache = new Map(), moduleMocks = {}) {
 
   const script = new vm.Script(output, { filename: resolvedEntry });
   const context = vm.createContext({
+    console,
+    __DEV__: false,
+    ...contextGlobals,
     require: localRequire,
     module,
     exports: module.exports,
     __dirname: path.dirname(resolvedEntry),
     __filename: resolvedEntry,
-    console,
-    __DEV__: false,
   });
   script.runInContext(context);
 

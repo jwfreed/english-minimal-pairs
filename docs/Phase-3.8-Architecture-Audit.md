@@ -359,6 +359,42 @@ for, the retirement deferral recorded in Section 4 and Decision 011:
 
 ---
 
+## Subsequent Work — 2026-08-01
+
+Recorded for accuracy of the phase history. **No finding, conclusion, or
+evidence requirement in this audit is revised, weakened, or superseded by
+anything below.**
+
+Section 5 of this audit requires "rollout safety gate results evaluated against
+real, persisted diagnostic counters — not hand-constructed test evidence," and
+notes that this first requires diagnostics to survive app restart. Persistence
+was subsequently implemented (WP-3.8A, `ed6fd3b`).
+
+A design review of the safety gate itself
+(`docs/Phase-3.8B-Safety-Gate-Evidence-Model.md`, 2026-07-31) then found that
+persistence alone is not sufficient to satisfy this audit's Section 5 gates.
+The gate's sixteen evidence fields cannot be evaluated against the persisted
+snapshot without producing false confidence: nine fields have no producer and
+would read `0`, which the gate treats as a pass, and three fields name
+unresolved conditions while reading counters that never decrement. The
+transition-volume criteria this audit anticipated ("≥1 renamed language," and
+similar) are also not derivable from the persisted shape.
+
+Consequences for this audit's requirements, all in the direction of stricter:
+
+- Section 5's requirement for real-counter gate results is **unchanged and
+  still unmet**. It is now understood to additionally require completing the
+  diagnostic producer model (WP-3.8A.1) before a gate can be wired at all.
+- Section 8's open questions are unchanged. None was answered by WP-3.8A.
+- The retirement deferral in Section 4 and Decision 011 is unchanged.
+
+Three proposed Decisions (012–014) arising from that review are recorded in
+`docs/Contrast-Domain-Architecture-Decisions.md` under "Proposed Decisions —
+not accepted." They are proposals; none is accepted, and none alters
+Decisions 001–011 or this audit.
+
+---
+
 ## Consistency Note
 
 This document does not alter, renumber, or contradict Decisions 001–010 in

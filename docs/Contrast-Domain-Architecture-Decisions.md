@@ -950,3 +950,388 @@ Tradeoffs:
 * Retirement requires operational evidence gates to be satisfied, as recorded
   in `docs/Phase-3.8-Architecture-Audit.md`.
 * This decision does not renumber or alter Decisions 001–010.
+
+---
+
+# **Proposed Decisions — not accepted**
+
+Everything below this line is a **proposal**. Proposed entries are not binding,
+do not constrain implementation, and must not be cited as authority. They
+become effective only when a human changes their `Status` to `Accepted` and
+records the approval date.
+
+Decisions 001–011 above are unchanged by this section. No entry below renumbers,
+alters, supersedes, or weakens any accepted Decision. Decision 011's retirement
+evidence requirements in particular remain in force exactly as written — the
+proposals below constrain how evidence is *classified and evaluated*, which
+makes Decision 011's gates harder to satisfy accidentally, never easier.
+
+Origin: the Phase 3.8B safety-gate design review recorded in
+`docs/Phase-3.8B-Safety-Gate-Evidence-Model.md`.
+
+---
+
+# **Decision 012**
+
+Date proposed:
+2026-08-01
+
+Status:
+**Proposed — not accepted**
+
+## **Title**
+
+Evidence Provenance Is Part Of The Evidence Model
+
+## **Context**
+
+The rollout safety gate
+([`src/domain/masteryRolloutSafety.ts`](../src/domain/masteryRolloutSafety.ts))
+evaluates sixteen numeric evidence fields under the rule "any nonzero value
+blocks." Nine of those fields have no runtime producer. Any evidence object
+assembled from the Phase 3.8A diagnostic snapshot therefore sets those fields
+to `0`, and `0` passes.
+
+The consequence is that the gate cannot distinguish two states that mean
+opposite things:
+
+* **observed safe** — the condition was measured, and it did not occur.
+* **not measured** — nothing in the system is capable of observing the
+  condition, or the code that would have observed it never ran.
+
+Both currently present as `0`. The gate reports `passed: true` for both. This
+is not a reporting inaccuracy; it is a safety inversion, because the second
+state is the one that should most strongly discourage advancement.
+
+The same collapse occurs a second way even for fields that *do* have a
+producer: a counter reading `0` is meaningless if the code path that increments
+it never executed. A build that never performed a stable read reports zero
+stable-read failures, which is true and tells a reader nothing.
+
+## **Decision**
+
+Evidence is not a number. Evidence is a number **plus the class of producer
+that supplied it**, and the absence of a producer is a distinct, first-class
+value that the type system can represent.
+
+Every evidence field carries exactly one provenance:
+
+* `runtime-measured` — a cumulative counter persisted by the diagnostic layer.
+* `harness-attested` — a deterministic harness or test run, identified by the
+  commit it ran against.
+* `manually-attested` — a human observation or drill outcome recorded through
+  the operator runbook.
+* `unknown` — no producer exists, the producer was not exercised, the evidence
+  source was unreadable, or a required attestation is absent or stale.
+
+Two invariants follow, and are the operative content of this decision:
+
+1. **Unknown evidence must never evaluate as zero.** No default, coercion,
+   fallback, struct initializer, or absent field may convert `unknown` into a
+   satisfied condition. Unknown reduces confidence; it never creates it.
+2. **A zero reading is evidence only when its producer demonstrably ran.**
+   Every field declares a *witness* — a separate observation whose positive
+   value proves the producing code path executed. A zero with an unmet witness
+   is `unknown`, not `satisfied`.
+
+Provenance classes are not interchangeable. A field's declared provenance set
+is part of its definition: evidence of a class the field does not accept cannot
+satisfy it. In particular, harness or synthetic evidence can never satisfy a
+field that requires real-install observation.
+
+## **Reason**
+
+The Phase 3.8 audit already requires that gate results come from "real,
+persisted diagnostic counters — not hand-constructed test evidence." That
+requirement is currently prose. Provenance makes it a property of the data,
+enforced wherever the evidence travels, rather than a rule a future reader must
+remember to apply.
+
+Two of the sixteen fields — mastery loss and practice-behavior change — cannot
+ever be runtime-measured without violating the Phase 3.8 diagnostic-data
+boundary: detecting mastery loss at runtime would require the diagnostic store
+to hold enough mastery content to notice something missing, and detecting
+behavior change would require recording learner behavior or running two
+authority engines concurrently. Both are prohibited. Without provenance, those
+fields have no honest representation and silently read as `0` forever. With
+provenance, they are permanently and visibly `harness-attested` and
+`manually-attested` respectively — a deliberate assignment rather than an
+unnoticed gap.
+
+## **Consequences**
+
+Positive:
+
+* the gate can state what it does not know, instead of implying it observed
+  safety it never observed
+* fields with no possible runtime producer are visible as such rather than
+  silently passing
+* synthetic evidence cannot satisfy a real-install gate, because provenance
+  travels with the value
+
+Tradeoffs:
+
+* every evidence field requires an explicit provenance declaration and an
+  explicit witness, which is more design work per field than a bare counter
+* more fields will read `unknown` in early collection windows, which will make
+  the gate look further from ready than the previous model suggested — this is
+  the correct reading, not a regression
+
+## **Required statements**
+
+* Unknown evidence must never evaluate as zero.
+* A zero reading with an unmet witness is unknown, not safe.
+* Provenance is part of the evidence type, not documentation about it.
+* This decision constrains evidence classification only. It does not change
+  runtime behavior, rollout state, migration behavior, or learner state.
+* This decision does not renumber or alter Decisions 001–011.
+
+---
+
+# **Decision 013**
+
+Date proposed:
+2026-08-01
+
+Status:
+**Proposed — not accepted**
+
+## **Title**
+
+Reliability Evidence Evaluates Unresolved State, Not Historical Occurrence
+
+## **Context**
+
+Three gate fields name *unresolved* conditions — `unhandledPartialWrites`,
+`unhandledStableStorageFailures`, `unhandledLegacyStorageFailures` — but their
+only available producers are monotonic cumulative counters that are incremented
+on failure and never decremented
+([`masteryRolloutDiagnosticStorage.ts`](../src/storage/masteryRolloutDiagnosticStorage.ts)).
+
+Evaluating a monotonic counter under a zero-tolerance rule means a single
+transient storage failure, anywhere in a collection window, pins the gate at
+blocked permanently on that device. No subsequent successful retry can clear
+it, because nothing decrements.
+
+This contradicts the architecture's own design. The compatibility write
+contract answers a failed stable write with `retryRequired: true`
+([`masteryCompatibility.ts`](../src/storage/masteryCompatibility.ts)) — the
+documented response is retry and converge, and a legacy-only partial success is
+explicitly stated to be safe to retry. A gate that treats the retryable
+condition as permanently disqualifying evaluates the system against a contract
+the system was never built to meet.
+
+The practical failure mode is not a false negative. It is that a gate which can
+never pass produces no decision signal, and the predictable human response is
+to stop consulting it — at which point the safety mechanism has been defeated
+without anyone deciding to defeat it.
+
+## **Decision**
+
+Reliability conditions are evaluated on **currently unresolved state**, not on
+historical occurrence.
+
+The safety predicate is:
+
+```
+residual = observed − recovered
+blocked  ⟺  residual > 0
+```
+
+Worked example, as the review specified it:
+
+| Observed failures | Recovered | Safety state |
+|---|---|---|
+| 10 | 10 | healthy — every failure converged |
+| 10 | 8 | **blocked** — two conditions remain unresolved |
+| 0 | 0 | *not* healthy — witness unmet, evidence is `unknown` (Decision 012) |
+
+This applies to reliability conditions only: storage failures, partial writes,
+migration failures, and orphan-adoption residue. It does **not** apply to
+data-integrity conditions — lost mastery, duplicated mastery, reset
+resurrection, identity mismatch, and unexplained divergence remain
+zero-tolerance on occurrence, because none of them has a recovery path that
+restores the lost information. A recovered storage failure has genuinely been
+recovered from; a lost mastery record has not.
+
+Two obligations follow:
+
+1. **Cumulative counters are not safety predicates.** A raw occurrence count
+   may be reported to a human as context, and may inform threshold
+   calibration, but may not by itself block or clear a transition.
+2. **Recovery must be observed, not assumed.** A condition counts as recovered
+   only when the producing layer records a corresponding successful outcome for
+   the same identity. Absence of a repeat failure is not recovery. Convergence
+   must be tracked per `LanguageId` and never netted across identities: a
+   converged failure on one language does not offset an open one on another.
+
+Recording convergence is subject to the existing diagnostic reliability
+contract without exception. Convergence tracking is best-effort, failure-
+isolated, and fire-and-forget; a failure to record convergence degrades
+evidence confidence and must never retry into, block, or delay a learner-state
+operation.
+
+## **Reason**
+
+The distinction this decision draws is between conditions the system is
+designed to recover from and conditions it is designed to prevent. Collapsing
+them into one rule makes the gate simultaneously too strict to satisfy for
+reliability and no stricter than before for integrity.
+
+Keeping integrity conditions at absolute zero preserves the guarantee that
+matters: Decision 008's rollback invariant and the "learner progress must never
+silently disappear" invariant are unaffected, and are if anything strengthened,
+because integrity fields are no longer diluted by reliability noise in the same
+counter.
+
+## **Consequences**
+
+Positive:
+
+* the gate becomes satisfiable under realistic device conditions, so it remains
+  a consulted signal rather than a permanently red one that gets ignored
+* unresolved failures are distinguished from recovered ones, which is the
+  distinction an operator actually needs in order to act
+* integrity conditions become *more* legible, because they are no longer mixed
+  with transient reliability events
+
+Tradeoffs:
+
+* this is a deliberate loosening relative to the current all-zero reading, and
+  must be approved as such rather than absorbed as an implementation detail
+* it places a new obligation on the diagnostic producer layer to record
+  recovery, not only failure — scoped as Phase 3.8A.1
+* a frequently-failing-but-always-converging install passes this rule; the raw
+  occurrence rate is therefore retained in the report for human judgment
+
+## **Required statements**
+
+* Reliability conditions evaluate unresolved state, not historical occurrence.
+* Cumulative counters must not be treated as direct safety predicates.
+* Data-integrity conditions remain zero-tolerance on occurrence and are not
+  covered by this decision.
+* Recovery must be observed per identity and never netted across identities.
+* Convergence tracking is best-effort diagnostics and must never affect
+  learner-state behavior.
+* This decision does not renumber or alter Decisions 001–011.
+
+---
+
+# **Decision 014**
+
+Date proposed:
+2026-08-01
+
+Status:
+**Proposed — not accepted**
+
+## **Title**
+
+The Rollout Safety Gate Is Advisory And Cannot Express Advancement
+
+## **Context**
+
+The human-control requirement for rollout is currently recorded in
+`featureFlags.ts` as a comment and in `docs/Phase-3.8-Stabilization-Plan.md` as
+a planning invariant. Neither is a durable architectural record, and neither
+constrains what a future gate implementation is *able* to do — only what it is
+supposed to do.
+
+The gate also returns `{passed: boolean, blockers}`. A boolean cannot represent
+the state Decision 012 makes central: evidence that is absent rather than
+clean. Under a binary return, "insufficient evidence" must collapse into either
+`passed` (unsafe) or `blocked` (indistinguishable from a real violation, and
+misdirects the operator toward fixing a defect that does not exist).
+
+## **Decision**
+
+The rollout safety gate is advisory. It consumes evidence, evaluates evidence,
+and emits a recommendation. It never changes rollout state.
+
+**Output.** The gate's recommendation is three-valued, and binary pass/fail is
+prohibited:
+
+* `READY` — every required field is satisfied under an accepted provenance,
+  every witness is met, and every volume threshold for the declared transition
+  is reached.
+* `BLOCKED` — at least one field violated its rule. A known violation.
+* `INSUFFICIENT_EVIDENCE` — no violation observed, but coverage is incomplete:
+  unknown fields, unmet witnesses, unmet volume thresholds, or a degraded
+  evidence source.
+
+A missing measurement must never produce a passing gate. `INSUFFICIENT_EVIDENCE`
+is the required result whenever evidence is absent, and it is never a weaker
+form of approval.
+
+`BLOCKED` outranks `INSUFFICIENT_EVIDENCE` when both apply. Both are
+non-advancing, so the safety property is unaffected by the ordering; the
+distinction exists so an operator knows whether to fix a defect or collect more
+evidence.
+
+**Capability.** The gate has no write access of any kind:
+
+* it cannot modify feature flags or any rollout configuration
+* it cannot trigger, schedule, or influence migration
+* it cannot read or write learner state
+* it cannot write to diagnostic storage — it is a consumer of evidence, never a
+  producer
+* its output type cannot express advancement: no `advance`, `apply`,
+  `nextState`, command, or callback member, and no property that is a function
+
+These are enforced by module boundaries and an import-graph test, not by review
+discipline. The gate performs no I/O; evidence is passed to it as
+already-read values.
+
+**Transitions.** The gate evaluates exactly one declared, adjacent, forward
+transition per report. Non-adjacent and backward transitions are refused. There
+is no representation of a multi-step advance, so no automatic
+`disabled → shadow → internal-test → limited → enabled` progression can be
+expressed.
+
+**Authority.** The final rollout decision lives outside runtime code. A human
+reads a gate report, records a decision artifact naming the transition, the
+evidence identity, and the approver, and then edits the build-time rollout
+constant and ships a release. A `READY` recommendation is an input to that
+decision, never a substitute for it, and a human may decline to advance on a
+`READY` report.
+
+## **Reason**
+
+The application may provide evidence; humans authorize rollout transitions.
+Writing this as a Decision rather than a plan invariant makes it survive the
+plan documents that produced it, and makes a future change that grants the gate
+write capability a visible Decision reversal rather than an unremarked
+refactor.
+
+The three-valued output is not a presentation choice. It is what makes
+Decision 012 enforceable at the boundary where a human actually reads the
+result: a provenance model that carefully distinguishes "not measured" from
+"observed safe" is defeated entirely if the final output collapses them back
+into one bit.
+
+## **Consequences**
+
+Positive:
+
+* human ownership of rollout survives as an architectural record, not a comment
+* the gate's advisory nature is enforced by structure rather than intention
+* absence of evidence reaches the human as absence of evidence
+
+Tradeoffs:
+
+* callers must handle three states; the existing boolean-returning function
+  becomes a lossy adapter that cannot represent `INSUFFICIENT_EVIDENCE`, and
+  must be documented as such
+* reports will more often say `INSUFFICIENT_EVIDENCE` than the previous model
+  said `blocked`, which requires operator familiarity with the distinction
+
+## **Required statements**
+
+* The safety gate is advisory and has no write access.
+* The safety gate cannot modify feature flags, trigger migration, or alter
+  learner state.
+* Gate output is `READY` / `BLOCKED` / `INSUFFICIENT_EVIDENCE`; binary
+  pass/fail is prohibited.
+* A missing measurement must never produce a passing gate.
+* Rollout authorization remains outside runtime code.
+* This decision does not renumber or alter Decisions 001–011.

@@ -1,10 +1,27 @@
 # Phase 3.8 Stabilization Plan
 
 Date: 2026-07-31
-Branch: `docs/phase-3-migration-strategy` (evidence gathered at `276b714`)
+Revised: 2026-08-01 — safety-gate design review
+Branch: `docs/phase-3-migration-strategy` (evidence gathered at `276b714`;
+review evidence at `ed6fd3b`)
 Status: **Authoritative planning document.** WP-3.8A completion is recorded
 below. All other packages remain proposed and require their stated approval
 and evidence gates.
+
+**2026-08-01 revision.** The WP-3.8B design review
+(`docs/Phase-3.8B-Safety-Gate-Evidence-Model.md`) found that the safety gate
+cannot be wired to the WP-3.8A snapshot as either is currently written:
+missing evidence would present as success, and reliability fields would be
+unsatisfiable. The revision adds **WP-3.8A.1** as a prerequisite
+evidence-completeness package, records new gaps G9–G11, and re-sequences
+WP-3.8B behind it. Three proposed Decisions (012–014) are recorded in
+`docs/Contrast-Domain-Architecture-Decisions.md` under "Proposed Decisions —
+not accepted" and require human approval before either package proceeds.
+
+No runtime behavior, rollout state, migration activation, or accepted Decision
+changed in this revision. WP-3.8A's completion record below is unmodified: the
+package delivered what it was scoped to deliver, and WP-3.8A.1 is additional
+scope identified afterward, not a defect in it.
 
 This plan is a peer of `docs/Phase-3.8-Architecture-Audit.md` and is scoped by
 Decision 011 (`docs/Contrast-Domain-Architecture-Decisions.md`): compatibility
@@ -292,11 +309,21 @@ behavior must remain unchanged.*
 
 ## Executive Recommendation
 
-**What should happen next:** Build the evidence pipeline (WP-3.8A) under the
-diagnostic-boundary invariant above, then define the safety-gate evidence
-contract (WP-3.8B) under the human-control invariant. These are prerequisites
-for every other decision in the phase. In parallel — because it is read-only —
-run the label-derived learner-state audit (WP-3.8D).
+**What should happen next** *(revised 2026-08-01)*: WP-3.8A is complete.
+Complete the diagnostic **producer** model (WP-3.8A.1) before defining the
+safety-gate evidence contract (WP-3.8B). The design review found that a gate
+wired to today's snapshot would report success on conditions nothing observed
+(G9) and would become permanently unsatisfiable after one transient storage
+failure (G10) — so WP-3.8B cannot safely proceed until the evidence it
+consumes is dimensionally complete and until proposed Decisions 012–014 are
+approved. In parallel — because it is read-only and independent — run the
+label-derived learner-state audit (WP-3.8D).
+
+**Why the ordering matters:** a safety gate is only as trustworthy as the
+evidence handed to it. Implementing WP-3.8B first would produce a gate that
+looks operational, is consulted by humans, and is wrong in the unsafe
+direction — which is worse than having no gate at all, because it converts an
+acknowledged absence of evidence into an apparent presence of it.
 
 **What must not happen yet:** No rollout state advance, no compatibility
 retirement, no placement migration implementation, no `ProgressUpdater`
@@ -356,10 +383,20 @@ Verified at `276b714`. `npm test` → 431 assertions pass, 0 failures.
 | **G6** Placement completion is label-derived (F8) | High | Rename re-shows placement to placed learners |
 | **G7** Pair-progress keys are label-derived and not alias-resolved at runtime (F10, F11) | High | Pre-rename attempt history already stranded; explicitly deferred by Decision 008 |
 | **G8** No runbook for real-install verification | Medium | Evidence collection would be unrepeatable and unauditable |
+| **G9** Missing evidence is indistinguishable from clean evidence | Blocking | Nine gate fields have no producer and read `0`; the gate reports `passed: true` on a build that observed nothing. Safety inversion, not a reporting flaw. |
+| **G10** Reliability fields are unsatisfiable as specified | Blocking | `unhandled*` fields name unresolved conditions but read monotonic counters; one transient failure blocks the gate permanently, so it stops being consulted |
+| **G11** Persisted evidence lacks the dimensions the transition gates require | Blocking | No cumulative unexplained-divergence counter, no divergence direction, no failure-operation attribution, no `LanguageId`, no cold-start count — so the "≥3 languages, ≥2 cold starts, ≥1 renamed language" row is unmeasurable and the headline blocking counter cannot be aggregated |
 
 Note on G6/G7: these are already-realized, not hypothetical — six renames
 have shipped. Nothing is deleted; data is stranded and remains recoverable
 through the alias table.
+
+Note on G9–G11 (added 2026-08-01): these are evidence-model gaps, not runtime
+defects. Nothing about learner behavior, mastery correctness, or rollback
+safety is affected by them — rollout is `disabled` and the gate has no caller.
+They block only the ability to make a *trustworthy rollout decision*, which is
+precisely what Phase 3.8 exists to produce. G9 and G10 are addressed by
+proposed Decisions 012 and 013; G11 is producer work, scoped as WP-3.8A.1.
 
 ---
 
@@ -435,18 +472,139 @@ learner-state correctness.
 - Any rollout advancement or migration orchestration.
 - Production evidence collection and release-window evaluation.
 
+### WP-3.8A.1 — Diagnostic evidence completeness *(added 2026-08-01; prerequisite to WP-3.8B)*
+
+- **Full proposal:** `docs/Phase-3.8A.1-Evidence-Completeness-Proposal.md`
+  (2026-08-01, revised same day after architecture review) — schema changes,
+  producer changes, affected files, migration compatibility, test strategy,
+  verification criteria, risks, and rejected alternatives. The summary below is
+  the plan-level entry; that document is authoritative for the package's
+  design. **Approved in direction**; implementation still awaits resolution of
+  proposed Decisions 012–014 at the order-3 checkpoint below.
+- **Boundaries established by that proposal**, and binding on every later
+  package in this plan:
+  - **Evidence lifecycle ownership** — Produced → Persisted → Exported →
+    Evaluated → Archived, with exactly one owner per stage. The lifecycle is
+    one-directional; no stage may be skipped or merged. Prevents authority
+    accumulating in a single layer by increments that each look reasonable.
+  - **Evidence Consumption Invariant** — *"Safety evidence is not runtime
+    control input."* No runtime component may consume safety evidence to change
+    learner behavior, modify mastery authority, trigger migration, advance
+    rollout state, enable a feature flag, or repair learner state. Runtime
+    produces evidence only. This is the Authority Boundary Invariant applied to
+    the artifact WP-3.8A.1 creates, written before the evidence store becomes
+    rich enough to be tempting to consult.
+  - **Ledger ownership** — the diagnostic producer opens conditions, the
+    reducer closes them only on observed successful completion, the evaluator
+    reads them. Nothing infers a missing resolution, ages a condition out, or
+    triggers the work that would close one. The ledger records observed
+    operational truth; it is not a workflow engine.
+- **Objective:** Complete the diagnostic **producer** model so that the
+  evidence a safety gate would consume is dimensionally sufficient, and so
+  that a zero reading is distinguishable from an unmeasured one. This package
+  finishes the observation layer. It does not evaluate anything.
+- **Rationale:** G9, G10, G11, and the design review recorded in
+  `docs/Phase-3.8B-Safety-Gate-Evidence-Model.md` §1.
+- **Why this is producer work, not safety-gate work.** The gate is a pure
+  evaluator; it can only be as trustworthy as the evidence handed to it. Every
+  gap G9–G11 is a fact the *diagnostic layer never recorded* — an undirected
+  divergence total that cannot answer "which way did the tier move," an
+  undifferentiated storage-failure scalar that cannot answer "which side
+  failed," a failure counter with no corresponding recovery counter, an event
+  with no `LanguageId`. None of these can be recovered by evaluating harder.
+  Attempting to compensate inside the gate would mean inferring unrecorded
+  facts from recorded ones, which is exactly how a gate acquires an opinion of
+  its own and becomes a second authority. Per the Ownership Boundaries section
+  above, diagnostic schemas and stored evidence are owned by the
+  observability/operations layer; this package stays inside that layer.
+- **Scope:**
+  - **Counter decomposition** — cumulative counters for each condition the
+    gate names, replacing aggregate scalars that erase the distinction. Notably
+    a cumulative unexplained-divergence counter: the bounded recent-event ring
+    is not a valid aggregation source, because once it wraps, summing it
+    under-reports silently and always in the safe-looking direction.
+  - **Event direction** — divergences counted by kind, including which side is
+    higher and which side is absent, so mastery increase and decrease are
+    separable.
+  - **Operation attribution** — storage failures counted per operation, so
+    stable-side and legacy-side reliability are separable.
+  - **Language identity** — `LanguageId` on persisted events and bounded
+    per-language observation counts, so "which languages were exercised" and
+    "was a renamed language exercised" become answerable.
+  - **Cold-start tracking** — a cold-start counter, so restart-spanning
+    evidence gates become answerable.
+  - **Convergence tracking** — recovery recorded alongside failure, per
+    identity, so unresolved state is measurable (proposed Decision 013).
+    Best-effort and failure-isolated like every other diagnostic write.
+  - **Schema evolution** — a schema version bump if the above requires one,
+    accepting that older snapshots become unreadable and are discarded.
+- **Boundary compliance:** every added field is a count, an enumerated
+  category, or a registry identity. No per-`ContrastId` tier, no mastery map,
+  no raw legacy payload, no attempt history, no timestamp, no device or user
+  identifier. `LanguageId` is an immutable registry identity (Decision 003) and
+  states *which language was exercised*, never *what the learner knows*.
+  Per-language observation counts are bounded by the contrast registry, so the
+  store stays size-capped. The store remains write-mostly and disjoint from
+  every learner-state key.
+- **Explicitly excluded** — this package does **not**:
+  - advance or change rollout state, or add any code path that could
+  - activate, wire, schedule, or trigger migration or orphan adoption
+  - change learner-visible behavior in any way
+  - change runtime authority — legacy remains the sole authority, stable
+    mastery remains the only future authority candidate
+  - evaluate evidence, define thresholds, or produce a recommendation — all of
+    that is WP-3.8B
+  - add remote telemetry, a new dependency, or a learner-facing surface
+- **Dependencies:** WP-3.8A (complete). Blocks WP-3.8B.
+- **Risks:** Scope drift into evaluation logic — a counter that "knows" what a
+  safe value is has crossed into the gate's layer. Mitigation: this package
+  adds no comparison, no threshold, and no boolean derived from a threshold.
+  Second risk: convergence tracking introducing state that a learner write
+  waits on. Mitigation: convergence records are diagnostic writes under the
+  existing Diagnostic Reliability Contract — fire-and-forget, failure-isolated,
+  never awaited by a learner path, and losing them degrades confidence only.
+- **Verification:** Every WP-3.8A isolation test still passes with the added
+  counters, including for convergence tracking — a throwing or slow diagnostic
+  sink still cannot fail or delay a mastery read, write, reset, or placement
+  action. Schema tests prove the extended shape still rejects learner-state
+  categories and accepts only registry-known language keys. A test proves the
+  cumulative counters, not the recent-event ring, are the aggregation source. A
+  test proves clearing diagnostics has zero effect on any learner-state key.
+- **Rollback:** Additive counters behind a schema version bump; revert is
+  code-only. An orphaned diagnostics key is inert and must not be auto-deleted.
+- **Completion evidence:** Every field the WP-3.8B evidence catalogue marks as
+  runtime-measured has a real cumulative producer; every reliability field has
+  both a failure and a recovery producer; per-language and cold-start counts
+  survive a cold start; isolation and schema tests green; rollout state
+  unchanged and still `disabled`.
+
 ### WP-3.8B — Safety-gate evidence contract and human-controlled reporting
 
+> **Status (2026-08-01): blocked on WP-3.8A.1 and on approval of proposed
+> Decisions 012–014.** The design is drafted in
+> `docs/Phase-3.8B-Safety-Gate-Evidence-Model.md`. It must not be implemented
+> against the current snapshot shape: doing so would wire a gate that reports
+> success on unmeasured conditions (G9) and that becomes permanently
+> unsatisfiable after one transient storage failure (G10). The objective and
+> scope below are revised to match that design.
+
 - **Objective:** Define which gate fields are runtime-measured, which are
-  harness-attested, and which are manually attested; wire only the
-  runtime-measured subset to real counters; ensure the gate's output is
-  read-only with respect to rollout state.
-- **Rationale:** G3, and the human-control invariant.
-- **Affected areas:** `src/domain/masteryRolloutSafety.ts` (contract and
-  provenance typing only — the function itself already returns a pure
-  `{passed, blockers}` result and must remain pure); WP-3.8A's snapshot
-  shape; a release decision artifact under `docs/`.
-- **Dependencies:** WP-3.8A.
+  harness-attested, which are manually attested, and which are `unknown`; wire
+  only the runtime-measured subset to real counters; replace the binary
+  `{passed, blockers}` result with a three-valued recommendation; ensure the
+  gate's output is read-only with respect to rollout state and structurally
+  incapable of expressing advancement.
+- **Rationale:** G3, G9, G10, and the human-control invariant. Formalized as
+  proposed Decisions 012 (provenance; unknown never evaluates as zero), 013
+  (reliability evaluates unresolved state), and 014 (advisory gate;
+  three-valued output).
+- **Affected areas:** `src/domain/masteryRolloutSafety.ts` (contract,
+  provenance typing, and the three-valued result — the function must remain
+  pure and gains no I/O); a new pure evidence-assembly module; an
+  operator-facing report path; a release decision artifact under `docs/`.
+  WP-3.8A's snapshot shape is **not** modified here — that is WP-3.8A.1.
+- **Dependencies:** WP-3.8A, **WP-3.8A.1**, and human approval of proposed
+  Decisions 012–014.
 - **Non-goals:** The gate must not alter rollout state and must not be given
   any write capability. It has no caller that could feed its result back
   into `featureFlags.ts` or any runtime configuration. It produces an
@@ -460,17 +618,29 @@ learner-state correctness.
   - Any surface that displays the gate's result (the WP-3.8A inspection
     screen) is presentation only; advancing rollout remains a manual code
     change and release, per F16.
-- **Risks:** Silently treating unmeasured fields as passing. Mitigation:
-  represent unmeasured fields as an explicit `unknown` provenance that
-  blocks rather than passes.
+- **Risks:** Silently treating unmeasured fields as passing — the G9 failure.
+  Mitigation: unmeasured fields carry an explicit `unknown` provenance that
+  resolves to `INSUFFICIENT_EVIDENCE`, never to a pass, and a zero reading
+  whose producer never ran is `unknown` rather than satisfied. Second risk:
+  the gate compensating for missing producers by inferring facts the
+  diagnostic layer did not record — that is how a gate acquires an opinion and
+  becomes a second authority. Mitigation: producer gaps are closed in
+  WP-3.8A.1, never inside the gate.
 - **Verification:** A test asserting that a field with no runtime producer
-  cannot be reported as satisfied by absence; a test or type-level check
-  confirming the gate's public surface has no rollout-state write capability.
+  cannot be reported as satisfied by absence; a table-driven test over the
+  full field set asserting `unknown` never yields `READY`, so a field added
+  later without a producer fails by default; a test asserting an all-zero,
+  all-witnesses-unmet evidence object yields `INSUFFICIENT_EVIDENCE` rather
+  than the `passed: true` the current gate would return; convergence tests for
+  the reliability fields; an import-graph test confirming the gate's
+  transitive imports contain no writer, no storage, and no feature-flag value;
+  a type-level check confirming the output cannot express advancement.
 - **Rollback:** Pure additive typing/reporting; revert is code-only.
-- **Completion evidence:** Each of the 16 fields has a documented producer or
-  an explicit `unknown` classification; gate evaluation on a real snapshot is
-  reproducible; no code path exists from gate output to rollout
-  configuration.
+- **Completion evidence:** Every evidence field has a documented producer or
+  an explicit `unknown` classification; the recommendation is three-valued;
+  gate evaluation on a real snapshot is reproducible and identifies the
+  evidence it evaluated; no code path exists from gate output to rollout
+  configuration, migration, or learner state.
 
 ### WP-3.8C — Explicit migration orchestration for missing-stable state
 
@@ -886,6 +1056,48 @@ close.
    automatic in any stage, with invocations recorded in the collection log so
    evidence is not confounded.
 
+### Added 2026-08-01 — safety-gate design review
+
+These gate WP-3.8A.1 and WP-3.8B. Items 9–11 are the proposed Decisions;
+items 12–15 are implementation choices that follow from them.
+
+9. **Proposed Decision 012 — evidence provenance.** Adopt
+   `runtime-measured` / `harness-attested` / `manually-attested` / `unknown`
+   as part of the evidence type, with the invariants that unknown never
+   evaluates as zero and that a zero reading with an unmet witness is unknown.
+   *Recommendation: accept.* Without it, G9 is unfixable — the gate cannot
+   state what it did not observe.
+10. **Proposed Decision 013 — reliability evaluates unresolved state.**
+    Reliability fields block on `observed − recovered > 0` rather than on
+    occurrence; cumulative counters stop being direct safety predicates;
+    data-integrity fields stay at absolute zero. *Recommendation: accept.*
+    This is a deliberate loosening and must be approved as one — but it is
+    also what makes the gate satisfiable at all (G10).
+11. **Proposed Decision 014 — advisory gate, three-valued output.** `READY` /
+    `BLOCKED` / `INSUFFICIENT_EVIDENCE`, no write capability, one adjacent
+    transition per report, authorization outside runtime code.
+    *Recommendation: accept.* Mostly a formalization of the human-control
+    invariant already in this plan; the new content is the three-valued output
+    and the structural enforcement.
+12. **WP-3.8A.1 as a separate package** rather than folding producer changes
+    into WP-3.8B. *Recommendation: separate* — the changes are producer-side
+    and belong to the layer that owns diagnostics under Ownership Boundaries;
+    folding them into the gate package would put schema authority in the
+    evaluator.
+13. **Diagnostic schema version bump**, accepting that existing snapshots
+    become unreadable and are discarded. *Recommendation: accept* — diagnostic
+    loss is an accepted degradation mode, and no shipped install has produced
+    meaningful evidence because rollout is `disabled`.
+14. **`LanguageId` and bounded per-language observation counts in diagnostic
+    storage.** Confirm this stays within the diagnostic-data boundary.
+    *Recommendation: yes* — registry identity, not learner content, and already
+    contemplated by the Evidence Pipeline Recommendation above.
+15. **Persisting the diagnostic self-metrics** (delivery failures, dropped
+    events), currently excluded from the persisted shape. *Recommendation:
+    persist, as confidence input only* — without them an operator cannot tell
+    a complete snapshot from a silently lossy one, which is the question
+    evidence confidence has to answer.
+
 ---
 
 ## Unknowns
@@ -910,21 +1122,33 @@ Explicitly not estimated:
 
 ## Recommended Codex Implementation Sequence
 
+Revised 2026-08-01. Two steps were inserted: an approval checkpoint for the
+proposed Decisions, and WP-3.8A.1 ahead of WP-3.8B.
+
 | Order | Package | Gate to proceed |
 |---|---|---|
-| 1 | **WP-3.8A** Evidence persistence and inspection | Counters survive cold start; export works; isolation test green; schema test proves no learner-state category can be persisted |
+| 1 | **WP-3.8A** Evidence persistence and inspection | ✅ **Complete** — counters survive cold start; isolation and schema tests green |
 | 2 | **WP-3.8D** Label-derived identity audit *(parallel — read-only)* | Table reviewed and classified |
-| 3 | **WP-3.8B** Gate evidence contract | Every field has a producer or explicit `unknown`; gate has no write capability |
-| 4 | **WP-3.8E** Shadow runbook | One dry run completed |
-| 5 | — | **Approval checkpoint (human):** advance `disabled → shadow` |
-| 6 | **WP-3.8F** Decision record for the shadow window | Clean evidence, ≥1 renamed language |
-| 7 | **WP-3.8C** Explicit migration orchestration | Ships only into `internal-test`; forbidden in shadow; `readCompatibleMastery` unmodified |
-| 8 | — | **Approval checkpoint (human):** `internal-test` → `limited` → `enabled`, one at a time |
-| 9 | **WP-3.8G** Mastery authority extraction | Phase 4 `ProgressUpdater` unblocker; separate approval |
+| 3 | — | **Approval checkpoint (human):** accept, amend, or reject proposed Decisions 012 (provenance), 013 (unresolved-state reliability), 014 (advisory three-valued gate). Nothing in orders 4–5 may begin until this is resolved, because all three change what the evidence model must record. |
+| 4 | **WP-3.8A.1** Diagnostic evidence completeness | Every runtime-measured field has a real cumulative producer; every reliability field has a recovery producer; per-language and cold-start counts survive a cold start; isolation and schema tests green; rollout still `disabled` |
+| 5 | **WP-3.8B** Gate evidence contract | Every field has a producer or explicit `unknown`; recommendation is three-valued; unknown cannot yield `READY`; gate has no write capability |
+| 6 | **WP-3.8E** Shadow runbook | One dry run completed |
+| 7 | — | **Approval checkpoint (human):** advance `disabled → shadow` |
+| 8 | **WP-3.8F** Decision record for the shadow window | Clean evidence, ≥1 renamed language |
+| 9 | **WP-3.8C** Explicit migration orchestration | Ships only into `internal-test`; forbidden in shadow; `readCompatibleMastery` unmodified |
+| 10 | — | **Approval checkpoint (human):** `internal-test` → `limited` → `enabled`, one at a time |
+| 11 | **WP-3.8G** Mastery authority extraction | Phase 4 `ProgressUpdater` unblocker; separate approval |
 
-Packages 1–4 are independently reviewable and carry no learner-visible risk.
-Package 7 is the only one that changes learner-visible behavior, and only in
+Orders 1–6 are independently reviewable and carry no learner-visible risk.
+Order 9 is the only package that changes learner-visible behavior, and only in
 states production has not yet reached, and only through the explicit
 orchestration boundary defined above. No package in this sequence retires,
 deletes, or disables any compatibility component, and no package introduces
 a code path by which the application changes its own rollout state.
+
+**Sequencing constraint added 2026-08-01:** WP-3.8A.1 must ship before
+WP-3.8B, and WP-3.8B must not be implemented against the current snapshot
+shape. If schedule pressure makes reordering tempting, the correct reduction
+is to ship WP-3.8A.1 alone and defer WP-3.8B entirely — a complete producer
+with no gate is a known absence of evidence, whereas a gate over an incomplete
+producer is a false presence of it.

@@ -657,6 +657,35 @@ Its findings:
 No cleanup or deletion phase has begun. Phase 3.8 is stabilization and
 evidence work, not migration retirement.
 
+#### **Phase 3.8 sub-package status — updated 2026-08-01**
+
+* **3.8A — diagnostic evidence persistence: complete.** Rollout diagnostics
+  are durable across cold start, bounded, isolated from learner state, and
+  schema-validated. Diagnostic loss remains an accepted degradation mode.
+* **3.8A.1 — diagnostic evidence completeness: proposed, not started.** The
+  safety-gate design review found the persisted evidence dimensionally
+  insufficient to support a rollout decision: counters that erase divergence
+  direction and failure operation, no cumulative unexplained-divergence
+  counter, no recovery counterpart to failure counters, no language identity,
+  no cold-start count. This is producer work in the diagnostic layer.
+* **3.8B — safety-gate evidence contract: designed, blocked.** Blocked on
+  3.8A.1 and on the proposed Decisions below. Wiring the gate to today's
+  snapshot would report success on conditions nothing observed, which is worse
+  than the current honest absence of evidence.
+* **3.8C–3.8G:** unchanged, still proposed, still sequenced after the above.
+
+Proposed Decisions 012 (evidence provenance — unknown never evaluates as
+zero), 013 (reliability evaluates unresolved state, not historical
+occurrence), and 014 (advisory gate with `READY` / `BLOCKED` /
+`INSUFFICIENT_EVIDENCE` output and no write capability) are recorded in
+`docs/Contrast-Domain-Architecture-Decisions.md` under "Proposed Decisions —
+not accepted." They are proposals awaiting human approval.
+
+Production state is unchanged by all of the above: rollout remains `disabled`,
+legacy remains the sole mastery authority, no migration is wired, and no
+learner-visible behavior has changed. Decision 011's retirement evidence
+requirements remain in force and remain unsatisfied.
+
 ---
 
 # **Phase 3 — Progress/Mastery Evolution**
@@ -1134,7 +1163,9 @@ pending real-install shadow evidence
 
 3.8 Migration stabilization and operational evidence — architecture audit
 complete; retirement deferred pending evidence gates (Decision 011). Not a
-cleanup or deletion phase.
+cleanup or deletion phase. Sub-packages: 3.8A diagnostic persistence complete;
+3.8A.1 diagnostic evidence completeness proposed; 3.8B safety gate designed
+and blocked on 3.8A.1 (see Phase 3.8 sub-package status above).
 
 ### **Phase 3.6 Exit Gate**
 

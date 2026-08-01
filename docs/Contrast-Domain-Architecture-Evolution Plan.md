@@ -662,16 +662,16 @@ evidence work, not migration retirement.
 * **3.8A — diagnostic evidence persistence: complete.** Rollout diagnostics
   are durable across cold start, bounded, isolated from learner state, and
   schema-validated. Diagnostic loss remains an accepted degradation mode.
-* **3.8A.1 — diagnostic evidence completeness: proposed, not started.** The
-  safety-gate design review found the persisted evidence dimensionally
-  insufficient to support a rollout decision: counters that erase divergence
-  direction and failure operation, no cumulative unexplained-divergence
-  counter, no recovery counterpart to failure counters, no language identity,
-  no cold-start count. This is producer work in the diagnostic layer.
-* **3.8B — safety-gate evidence contract: designed, blocked.** Blocked on
-  3.8A.1 and on the proposed Decisions below. Wiring the gate to today's
-  snapshot would report success on conditions nothing observed, which is worse
-  than the current honest absence of evidence.
+* **3.8A.1 — diagnostic evidence completeness: complete.** The observer-only
+  producer layer now preserves directional divergence, operation-scoped
+  storage outcomes, unresolved reliability conditions, language observations,
+  cold starts, diagnostic self-metrics, and an explicit producer manifest.
+  Evidence interpretation remains outside the diagnostic runtime.
+* **3.8B — advisory safety evaluator: implemented, not wired.** The pure
+  evaluator consumes already-read evidence and emits `READY`, `BLOCKED`, or
+  `INSUFFICIENT_EVIDENCE`; the lossy compatibility API is isolated in a legacy
+  adapter. No runtime module consumes either evaluator surface, and the
+  implementation does not accept or activate the proposed Decisions below.
 * **3.8C–3.8G:** unchanged, still proposed, still sequenced after the above.
 
 Proposed Decisions 012 (evidence provenance — unknown never evaluates as

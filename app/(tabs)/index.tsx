@@ -155,7 +155,7 @@ export default function HomeScreen() {
           {selectedPair && (
             <LevelIndicator
               currentTier={mastery[selectedPair.group] ?? 1}
-              previewNextTier={feedback === 'correct'}
+              highlightCurrentTier={feedback === 'correct'}
             />
           )}
           {selectedPair && (

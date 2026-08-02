@@ -346,6 +346,17 @@ const levelIndicatorSource = fs.readFileSync(
   path.join(__dirname, '..', 'src', 'components', 'LevelIndicator.tsx'),
   'utf8'
 );
+const levelUpCelebrationSource = fs.readFileSync(
+  path.join(
+    __dirname,
+    '..',
+    'src',
+    'components',
+    'practice',
+    'LevelUpCelebration.tsx'
+  ),
+  'utf8'
+);
 const settingsScreenSource = fs.readFileSync(
   path.join(__dirname, '..', 'app', '(tabs)', 'settings.tsx'),
   'utf8'
@@ -422,15 +433,54 @@ runTest('goal bar surges forward on a correct answer and animates its width', ()
   );
 });
 
-runTest('level indicator pops the next segment on a correct answer', () => {
+runTest('correct feedback highlights durable mastery without filling another tier', () => {
   assert.ok(
-    practiceScreenSource.includes("previewNextTier={feedback === 'correct'}"),
-    'practice screen must preview the next tier only while correct feedback shows'
+    practiceScreenSource.includes("highlightCurrentTier={feedback === 'correct'}"),
+    'practice screen must request a current-tier highlight only while correct feedback shows'
   );
   assert.ok(
-    levelIndicatorSource.includes('levelPopAnimation') &&
-      levelIndicatorSource.includes('tier === currentTier + 1'),
-    'level indicator must pop exactly the next empty segment'
+    !practiceScreenSource.includes('previewNextTier') &&
+      !levelIndicatorSource.includes('previewNextTier'),
+    'the transient next-tier preview contract must be removed'
+  );
+  assert.ok(
+    levelIndicatorSource.includes('const isFilled = tier <= currentTier;') &&
+      levelIndicatorSource.includes("backgroundColor: isFilled ? '#E67E22' : theme.track"),
+    'only tiers earned through currentTier may render as filled'
+  );
+  assert.ok(
+    levelIndicatorSource.includes('level: currentTier') &&
+      !levelIndicatorSource.includes('currentTier + 1'),
+    'the visible tier count and label must remain derived only from currentTier'
+  );
+});
+
+runTest('correct feedback pops only the current tier and respects reduced motion', () => {
+  assert.ok(
+    levelIndicatorSource.includes(
+      'highlightCurrentTier && tier === currentTier'
+    ),
+    'the reward highlight must target the achieved current tier'
+  );
+  assert.ok(
+    levelIndicatorSource.includes(
+      'isHighlighted && !reduceMotion && levelPopAnimation'
+    ),
+    'the current-tier pop must be disabled when reduced motion is requested'
+  );
+});
+
+runTest('real mastery promotion still renders the promoted tier celebration', () => {
+  assert.ok(
+    practiceScreenSource.includes('<LevelUpCelebration') &&
+      practiceScreenSource.includes('promotedTier={promotedTier}'),
+    'practice must continue passing actual promotion state to the celebration'
+  );
+  assert.ok(
+    levelUpCelebrationSource.includes(
+      '<LevelIndicator currentTier={promotedTier} compact />'
+    ),
+    'the promotion celebration must render mastery from promotedTier'
   );
 });
 

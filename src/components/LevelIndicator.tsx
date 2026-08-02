@@ -24,17 +24,17 @@ interface Props {
   /** Show leveling-criteria hint below the dots (practice screen only) */
   showCriteria?: boolean;
   /**
-   * Fill the next empty segment orange with a spring pop — the level-up
-   * moment while correct-answer feedback is showing. Reverts when cleared.
+   * Pop the current filled segment while correct-answer feedback is showing.
+   * Does not change the durable mastery state represented by the indicator.
    */
-  previewNextTier?: boolean;
+  highlightCurrentTier?: boolean;
 }
 
 export default function LevelIndicator({
   currentTier,
   compact = false,
   showCriteria = false,
-  previewNextTier = false,
+  highlightCurrentTier = false,
 }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -57,8 +57,8 @@ export default function LevelIndicator({
         {Array.from({ length: TOTAL_TIERS }, (_, i) => {
           const tier = i + 1;
           const isFilled = tier <= currentTier;
-          const isPreview =
-            previewNextTier && !isMastered && tier === currentTier + 1;
+          const isHighlighted =
+            highlightCurrentTier && tier === currentTier;
           return (
             <Reanimated.View
               key={tier}
@@ -68,10 +68,9 @@ export default function LevelIndicator({
                   width: compact ? 16 : 26,
                   height: compact ? 4 : 5,
                   borderRadius: 3,
-                  backgroundColor:
-                    isFilled || isPreview ? '#E67E22' : theme.track,
+                  backgroundColor: isFilled ? '#E67E22' : theme.track,
                 },
-                isPreview && !reduceMotion && levelPopAnimation,
+                isHighlighted && !reduceMotion && levelPopAnimation,
               ]}
             />
           );

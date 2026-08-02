@@ -49,14 +49,18 @@ export const liveDotPulse: CSSAnimationKeyframes = {
   '100%': { opacity: 1, transform: [{ scale: 1 }] },
 };
 
+/** Correct-answer reward that emphasizes the goal bar without changing its ratio. */
+export const goalBarPulse: CSSAnimationKeyframes = {
+  '0%': { transform: [{ scaleY: 1 }] },
+  '45%': { transform: [{ scaleY: 1.75 }] },
+  '100%': { transform: [{ scaleY: 1 }] },
+};
+
 /**
  * Per-row stagger for the feedback cascade: row N starts 50ms after row N-1
  * (mock: .sw-fbrow nth-child delays in .05s steps).
  */
 export const FEEDBACK_ROW_STAGGER_MS = 50;
-
-/** How far the header progress bar surges forward on a correct answer. */
-export const PROGRESS_SURGE_FRACTION = 0.14;
 
 /** Feedback panel entry — swBannerIn .4s. */
 export const panelEntryAnimation = asStyle({
@@ -97,6 +101,13 @@ export const liveDotAnimation = asStyle({
   animationDuration: '2.4s',
   animationTimingFunction: 'ease-in-out',
   animationIterationCount: 'infinite',
+});
+
+/** Goal bar reward — a brief vertical pulse that preserves the fill ratio. */
+export const goalBarPulseAnimation = asStyle({
+  animationName: goalBarPulse,
+  animationDuration: '450ms',
+  animationTimingFunction: springEase,
 });
 
 /** Goal bar width change — .7s decelerating fill (mock .sw-progress). */

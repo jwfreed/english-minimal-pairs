@@ -16,7 +16,6 @@ import PracticeHeader from '@/src/components/practice/PracticeHeader';
 import PracticePairSelector from '@/src/components/practice/PracticePairSelector';
 import { minimalPairs, type Pair } from '@/src/constants/minimalPairs';
 import createStyles from '@/src/constants/styles';
-import { PROGRESS_SURGE_FRACTION } from '@/src/constants/motion';
 import { tKeys } from '@/src/constants/translationKeys';
 import { useCategory } from '@/src/context/CategoryContext';
 import { useLanguage } from '@/src/context/LanguageContext';
@@ -143,7 +142,7 @@ export default function HomeScreen() {
         primaryColor={theme.primaryText}
         styles={styles}
         timerRef={timerRef}
-        progressBoost={feedback === 'correct' ? PROGRESS_SURGE_FRACTION : 0}
+        highlightProgress={feedback === 'correct'}
       />
 
       <View style={styles.mainCard}>

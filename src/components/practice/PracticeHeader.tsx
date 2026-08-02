@@ -16,8 +16,8 @@ interface PracticeHeaderProps {
   styles: PracticeHeaderStyles;
   helpAccessibilityLabel: string;
   timerRef: React.MutableRefObject<SessionTimerHandle | null>;
-  /** Temporary goal-bar surge while correct-answer feedback is showing. */
-  progressBoost?: number;
+  /** Visually reward the truthful goal progress while correct feedback shows. */
+  highlightProgress?: boolean;
 }
 
 export default function PracticeHeader({
@@ -27,13 +27,13 @@ export default function PracticeHeader({
   styles,
   helpAccessibilityLabel,
   timerRef,
-  progressBoost,
+  highlightProgress,
 }: PracticeHeaderProps) {
   return (
     <View style={styles.practiceHeader}>
       <SessionTimer
         timerRef={timerRef}
-        progressBoost={progressBoost}
+        highlightProgress={highlightProgress}
         leading={<Text style={styles.practiceTitle}>{title}</Text>}
         trailing={
           <TouchableOpacity

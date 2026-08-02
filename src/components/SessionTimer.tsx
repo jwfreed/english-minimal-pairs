@@ -10,7 +10,11 @@ import { View, Text, AppState, AppStateStatus } from 'react-native';
 import Reanimated, { useReducedMotion } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createStyles from '@/src/constants/styles';
-import { barFillTransition, liveDotAnimation } from '@/src/constants/motion';
+import {
+  barFillTransition,
+  goalBarPulseAnimation,
+  liveDotAnimation,
+} from '@/src/constants/motion';
 import { useAllThemeColors } from '@/src/context/theme';
 import {
   SESSION_TIMER_CUMULATIVE_STORAGE_KEY,
@@ -56,14 +60,16 @@ interface Props {
   timerRef?: React.MutableRefObject<SessionTimerHandle | null>;
   leading?: ReactNode;
   trailing?: ReactNode;
-  /**
-   * Extra fraction (0–1) temporarily added to the goal bar — the celebratory
-   * surge on a correct answer. Reverts to the true value when it goes back to 0.
-   */
-  progressBoost?: number;
+  /** Briefly emphasize the truthful goal progress without changing its value. */
+  highlightProgress?: boolean;
 }
 
-export default function SessionTimer({ timerRef, leading, trailing, progressBoost = 0 }: Props) {
+export default function SessionTimer({
+  timerRef,
+  leading,
+  trailing,
+  highlightProgress = false,
+}: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const reduceMotion = useReducedMotion();
@@ -205,7 +211,7 @@ export default function SessionTimer({ timerRef, leading, trailing, progressBoos
   }, [persist]);
 
   const goalSeconds = DAILY_GOAL_MINUTES * 60;
-  const progress = Math.min(elapsedToday / goalSeconds + progressBoost, 1);
+  const progress = Math.min(elapsedToday / goalSeconds, 1);
 
   return (
     <View style={styles.sessionTimerContainer}>
@@ -226,7 +232,12 @@ export default function SessionTimer({ timerRef, leading, trailing, progressBoos
           {trailing}
         </View>
       </View>
-      <View style={styles.sessionTimerBarBg}>
+      <Reanimated.View
+        style={[
+          styles.sessionTimerBarBg,
+          highlightProgress && !reduceMotion && goalBarPulseAnimation,
+        ]}
+      >
         <Reanimated.View
           style={[
             styles.sessionTimerBarFill,
@@ -234,7 +245,7 @@ export default function SessionTimer({ timerRef, leading, trailing, progressBoos
             !reduceMotion && barFillTransition,
           ]}
         />
-      </View>
+      </Reanimated.View>
     </View>
   );
 }

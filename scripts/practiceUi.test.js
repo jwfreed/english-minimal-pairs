@@ -342,6 +342,17 @@ const sessionTimerSource = fs.readFileSync(
   path.join(__dirname, '..', 'src', 'components', 'SessionTimer.tsx'),
   'utf8'
 );
+const practiceHeaderSource = fs.readFileSync(
+  path.join(
+    __dirname,
+    '..',
+    'src',
+    'components',
+    'practice',
+    'PracticeHeader.tsx'
+  ),
+  'utf8'
+);
 const levelIndicatorSource = fs.readFileSync(
   path.join(__dirname, '..', 'src', 'components', 'LevelIndicator.tsx'),
   'utf8'
@@ -419,17 +430,38 @@ runTest('compare mini-buttons expose a press state', () => {
   );
 });
 
-runTest('goal bar surges forward on a correct answer and animates its width', () => {
+runTest('correct feedback rewards truthful elapsed-time progress without changing its value', () => {
   assert.ok(
     practiceScreenSource.includes(
-      "progressBoost={feedback === 'correct' ? PROGRESS_SURGE_FRACTION : 0}"
+      "highlightProgress={feedback === 'correct'}"
     ),
-    'practice screen must surge the goal bar only while correct feedback shows'
+    'practice screen must request a visual-only progress reward for correct feedback'
   );
   assert.ok(
-    sessionTimerSource.includes('progressBoost') &&
-      sessionTimerSource.includes('barFillTransition'),
-    'session timer must accept the surge and animate width changes'
+    practiceHeaderSource.includes('highlightProgress={highlightProgress}') &&
+      sessionTimerSource.includes(
+        'const progress = Math.min(elapsedToday / goalSeconds, 1);'
+      ),
+    'the header must forward only the visual reward while progress remains elapsed-time-only'
+  );
+  for (const source of [
+    practiceScreenSource,
+    practiceHeaderSource,
+    sessionTimerSource,
+    motionSource,
+  ]) {
+    assert.ok(
+      !source.includes('progressBoost') &&
+        !source.includes('PROGRESS_SURGE_FRACTION'),
+      'correct feedback must never supply a quantitative progress boost'
+    );
+  }
+  assert.ok(
+    sessionTimerSource.includes(
+      'highlightProgress && !reduceMotion && goalBarPulseAnimation'
+    ) &&
+      motionSource.includes('goalBarPulseAnimation'),
+    'the existing goal bar must pulse only when correct feedback is active and motion is allowed'
   );
 });
 

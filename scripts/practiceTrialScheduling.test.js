@@ -249,14 +249,20 @@ module.exports = (async () => {
     );
   });
 
-  await runTest('round start and scheduling commit precede conditional presentation', () => {
+  await runTest('scheduling query and events precede conditional presentation', () => {
     const step = findStep(replay, 'r1-fast-correct-with-replay');
     const firstPlayEvents = step.playObservations[0].immediateEventTypes;
-    assert.ok(
-      firstPlayEvents.indexOf('round-started') <
-        firstPlayEvents.indexOf('pair-presented'),
-      'round start must precede presentation'
+    assert.deepStrictEqual(
+      firstPlayEvents.filter((event) => event.startsWith('trial-scheduling-')),
+      [
+        'trial-scheduling-query',
+        'trial-scheduling-round-started',
+        'trial-scheduling-trial-presented',
+      ],
+      'scheduling must query before consuming the override and recording presentation'
     );
+    assert.ok(firstPlayEvents.includes('mark-scheduled-pair'));
+    assert.ok(firstPlayEvents.includes('pair-presented'));
     assert.ok(
       firstPlayEvents.indexOf('mark-scheduled-pair') <
         firstPlayEvents.indexOf('pair-presented'),
@@ -264,7 +270,13 @@ module.exports = (async () => {
     );
 
     const emptyStep = findStep(replay, 'round-without-presentation');
-    assert.ok(emptyStep.eventTypes.includes('round-started'));
+    assert.deepStrictEqual(
+      emptyStep.eventTypes.filter((event) =>
+        event.startsWith('trial-scheduling-')
+      ),
+      ['trial-scheduling-query', 'trial-scheduling-round-started'],
+      'an empty round must consume the override without recording presentation'
+    );
     assert.ok(!emptyStep.eventTypes.includes('pair-presented'));
   });
 

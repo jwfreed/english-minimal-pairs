@@ -10,14 +10,16 @@ import { usePairProgress } from '@/src/context/PairProgressContext';
 import { usePracticeTarget } from '@/src/context/PracticeTargetContext';
 import { useSettings } from '@/src/context/SettingsContext';
 import {
-  advanceTrialCycleSeenIds,
   applyPracticeAnswer,
   buildTrialPairId,
   choosePlaybackForRound,
-  selectNextTrialPair,
-  updateRecentMissState,
-  type RecentMissState,
 } from '@/src/domain/practiceSession';
+import {
+  initialTrialSchedulingState,
+  planNextTrial,
+  reduceTrialScheduling,
+  type TrialSchedulingEvent,
+} from '@/src/domain/practice/trialScheduling';
 import { useAudio } from '@/src/hooks/useAudio';
 import { useContrastPairs } from '@/src/hooks/useContrastPairs';
 import { useHaptics } from '@/src/hooks/useHaptics';
@@ -75,16 +77,17 @@ export function usePracticeSession({
   } | null>(null);
   /** Tier the user just promoted to — drives inline celebration in AnswerButtons */
   const [promotedTier, setPromotedTier] = useState<number | null>(null);
-  const lastPairIdRef = useRef<string | null>(null);
-  const seenThisCycleRef = useRef<string[]>([]);
-  const recentMissStateRef = useRef<RecentMissState>({
-    recentlyMissedPairId: null,
-    trialsSinceMiss: 0,
-  });
-  // A manual choice owns exactly the next round. Once presented, normal
-  // contrast-scoped scheduling resumes on the following round.
-  const manualPairOverrideRef = useRef(false);
+  const trialSchedulingRef = useRef(initialTrialSchedulingState());
   const lastStartedContrastRef = useRef<string | null>(null);
+  const dispatchTrialScheduling = useCallback(
+    (event: TrialSchedulingEvent) => {
+      trialSchedulingRef.current = reduceTrialScheduling(
+        trialSchedulingRef.current,
+        event
+      );
+    },
+    []
+  );
 
   // Reset round state when the category changes so stale startTime / playedIdx
   // from a previous category can't bleed into a new one.
@@ -95,15 +98,9 @@ export function usePracticeSession({
     setPlayedIdx(null);
     setStartTime(null);
     setPendingPlayback(null);
-    lastPairIdRef.current = null;
-    seenThisCycleRef.current = [];
-    recentMissStateRef.current = {
-      recentlyMissedPairId: null,
-      trialsSinceMiss: 0,
-    };
-    manualPairOverrideRef.current = false;
+    dispatchTrialScheduling({ kind: 'session-reset' });
     lastStartedContrastRef.current = null;
-  }, [categoryIndex]);
+  }, [categoryIndex, dispatchTrialScheduling]);
 
   // Jump to a pair requested from the Results "Practice this next" card.
   // The target is a group id. visible may include multiple same-tier examples
@@ -118,15 +115,9 @@ export function usePracticeSession({
     setPlayedIdx(null);
     setStartTime(null);
     setPendingPlayback(null);
-    lastPairIdRef.current = null;
-    seenThisCycleRef.current = [];
-    recentMissStateRef.current = {
-      recentlyMissedPairId: null,
-      trialsSinceMiss: 0,
-    };
-    manualPairOverrideRef.current = false;
+    dispatchTrialScheduling({ kind: 'session-reset' });
     consumeTarget();
-  }, [targetGroup, visible, isLoading, consumeTarget]);
+  }, [targetGroup, visible, isLoading, consumeTarget, dispatchTrialScheduling]);
 
   // Clamp pairIndex when visible list shrinks.
   const safePairIndex =
@@ -175,20 +166,16 @@ export function usePracticeSession({
   }, [activeGroup, isLoading, isPracticeReady, mastery, selectedPair]);
 
   useEffect(() => {
-    seenThisCycleRef.current = [];
-    recentMissStateRef.current = {
-      recentlyMissedPairId: null,
-      trialsSinceMiss: 0,
-    };
-    if (
-      lastPairIdRef.current &&
-      !activeGroupPairs.some(
-        (pair) => buildTrialPairId(pair) === lastPairIdRef.current
-      )
-    ) {
-      lastPairIdRef.current = null;
-    }
-  }, [activeGroup, activeGroupPairs, activeGroupPairIdsKey]);
+    dispatchTrialScheduling({
+      kind: 'active-set-changed',
+      activeGroupPairs,
+    });
+  }, [
+    activeGroup,
+    activeGroupPairs,
+    activeGroupPairIdsKey,
+    dispatchTrialScheduling,
+  ]);
 
   // Keep a stable snapshot of items — only update when the picker is NOT being scrolled.
   const [stableVisible, setStableVisible] = useState<Pair[]>(visible);
@@ -229,18 +216,17 @@ export function usePracticeSession({
       const groupPairs = visible.filter(
         (candidate) => candidate.group === pair.group
       );
-      lastPairIdRef.current = pairId;
-      seenThisCycleRef.current = advanceTrialCycleSeenIds({
+      dispatchTrialScheduling({
+        kind: 'trial-presented',
+        pair,
         activeGroupPairs: groupPairs,
-        selectedPair: pair,
-        seenThisCycle: seenThisCycleRef.current,
       });
       if (activeGroup !== pair.group) {
         setActiveGroup(pair.group);
       }
       return pairId;
     },
-    [activeGroup, visible]
+    [activeGroup, dispatchTrialScheduling, visible]
   );
 
   const findVisiblePairIndex = useCallback(
@@ -279,21 +265,14 @@ export function usePracticeSession({
       setPlayedIdx(playback.playedIdx);
 
       const group = activeGroup ?? selectedPair?.group ?? null;
-      const nextPair =
-        manualPairOverrideRef.current && selectedPair
-          ? selectedPair
-          : group
-            ? selectNextTrialPair({
-                eligiblePairs: visible,
-                activeGroup: group,
-                lastPairId: lastPairIdRef.current,
-                seenThisCycle: seenThisCycleRef.current,
-                recentlyMissedPairId:
-                  recentMissStateRef.current.recentlyMissedPairId,
-                random: Math.random,
-              })
-            : selectedPair;
-      manualPairOverrideRef.current = false;
+      const nextPair = planNextTrial({
+        state: trialSchedulingRef.current,
+        eligiblePairs: visible,
+        activeGroup: group,
+        selectedPair,
+        random: Math.random,
+      });
+      dispatchTrialScheduling({ kind: 'round-started' });
 
       if (nextPair) {
         const nextPairId = markScheduledPair(nextPair);
@@ -327,6 +306,7 @@ export function usePracticeSession({
     audioModeReady,
     catObj.category,
     debugLog,
+    dispatchTrialScheduling,
     feedback,
     findVisiblePairIndex,
     markScheduledPair,
@@ -392,8 +372,8 @@ export function usePracticeSession({
           responseTimeMs: result.responseTimeMs,
         });
       }
-      recentMissStateRef.current = updateRecentMissState({
-        state: recentMissStateRef.current,
+      dispatchTrialScheduling({
+        kind: 'answer-recorded',
         answeredPairId: buildTrialPairId(selectedPair),
         wasCorrect: result.correct,
       });
@@ -449,6 +429,7 @@ export function usePracticeSession({
       playedIdx,
       startTime,
       selectedPair,
+      dispatchTrialScheduling,
       promote,
       mastery,
       recordAttempt,
@@ -461,15 +442,7 @@ export function usePracticeSession({
       timerRef.current?.poke();
       const groupChanged = nextPair.group !== activeGroup;
       setActiveGroup(nextPair.group);
-      if (groupChanged) {
-        lastPairIdRef.current = null;
-        seenThisCycleRef.current = [];
-        recentMissStateRef.current = {
-          recentlyMissedPairId: null,
-          trialsSinceMiss: 0,
-        };
-      }
-      manualPairOverrideRef.current = true;
+      dispatchTrialScheduling({ kind: 'manual-selection', groupChanged });
       setPairIndex(index);
       setFeedback(null);
       setPlayedIdx(null);
@@ -480,7 +453,7 @@ export function usePracticeSession({
         category: catObj.category,
       });
     },
-    [activeGroup, catObj.category]
+    [activeGroup, catObj.category, dispatchTrialScheduling]
   );
 
   const handlePairChange = useCallback(

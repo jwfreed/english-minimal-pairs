@@ -16,6 +16,13 @@ const practiceSessionHookPath = path.join(
   'hooks',
   'usePracticeSession.ts'
 );
+const trialSchedulingPath = path.join(
+  ROOT,
+  'src',
+  'domain',
+  'practice',
+  'trialScheduling.ts'
+);
 
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
@@ -129,6 +136,27 @@ function createPracticeTrialSchedulingHarness(fixture) {
         next: nextState,
       });
       return nextState;
+    },
+  };
+
+  const trialScheduling = loadTsModule(
+    trialSchedulingPath,
+    new Map(),
+    { '@/src/domain/practiceSession': wrappedDomain }
+  );
+  const wrappedTrialScheduling = {
+    ...trialScheduling,
+
+    planNextTrial(input) {
+      record({ type: 'trial-scheduling-query' });
+      return trialScheduling.planNextTrial(input);
+    },
+
+    reduceTrialScheduling(state, event) {
+      if (event.kind === 'round-started' || event.kind === 'trial-presented') {
+        record({ type: `trial-scheduling-${event.kind}` });
+      }
+      return trialScheduling.reduceTrialScheduling(state, event);
     },
   };
 
@@ -278,6 +306,7 @@ function createPracticeTrialSchedulingHarness(fixture) {
       useSettings: () => ({ getNextVoice }),
     },
     '@/src/domain/practiceSession': wrappedDomain,
+    '@/src/domain/practice/trialScheduling': wrappedTrialScheduling,
     '@/src/hooks/useAudio': { useAudio },
     '@/src/hooks/useContrastPairs': { useContrastPairs },
     '@/src/hooks/useHaptics': {

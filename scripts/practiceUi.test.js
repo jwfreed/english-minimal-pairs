@@ -246,7 +246,7 @@ runTest('practice workflow is owned by the session hook', () => {
   );
   for (const workflowDependency of [
     'applyPracticeAnswer',
-    'selectNextTrialPair',
+    'planNextTrial',
     'practiceAnalytics',
     'useAudio',
   ]) {
@@ -281,19 +281,7 @@ runTest('contrast details stay presentation-only and emit selection actions', ()
   );
 });
 
-runTest('manual selection owns one round before contrast scheduling resumes', () => {
-  assertInOrder(
-    practiceSessionHookSource,
-    [
-      'manualPairOverrideRef.current && selectedPair',
-      '? selectedPair',
-      ': group',
-      'selectNextTrialPair({',
-      'activeGroup: group',
-      'manualPairOverrideRef.current = false',
-    ],
-    'manual pair override must remain one-shot and resume contrast scheduling'
-  );
+runTest('contrast-detail selections stay inside the active eligible examples', () => {
   assert.ok(
     practiceSessionHookSource.includes('catObj.pairs.filter((pair) => pair.group === group)') &&
       practiceSessionHookSource.includes('if (nextIndex === -1) return false;'),

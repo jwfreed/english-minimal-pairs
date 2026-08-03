@@ -20,6 +20,11 @@ import {
   reduceTrialScheduling,
   type TrialSchedulingEvent,
 } from '@/src/domain/practice/trialScheduling';
+import {
+  applyProgressionAnswer,
+  getGroupProgression,
+  initialProgressionState,
+} from '@/src/domain/practice/progressionState';
 import { useAudio } from '@/src/hooks/useAudio';
 import { useContrastPairs } from '@/src/hooks/useContrastPairs';
 import { useHaptics } from '@/src/hooks/useHaptics';
@@ -28,7 +33,6 @@ import {
   FAST_THRESHOLD_MS,
   LONG_STREAK_NEEDED,
   SPEED_TABLE,
-  type SpeedTier,
 } from '@/src/learning/adaptiveProgression';
 
 interface UsePracticeSessionOptions {
@@ -56,10 +60,7 @@ export function usePracticeSession({
     []
   );
 
-  /* ── Speed & streak tracking via refs (always-current, no stale closures) ── */
-  const groupSpeedRef = useRef<Record<string, SpeedTier>>({});
-  const groupStreakRef = useRef<Record<string, number>>({});
-  const groupLongStreakRef = useRef<Record<string, number>>({});
+  const progressionStateRef = useRef(initialProgressionState());
   const [, forceRender] = useState(0);
 
   const { visible, promote, mastery, setAllGroupsToTier, isLoading } =
@@ -186,8 +187,9 @@ export function usePracticeSession({
     }
   }, [visible, isLoading]);
 
-  const speedTier: SpeedTier = selectedPair
-    ? (groupSpeedRef.current[selectedPair.group] ?? 0)
+  const speedTier = selectedPair
+    ? getGroupProgression(progressionStateRef.current, selectedPair.group)
+        .speedTier
     : 0;
   const { play, audioModeReady, isSpeaking } = useAudio(
     selectedPair,
@@ -337,9 +339,13 @@ export function usePracticeSession({
       if (playedIdx === null || !selectedPair) return;
       timerRef.current?.poke();
       const group = selectedPair.group;
-      const curSpeed: SpeedTier = groupSpeedRef.current[group] ?? 0;
-      const longStreak = groupLongStreakRef.current[group] ?? 0;
-      const fastStreak = groupStreakRef.current[group] ?? 0;
+      const progression = getGroupProgression(
+        progressionStateRef.current,
+        group
+      );
+      const curSpeed = progression.speedTier;
+      const longStreak = progression.longStreak;
+      const fastStreak = progression.fastStreak;
 
       const result = applyPracticeAnswer({
         selectedPair,
@@ -378,8 +384,10 @@ export function usePracticeSession({
         wasCorrect: result.correct,
       });
 
-      groupLongStreakRef.current[group] = result.nextLongStreak;
-      groupStreakRef.current[group] = result.nextFastStreak;
+      progressionStateRef.current = applyProgressionAnswer(
+        progressionStateRef.current,
+        result
+      );
 
       if (__DEV__) {
         const isFast = result.responseTimeMs < FAST_THRESHOLD_MS;
@@ -397,14 +405,12 @@ export function usePracticeSession({
 
       // ── Promote speed or mastery ──
       if (result.promoteSpeed) {
-        groupSpeedRef.current[group] = result.nextSpeed;
         if (__DEV__) {
           console.log(
             `⬆ Speed ${group}: ${curSpeed} → ${result.nextSpeed}`
           );
         }
       } else {
-        groupSpeedRef.current[group] = result.nextSpeed;
         promote(group);
         setPromotedTier(result.promotedTier);
         if (result.resetPairIndex) {
@@ -420,9 +426,6 @@ export function usePracticeSession({
         }
       }
 
-      // Reset streaks after promotion.
-      groupStreakRef.current[group] = result.nextFastStreak;
-      groupLongStreakRef.current[group] = result.nextLongStreak;
       forceRender((value) => value + 1);
     },
     [

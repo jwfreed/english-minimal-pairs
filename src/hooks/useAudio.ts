@@ -15,6 +15,14 @@ import {
   type SpeechPlaybackAttempt,
   type SpeechPlaybackRequest,
 } from '@/src/domain/speechPlaybackCoordinator';
+import {
+  captureSpeechDiagnosticTime,
+  createSpeechDiagnosticAttempt,
+  recordSilentWarmupPlayInvoked,
+  recordSpeechDiagnosticPhase,
+  type SpeechDiagnosticAttempt,
+  type SpeechDiagnosticTime,
+} from '@/src/diagnostics/speechPlaybackDiagnostics';
 import { useSilentWarmupPlayer } from '@/src/hooks/useSilentWarmupPlayer';
 
 // Audio-session configuration for TTS playback. `playsInSilentMode` is the
@@ -197,6 +205,7 @@ export const useAudio = (
             try {
               debugLog('🔇 Playing silent warmup audio…');
               silentWarmupPlayer.play();
+              recordSilentWarmupPlayInvoked();
               debugLog('✅ Silent audio played - iOS silent-mode workaround enabled');
             } catch (soundError) {
               debugWarn(
@@ -286,6 +295,10 @@ export const useAudio = (
       }
 
       const { requestId } = beginResult.attempt;
+      const coordinatorAcquiredDiagnosticTime = captureSpeechDiagnosticTime();
+      let diagnosticAttempt: SpeechDiagnosticAttempt | null = null;
+      let speechOptionsCreatedDiagnosticTime: SpeechDiagnosticTime | null = null;
+      let speechSpeakInvokedDiagnosticTime: SpeechDiagnosticTime | null = null;
       logSpeechDiagnostic({
         phase: 'accepted',
         request: beginResult.attempt,
@@ -322,6 +335,23 @@ export const useAudio = (
           ? getNextVoice({ difficulty: selectedPair.difficulty })
           : null;
         speechPlaybackCoordinator.selectVoice(requestId, voice?.identifier ?? null);
+        if (coordinatorAcquiredDiagnosticTime) {
+          diagnosticAttempt = createSpeechDiagnosticAttempt({
+            requestId,
+            voiceIdentifier: voice?.identifier ?? null,
+            coordinatorAcquiredAt: coordinatorAcquiredDiagnosticTime,
+            audioSession: {
+              configuredIntent: {
+                category: 'playback',
+                mode: 'default',
+                options: ['duckOthers'],
+              },
+              audioModeConfigured: audioModeConfiguredRef.current,
+              experimentVariant: IOS_AUDIO_SESSION_EXPERIMENT,
+              silentWarmupEnabled: IOS_SILENT_WARMUP_ENABLED,
+            },
+          });
+        }
 
         debugLog(`🔊 Attempting to speak: "${word}" at rate ${rate}`);
         if (voice) {
@@ -333,11 +363,15 @@ export const useAudio = (
             rate,
             voice,
             onDone: () => {
+              const nativeFinishedDiagnosticTime =
+                captureSpeechDiagnosticTime();
               const finishedAtMs = Date.now();
               const finishedAttempt = speechPlaybackCoordinator.finish(
                 requestId,
                 finishedAtMs
               );
+              const coordinatorReleasedDiagnosticTime =
+                captureSpeechDiagnosticTime();
               if (!finishedAttempt) return;
               updateIsSpeaking(false);
               logSpeechDiagnostic({
@@ -348,13 +382,25 @@ export const useAudio = (
                 isSpeaking: isSpeakingRef.current,
               });
               debugLog(`✅ Successfully spoke: "${word}"`);
+              recordSpeechDiagnosticPhase(
+                diagnosticAttempt,
+                'native-finished-coordinator-released',
+                nativeFinishedDiagnosticTime,
+                {
+                  coordinatorReleasedAtMonotonicMs:
+                    coordinatorReleasedDiagnosticTime?.monotonicTimestampMs,
+                }
+              );
             },
             onStopped: () => {
+              const nativeStoppedDiagnosticTime = captureSpeechDiagnosticTime();
               const cancelledAtMs = Date.now();
               const cancelledAttempt = speechPlaybackCoordinator.cancel(
                 requestId,
                 cancelledAtMs
               );
+              const coordinatorReleasedDiagnosticTime =
+                captureSpeechDiagnosticTime();
               if (!cancelledAttempt) return;
               updateIsSpeaking(false);
               logSpeechDiagnostic({
@@ -365,13 +411,25 @@ export const useAudio = (
                 isSpeaking: isSpeakingRef.current,
               });
               debugLog(`⏸️ Speech stopped for: "${word}"`);
+              recordSpeechDiagnosticPhase(
+                diagnosticAttempt,
+                'native-stopped-coordinator-released',
+                nativeStoppedDiagnosticTime,
+                {
+                  coordinatorReleasedAtMonotonicMs:
+                    coordinatorReleasedDiagnosticTime?.monotonicTimestampMs,
+                }
+              );
             },
             onError: (error) => {
+              const nativeErrorDiagnosticTime = captureSpeechDiagnosticTime();
               const failedAtMs = Date.now();
               const failedAttempt = speechPlaybackCoordinator.fail(
                 requestId,
                 failedAtMs
               );
+              const coordinatorReleasedDiagnosticTime =
+                captureSpeechDiagnosticTime();
               if (!failedAttempt) return;
               updateIsSpeaking(false);
               logSpeechDiagnostic({
@@ -382,9 +440,19 @@ export const useAudio = (
                 isSpeaking: isSpeakingRef.current,
               });
               debugError(`❌ TTS Error for "${word}":`, error);
+              recordSpeechDiagnosticPhase(
+                diagnosticAttempt,
+                'native-error-coordinator-released',
+                nativeErrorDiagnosticTime,
+                {
+                  coordinatorReleasedAtMonotonicMs:
+                    coordinatorReleasedDiagnosticTime?.monotonicTimestampMs,
+                }
+              );
             },
           }),
           onStart: () => {
+            const nativeStartedDiagnosticTime = captureSpeechDiagnosticTime();
             const startedAtMs = Date.now();
             const startedAttempt = speechPlaybackCoordinator.start(
               requestId,
@@ -398,6 +466,11 @@ export const useAudio = (
               eventTimestampMs: startedAtMs,
               isSpeaking: isSpeakingRef.current,
             });
+            recordSpeechDiagnosticPhase(
+              diagnosticAttempt,
+              'native-started',
+              nativeStartedDiagnosticTime
+            );
           },
           // Experiment variant C only: hand the speech audio session to iOS.
           // AVSpeechSynthesizer latches this on its first utterance, so it must
@@ -408,6 +481,7 @@ export const useAudio = (
             ? { useApplicationAudioSession: false }
             : {}),
         };
+        speechOptionsCreatedDiagnosticTime = captureSpeechDiagnosticTime();
 
         // Log speech attempt details
         debugLog('📋 Speech options:', {
@@ -419,7 +493,9 @@ export const useAudio = (
           voice: voice?.name || 'system default',
         });
 
+        speechSpeakInvokedDiagnosticTime = captureSpeechDiagnosticTime();
         Speech.speak(word, speechOptions);
+        const speechSpeakReturnedDiagnosticTime = captureSpeechDiagnosticTime();
         const submittedAtMs = Date.now();
         const submittedAttempt = speechPlaybackCoordinator.submitSpeech(
           requestId,
@@ -434,12 +510,34 @@ export const useAudio = (
             isSpeaking: isSpeakingRef.current,
           });
         }
+        recordSpeechDiagnosticPhase(
+          diagnosticAttempt,
+          'coordinator-acquired',
+          coordinatorAcquiredDiagnosticTime
+        );
+        recordSpeechDiagnosticPhase(
+          diagnosticAttempt,
+          'speech-options-created',
+          speechOptionsCreatedDiagnosticTime
+        );
+        recordSpeechDiagnosticPhase(
+          diagnosticAttempt,
+          'speech-speak-invoked',
+          speechSpeakInvokedDiagnosticTime
+        );
+        recordSpeechDiagnosticPhase(
+          diagnosticAttempt,
+          'speech-speak-returned',
+          speechSpeakReturnedDiagnosticTime
+        );
       } catch (error) {
+        const submissionFailedDiagnosticTime = captureSpeechDiagnosticTime();
         const failedAtMs = Date.now();
         const failedAttempt = speechPlaybackCoordinator.fail(
           requestId,
           failedAtMs
         );
+        const coordinatorReleasedDiagnosticTime = captureSpeechDiagnosticTime();
         if (failedAttempt) {
           updateIsSpeaking(false);
           logSpeechDiagnostic({
@@ -451,6 +549,15 @@ export const useAudio = (
           });
         }
         debugError(`❌ Exception during speech playback: "${word}"`, error);
+        recordSpeechDiagnosticPhase(
+          diagnosticAttempt,
+          'submission-failed-coordinator-released',
+          submissionFailedDiagnosticTime,
+          {
+            coordinatorReleasedAtMonotonicMs:
+              coordinatorReleasedDiagnosticTime?.monotonicTimestampMs,
+          }
+        );
         throw error;
       }
     },

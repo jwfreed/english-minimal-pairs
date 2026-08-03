@@ -64,13 +64,11 @@ export interface SpeechDiagnosticAttempt {
   nativeStartCallbackAtMonotonicMs: number | null;
   nativeTerminalCallbackAtMonotonicMs: number | null;
   coordinatorReleasedAtMonotonicMs: number | null;
-  coordinatorObservedOwnershipCount: 0 | 1;
   audioSession: SpeechDiagnosticAudioSessionSnapshot;
 }
 
 export interface SpeechDiagnosticPhaseUpdate {
   coordinatorReleasedAtMonotonicMs?: number;
-  coordinatorObservedOwnershipCount?: 0 | 1;
 }
 
 export interface SpeechLifecycleDiagnosticEvent
@@ -214,7 +212,6 @@ export function createSpeechPlaybackDiagnostics({
           nativeStartCallbackAtMonotonicMs: null,
           nativeTerminalCallbackAtMonotonicMs: null,
           coordinatorReleasedAtMonotonicMs: null,
-          coordinatorObservedOwnershipCount: 1,
           audioSession: {
             configuredIntent: {
               category: input.audioSession.configuredIntent.category,
@@ -274,11 +271,6 @@ export function createSpeechPlaybackDiagnostics({
           attempt.coordinatorReleasedAtMonotonicMs =
             update.coordinatorReleasedAtMonotonicMs;
         }
-        if (update.coordinatorObservedOwnershipCount !== undefined) {
-          attempt.coordinatorObservedOwnershipCount =
-            update.coordinatorObservedOwnershipCount;
-        }
-
         safelyEmit({
           phase,
           ...attempt,

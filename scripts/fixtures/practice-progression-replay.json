@@ -1,0 +1,253 @@
+{
+  "clockStartMs": 100000,
+  "initialCategory": "Shared A",
+  "initialMastery": {
+    "Shared A": { "rL": 1, "bV": 1 },
+    "Shared B": { "rL": 1 }
+  },
+  "randomValues": [
+    0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.15, 0.85,
+    0.25, 0.75, 0.35, 0.65, 0.45, 0.55, 0.05, 0.95, 0.12, 0.88,
+    0.22, 0.78, 0.32, 0.68, 0.42, 0.58, 0.08, 0.92, 0.18, 0.82,
+    0.28, 0.72, 0.38, 0.62, 0.48, 0.52, 0.02, 0.98, 0.11, 0.89,
+    0.21, 0.79, 0.31, 0.69, 0.41, 0.59, 0.06, 0.94, 0.16, 0.84,
+    0.26, 0.74, 0.36, 0.64, 0.46, 0.54, 0.04, 0.96, 0.14, 0.86
+  ],
+  "categories": [
+    {
+      "category": "Shared A",
+      "pairs": [
+        { "word1": "rake", "word2": "lake", "ipa1": "/reɪk/", "ipa2": "/leɪk/", "difficulty": 1, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" },
+        { "word1": "rate", "word2": "late", "ipa1": "/reɪt/", "ipa2": "/leɪt/", "difficulty": 2, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" },
+        { "word1": "ban", "word2": "van", "ipa1": "/bæn/", "ipa2": "/væn/", "difficulty": 1, "group": "bV", "position": "initial", "contrastPhoneme1": "b", "contrastPhoneme2": "v" },
+        { "word1": "berry", "word2": "very", "ipa1": "/ˈbɛri/", "ipa2": "/ˈvɛri/", "difficulty": 2, "group": "bV", "position": "initial", "contrastPhoneme1": "b", "contrastPhoneme2": "v" }
+      ]
+    },
+    {
+      "category": "Shared B",
+      "pairs": [
+        { "word1": "right", "word2": "light", "ipa1": "/raɪt/", "ipa2": "/laɪt/", "difficulty": 1, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" },
+        { "word1": "road", "word2": "load", "ipa1": "/roʊd/", "ipa2": "/loʊd/", "difficulty": 2, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" }
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "fast-mastery-ladder",
+      "initialCategory": "Shared A",
+      "actions": [
+        { "type": "answer", "label": "fast-1", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-2", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-3-speed-one", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-4", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-5", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-6-speed-two", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-7", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-8", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "answer", "label": "fast-9-mastery", "group": "rL", "answer": "correct", "responseMs": 4999 },
+        { "type": "observe-rate", "label": "after-mastery-speed-reset", "group": "rL" }
+      ]
+    },
+    {
+      "name": "long-mastery-ladder",
+      "initialCategory": "Shared A",
+      "actions": [
+        { "type": "answer", "label": "slow-1", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-2", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-3", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-4", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-5", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-6-speed-one", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-7", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-8", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-9", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-10", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-11", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-12-speed-two", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-13", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-14", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-15", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-16", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-17", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "slow-18-mastery", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "observe-rate", "label": "after-long-mastery-speed-reset", "group": "rL" }
+      ]
+    },
+    {
+      "name": "long-streak-reset",
+      "initialCategory": "Shared A",
+      "actions": [
+        { "type": "answer", "label": "pre-miss-slow-1", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "pre-miss-slow-2", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "pre-miss-slow-3", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "pre-miss-slow-4", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "pre-miss-slow-5", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "miss-resets-long-streak", "group": "rL", "answer": "incorrect", "responseMs": 5000 },
+        { "type": "answer", "label": "post-miss-slow-1", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "post-miss-slow-2", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "post-miss-slow-3", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "post-miss-slow-4", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "post-miss-slow-5", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "post-miss-slow-6-speed-one", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "observe-rate", "label": "after-post-miss-long-promotion", "group": "rL" }
+      ]
+    },
+    {
+      "name": "fast-reset-without-demotion",
+      "initialCategory": "Shared A",
+      "actions": [
+        { "type": "answer", "label": "build-speed-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "build-speed-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "build-speed-3", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "pre-fast-miss-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "pre-fast-miss-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "miss-resets-fast-streak", "group": "rL", "answer": "incorrect", "responseMs": 1000 },
+        { "type": "answer", "label": "post-fast-miss-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "post-fast-miss-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "post-fast-miss-3-speed-two", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "observe-rate", "label": "after-post-fast-miss-promotion", "group": "rL" }
+      ]
+    },
+    {
+      "name": "per-group-fast-isolation",
+      "initialCategory": "Shared A",
+      "actions": [
+        { "type": "answer", "label": "rl-fast-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "rl-fast-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "bv-fast-1", "group": "bV", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "rl-fast-3-speed-one", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "bv-fast-2", "group": "bV", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "bv-fast-3-speed-one", "group": "bV", "answer": "correct", "responseMs": 1000 },
+        { "type": "observe-rate", "label": "bv-after-own-fast-promotion", "group": "bV" },
+        { "type": "observe-rate", "label": "rl-retains-own-fast-speed", "group": "rL" }
+      ]
+    },
+    {
+      "name": "per-group-long-isolation",
+      "initialCategory": "Shared A",
+      "actions": [
+        { "type": "answer", "label": "rl-slow-1", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "bv-slow-1", "group": "bV", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "rl-slow-2", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "bv-slow-2", "group": "bV", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "rl-slow-3", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "bv-slow-3", "group": "bV", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "rl-slow-4", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "bv-slow-4", "group": "bV", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "rl-slow-5", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "bv-slow-5", "group": "bV", "answer": "correct", "responseMs": 5000 },
+        { "type": "answer", "label": "rl-slow-6-speed-one", "group": "rL", "answer": "correct", "responseMs": 5000 },
+        { "type": "observe-rate", "label": "bv-before-own-long-promotion", "group": "bV" },
+        { "type": "answer", "label": "bv-slow-6-speed-one", "group": "bV", "answer": "correct", "responseMs": 5000 },
+        { "type": "observe-rate", "label": "bv-after-own-long-promotion", "group": "bV" },
+        { "type": "observe-rate", "label": "rl-retains-own-long-speed", "group": "rL" }
+      ]
+    },
+    {
+      "name": "category-change-same-mount",
+      "initialCategory": "Shared A",
+      "actions": [
+        { "type": "answer", "label": "category-a-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "category-a-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "category-switch", "label": "switch-to-category-b", "category": "Shared B" },
+        { "type": "answer", "label": "category-b-shared-group-promotes", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "observe-rate", "label": "category-b-sees-carried-speed", "group": "rL" }
+      ]
+    },
+    {
+      "name": "same-module-hook-remount",
+      "initialCategory": "Shared B",
+      "initialMastery": {
+        "Shared A": { "rL": 1, "bV": 1 },
+        "Shared B": { "rL": 2 }
+      },
+      "actions": [
+        { "type": "answer", "label": "before-remount-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "before-remount-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "answer", "label": "before-remount-3", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "observe-rate", "label": "earned-speed-before-remount", "group": "rL" },
+        { "type": "remount", "label": "new-hook-instance" },
+        { "type": "observe-rate", "label": "initial-speed-after-remount", "group": "rL" }
+      ]
+    }
+  ],
+  "expected": {
+    "fast-mastery-ladder": {
+      "answers": [
+        ["fast-1", 0.85, "correct", null, 0], ["fast-2", 0.85, "correct", null, 0], ["fast-3-speed-one", 0.85, "correct", null, 0],
+        ["fast-4", 1, "correct", null, 0], ["fast-5", 1, "correct", null, 0], ["fast-6-speed-two", 1, "correct", null, 0],
+        ["fast-7", 1.15, "correct", null, 0], ["fast-8", 1.15, "correct", null, 0], ["fast-9-mastery", 1.15, null, 2, 1]
+      ],
+      "observations": [["after-mastery-speed-reset", 0.85, 1]],
+      "masteryChanges": [["fast-9-mastery", { "rL": 2, "bV": 1 }]],
+      "remounts": []
+    },
+    "long-mastery-ladder": {
+      "answers": [
+        ["slow-1", 0.85, "correct", null, 0], ["slow-2", 0.85, "correct", null, 0], ["slow-3", 0.85, "correct", null, 0],
+        ["slow-4", 0.85, "correct", null, 0], ["slow-5", 0.85, "correct", null, 0], ["slow-6-speed-one", 0.85, "correct", null, 0],
+        ["slow-7", 1, "correct", null, 0], ["slow-8", 1, "correct", null, 0], ["slow-9", 1, "correct", null, 0],
+        ["slow-10", 1, "correct", null, 0], ["slow-11", 1, "correct", null, 0], ["slow-12-speed-two", 1, "correct", null, 0],
+        ["slow-13", 1.15, "correct", null, 0], ["slow-14", 1.15, "correct", null, 0], ["slow-15", 1.15, "correct", null, 0],
+        ["slow-16", 1.15, "correct", null, 0], ["slow-17", 1.15, "correct", null, 0], ["slow-18-mastery", 1.15, null, 2, 1]
+      ],
+      "observations": [["after-long-mastery-speed-reset", 0.85, 1]],
+      "masteryChanges": [["slow-18-mastery", { "rL": 2, "bV": 1 }]],
+      "remounts": []
+    },
+    "long-streak-reset": {
+      "answers": [
+        ["pre-miss-slow-1", 0.85, "correct", null, 0], ["pre-miss-slow-2", 0.85, "correct", null, 0], ["pre-miss-slow-3", 0.85, "correct", null, 0],
+        ["pre-miss-slow-4", 0.85, "correct", null, 0], ["pre-miss-slow-5", 0.85, "correct", null, 0], ["miss-resets-long-streak", 0.85, "incorrect", null, 0],
+        ["post-miss-slow-1", 0.85, "correct", null, 0], ["post-miss-slow-2", 0.85, "correct", null, 0], ["post-miss-slow-3", 0.85, "correct", null, 0],
+        ["post-miss-slow-4", 0.85, "correct", null, 0], ["post-miss-slow-5", 0.85, "correct", null, 0], ["post-miss-slow-6-speed-one", 0.85, "correct", null, 0]
+      ],
+      "observations": [["after-post-miss-long-promotion", 1, 0]],
+      "masteryChanges": [],
+      "remounts": []
+    },
+    "fast-reset-without-demotion": {
+      "answers": [
+        ["build-speed-1", 0.85, "correct", null, 0], ["build-speed-2", 0.85, "correct", null, 0], ["build-speed-3", 0.85, "correct", null, 0],
+        ["pre-fast-miss-1", 1, "correct", null, 0], ["pre-fast-miss-2", 1, "correct", null, 0], ["miss-resets-fast-streak", 1, "incorrect", null, 0],
+        ["post-fast-miss-1", 1, "correct", null, 0], ["post-fast-miss-2", 1, "correct", null, 0], ["post-fast-miss-3-speed-two", 1, "correct", null, 0]
+      ],
+      "observations": [["after-post-fast-miss-promotion", 1.15, 0]],
+      "masteryChanges": [],
+      "remounts": []
+    },
+    "per-group-fast-isolation": {
+      "answers": [
+        ["rl-fast-1", 0.85, "correct", null, 0], ["rl-fast-2", 0.85, "correct", null, 0], ["bv-fast-1", 0.85, "correct", null, 0],
+        ["rl-fast-3-speed-one", 0.85, "correct", null, 0], ["bv-fast-2", 0.85, "correct", null, 0], ["bv-fast-3-speed-one", 0.85, "correct", null, 0]
+      ],
+      "observations": [["bv-after-own-fast-promotion", 1, 0], ["rl-retains-own-fast-speed", 1, 0]],
+      "masteryChanges": [],
+      "remounts": []
+    },
+    "per-group-long-isolation": {
+      "answers": [
+        ["rl-slow-1", 0.85, "correct", null, 0], ["bv-slow-1", 0.85, "correct", null, 0], ["rl-slow-2", 0.85, "correct", null, 0],
+        ["bv-slow-2", 0.85, "correct", null, 0], ["rl-slow-3", 0.85, "correct", null, 0], ["bv-slow-3", 0.85, "correct", null, 0],
+        ["rl-slow-4", 0.85, "correct", null, 0], ["bv-slow-4", 0.85, "correct", null, 0], ["rl-slow-5", 0.85, "correct", null, 0],
+        ["bv-slow-5", 0.85, "correct", null, 0], ["rl-slow-6-speed-one", 0.85, "correct", null, 0], ["bv-slow-6-speed-one", 0.85, "correct", null, 0]
+      ],
+      "observations": [["bv-before-own-long-promotion", 0.85, 0], ["bv-after-own-long-promotion", 1, 0], ["rl-retains-own-long-speed", 1, 0]],
+      "masteryChanges": [],
+      "remounts": []
+    },
+    "category-change-same-mount": {
+      "answers": [["category-a-1", 0.85, "correct", null, 0], ["category-a-2", 0.85, "correct", null, 0], ["category-b-shared-group-promotes", 0.85, "correct", null, 0]],
+      "observations": [["category-b-sees-carried-speed", 1, 0]],
+      "masteryChanges": [],
+      "remounts": []
+    },
+    "same-module-hook-remount": {
+      "answers": [["before-remount-1", 0.85, "correct", null, 0], ["before-remount-2", 0.85, "correct", null, 0], ["before-remount-3", 0.85, "correct", null, 0]],
+      "observations": [["earned-speed-before-remount", 1, 0], ["initial-speed-after-remount", 0.85, 0]],
+      "masteryChanges": [],
+      "remounts": [["new-hook-instance", { "rL": 2 }, 0]],
+      "lifecycle": { "hookModuleLoads": 1, "hookInstancesMounted": 2 }
+    }
+  }
+}

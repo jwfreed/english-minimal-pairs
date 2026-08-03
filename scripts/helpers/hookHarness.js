@@ -21,6 +21,8 @@ function createHookHarness({ onStateChange = () => {} } = {}) {
   let effectIndex = 0;
   let pendingEffects = [];
   let stateVersion = 0;
+  let mounted = false;
+  let mountCount = 0;
 
   const react = {
     useState(initialValue) {
@@ -83,6 +85,10 @@ function createHookHarness({ onStateChange = () => {} } = {}) {
   };
 
   function renderOnce(renderHook) {
+    if (!mounted) {
+      mounted = true;
+      mountCount += 1;
+    }
     stateIndex = 0;
     refIndex = 0;
     memoIndex = 0;
@@ -100,6 +106,21 @@ function createHookHarness({ onStateChange = () => {} } = {}) {
     return result;
   }
 
+  function unmount() {
+    for (const cleanup of effectCleanups) cleanup?.();
+
+    states.length = 0;
+    stateInitialized.length = 0;
+    refs.length = 0;
+    memos.length = 0;
+    callbacks.length = 0;
+    effectDependencies.length = 0;
+    effectCleanups.length = 0;
+    pendingEffects = [];
+    stateVersion = 0;
+    mounted = false;
+  }
+
   function renderUntilStable(renderHook, maxRenders = 25) {
     let result;
     for (let renderCount = 0; renderCount < maxRenders; renderCount += 1) {
@@ -114,6 +135,10 @@ function createHookHarness({ onStateChange = () => {} } = {}) {
     react,
     renderOnce,
     renderUntilStable,
+    unmount,
+    get mountCount() {
+      return mountCount;
+    },
   };
 }
 

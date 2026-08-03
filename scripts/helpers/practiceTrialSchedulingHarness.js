@@ -324,16 +324,20 @@ function createPracticeTrialSchedulingHarness(fixture) {
       });
     },
   };
-  const usePracticeSession = loadTsModule(
-    practiceSessionHookPath,
-    new Map(),
-    moduleMocks,
-    {
-      Math: controlledMath,
-      Date: ControlledDate,
-      console: quietConsole,
-    }
-  ).usePracticeSession;
+  let hookModuleLoads = 0;
+  const usePracticeSession = (() => {
+    hookModuleLoads += 1;
+    return loadTsModule(
+      practiceSessionHookPath,
+      new Map(),
+      moduleMocks,
+      {
+        Math: controlledMath,
+        Date: ControlledDate,
+        console: quietConsole,
+      }
+    ).usePracticeSession;
+  })();
 
   const renderHook = () =>
     usePracticeSession({
@@ -381,6 +385,12 @@ function createPracticeTrialSchedulingHarness(fixture) {
     get mastery() {
       return plain(masteryByCategory[currentCategory.category] ?? {});
     },
+    get hookInstancesMounted() {
+      return harness.mountCount;
+    },
+    get hookModuleLoads() {
+      return hookModuleLoads;
+    },
     get nowMs() {
       return nowMs;
     },
@@ -388,6 +398,10 @@ function createPracticeTrialSchedulingHarness(fixture) {
       return randomIndex;
     },
     render,
+    remount() {
+      harness.unmount();
+      currentResult = null;
+    },
     replaceMastery,
     setCategory,
     setTarget,

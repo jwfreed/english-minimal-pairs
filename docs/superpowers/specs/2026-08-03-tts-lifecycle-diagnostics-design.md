@@ -10,12 +10,13 @@ options, or add delays, retries, buffering, or playback state transitions.
 
 ## Files
 
-- Create `src/domain/speechPlaybackDiagnostics.ts`: development diagnostic
+- Create `src/diagnostics/speechPlaybackDiagnostics.ts`: development diagnostic
   session metadata, monotonic/epoch timestamps, per-launch and per-voice
   counters, event construction, and guarded Console/Xcode emission.
 - Modify `src/hooks/useAudio.ts`: emit diagnostic events at the existing
-  coordinator, speech-option, `Speech.speak`, and native callback boundaries;
-  observe development-only app foreground/background transitions.
+  coordinator, speech-option, `Speech.speak`, and native callback boundaries.
+  These changes are strictly observational: no new React state, refs, hook
+  dependencies, speech options, or callback behavior.
 - Create `scripts/speechPlaybackDiagnostics.test.js`: unit coverage for event
   ordering metadata, required fields, counters, and disabled emission.
 - Modify `scripts/ttsDebugScreen.test.js` only if an integration source-contract
@@ -38,8 +39,9 @@ in a development build. It has:
   explicit value `system-default`;
 - an app-state transition counter.
 
-The same session ID and playback counters continue across background/resume.
-Development-only `app-state-changed` events record the previous and next app
+The diagnostics module—not `useAudio`—owns a development-only `AppState`
+observer. The same session ID and playback counters continue across
+background/resume. `app-state-changed` events record the previous and next app
 states and the current playback counter, which distinguishes a fresh runtime
 from continued playback after resume. No diagnostic state is persisted, so a
 process relaunch creates a new session ID and resets all counters.
@@ -68,6 +70,7 @@ interface TtsLifecycleDiagnosticEvent {
     | 'coordinator-acquired'
     | 'speech-options-created'
     | 'speech-speak-invoked'
+    | 'speech-speak-returned'
     | 'native-started'
     | 'native-finished-coordinator-released'
     | 'native-stopped-coordinator-released'
@@ -86,6 +89,7 @@ interface TtsLifecycleDiagnosticEvent {
   coordinatorAcquiredAtMonotonicMs: number;
   speechOptionsCreatedAtMonotonicMs: number | null;
   speechSpeakInvokedAtMonotonicMs: number | null;
+  speechSpeakReturnedAtMonotonicMs: number | null;
   nativeStartCallbackAtMonotonicMs: number | null;
   nativeTerminalCallbackAtMonotonicMs: number | null;
   coordinatorReleasedAtMonotonicMs: number | null;
@@ -119,9 +123,10 @@ Expo creates `AVSpeechUtterance` after the JavaScript-to-native call, and that
 timestamp is not exposed without patching Expo. Therefore the observable event
 is named `speech-options-created`; the schema will not mislabel it as native
 utterance creation. `speech-speak-invoked` is captured immediately before the
-existing `Speech.speak` call. `native-started` and terminal timestamps are the
-times JavaScript receives Expo's callbacks, not timestamps generated inside
-AVFoundation.
+existing `Speech.speak` call, and `speech-speak-returned` immediately after it
+returns, completing the observable JavaScript handoff boundary. `native-started`
+and terminal timestamps are the times JavaScript receives Expo's callbacks,
+not timestamps generated inside AVFoundation.
 
 ## Instrumentation points
 
@@ -133,12 +138,14 @@ AVFoundation.
    alter the options object.
 3. **Immediately before `Speech.speak`:** Provides the closest JavaScript
    submission boundary and lets device logs measure acquire-to-submit time.
-4. **`onStart`:** Provides the first native-originating callback and allows
+4. **Immediately after `Speech.speak` returns:** Completes the synchronous
+   JavaScript handoff interval without changing or awaiting the existing call.
+5. **`onStart`:** Provides the first native-originating callback and allows
    submit-to-start latency comparison.
-5. **`onDone`, `onStopped`, and `onError`:** Capture the terminal native callback
+6. **`onDone`, `onStopped`, and `onError`:** Capture the terminal native callback
    before coordinator release, then capture the release timestamp immediately
    after the existing coordinator operation succeeds.
-6. **App-state transition:** Marks background/resume while preserving the same
+7. **App-state transition:** Marks background/resume while preserving the same
    runtime session and playback sequence.
 
 Rejected duplicate requests retain the existing `[tts-playback]` diagnostic and
@@ -153,6 +160,12 @@ development build launched through Xcode is visible in Xcode or macOS Console.
 There is no AsyncStorage, file access, network access, serialization pipeline,
 or in-app viewer.
 
+Every public diagnostic entry point is non-throwing. Clock access, session
+metadata, counter updates, AppState observation, event construction, and the
+Console sink are contained in defensive `try/catch` boundaries. A diagnostic
+failure must never prevent `Speech.speak`, callback execution, or coordinator
+release. Diagnostics never become an awaited playback dependency.
+
 ## Testing
 
 Tests will not simulate native audio. They will verify only diagnostic behavior:
@@ -161,9 +174,10 @@ Tests will not simulate native audio. They will verify only diagnostic behavior:
   and per-voice metadata;
 - event snapshots expose all required fields and preserve monotonically ordered
   boundary timestamps supplied by the test;
-- the expected phase sequence is acquire, options, invoke, native start, native
-  terminal/release;
-- a disabled emitter does not invoke the Console sink;
+- the expected phase sequence is acquire, options, invoke, returned, native
+  start, native terminal/release;
+- a disabled emitter does not invoke the Console sink, and a throwing clock or
+  sink never escapes the diagnostic API;
 - the production hook passes `__DEV__` to the emitter and retains the existing
   `Speech.speak` option construction and callback boundaries.
 
@@ -174,11 +188,16 @@ then `npm test`, `npm run typecheck`, and `npm run lint`.
 
 On one physical development device, hold word, voice, rate, route, and app
 settings constant. Capture three completed utterances after cold launch, then
-background/resume and capture three more without killing the process.
+background/resume and capture three more without killing the process. The
+minimum boundary comparison is also run explicitly as two matched pairs:
+
+1. Fresh process: playback 1, then playback 2.
+2. Background/resume in that same process: playback 1, then playback 2.
 
 For each sequence compare:
 
 - coordinator-acquire to `Speech.speak` invocation;
+- `Speech.speak` invocation to synchronous return;
 - invocation to native-start callback;
 - native-start to native-finish callback;
 - native-finish callback to coordinator release;

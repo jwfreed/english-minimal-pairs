@@ -60,7 +60,7 @@ allowed to vary:
 | Cancel callback | Delegate receives `didCancel` and emits the ID. Expo's JS callback registry calls `onStopped`, then removes that ID. | Emits the ID; the experiment adapter calls `onStopped`, then removes that ID. | Callback registry ownership and event namespace differ. Native delivery timing equivalence is not claimed. |
 | Error callback | Expo's JS layer registers an error listener, but the iOS `SpeechDelegate` has no AVSpeechSynthesizer error delegate callback and `SpeechModule` never emits the error event. | Does not invent a native error event. Synchronous/async native invocation failures retain the bridge's normal failure behavior. | Exception identity belongs to the experiment module. No timing equivalence is claimed. |
 | Stop behavior | Calls `synthesizer.stopSpeaking(at: .immediate)` and relies on `didCancel` for the observable stopped event. It does not recreate the synthesizer. | Exposes `stop()` that calls `.stopSpeaking(at: .immediate)` on the currently owned synthesizer and does not reset it. | The app does not currently call stop through `useAudio`; the method exists to keep the experiment boundary behaviorally complete. |
-| Synthesizer allocation | Initializes one private `AVSpeechSynthesizer` for the native module and reuses it for every utterance. | Both modes create the first synthesizer lazily through one factory. `retained` reuses it. `reset-per-utterance` replaces it immediately before each later utterance. The same delegate instance and all code after selection are shared. | Reset mode intentionally changes allocation lifetime; this is the sole experimental variable. |
+| Synthesizer allocation | Initializes one private `AVSpeechSynthesizer` for the native module and reuses it for every utterance. | Both modes create one synthesizer during module creation through the same factory. Both use it for the first utterance. `retained` keeps reusing it; `reset-per-utterance` replaces it immediately before each later valid utterance. The same delegate instance and all code after selection are shared. | Reset mode intentionally changes allocation lifetime between utterances; this is the sole experimental variable. |
 
 No parity claim extends to identical native callback timing. The required
 equivalence is the same observable lifecycle events and adapter callback
@@ -92,11 +92,12 @@ submission scheduling.
 
 The module supports exactly two experimental lifecycle modes:
 
-1. `retained`: create one synthesizer and reuse it for all utterances.
-2. `reset-per-utterance`: create the first synthesizer through the same lazy
-   factory as retained mode, then replace it immediately before each later
-   accepted utterance, after the prior utterance has reached a terminal
-   callback through the existing coordinator contract.
+1. `retained`: create one synthesizer during module creation and reuse it for
+   all utterances.
+2. `reset-per-utterance`: use the same module-creation synthesizer for the first
+   utterance, then replace it immediately before each later valid utterance,
+   after the prior utterance has reached a terminal callback through the
+   existing coordinator contract.
 
 Both modes use the same module, delegate, option mapping, event routing, and
 JavaScript adapter. The allocation decision is the only difference.

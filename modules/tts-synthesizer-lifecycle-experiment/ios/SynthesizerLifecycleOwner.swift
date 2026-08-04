@@ -1,4 +1,4 @@
-enum SynthesizerLifecycleMode: String {
+enum SynthesizerLifecycleMode: String, CaseIterable {
   case retained
   case resetPerUtterance = "reset-per-utterance"
 }

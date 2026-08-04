@@ -62,6 +62,7 @@ function makeAttemptInput(requestId, voiceIdentifier, acquiredAtMs) {
     requestId,
     voiceIdentifier,
     coordinatorAcquiredAt: makeTime(acquiredAtMs),
+    synthesizerLifecycleMode: 'experimental-retained',
     audioSession: makeAudioSession(),
   };
 }
@@ -85,6 +86,9 @@ const REQUIRED_EVENT_FIELDS = [
   'nativeStartCallbackAtMonotonicMs',
   'nativeTerminalCallbackAtMonotonicMs',
   'coordinatorReleasedAtMonotonicMs',
+  'synthesizerLifecycleMode',
+  'synthesizerInstanceIdentifier',
+  'synthesizerCreationCount',
   'audioSession',
 ];
 
@@ -191,6 +195,12 @@ runTest('lifecycle snapshots contain required fields in boundary order', () => {
       ['duckOthers']
     );
     assert.strictEqual(event.audioSession.silentWarmupPlayInvoked, true);
+    assert.strictEqual(
+      event.synthesizerLifecycleMode,
+      'experimental-retained'
+    );
+    assert.strictEqual(event.synthesizerInstanceIdentifier, null);
+    assert.strictEqual(event.synthesizerCreationCount, null);
     assert.strictEqual(event.audioSession.nativeState.active, 'unavailable');
     assert.strictEqual(event.audioSession.nativeState.route, 'unavailable');
     assert.strictEqual(
@@ -206,6 +216,54 @@ runTest('lifecycle snapshots contain required fields in boundary order', () => {
   assert.strictEqual(terminal.nativeStartCallbackAtMonotonicMs, 40);
   assert.strictEqual(terminal.nativeTerminalCallbackAtMonotonicMs, 70);
   assert.strictEqual(terminal.coordinatorReleasedAtMonotonicMs, 71);
+});
+
+runTest('native synthesizer identity becomes observable without adding a phase', () => {
+  const events = [];
+  const diagnostics = createSpeechPlaybackDiagnostics({
+    enabled: true,
+    diagnosticSessionId: 'session-a',
+    sink(_prefix, event) {
+      events.push(event);
+    },
+  });
+  const attempt = diagnostics.createAttempt(
+    makeAttemptInput('request-1', 'voice-a', 10)
+  );
+
+  diagnostics.recordSynthesizerMetadata(attempt, {
+    synthesizerInstanceIdentifier: 'experimental-synthesizer-1',
+    synthesizerCreationCount: 1,
+  });
+  diagnostics.recordPhase(attempt, 'native-started', makeTime(20));
+
+  assert.strictEqual(events.length, 1);
+  assert.strictEqual(
+    events[0].synthesizerInstanceIdentifier,
+    'experimental-synthesizer-1'
+  );
+  assert.strictEqual(events[0].synthesizerCreationCount, 1);
+});
+
+runTest('synthesizer lifecycle mode is captured independently per attempt', () => {
+  const diagnostics = createSpeechPlaybackDiagnostics({
+    enabled: true,
+    diagnosticSessionId: 'session-a',
+    sink() {},
+  });
+  const retained = diagnostics.createAttempt(
+    makeAttemptInput('request-1', 'voice-a', 10)
+  );
+  const reset = diagnostics.createAttempt({
+    ...makeAttemptInput('request-2', 'voice-a', 20),
+    synthesizerLifecycleMode: 'experimental-reset-per-utterance',
+  });
+
+  assert.strictEqual(retained.synthesizerLifecycleMode, 'experimental-retained');
+  assert.strictEqual(
+    reset.synthesizerLifecycleMode,
+    'experimental-reset-per-utterance'
+  );
 });
 
 runTest('runtime session continues through background and resume transitions', () => {

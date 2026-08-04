@@ -1,4 +1,8 @@
 import { AppState, type AppStateStatus } from 'react-native';
+import type {
+  SpeechSynthesizerLifecycleMode,
+  SynthesizerLifecycleMetadata,
+} from '@/src/experiments/ttsSynthesizerLifecycleExperiment';
 
 const TTS_LIFECYCLE_LOG_PREFIX = '[tts-lifecycle]';
 const SYSTEM_DEFAULT_VOICE_IDENTIFIER = 'system-default';
@@ -46,6 +50,7 @@ export interface CreateSpeechDiagnosticAttemptInput {
   requestId: string;
   voiceIdentifier: string | null;
   coordinatorAcquiredAt: SpeechDiagnosticTime;
+  synthesizerLifecycleMode: SpeechSynthesizerLifecycleMode;
   audioSession: SpeechDiagnosticAudioSessionInput;
 }
 
@@ -64,6 +69,9 @@ export interface SpeechDiagnosticAttempt {
   nativeStartCallbackAtMonotonicMs: number | null;
   nativeTerminalCallbackAtMonotonicMs: number | null;
   coordinatorReleasedAtMonotonicMs: number | null;
+  synthesizerLifecycleMode: SpeechSynthesizerLifecycleMode;
+  synthesizerInstanceIdentifier: string | null;
+  synthesizerCreationCount: number | null;
   audioSession: SpeechDiagnosticAudioSessionSnapshot;
 }
 
@@ -122,6 +130,10 @@ export interface SpeechPlaybackDiagnostics {
     update?: SpeechDiagnosticPhaseUpdate
   ): void;
   recordSilentWarmupPlayInvoked(): void;
+  recordSynthesizerMetadata(
+    attempt: SpeechDiagnosticAttempt | null,
+    metadata: SynthesizerLifecycleMetadata
+  ): void;
   observeAppState(appState: AppStateLike): void;
 }
 
@@ -212,6 +224,9 @@ export function createSpeechPlaybackDiagnostics({
           nativeStartCallbackAtMonotonicMs: null,
           nativeTerminalCallbackAtMonotonicMs: null,
           coordinatorReleasedAtMonotonicMs: null,
+          synthesizerLifecycleMode: input.synthesizerLifecycleMode,
+          synthesizerInstanceIdentifier: null,
+          synthesizerCreationCount: null,
           audioSession: {
             configuredIntent: {
               category: input.audioSession.configuredIntent.category,
@@ -300,6 +315,17 @@ export function createSpeechPlaybackDiagnostics({
       }
     },
 
+    recordSynthesizerMetadata(attempt, metadata) {
+      if (!enabled || !attempt) return;
+      try {
+        attempt.synthesizerInstanceIdentifier =
+          metadata.synthesizerInstanceIdentifier;
+        attempt.synthesizerCreationCount = metadata.synthesizerCreationCount;
+      } catch {
+        // Native identity diagnostics must never alter playback callbacks.
+      }
+    },
+
     observeAppState(appState) {
       if (!enabled) return;
       try {
@@ -360,4 +386,11 @@ export function recordSpeechDiagnosticPhase(
 
 export function recordSilentWarmupPlayInvoked(): void {
   speechPlaybackDiagnostics.recordSilentWarmupPlayInvoked();
+}
+
+export function recordSpeechDiagnosticSynthesizerMetadata(
+  attempt: SpeechDiagnosticAttempt | null,
+  metadata: SynthesizerLifecycleMetadata
+): void {
+  speechPlaybackDiagnostics.recordSynthesizerMetadata(attempt, metadata);
 }

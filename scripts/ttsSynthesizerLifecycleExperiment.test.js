@@ -159,3 +159,216 @@ runTest('retained reuses one instance while reset creates one per utterance', ()
     fs.rmSync(binaryPath, { force: true });
   }
 });
+
+const adapterPath = path.join(
+  projectRoot,
+  'src',
+  'experiments',
+  'ttsSynthesizerLifecycleExperiment.ts'
+);
+const { loadTsModule } = require('./load-ts-module');
+const {
+  createTtsSynthesizerLifecycleExperimentAdapter: createAdapter,
+  resolveSpeechSynthesizerLifecycleMode: resolveMode,
+} = loadTsModule(adapterPath, new Map(), {
+  'expo-modules-core': {
+    requireOptionalNativeModule() {
+      return null;
+    },
+  },
+});
+
+function makeNativeModule() {
+  const listeners = new Map();
+  const speakCalls = [];
+  let stopCalls = 0;
+  return {
+    listeners,
+    speakCalls,
+    get stopCalls() {
+      return stopCalls;
+    },
+    addListener(name, listener) {
+      listeners.set(name, listener);
+      return { remove() {} };
+    },
+    speak(...args) {
+      speakCalls.push(args);
+    },
+    stop() {
+      stopCalls += 1;
+    },
+  };
+}
+
+function completeSpeechOptions(overrides = {}) {
+  return {
+    language: 'en-US',
+    voice: 'voice-a',
+    pitch: 1,
+    rate: 0.8,
+    volume: 1,
+    useApplicationAudioSession: false,
+    onStart() {},
+    onBoundary() {},
+    onDone() {},
+    onStopped() {},
+    onError() {},
+    ...overrides,
+  };
+}
+
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+runTest('adapter passes identical text and native options in both lifecycle modes', () => {
+  const retainedNative = makeNativeModule();
+  const resetNative = makeNativeModule();
+  const retained = createAdapter({ nativeModule: retainedNative });
+  const reset = createAdapter({ nativeModule: resetNative });
+
+  retained.speak('right', completeSpeechOptions(), 'retained');
+  reset.speak('right', completeSpeechOptions(), 'reset-per-utterance');
+
+  const retainedCall = retainedNative.speakCalls[0];
+  const resetCall = resetNative.speakCalls[0];
+  assert.strictEqual(retainedCall[1], 'right');
+  assert.strictEqual(resetCall[1], 'right');
+  assert.deepStrictEqual(plain(retainedCall[2]), {
+    language: 'en-US',
+    pitch: 1,
+    rate: 0.8,
+    voice: 'voice-a',
+    useApplicationAudioSession: false,
+  });
+  assert.deepStrictEqual(plain(resetCall[2]), plain(retainedCall[2]));
+  assert.strictEqual(retainedCall[3], 'retained');
+  assert.strictEqual(resetCall[3], 'reset-per-utterance');
+});
+
+runTest('adapter forwards lifecycle metadata before start and terminal callbacks', () => {
+  const nativeModule = makeNativeModule();
+  const adapter = createAdapter({ nativeModule });
+  const observed = [];
+  adapter.speak(
+    'right',
+    completeSpeechOptions({
+      onStart() {
+        observed.push('start');
+      },
+      onDone() {
+        observed.push('done');
+      },
+    }),
+    'retained',
+    (metadata) => observed.push(metadata)
+  );
+
+  const [utteranceId] = nativeModule.speakCalls[0];
+  const payload = {
+    id: utteranceId,
+    synthesizerInstanceIdentifier: 'experimental-synthesizer-1',
+    synthesizerCreationCount: 1,
+  };
+  nativeModule.listeners.get('TtsLifecycleExperiment.speakingStarted')(payload);
+  nativeModule.listeners.get('TtsLifecycleExperiment.speakingDone')(payload);
+  nativeModule.listeners.get('TtsLifecycleExperiment.speakingDone')(payload);
+
+  assert.deepStrictEqual(plain(observed), [
+    {
+      synthesizerInstanceIdentifier: 'experimental-synthesizer-1',
+      synthesizerCreationCount: 1,
+    },
+    'start',
+    {
+      synthesizerInstanceIdentifier: 'experimental-synthesizer-1',
+      synthesizerCreationCount: 1,
+    },
+    'done',
+  ]);
+});
+
+runTest('adapter forwards boundary and stopped callbacks to the matching utterance', () => {
+  const nativeModule = makeNativeModule();
+  const adapter = createAdapter({ nativeModule });
+  const boundaries = [];
+  let stopped = 0;
+  adapter.speak(
+    'light',
+    completeSpeechOptions({
+      onBoundary(event) {
+        boundaries.push(event);
+      },
+      onStopped() {
+        stopped += 1;
+      },
+    }),
+    'reset-per-utterance'
+  );
+
+  const [utteranceId] = nativeModule.speakCalls[0];
+  const metadata = {
+    id: utteranceId,
+    synthesizerInstanceIdentifier: 'experimental-synthesizer-2',
+    synthesizerCreationCount: 2,
+  };
+  nativeModule.listeners.get(
+    'TtsLifecycleExperiment.speakingWillSayNextString'
+  )({ ...metadata, charIndex: 2, charLength: 3 });
+  nativeModule.listeners.get('TtsLifecycleExperiment.speakingStopped')(metadata);
+  nativeModule.listeners.get('TtsLifecycleExperiment.speakingStopped')(metadata);
+
+  assert.deepStrictEqual(plain(boundaries), [{ charIndex: 2, charLength: 3 }]);
+  assert.strictEqual(stopped, 1);
+});
+
+runTest('adapter delegates stop without changing lifecycle ownership', () => {
+  const nativeModule = makeNativeModule();
+  const adapter = createAdapter({ nativeModule });
+  adapter.stop();
+  assert.strictEqual(nativeModule.stopCalls, 1);
+});
+
+runTest('adapter fails explicitly when the development native module is unavailable', () => {
+  const adapter = createAdapter({ nativeModule: null });
+  assert.throws(
+    () => adapter.speak('right', completeSpeechOptions(), 'retained'),
+    /native module is unavailable/
+  );
+});
+
+runTest('resolver leaves release and non-iOS speech on Expo Speech', () => {
+  assert.strictEqual(
+    resolveMode({
+      isDevelopment: false,
+      platform: 'ios',
+      experimentMode: 'retained',
+    }),
+    'expo-retained-production-path'
+  );
+  assert.strictEqual(
+    resolveMode({
+      isDevelopment: true,
+      platform: 'android',
+      experimentMode: 'reset-per-utterance',
+    }),
+    'expo-retained-production-path'
+  );
+  assert.strictEqual(
+    resolveMode({
+      isDevelopment: true,
+      platform: 'ios',
+      experimentMode: 'retained',
+    }),
+    'experimental-retained'
+  );
+  assert.strictEqual(
+    resolveMode({
+      isDevelopment: true,
+      platform: 'ios',
+      experimentMode: 'reset-per-utterance',
+    }),
+    'experimental-reset-per-utterance'
+  );
+});

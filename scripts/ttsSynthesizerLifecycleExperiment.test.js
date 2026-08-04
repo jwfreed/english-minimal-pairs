@@ -372,3 +372,51 @@ runTest('resolver leaves release and non-iOS speech on Expo Speech', () => {
     'experimental-reset-per-utterance'
   );
 });
+
+const useAudioSource = fs.readFileSync(
+  path.join(projectRoot, 'src', 'hooks', 'useAudio.ts'),
+  'utf8'
+);
+
+runTest('useAudio keeps Expo Speech fallback and selects the experiment only at submission', () => {
+  assert.strictEqual(
+    (useAudioSource.match(/Speech\.speak\(word, speechOptions\)/g) || []).length,
+    1
+  );
+  assert.strictEqual(
+    (useAudioSource.match(/speakWithSynthesizerLifecycleExperiment\(/g) || [])
+      .length,
+    1
+  );
+  assert.ok(
+    useAudioSource.includes(
+      "'retained' as IosSynthesizerLifecycleExperimentMode"
+    )
+  );
+  assert.ok(useAudioSource.includes('isDevelopment: __DEV__'));
+  assert.ok(useAudioSource.includes('platform: Platform.OS'));
+  assert.ok(
+    useAudioSource.includes(
+      'synthesizerLifecycleMode: SPEECH_SYNTHESIZER_LIFECYCLE_MODE'
+    )
+  );
+});
+
+runTest('useAudio preserves timing boundaries around either speech submission path', () => {
+  const invoked = useAudioSource.indexOf(
+    'speechSpeakInvokedDiagnosticTime = captureSpeechDiagnosticTime()'
+  );
+  const experimental = useAudioSource.indexOf(
+    'speakWithSynthesizerLifecycleExperiment('
+  );
+  const expo = useAudioSource.indexOf('Speech.speak(word, speechOptions);');
+  const returned = useAudioSource.indexOf(
+    'const speechSpeakReturnedDiagnosticTime = captureSpeechDiagnosticTime()'
+  );
+  assert.ok(invoked < experimental && experimental < returned);
+  assert.ok(invoked < expo && expo < returned);
+  assert.match(
+    useAudioSource,
+    /recordSpeechDiagnosticSynthesizerMetadata\(\s*diagnosticAttempt,\s*metadata\s*\)/
+  );
+});

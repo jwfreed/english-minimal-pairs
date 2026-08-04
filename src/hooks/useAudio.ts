@@ -20,9 +20,15 @@ import {
   createSpeechDiagnosticAttempt,
   recordSilentWarmupPlayInvoked,
   recordSpeechDiagnosticPhase,
+  recordSpeechDiagnosticSynthesizerMetadata,
   type SpeechDiagnosticAttempt,
   type SpeechDiagnosticTime,
 } from '@/src/diagnostics/speechPlaybackDiagnostics';
+import {
+  resolveSpeechSynthesizerLifecycleMode,
+  speakWithSynthesizerLifecycleExperiment,
+  type IosSynthesizerLifecycleExperimentMode,
+} from '@/src/experiments/ttsSynthesizerLifecycleExperiment';
 import { useSilentWarmupPlayer } from '@/src/hooks/useSilentWarmupPlayer';
 
 // Audio-session configuration for TTS playback. `playsInSilentMode` is the
@@ -74,6 +80,18 @@ const IOS_AUDIO_SESSION_EXPERIMENT =
 
 const IOS_SILENT_WARMUP_ENABLED =
   IOS_AUDIO_SESSION_EXPERIMENT === 'A-silent-warmup';
+
+// EXPERIMENT (temporary, iOS development builds only): the retained build is
+// the required control. Change only this selector for the reset comparison.
+const IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE =
+  'retained' as IosSynthesizerLifecycleExperimentMode;
+
+const SPEECH_SYNTHESIZER_LIFECYCLE_MODE =
+  resolveSpeechSynthesizerLifecycleMode({
+    isDevelopment: __DEV__,
+    platform: Platform.OS,
+    experimentMode: IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE,
+  });
 
 type SpeechDiagnosticPhase =
   | 'requested'
@@ -340,6 +358,7 @@ export const useAudio = (
             requestId,
             voiceIdentifier: voice?.identifier ?? null,
             coordinatorAcquiredAt: coordinatorAcquiredDiagnosticTime,
+            synthesizerLifecycleMode: SPEECH_SYNTHESIZER_LIFECYCLE_MODE,
             audioSession: {
               configuredIntent: {
                 category: 'playback',
@@ -494,7 +513,24 @@ export const useAudio = (
         });
 
         speechSpeakInvokedDiagnosticTime = captureSpeechDiagnosticTime();
-        Speech.speak(word, speechOptions);
+        if (
+          SPEECH_SYNTHESIZER_LIFECYCLE_MODE === 'experimental-retained' ||
+          SPEECH_SYNTHESIZER_LIFECYCLE_MODE ===
+            'experimental-reset-per-utterance'
+        ) {
+          speakWithSynthesizerLifecycleExperiment(
+            word,
+            speechOptions,
+            IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE,
+            (metadata) =>
+              recordSpeechDiagnosticSynthesizerMetadata(
+                diagnosticAttempt,
+                metadata
+              )
+          );
+        } else {
+          Speech.speak(word, speechOptions);
+        }
         const speechSpeakReturnedDiagnosticTime = captureSpeechDiagnosticTime();
         const submittedAtMs = Date.now();
         const submittedAttempt = speechPlaybackCoordinator.submitSpeech(

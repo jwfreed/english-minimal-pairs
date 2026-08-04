@@ -37,6 +37,36 @@ forking Expo Speech, which this experiment forbids.
 An app-owned native experiment module is consequently unavoidable. It will be
 strictly bounded and will not become the production speech implementation.
 
+## Native parity map
+
+The parity target is the checked-in dependency source at
+`node_modules/expo-speech/ios/SpeechModule.swift` and
+`node_modules/expo-speech/ios/SpeechDelegate.swift` for Expo Speech 14.0.7.
+The implementation must preserve the following map before lifecycle mode is
+allowed to vary:
+
+| Behavior | Expo Speech 14.0.7 | Experimental equivalent | Unavoidable difference |
+|---|---|---|---|
+| Utterance creation | Constructs `ExpoSpeechUtterance(id:text:)`, which subclasses `AVSpeechUtterance`, stores the opaque callback ID, and calls `super.init(string: text)`. | `TtsLifecycleExperimentUtterance(id:text:)` at `modules/tts-synthesizer-lifecycle-experiment/ios/TtsSynthesizerLifecycleExperimentModule.swift` has the same stored ID and superclass initializer. | Swift class name and owning module differ; utterance contents and ID role do not. |
+| Language assignment | If `options.language` exists, assigns `AVSpeechSynthesisVoice(language:)`. | Performs the same conditional assignment first. | None known. |
+| Voice assignment and fallback | If `options.voice` exists, assigns `AVSpeechSynthesisVoice(identifier:)` after language assignment, so it overrides the language-derived voice. Throws `InvalidVoiceException` when the identifier resolves to `nil`. If no explicit voice exists, the prior language assignment or AVFoundation default remains. | Performs the same second assignment and nil check, throwing an experiment-local invalid-voice exception. It does not add fallback or normalization. | Exception class/module name differs. Successful voice selection and failure condition are the parity target. |
+| Pitch conversion | If supplied, assigns `Float(pitch)` to `pitchMultiplier`; otherwise leaves the AVFoundation default. | Same conditional conversion and assignment. | None known. |
+| Rate conversion | If supplied, assigns `Float(rate) * AVSpeechUtteranceDefaultSpeechRate`; otherwise leaves the AVFoundation default. | Same conditional conversion and multiplication. | None known. |
+| Volume and unsupported JS fields | iOS native code does not read `volume`, `_voiceIndex`, or JS callback fields from `SpeechOptions`. | The native record does not read or apply them. Callback functions remain in the TypeScript adapter only. | None known for iOS playback. |
+| Audio-session option | If `useApplicationAudioSession` is supplied, assigns it to `synthesizer.usesApplicationAudioSession`; if omitted, does not assign it. On the retained synthesizer a prior explicit value therefore remains resident. | Performs the same conditional assignment on the synthesizer selected for the utterance. No session activation, category, delay, or cleanup is added. | In reset mode an omitted option encounters a fresh synthesizer default rather than retained prior state. Matched experiment runs must pass identical options; this consequence is intrinsic to changing synthesizer lifetime and is recorded as part of the tested variable. |
+| Start callback | Delegate receives `didStart`, casts to the ID-carrying utterance, and emits the ID to JavaScript. | Delegate receives `didStart`, casts to the experiment utterance, and emits the same ID shape for adapter routing. | Event namespace and bridge implementation differ. Native delivery timing equivalence is not claimed. |
+| Boundary callback | Delegate receives `willSpeakRangeOfSpeechString` and emits ID, character index, and length. | Emits the same observable values for the adapter. | Event namespace and bridge implementation differ. Native delivery timing equivalence is not claimed. |
+| Finish callback | Delegate receives `didFinish` and emits the ID. Expo's JS callback registry calls `onDone`, then removes that ID. | Emits the ID; the experiment adapter calls `onDone`, then removes that ID. | Callback registry ownership and event namespace differ. Native delivery timing equivalence is not claimed. |
+| Cancel callback | Delegate receives `didCancel` and emits the ID. Expo's JS callback registry calls `onStopped`, then removes that ID. | Emits the ID; the experiment adapter calls `onStopped`, then removes that ID. | Callback registry ownership and event namespace differ. Native delivery timing equivalence is not claimed. |
+| Error callback | Expo's JS layer registers an error listener, but the iOS `SpeechDelegate` has no AVSpeechSynthesizer error delegate callback and `SpeechModule` never emits the error event. | Does not invent a native error event. Synchronous/async native invocation failures retain the bridge's normal failure behavior. | Exception identity belongs to the experiment module. No timing equivalence is claimed. |
+| Stop behavior | Calls `synthesizer.stopSpeaking(at: .immediate)` and relies on `didCancel` for the observable stopped event. It does not recreate the synthesizer. | Exposes `stop()` that calls `.stopSpeaking(at: .immediate)` on the currently owned synthesizer and does not reset it. | The app does not currently call stop through `useAudio`; the method exists to keep the experiment boundary behaviorally complete. |
+| Synthesizer allocation | Initializes one private `AVSpeechSynthesizer` for the native module and reuses it for every utterance. | Both modes create the first synthesizer lazily through one factory. `retained` reuses it. `reset-per-utterance` replaces it immediately before each later utterance. The same delegate instance and all code after selection are shared. | Reset mode intentionally changes allocation lifetime; this is the sole experimental variable. |
+
+No parity claim extends to identical native callback timing. The required
+equivalence is the same observable lifecycle events and adapter callback
+semantics. The retained control is the empirical check that unavoidable module
+and bridge differences have not removed the defect.
+
 ## Experimental boundary
 
 Create one local, iOS-only Expo module under `modules/` and one TypeScript
@@ -56,10 +86,15 @@ needed by `useAudio`:
 - emit start, boundary, finish, and stop events containing the same utterance
   ID used to route existing callbacks.
 
+It will not normalize values, alter defaults, add fallback behavior, retry,
+delay, buffer, automatically stop, clean up at terminal callbacks, or change
+submission scheduling.
+
 The module supports exactly two experimental lifecycle modes:
 
 1. `retained`: create one synthesizer and reuse it for all utterances.
-2. `reset-per-utterance`: replace the synthesizer immediately before each
+2. `reset-per-utterance`: create the first synthesizer through the same lazy
+   factory as retained mode, then replace it immediately before each later
    accepted utterance, after the prior utterance has reached a terminal
    callback through the existing coordinator contract.
 
@@ -209,3 +244,9 @@ production playback default. It adds no dependency and does not modify
 After physical-device results are reviewed, production lifecycle design or
 experiment removal is a separate task. This experiment will not be promoted
 to production behavior directly.
+
+Rollback requires no production migration. Delete the local experiment module
+and TypeScript adapter, remove the development selector and routing branch from
+`useAudio`, and remove the lifecycle-mode diagnostic field and experiment test
+coverage. The unchanged Expo Speech release path then remains as the sole
+submission path.

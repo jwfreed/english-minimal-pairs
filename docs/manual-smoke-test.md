@@ -334,6 +334,92 @@ retain the warmup and remove the experiment selector.
 
 ---
 
+## 18. TEMPORARY — iOS AVSpeechSynthesizer Lifecycle Experiment
+
+> **Status:** Implementation verified locally; physical-device retained control
+> not yet run. This is a causal probe, not a production fix. Do not promote the
+> experiment module or its allocation policy into release behavior from these
+> implementation results alone.
+
+### Boundary and selector
+
+The development-only selector is
+`IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE` in `src/hooks/useAudio.ts`.
+It is currently `retained`, the required control. In iOS development builds,
+`useAudio` sends its existing `word` and `speechOptions` through the local
+experiment adapter. Release builds and all Android/web builds continue to call
+Expo Speech's existing `Speech.speak(word, speechOptions)` path.
+
+Both experimental modes use the same local module, delegate, utterance type,
+option mapping, event bridge, callback adapter, coordinator, diagnostics,
+warmup configuration, and audio-session configuration. They differ only here:
+
+- `retained`: reuse the module-creation `AVSpeechSynthesizer` for every
+  utterance.
+- `reset-per-utterance`: use that same synthesizer for playback 1, then create
+  a new synthesizer immediately before playback 2 and every later valid
+  utterance.
+
+Every `[tts-lifecycle]` attempt records `synthesizerLifecycleMode`.
+Experimental native callbacks also make `synthesizerInstanceIdentifier` and
+`synthesizerCreationCount` available. Retained playback should report one
+identifier/count across playbacks 1-3; reset should report creation counts
+1, 2, and 3 with corresponding identifiers.
+
+### Expo Speech 14.0.7 parity and differences
+
+The experiment matches the inspected iOS implementation for utterance text and
+ID creation; language assignment followed by explicit voice assignment; invalid
+voice failure condition; `Float` pitch conversion; rate multiplication by
+`AVSpeechUtteranceDefaultSpeechRate`; conditional
+`usesApplicationAudioSession` assignment; start, boundary, finish, and cancel
+events; absence of an iOS native error event; and immediate stop behavior.
+It does not read iOS-ignored `volume`, callback, or `_voiceIndex` fields.
+
+Unavoidable differences are limited to the app-owned module/class names,
+event namespace, callback-registry ownership, and experiment-local invalid
+voice exception identity. Native callback timing equivalence with Expo is not
+claimed. The retained physical-device control is required specifically to
+detect whether these bridge/module differences prevent reproduction.
+
+### Matched physical-device protocol
+
+Hold all of these constant across the retained and reset builds: physical
+iPhone, iOS version, development build configuration, voice identifier, word,
+playback rate, audio route, app settings, warmup variant, and application
+audio-session configuration. Cold-launch each build and record three completed
+playbacks with `[tts-lifecycle]` logs.
+
+Do not run or interpret reset mode until retained mode reproduces
+`clean → stutter → stutter` under those controls. If retained does not
+reproduce, stop and report the lifecycle experiment as inconclusive.
+
+| Mode | Device / iOS | Voice ID | Word | Rate | Route | Playback 1 | Playback 2 | Playback 3 | Valid control? |
+|---|---|---|---|---:|---|---|---|---|---|
+| `retained` | Not run | Not run | Not run | — | Not run | Not run | Not run | Not run | No evidence yet |
+| `reset-per-utterance` | Blocked until retained reproduces | Same as retained | Same as retained | Same as retained | Same as retained | Not run | Not run | Not run | Requires valid retained control |
+
+Interpret only a matched comparison with a valid retained control:
+
+- Reset changes `clean → stutter → stutter` to `clean → clean → clean`:
+  retained synthesizer lifetime is causal or a necessary trigger.
+- Reset remains `clean → stutter → stutter`: retained synthesizer lifetime
+  alone is insufficient.
+- Any other pattern is inconclusive and should be recorded without forcing a
+  binary conclusion.
+
+### Removal
+
+Delete `modules/tts-synthesizer-lifecycle-experiment/` and
+`src/experiments/ttsSynthesizerLifecycleExperiment.ts`; remove the temporary
+selector/submission branch from `src/hooks/useAudio.ts`; remove the lifecycle
+mode and native instance metadata from the diagnostics schema; and delete the
+focused experiment assertions and this temporary section. No stored data,
+production migration, content change, or tracked native project edit is
+required.
+
+---
+
 ## Failure Log
 
 Record any failures below. Do not ship if any item marked Critical is failing.

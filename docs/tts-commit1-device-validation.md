@@ -58,6 +58,40 @@ Record any audible defect against the wall-clock time so it can be aligned with
 the log: stutter at word onset, delayed playback, a queued utterance arriving
 late, or silence.
 
+## Analyzer input integrity
+
+Each `[tts-playback]` marker begins one diagnostic record. The analyzer accepts
+the real one-line JSON emitted by the iPhone development client and the legacy
+multiline Metro representation with unquoted keys and single-quoted values.
+Unrelated console output is ignored.
+
+The analyzer is a verification tool, not a best-effort log viewer. Every
+discovered diagnostic record must parse and satisfy the known Commit 1 event
+schema. Malformed JSON or legacy records, incomplete multiline records,
+unknown phases, missing required fields, invalid request identifiers or
+timestamps, and lifecycle sequences that Commit 1 cannot emit invalidate the
+entire capture. The analyzer never falls back from malformed JSON to tolerant
+token matching and never derives a verdict from partially parsed metrics.
+
+Lifecycle validation preserves the intended exceptional paths: rejected
+duplicates, terminal callbacks after a missing `started` callback, both timeout
+phases, callbacks arriving after a timeout and newer ownership, and
+`late-callback-unknown-request` events without a known request lifecycle.
+
+Every analysis reports one capture classification:
+
+- `VALID` — every diagnostic record parsed and passed schema/lifecycle checks,
+  and accepted or submitted events prove the playback-attempt denominator.
+- `INVALID_CAPTURE` — at least one record failed parsing, schema, or lifecycle
+  validation, or diagnostic records exist without denominator evidence.
+- `EMPTY_CAPTURE` — no diagnostic records were found.
+
+Only `VALID` captures expose playback metrics and the Commit 1 runtime verdict.
+`INVALID_CAPTURE` and `EMPTY_CAPTURE` exit nonzero, explain why the evidence is
+unusable, and withhold partial metrics. The parse summary always includes lines
+inspected, records found, parsed and invalid record counts, the first invalid
+line, representative parse/schema errors, and lifecycle validation failures.
+
 ## 4. Confirm the diagnostics are actually visible
 
 Zero timeouts in a healthy run proves nothing about whether a timeout would be
@@ -77,14 +111,15 @@ that this check was performed and reverted.
 npm run analyze:tts-log -- /tmp/tts-validation.log
 ```
 
-Exits 0 when the run is clean, 1 otherwise. The verdict distinguishes:
+Exits 0 only for a clean `VALID` capture and exits 1 otherwise. After the
+capture classification passes, the runtime verdict distinguishes:
 
 - `PROCEED` — ≥ 30 attempts, zero recoveries, zero late callbacks.
 - `INCONCLUSIVE` — clean but under-sampled.
 - `REVIEW` — no recoveries, but native errors or unexplained late callbacks.
 - `BLOCKED` — watchdog recoveries during normal use.
-- `UNUSABLE` — no events, or recovery diagnostics with no denominator
-  (wrong build profile).
+
+`INVALID_CAPTURE` and `EMPTY_CAPTURE` do not receive a runtime verdict.
 
 ## 6. Results
 

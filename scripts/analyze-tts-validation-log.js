@@ -301,21 +301,33 @@ function validateLifecycle(records) {
   return failures;
 }
 
-function countPhases(events) {
-  const counts = new Map();
-  for (const event of events) {
-    const phase = event.phase;
-    counts.set(phase, (counts.get(phase) ?? 0) + 1);
-  }
-  return counts;
-}
+function buildMetrics(events) {
+  const count = (phase) => events.filter((event) => event.phase === phase).length;
+  const submitted = count('submitted-to-native-speech');
+  const accepted = count('accepted');
+  const awaitingStart = count('ownership-timeout-awaiting-start');
+  const awaitingTerminal = count('ownership-timeout-awaiting-terminal');
+  const afterTimeout = count('late-callback-after-timeout');
+  const unknownRequest = count('late-callback-unknown-request');
 
-function collectRequestIds(events) {
-  const seen = new Set();
-  for (const event of events) {
-    if (typeof event.requestId === 'string') seen.add(event.requestId);
-  }
-  return [...seen];
+  return {
+    attempts: submitted || accepted,
+    completed: count('completed'),
+    cancelled: count('cancelled'),
+    failed: count('failed'),
+    rejectedDuplicates: count('rejected-duplicate'),
+    timeouts: {
+      awaitingStart,
+      awaitingTerminal,
+      total: awaitingStart + awaitingTerminal,
+    },
+    lateCallbacks: {
+      afterTimeout,
+      unknownRequest,
+      total: afterTimeout + unknownRequest,
+    },
+    requestIds: [...new Set(events.map((event) => event.requestId))],
+  };
 }
 
 function analyzeValidationLog(logText) {
@@ -374,6 +386,7 @@ function analyzeValidationLog(logText) {
       parseSummary,
       metrics: null,
       runtimeVerdict: null,
+      validationPassed: false,
     };
   }
 
@@ -383,103 +396,56 @@ function analyzeValidationLog(logText) {
       parseSummary,
       metrics: null,
       runtimeVerdict: null,
+      validationPassed: false,
     };
   }
 
   const eventValues = events.map(({ event }) => event);
-  const phases = countPhases(eventValues);
-  const count = (phase) => phases.get(phase) ?? 0;
+  const metrics = buildMetrics(eventValues);
 
-  const submitted = count('submitted-to-native-speech');
-  const accepted = count('accepted');
-  // The lifecycle events are __DEV__-only. A release capture has recovery
-  // diagnostics but no denominator, which must be reported rather than
-  // silently presented as an empty session.
-  const attemptDenominatorAvailable = submitted > 0 || accepted > 0;
-  const attempts = submitted || accepted;
+  if (metrics.attempts === 0) {
+    const lineNumber = records[0].lineNumber;
+    parseSummary.invalidRecords += 1;
+    parseSummary.firstInvalidLineNumber = lineNumber;
+    parseSummary.errors.push({
+      lineNumber,
+      category: 'capture',
+      message: 'marked diagnostics contain no accepted or submitted attempt denominator',
+    });
+    return {
+      captureStatus: 'INVALID_CAPTURE',
+      parseSummary,
+      metrics: null,
+      runtimeVerdict: null,
+      validationPassed: false,
+    };
+  }
 
-  const timeouts = {
-    awaitingStart: count('ownership-timeout-awaiting-start'),
-    awaitingTerminal: count('ownership-timeout-awaiting-terminal'),
-    get total() {
-      return this.awaitingStart + this.awaitingTerminal;
-    },
-  };
-
-  const lateCallbacks = {
-    afterTimeout: count('late-callback-after-timeout'),
-    unknownRequest: count('late-callback-unknown-request'),
-    get total() {
-      return this.afterTimeout + this.unknownRequest;
-    },
-  };
-
-  const hasAnyEvent = phases.size > 0;
-  const unexpectedRecoveries = timeouts.total;
-  const clean = hasAnyEvent && unexpectedRecoveries === 0;
+  const runtimeVerdict = buildRuntimeVerdict(metrics);
 
   return {
-    attempts,
-    attemptDenominatorAvailable,
-    completed: count('completed'),
-    cancelled: count('cancelled'),
-    failed: count('failed'),
-    rejectedDuplicates: count('rejected-duplicate'),
-    timeouts: {
-      awaitingStart: timeouts.awaitingStart,
-      awaitingTerminal: timeouts.awaitingTerminal,
-      total: timeouts.total,
-    },
-    lateCallbacks: {
-      afterTimeout: lateCallbacks.afterTimeout,
-      unknownRequest: lateCallbacks.unknownRequest,
-      total: lateCallbacks.total,
-    },
-    unexpectedRecoveries,
-    requestIds: collectRequestIds(eventValues),
-    clean,
     captureStatus: 'VALID',
     parseSummary,
-    metrics: null,
-    runtimeVerdict: null,
-    verdict: buildVerdict({
-      hasAnyEvent,
-      attemptDenominatorAvailable,
-      attempts,
-      unexpectedRecoveries,
-      lateCallbacks: lateCallbacks.total,
-      failed: count('failed'),
-    }),
+    metrics,
+    runtimeVerdict,
+    validationPassed: runtimeVerdict.startsWith('PROCEED'),
   };
 }
 
-function buildVerdict({
-  hasAnyEvent,
-  attemptDenominatorAvailable,
-  attempts,
-  unexpectedRecoveries,
-  lateCallbacks,
-  failed,
-}) {
-  if (!hasAnyEvent) {
-    return 'UNUSABLE — no [tts-playback] events found. Confirm the capture came from a development build with Metro attached.';
+function buildRuntimeVerdict(metrics) {
+  if (metrics.timeouts.total > 0) {
+    return `BLOCKED — ${metrics.timeouts.total} watchdog recovery/recoveries during normal use. Commit 2 is gated on zero. Investigate whether these are false positives (audio sounded fine) before adjusting timeout constants.`;
   }
-  if (!attemptDenominatorAvailable) {
-    return 'UNUSABLE — recovery diagnostics present but no attempt denominator. The lifecycle events are __DEV__-only; re-capture from a development build.';
+  if (metrics.failed > 0) {
+    return `REVIEW — no watchdog recoveries, but ${metrics.failed} native error callback(s). Explain these before proceeding.`;
   }
-  if (unexpectedRecoveries > 0) {
-    return `BLOCKED — ${unexpectedRecoveries} watchdog recovery/recoveries during normal use. Commit 2 is gated on zero. Investigate whether these are false positives (audio sounded fine) before adjusting timeout constants.`;
+  if (metrics.lateCallbacks.total > 0) {
+    return `REVIEW — no watchdog recoveries, but ${metrics.lateCallbacks.total} unexplained late callback(s). Explain these before proceeding.`;
   }
-  if (failed > 0) {
-    return `REVIEW — no watchdog recoveries, but ${failed} native error callback(s). Explain these before proceeding.`;
+  if (metrics.attempts < 30) {
+    return `INCONCLUSIVE — only ${metrics.attempts} attempt(s) captured. Collect at least 30 across cold launch, post-resume, rapid replay, and normal intervals.`;
   }
-  if (lateCallbacks > 0) {
-    return `REVIEW — no watchdog recoveries, but ${lateCallbacks} late callback(s) with no preceding timeout. Unexpected; explain before proceeding.`;
-  }
-  if (attempts < 30) {
-    return `INCONCLUSIVE — only ${attempts} attempt(s) captured. Collect at least 30 across cold launch, post-resume, rapid replay, and normal intervals.`;
-  }
-  return `PROCEED — ${attempts} attempts, zero watchdog recoveries, zero late callbacks. Commit 1 shows no regression; Commit 2 may begin.`;
+  return `PROCEED — ${metrics.attempts} attempts, zero watchdog recoveries, zero late callbacks. Commit 1 shows no regression; Commit 2 may begin.`;
 }
 
 function formatValidationReport(report) {
@@ -487,44 +453,50 @@ function formatValidationReport(report) {
     return formatEvidenceReport(report);
   }
 
+  const { metrics } = report;
   const lines = [
     'TTS Commit 1 device validation',
     '='.repeat(60),
-    `Total playback attempts        ${report.attempts}${report.attemptDenominatorAvailable ? '' : '  (denominator unavailable)'}`,
-    `  completed                    ${report.completed}`,
-    `  cancelled                    ${report.cancelled}`,
-    `  failed (native error)        ${report.failed}`,
-    `  rejected as duplicate        ${report.rejectedDuplicates}`,
-    `Distinct requests seen         ${report.requestIds.length}`,
+    ...formatEvidenceSummary(report.parseSummary, report.captureStatus),
     '',
-    `Watchdog timeouts              ${report.timeouts.total}`,
-    `  awaiting-start               ${report.timeouts.awaitingStart}`,
-    `  awaiting-terminal            ${report.timeouts.awaitingTerminal}`,
+    `Total playback attempts        ${metrics.attempts}`,
+    `  completed                    ${metrics.completed}`,
+    `  cancelled                    ${metrics.cancelled}`,
+    `  failed (native error)        ${metrics.failed}`,
+    `  rejected as duplicate        ${metrics.rejectedDuplicates}`,
+    `Distinct requests seen         ${metrics.requestIds.length}`,
     '',
-    `Late callbacks                 ${report.lateCallbacks.total}`,
-    `  after-timeout                ${report.lateCallbacks.afterTimeout}`,
-    `  unknown-request              ${report.lateCallbacks.unknownRequest}`,
+    `Watchdog timeouts              ${metrics.timeouts.total}`,
+    `  awaiting-start               ${metrics.timeouts.awaitingStart}`,
+    `  awaiting-terminal            ${metrics.timeouts.awaitingTerminal}`,
     '',
-    `Unexpected recoveries          ${report.unexpectedRecoveries}`,
+    `Late callbacks                 ${metrics.lateCallbacks.total}`,
+    `  after-timeout                ${metrics.lateCallbacks.afterTimeout}`,
+    `  unknown-request              ${metrics.lateCallbacks.unknownRequest}`,
     '='.repeat(60),
-    `Verdict: ${report.verdict}`,
+    `Runtime verdict: ${report.runtimeVerdict}`,
   ];
   return lines.join('\n');
+}
+
+function formatEvidenceSummary(parseSummary, captureStatus) {
+  return [
+    `Capture classification         ${captureStatus}`,
+    `Lines inspected                ${parseSummary.linesInspected}`,
+    `Diagnostic records found       ${parseSummary.diagnosticRecordsFound}`,
+    `Parsed records                 ${parseSummary.parsedRecords}`,
+    `Invalid records                ${parseSummary.invalidRecords}`,
+    `First invalid line             ${parseSummary.firstInvalidLineNumber ?? 'none'}`,
+  ];
 }
 
 function formatEvidenceReport({ captureStatus, parseSummary }) {
   const lines = [
     'TTS Commit 1 device validation',
     '='.repeat(60),
-    `Capture status                 ${captureStatus}`,
-    `Diagnostic records found       ${parseSummary.diagnosticRecordsFound}`,
-    `Parsed records                 ${parseSummary.parsedRecords}`,
-    `Invalid records                ${parseSummary.invalidRecords}`,
+    ...formatEvidenceSummary(parseSummary, captureStatus),
   ];
 
-  if (parseSummary.firstInvalidLineNumber !== null) {
-    lines.push(`First invalid line             ${parseSummary.firstInvalidLineNumber}`);
-  }
   for (const error of parseSummary.errors) {
     lines.push(`Line ${error.lineNumber} (${error.category}): ${error.message}`);
   }
@@ -532,12 +504,19 @@ function formatEvidenceReport({ captureStatus, parseSummary }) {
     lines.push(`Line ${failure.lineNumber} (lifecycle): ${failure.message}`);
   }
 
+  lines.push('Playback metrics             WITHHELD — capture evidence is not trustworthy');
+  lines.push('Runtime verdict              WITHHELD');
   lines.push('='.repeat(60));
   return lines.join('\n');
 }
 
+function exitCodeForReport(report) {
+  return report.validationPassed ? 0 : 1;
+}
+
 module.exports = {
   analyzeValidationLog,
+  exitCodeForReport,
   formatValidationReport,
   scanDiagnosticRecords,
   parseDiagnosticRecord,
@@ -553,5 +532,5 @@ if (require.main === module) {
   }
   const report = analyzeValidationLog(fs.readFileSync(logPath, 'utf8'));
   console.log(formatValidationReport(report));
-  process.exit(report.clean ? 0 : 1);
+  process.exit(exitCodeForReport(report));
 }

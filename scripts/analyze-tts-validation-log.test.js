@@ -9,6 +9,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 const {
   analyzeValidationLog,
+  exitCodeForReport,
   formatValidationReport,
 } = require('./analyze-tts-validation-log');
 
@@ -114,6 +115,83 @@ const TIMED_OUT_UTTERANCE = [
 ]
   .map(legacyRecord)
   .join('\n');
+
+runTest('withholds all metrics and runtime verdicts for invalid captures', () => {
+  const report = analyzeValidationLog(
+    `${healthyJsonRequest()}\n[tts-playback] {"phase":"completed",}`
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.strictEqual(report.metrics, null);
+  assert.strictEqual(report.runtimeVerdict, null);
+  assert.strictEqual(report.validationPassed, false);
+  assert.strictEqual(exitCodeForReport(report), 1);
+});
+
+runTest('does not treat VALID as a passing runtime verdict', () => {
+  const report = analyzeValidationLog(healthyJsonRequest());
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.match(report.runtimeVerdict, /INCONCLUSIVE/);
+  assert.strictEqual(report.validationPassed, false);
+  assert.strictEqual(exitCodeForReport(report), 1);
+});
+
+runTest('a valid timeout-free sampled run can proceed', () => {
+  const capture = Array.from({ length: 30 }, (_, index) =>
+    healthyJsonRequest(`tts-${1000 + index}-${index + 1}`)
+  ).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.strictEqual(report.metrics.attempts, 30);
+  assert.strictEqual(report.metrics.completed, 30);
+  assert.strictEqual(report.metrics.timeouts.total, 0);
+  assert.match(report.runtimeVerdict, /PROCEED/);
+  assert.strictEqual(report.validationPassed, true);
+  assert.strictEqual(exitCodeForReport(report), 0);
+});
+
+runTest('a valid watchdog path is evidence-valid but runtime-blocked', () => {
+  const capture = [
+    lifecycleEvent('requested'),
+    lifecycleEvent('accepted'),
+    lifecycleEvent('submitted-to-native-speech'),
+    timeoutEvent('ownership-timeout-awaiting-start'),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.strictEqual(report.metrics.attempts, 1);
+  assert.strictEqual(report.metrics.timeouts.awaitingStart, 1);
+  assert.match(report.runtimeVerdict, /BLOCKED/);
+  assert.strictEqual(exitCodeForReport(report), 1);
+});
+
+runTest('a valid unknown late callback receives runtime review', () => {
+  const capture = `${healthyJsonRequest()}\n${jsonRecord(
+    lateCallbackEvent('late-callback-unknown-request', 'tts-9000-9')
+  )}`;
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.strictEqual(report.metrics.lateCallbacks.unknownRequest, 1);
+  assert.match(report.runtimeVerdict, /REVIEW/);
+  assert.strictEqual(exitCodeForReport(report), 1);
+});
+
+runTest('empty captures expose neither metrics nor a runtime verdict', () => {
+  const report = analyzeValidationLog('Metro ready');
+  assert.strictEqual(report.captureStatus, 'EMPTY_CAPTURE');
+  assert.strictEqual(report.metrics, null);
+  assert.strictEqual(report.runtimeVerdict, null);
+  assert.strictEqual(exitCodeForReport(report), 1);
+});
+
+runTest('invalidates marked captures without an accepted or submitted denominator', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(lateCallbackEvent('late-callback-unknown-request', 'tts-9000-9'))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.strictEqual(report.metrics, null);
+  assert.strictEqual(report.runtimeVerdict, null);
+  assert.match(report.parseSummary.errors[0].message, /attempt denominator/i);
+});
 
 runTest('invalidates an unknown lifecycle phase', () => {
   const report = analyzeValidationLog(
@@ -446,12 +524,11 @@ runTest('formats invalid captures as evidence and exits nonzero without throwing
 runTest('counts a healthy utterance as one attempt with no recoveries', () => {
   const report = analyzeValidationLog(HEALTHY_UTTERANCE);
 
-  assert.strictEqual(report.attempts, 1);
-  assert.strictEqual(report.completed, 1);
-  assert.strictEqual(report.timeouts.total, 0);
-  assert.strictEqual(report.lateCallbacks.total, 0);
-  assert.strictEqual(report.unexpectedRecoveries, 0);
-  assert.strictEqual(report.clean, true);
+  assert.strictEqual(report.metrics.attempts, 1);
+  assert.strictEqual(report.metrics.completed, 1);
+  assert.strictEqual(report.metrics.timeouts.total, 0);
+  assert.strictEqual(report.metrics.lateCallbacks.total, 0);
+  assert.match(report.runtimeVerdict, /INCONCLUSIVE/);
 });
 
 runTest('does not mistake timedOutPhase for the event phase key', () => {
@@ -459,9 +536,9 @@ runTest('does not mistake timedOutPhase for the event phase key', () => {
   // double-count every timeout event.
   const report = analyzeValidationLog(TIMED_OUT_UTTERANCE);
 
-  assert.strictEqual(report.timeouts.total, 1);
-  assert.strictEqual(report.timeouts.awaitingStart, 1);
-  assert.strictEqual(report.timeouts.awaitingTerminal, 0);
+  assert.strictEqual(report.metrics.timeouts.total, 1);
+  assert.strictEqual(report.metrics.timeouts.awaitingStart, 1);
+  assert.strictEqual(report.metrics.timeouts.awaitingTerminal, 0);
 });
 
 runTest('separates the two timeout phases', () => {
@@ -473,9 +550,9 @@ runTest('separates the two timeout phases', () => {
     .concat(jsonRecord(timeoutEvent('ownership-timeout-awaiting-terminal', 'tts-4000-4')));
   const report = analyzeValidationLog(awaitingStart.concat(awaitingTerminal).join('\n'));
 
-  assert.strictEqual(report.timeouts.awaitingStart, 1);
-  assert.strictEqual(report.timeouts.awaitingTerminal, 1);
-  assert.strictEqual(report.timeouts.total, 2);
+  assert.strictEqual(report.metrics.timeouts.awaitingStart, 1);
+  assert.strictEqual(report.metrics.timeouts.awaitingTerminal, 1);
+  assert.strictEqual(report.metrics.timeouts.total, 2);
 });
 
 runTest('separates the two late-callback classifications', () => {
@@ -488,9 +565,9 @@ runTest('separates the two late-callback classifications', () => {
     lateCallbackEvent('late-callback-unknown-request', 'tts-4000-4'),
   ].map(jsonRecord).join('\n'));
 
-  assert.strictEqual(report.lateCallbacks.afterTimeout, 1);
-  assert.strictEqual(report.lateCallbacks.unknownRequest, 1);
-  assert.strictEqual(report.lateCallbacks.total, 2);
+  assert.strictEqual(report.metrics.lateCallbacks.afterTimeout, 1);
+  assert.strictEqual(report.metrics.lateCallbacks.unknownRequest, 1);
+  assert.strictEqual(report.metrics.lateCallbacks.total, 2);
 });
 
 runTest('counts duplicate rejections without counting them as attempts', () => {
@@ -502,8 +579,8 @@ runTest('counts duplicate rejections without counting them as attempts', () => {
     }),
   ].flatMap((record) => typeof record === 'string' ? [record] : [jsonRecord(record)]).join('\n'));
 
-  assert.strictEqual(report.attempts, 1);
-  assert.strictEqual(report.rejectedDuplicates, 1);
+  assert.strictEqual(report.metrics.attempts, 1);
+  assert.strictEqual(report.metrics.rejectedDuplicates, 1);
 });
 
 runTest('treats any timeout during a validation run as an unexpected recovery', () => {
@@ -511,13 +588,10 @@ runTest('treats any timeout during a validation run as an unexpected recovery', 
     `${HEALTHY_UTTERANCE}\n${TIMED_OUT_UTTERANCE}`
   );
 
-  assert.strictEqual(report.attempts, 2);
-  assert.strictEqual(report.unexpectedRecoveries, 1);
-  assert.strictEqual(
-    report.clean,
-    false,
-    'a run containing a watchdog recovery does not satisfy the Commit 2 gate'
-  );
+  assert.strictEqual(report.metrics.attempts, 2);
+  assert.strictEqual(report.metrics.timeouts.total, 1);
+  assert.match(report.runtimeVerdict, /BLOCKED/);
+  assert.strictEqual(report.validationPassed, false);
 });
 
 runTest('reports distinct request identities so repeats are visible', () => {
@@ -525,7 +599,7 @@ runTest('reports distinct request identities so repeats are visible', () => {
     `${HEALTHY_UTTERANCE}\n${TIMED_OUT_UTTERANCE}`
   );
 
-  assert.deepStrictEqual(report.requestIds, ['tts-1000-1', 'tts-2000-2']);
+  assert.deepStrictEqual(report.metrics.requestIds, ['tts-1000-1', 'tts-2000-2']);
 });
 
 runTest('falls back to accepted events when submissions are absent', () => {
@@ -538,8 +612,7 @@ runTest('falls back to accepted events when submissions are absent', () => {
     lifecycleEvent('failed', 'tts-3000-3'),
   ].map(jsonRecord).join('\n'));
 
-  assert.strictEqual(report.attempts, 1);
-  assert.strictEqual(report.attemptDenominatorAvailable, true);
+  assert.strictEqual(report.metrics.attempts, 1);
 });
 
 runTest('a clean run recommends proceeding to Commit 2', () => {
@@ -550,9 +623,9 @@ runTest('a clean run recommends proceeding to Commit 2', () => {
     ).join('\n')
   );
 
-  assert.strictEqual(report.attempts, 30);
-  assert.strictEqual(report.clean, true);
-  assert.match(report.verdict, /proceed/i);
+  assert.strictEqual(report.metrics.attempts, 30);
+  assert.strictEqual(report.validationPassed, true);
+  assert.match(report.runtimeVerdict, /proceed/i);
 });
 
 runTest('the formatted report includes every required validation metric', () => {
@@ -566,7 +639,7 @@ runTest('the formatted report includes every required validation metric', () => 
     'awaiting-start',
     'awaiting-terminal',
     'Late callbacks',
-    'Verdict',
+    'Runtime verdict',
   ]) {
     assert.ok(text.includes(required), `report must include "${required}"`);
   }

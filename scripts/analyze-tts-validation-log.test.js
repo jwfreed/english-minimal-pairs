@@ -190,7 +190,30 @@ runTest('invalidates marked captures without an accepted or submitted denominato
   assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
   assert.strictEqual(report.metrics, null);
   assert.strictEqual(report.runtimeVerdict, null);
+  assert.strictEqual(report.parseSummary.diagnosticRecordsFound, 1);
+  assert.strictEqual(report.parseSummary.parsedRecords, 1);
+  assert.strictEqual(report.parseSummary.invalidRecords, 0);
+  assert.strictEqual(report.parseSummary.firstInvalidLineNumber, null);
+  assert.strictEqual(
+    report.parseSummary.diagnosticRecordsFound,
+    report.parseSummary.parsedRecords + report.parseSummary.invalidRecords
+  );
   assert.match(report.parseSummary.errors[0].message, /attempt denominator/i);
+});
+
+runTest('bounds lifecycle diagnostics and declares omitted failures', () => {
+  const capture = Array.from({ length: 8 }, () =>
+    jsonRecord(lifecycleEvent('requested'))
+  ).join('\n');
+  const report = analyzeValidationLog(capture);
+  const text = formatValidationReport(report);
+  const lifecycleDiagnosticCount = text
+    .split('\n')
+    .filter((line) => line.includes('(lifecycle):')).length;
+
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.strictEqual(lifecycleDiagnosticCount, 5);
+  assert.match(text, /additional diagnostics not shown/i);
 });
 
 runTest('invalidates an unknown lifecycle phase', () => {

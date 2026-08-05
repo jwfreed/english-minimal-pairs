@@ -405,8 +405,6 @@ function analyzeValidationLog(logText) {
 
   if (metrics.attempts === 0) {
     const lineNumber = records[0].lineNumber;
-    parseSummary.invalidRecords += 1;
-    parseSummary.firstInvalidLineNumber = lineNumber;
     parseSummary.errors.push({
       lineNumber,
       category: 'capture',
@@ -497,11 +495,30 @@ function formatEvidenceReport({ captureStatus, parseSummary }) {
     ...formatEvidenceSummary(parseSummary, captureStatus),
   ];
 
-  for (const error of parseSummary.errors) {
-    lines.push(`Line ${error.lineNumber} (${error.category}): ${error.message}`);
+  const diagnostics = [
+    ...parseSummary.errors,
+    ...parseSummary.lifecycleFailures.map((failure) => ({
+      ...failure,
+      category: 'lifecycle',
+    })),
+  ];
+  const representativeDiagnostics = diagnostics.slice(0, MAX_REPRESENTATIVE_ERRORS);
+  for (const diagnostic of representativeDiagnostics) {
+    lines.push(`Line ${diagnostic.lineNumber} (${diagnostic.category}): ${diagnostic.message}`);
   }
-  for (const failure of parseSummary.lifecycleFailures) {
-    lines.push(`Line ${failure.lineNumber} (lifecycle): ${failure.message}`);
+
+  const representedLineNumbers = new Set(
+    representativeDiagnostics.map((diagnostic) => diagnostic.lineNumber)
+  );
+  const additionalDiagnostics = Math.max(
+    diagnostics.length - representativeDiagnostics.length,
+    parseSummary.invalidRecords - representedLineNumbers.size,
+    0
+  );
+  if (additionalDiagnostics > 0) {
+    lines.push(
+      `... ${additionalDiagnostics} additional diagnostics not shown (representative limit: ${MAX_REPRESENTATIVE_ERRORS})`
+    );
   }
 
   lines.push('Playback metrics             WITHHELD — capture evidence is not trustworthy');

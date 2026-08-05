@@ -334,6 +334,85 @@ retain the warmup and remove the experiment selector.
 
 ---
 
+## 18. TEMPORARY — iOS Synthesizer Lifecycle Causal Experiment
+
+> **Status:** Commit 1 is approved. The temporary probe is implemented on an
+> isolated branch; physical-device retained and reset arms are not yet
+> complete. This experiment is evidence only and must not be promoted directly
+> into production playback.
+
+### Arms and boundary
+
+`IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE` in `src/hooks/useAudio.ts` selects
+one of two iOS development-build arms:
+
+- `retained`: the app-owned probe creates one `AVSpeechSynthesizer` and reuses
+  it for every utterance.
+- `reset-per-utterance`: the first utterance uses that same initial instance;
+  every later valid utterance uses a newly created synthesizer.
+
+Both arms share the native module, delegate, utterance type, speech options,
+callback adapter, Commit 1 coordinator/watchdog, warmup variant, and audio
+session. Release builds and non-iOS platforms remain on Expo Speech. Native
+events add a synthesizer identifier and creation count to the existing
+`[tts-playback]` evidence without changing its lifecycle phases.
+
+### Matched protocol
+
+Run the retained control first. Use the same physical device, iOS version,
+Debug development-client configuration, voice identifier, word (`oath`), rate
+(`0.85`), output route, volume, silent-switch position, app settings, warmup
+variant, and audio-session configuration for both arms. Cold-launch each arm
+and collect one continuous log.
+
+Count at least 30 completed attempts per arm under the same matrix:
+
+| Condition | Count per arm |
+|---|---:|
+| Cold launch, unhurried replay | 5 |
+| Rapid replay | 10 |
+| Background at least 10 seconds, then resume | 5 |
+| Repeated identical word with quick replay | 10 |
+
+Score every attempt `clean` or `stutter` before inspecting lifecycle logs.
+Record other audible outcomes separately. Analyze each capture with
+`npm run analyze:tts-log -- <capture>`; any invalid capture, watchdog timeout,
+late callback, ownership leak, missing terminal callback, or duplicate native
+submission makes that arm unusable until explained.
+
+For lifecycle evidence, retained must report one synthesizer identifier and
+creation count throughout. Reset must advance the identifier and creation
+count on every completed utterance after the first. Record callback counts and
+ordering from the same capture.
+
+Record the process memory footprint after cold launch, after attempt 15, and
+after attempt 30 using the same Xcode memory gauge procedure for both arms. If
+reset shows sustained growth rather than bounded churn, capture an Allocations
+trace before interpreting the experiment as safe.
+
+### Result record
+
+| Arm | Build / commit | Attempts | Clean | Stutter | Watchdogs | Late callbacks | Synthesizer evidence | Memory observations |
+|---|---|---:|---:|---:|---:|---:|---|---|
+| `retained` | Not run | 0 | 0 | 0 | — | — | Not run | Not run |
+| `reset-per-utterance` | Blocked until retained control is captured | 0 | 0 | 0 | — | — | Not run | Not run |
+
+Interpretation is causal and bounded: a stuttering retained arm with a clean
+reset arm under matched controls supports retained synthesizer lifetime as a
+causal or necessary trigger. It does not establish root cause, generalize to
+other devices/iOS versions, authorize production code, or select a permanent
+mitigation.
+
+### Removal
+
+Delete `modules/tts-synthesizer-lifecycle-experiment/` and
+`src/experiments/ttsSynthesizerLifecycleExperiment.ts`; remove the temporary
+selector/submission branch and lifecycle metadata from `src/hooks/useAudio.ts`;
+and delete the focused experiment assertions and this section. No production
+data migration or generated native-file change is required.
+
+---
+
 ## Failure Log
 
 Record any failures below. Do not ship if any item marked Critical is failing.

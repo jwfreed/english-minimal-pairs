@@ -69,6 +69,29 @@ const lifecycleEvent = (phase, requestId = 'tts-1000-1', overrides = {}) => {
   return { ...event, ...overrides };
 };
 
+const timeoutEvent = (phase, requestId = 'tts-1000-1', overrides = {}) => ({
+  phase,
+  requestId,
+  word: 'oath',
+  difficulty: 6,
+  requestedAtMs: 1000,
+  timedOutAtMs: 5000,
+  timedOutPhase: phase.endsWith('awaiting-start')
+    ? 'awaiting-start'
+    : 'awaiting-terminal',
+  coordinatorObservedActivePlaybackOwnershipCount: 0,
+  ...overrides,
+});
+
+const lateCallbackEvent = (phase, requestId = 'tts-1000-1', overrides = {}) => ({
+  phase,
+  requestId,
+  nativeCallback: 'onDone',
+  eventTimestampMs: 5001,
+  coordinatorObservedActivePlaybackOwnershipCount: 0,
+  ...overrides,
+});
+
 const healthyJsonRequest = (requestId = 'tts-1000-1') => [
   lifecycleEvent('requested', requestId),
   lifecycleEvent('accepted', requestId),
@@ -82,15 +105,206 @@ const healthyJsonRequest = (requestId = 'tts-1000-1') => [
 const HEALTHY_UTTERANCE = healthyJsonRequest();
 
 const TIMED_OUT_UTTERANCE = [
+  lifecycleEvent('requested', 'tts-2000-2', { word: 'oaths' }),
   lifecycleEvent('accepted', 'tts-2000-2', { word: 'oaths' }),
   lifecycleEvent('submitted-to-native-speech', 'tts-2000-2', { word: 'oaths' }),
-  lifecycleEvent('ownership-timeout-awaiting-start', 'tts-2000-2', {
+  timeoutEvent('ownership-timeout-awaiting-start', 'tts-2000-2', {
     word: 'oaths',
-    timedOutPhase: 'awaiting-start',
   }),
 ]
   .map(legacyRecord)
   .join('\n');
+
+runTest('invalidates an unknown lifecycle phase', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(lifecycleEvent('future-unrecognized-phase'))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /unknown phase/i);
+});
+
+runTest('invalidates missing required lifecycle fields', () => {
+  const report = analyzeValidationLog(
+    jsonRecord({ phase: 'requested', eventTimestampMs: 1000 })
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /requestId/i);
+});
+
+runTest('invalidates malformed request identifiers', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(lifecycleEvent('requested', 'request-one'))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /requestId/i);
+});
+
+runTest('invalidates malformed timestamps', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(lifecycleEvent('requested', 'tts-1000-1', { eventTimestampMs: 'now' }))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /eventTimestampMs/i);
+});
+
+runTest('invalidates a rejected duplicate without a different active owner', () => {
+  const events = [
+    lifecycleEvent('requested'),
+    lifecycleEvent('rejected-duplicate'),
+  ];
+  const report = analyzeValidationLog(events.map(jsonRecord).join('\n'));
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /active owner/i);
+});
+
+runTest('invalidates timeout payloads that do not prove ownership release', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(timeoutEvent('ownership-timeout-awaiting-start', 'tts-1000-1', {
+      coordinatorObservedActivePlaybackOwnershipCount: 1,
+    }))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /ownership released/i);
+});
+
+runTest('invalidates timeout payloads with the wrong timeout phase', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(timeoutEvent('ownership-timeout-awaiting-start', 'tts-1000-1', {
+      timedOutPhase: 'awaiting-terminal',
+    }))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /timedOutPhase/i);
+});
+
+runTest('invalidates timeout payloads with malformed timeout timestamps', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(timeoutEvent('ownership-timeout-awaiting-start', 'tts-1000-1', {
+      timedOutAtMs: Number.NaN,
+    }))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /timedOutAtMs/i);
+});
+
+runTest('invalidates late callbacks without a native callback name', () => {
+  const report = analyzeValidationLog(
+    jsonRecord(lateCallbackEvent('late-callback-unknown-request', 'tts-9000-9', {
+      nativeCallback: 'onMystery',
+    }))
+  );
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.errors[0].message, /onDone.*onStopped.*onError/i);
+});
+
+runTest('invalidates an accepted request with no terminal outcome', () => {
+  const capture = ['requested', 'accepted', 'submitted-to-native-speech']
+    .map((phase) => jsonRecord(lifecycleEvent(phase)))
+    .join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.lifecycleFailures[0].message, /exactly one terminal/i);
+  assert.strictEqual(report.parseSummary.invalidRecords, 1);
+  assert.strictEqual(report.parseSummary.parsedRecords, 2);
+  assert.strictEqual(report.parseSummary.firstInvalidLineNumber, 1);
+});
+
+runTest('invalidates duplicate terminal outcomes', () => {
+  const capture = [
+    'requested',
+    'accepted',
+    'submitted-to-native-speech',
+    'completed',
+    'cancelled',
+  ].map((phase) => jsonRecord(lifecycleEvent(phase))).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.lifecycleFailures[0].message, /duplicate terminal/i);
+});
+
+runTest('allows a terminal callback when the started callback is missing', () => {
+  const capture = [
+    'requested',
+    'accepted',
+    'submitted-to-native-speech',
+    'completed',
+  ].map((phase) => jsonRecord(lifecycleEvent(phase))).join('\n');
+  assert.strictEqual(analyzeValidationLog(capture).captureStatus, 'VALID');
+});
+
+runTest('invalidates submission before acceptance and start before submission', () => {
+  const submittedTooSoon = ['requested', 'submitted-to-native-speech']
+    .map((phase) => jsonRecord(lifecycleEvent(phase)))
+    .join('\n');
+  const startedTooSoon = ['requested', 'accepted', 'started', 'completed']
+    .map((phase) => jsonRecord(lifecycleEvent(phase)))
+    .join('\n');
+  assert.match(
+    analyzeValidationLog(submittedTooSoon).parseSummary.lifecycleFailures[0].message,
+    /submission requires acceptance/i
+  );
+  assert.match(
+    analyzeValidationLog(startedTooSoon).parseSummary.lifecycleFailures[0].message,
+    /start requires submission/i
+  );
+});
+
+runTest('accepts both intended timeout terminal paths', () => {
+  const awaitingStart = [
+    lifecycleEvent('requested'),
+    lifecycleEvent('accepted'),
+    lifecycleEvent('submitted-to-native-speech'),
+    timeoutEvent('ownership-timeout-awaiting-start'),
+  ].map(jsonRecord).join('\n');
+  const awaitingTerminal = [
+    lifecycleEvent('requested', 'tts-2000-2'),
+    lifecycleEvent('accepted', 'tts-2000-2'),
+    lifecycleEvent('submitted-to-native-speech', 'tts-2000-2'),
+    lifecycleEvent('started', 'tts-2000-2'),
+    timeoutEvent('ownership-timeout-awaiting-terminal', 'tts-2000-2'),
+  ].map(jsonRecord).join('\n');
+  assert.strictEqual(analyzeValidationLog(awaitingStart).captureStatus, 'VALID');
+  assert.strictEqual(analyzeValidationLog(awaitingTerminal).captureStatus, 'VALID');
+});
+
+runTest('accepts rejected duplicate admission while the original owner continues', () => {
+  const ownerId = 'tts-1000-1';
+  const duplicateId = 'tts-1001-2';
+  const capture = [
+    lifecycleEvent('requested', ownerId),
+    lifecycleEvent('accepted', ownerId),
+    lifecycleEvent('submitted-to-native-speech', ownerId),
+    lifecycleEvent('started', ownerId),
+    lifecycleEvent('requested', duplicateId),
+    lifecycleEvent('rejected-duplicate', duplicateId, {
+      activePlaybackOwnerRequestId: ownerId,
+    }),
+    lifecycleEvent('completed', ownerId),
+  ].map(jsonRecord).join('\n');
+  assert.strictEqual(analyzeValidationLog(capture).captureStatus, 'VALID');
+});
+
+runTest('accepts both late-callback classifications and newer ownership', () => {
+  const oldId = 'tts-1000-1';
+  const newId = 'tts-2000-2';
+  const capture = [
+    lifecycleEvent('requested', oldId),
+    lifecycleEvent('accepted', oldId),
+    lifecycleEvent('submitted-to-native-speech', oldId),
+    timeoutEvent('ownership-timeout-awaiting-start', oldId),
+    lifecycleEvent('requested', newId),
+    lifecycleEvent('accepted', newId),
+    lifecycleEvent('submitted-to-native-speech', newId),
+    lifecycleEvent('started', newId),
+    lateCallbackEvent('late-callback-after-timeout', oldId, {
+      coordinatorObservedActivePlaybackOwnershipCount: 1,
+      activePlaybackOwnerRequestId: newId,
+    }),
+    lifecycleEvent('completed', newId),
+    lateCallbackEvent('late-callback-unknown-request', 'tts-9000-9'),
+  ].map(jsonRecord).join('\n');
+  assert.strictEqual(analyzeValidationLog(capture).captureStatus, 'VALID');
+});
 
 runTest('parses the real one-line iPhone JSON diagnostic format', () => {
   const report = analyzeValidationLog(healthyJsonRequest());
@@ -210,22 +424,28 @@ runTest('does not mistake timedOutPhase for the event phase key', () => {
 });
 
 runTest('separates the two timeout phases', () => {
-  const report = analyzeValidationLog(`
-    [tts-playback] { phase: 'ownership-timeout-awaiting-start' }
-    [tts-playback] { phase: 'ownership-timeout-awaiting-terminal' }
-    [tts-playback] { phase: 'ownership-timeout-awaiting-terminal' }
-  `);
+  const awaitingStart = ['requested', 'accepted', 'submitted-to-native-speech']
+    .map((phase) => jsonRecord(lifecycleEvent(phase, 'tts-3000-3')))
+    .concat(jsonRecord(timeoutEvent('ownership-timeout-awaiting-start', 'tts-3000-3')));
+  const awaitingTerminal = ['requested', 'accepted', 'submitted-to-native-speech', 'started']
+    .map((phase) => jsonRecord(lifecycleEvent(phase, 'tts-4000-4')))
+    .concat(jsonRecord(timeoutEvent('ownership-timeout-awaiting-terminal', 'tts-4000-4')));
+  const report = analyzeValidationLog(awaitingStart.concat(awaitingTerminal).join('\n'));
 
   assert.strictEqual(report.timeouts.awaitingStart, 1);
-  assert.strictEqual(report.timeouts.awaitingTerminal, 2);
-  assert.strictEqual(report.timeouts.total, 3);
+  assert.strictEqual(report.timeouts.awaitingTerminal, 1);
+  assert.strictEqual(report.timeouts.total, 2);
 });
 
 runTest('separates the two late-callback classifications', () => {
-  const report = analyzeValidationLog(`
-    [tts-playback] { phase: 'late-callback-after-timeout' }
-    [tts-playback] { phase: 'late-callback-unknown-request' }
-  `);
+  const report = analyzeValidationLog([
+    lifecycleEvent('requested', 'tts-3000-3'),
+    lifecycleEvent('accepted', 'tts-3000-3'),
+    lifecycleEvent('submitted-to-native-speech', 'tts-3000-3'),
+    timeoutEvent('ownership-timeout-awaiting-start', 'tts-3000-3'),
+    lateCallbackEvent('late-callback-after-timeout', 'tts-3000-3'),
+    lateCallbackEvent('late-callback-unknown-request', 'tts-4000-4'),
+  ].map(jsonRecord).join('\n'));
 
   assert.strictEqual(report.lateCallbacks.afterTimeout, 1);
   assert.strictEqual(report.lateCallbacks.unknownRequest, 1);
@@ -233,10 +453,13 @@ runTest('separates the two late-callback classifications', () => {
 });
 
 runTest('counts duplicate rejections without counting them as attempts', () => {
-  const report = analyzeValidationLog(`
-    ${HEALTHY_UTTERANCE}
-    [tts-playback] { phase: 'rejected-duplicate', requestId: 'tts-1000-9' }
-  `);
+  const report = analyzeValidationLog([
+    healthyJsonRequest(),
+    lifecycleEvent('requested', 'tts-1001-2'),
+    lifecycleEvent('rejected-duplicate', 'tts-1001-2', {
+      activePlaybackOwnerRequestId: 'tts-1000-1',
+    }),
+  ].flatMap((record) => typeof record === 'string' ? [record] : [jsonRecord(record)]).join('\n'));
 
   assert.strictEqual(report.attempts, 1);
   assert.strictEqual(report.rejectedDuplicates, 1);
@@ -268,12 +491,14 @@ runTest('falls back to accepted events when submissions are absent', () => {
   // A release build emits only recovery diagnostics; the accepted/submitted
   // lifecycle is __DEV__-only. The analyzer must say so rather than report
   // zero attempts as if the session were empty.
-  const report = analyzeValidationLog(`
-    [tts-playback] { phase: 'ownership-timeout-awaiting-start' }
-  `);
+  const report = analyzeValidationLog([
+    lifecycleEvent('requested', 'tts-3000-3'),
+    lifecycleEvent('accepted', 'tts-3000-3'),
+    lifecycleEvent('failed', 'tts-3000-3'),
+  ].map(jsonRecord).join('\n'));
 
-  assert.strictEqual(report.attempts, 0);
-  assert.strictEqual(report.attemptDenominatorAvailable, false);
+  assert.strictEqual(report.attempts, 1);
+  assert.strictEqual(report.attemptDenominatorAvailable, true);
 });
 
 runTest('a clean run recommends proceeding to Commit 2', () => {

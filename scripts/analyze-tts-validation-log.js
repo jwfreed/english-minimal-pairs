@@ -10,6 +10,29 @@ const fs = require('fs');
 const MARKER = '[tts-playback]';
 const MAX_REPRESENTATIVE_ERRORS = 5;
 const JSON_OBJECT_PATTERN = /^\{\s*"/;
+const PHASES = new Set([
+  'requested',
+  'accepted',
+  'rejected-duplicate',
+  'submitted-to-native-speech',
+  'started',
+  'completed',
+  'cancelled',
+  'failed',
+  'ownership-timeout-awaiting-start',
+  'ownership-timeout-awaiting-terminal',
+  'late-callback-after-timeout',
+  'late-callback-unknown-request',
+]);
+const REQUEST_ID_PATTERN = /^tts-\d+-\d+$/;
+const NATIVE_CALLBACKS = new Set(['onDone', 'onStopped', 'onError']);
+const TERMINAL_PHASES = new Set([
+  'completed',
+  'cancelled',
+  'failed',
+  'ownership-timeout-awaiting-start',
+  'ownership-timeout-awaiting-terminal',
+]);
 const LEGACY_FIELD_PATTERN =
   /^([A-Za-z][A-Za-z0-9]*)\s*:\s*(?:'([^']*)'|(-?\d+(?:\.\d+)?)|(true|false|null))$/;
 
@@ -74,6 +97,207 @@ function parseDiagnosticRecord(record) {
   return parseLegacyObject(record.payload);
 }
 
+function requireFiniteTimestamp(event, field) {
+  if (!Number.isFinite(event[field]) || event[field] < 0) {
+    throw new Error(`${field} must be a finite non-negative number`);
+  }
+}
+
+function validateEventSchema(event, lineNumber) {
+  if (!event || typeof event !== 'object' || Array.isArray(event)) {
+    throw new Error('diagnostic payload must be an object');
+  }
+  if (!PHASES.has(event.phase)) throw new Error(`unknown phase: ${String(event.phase)}`);
+  if (typeof event.requestId !== 'string' || !REQUEST_ID_PATTERN.test(event.requestId)) {
+    throw new Error('requestId must match tts-<timestamp>-<sequence>');
+  }
+
+  const ordinaryLifecycle = !event.phase.startsWith('ownership-timeout-') &&
+    !event.phase.startsWith('late-callback-');
+  if (ordinaryLifecycle) {
+    if (typeof event.word !== 'string' || event.word.length === 0) {
+      throw new Error('ordinary lifecycle event must contain a non-empty word');
+    }
+    if (!Number.isInteger(event.difficulty) || event.difficulty < 1 || event.difficulty > 6) {
+      throw new Error('ordinary lifecycle event must contain difficulty 1 through 6');
+    }
+    requireFiniteTimestamp(event, 'requestedAtMs');
+    if (typeof event.isSpeaking !== 'boolean') {
+      throw new Error('ordinary lifecycle event must contain boolean isSpeaking');
+    }
+  }
+
+  if (![0, 1].includes(event.coordinatorObservedActivePlaybackOwnershipCount)) {
+    throw new Error('coordinator ownership count must be 0 or 1');
+  }
+
+  if (event.phase.startsWith('ownership-timeout-')) {
+    if (typeof event.word !== 'string' || event.word.length === 0) {
+      throw new Error('timeout diagnostic must contain a non-empty word');
+    }
+    if (!Number.isInteger(event.difficulty) || event.difficulty < 1 || event.difficulty > 6) {
+      throw new Error('timeout diagnostic must contain difficulty 1 through 6');
+    }
+    requireFiniteTimestamp(event, 'requestedAtMs');
+    requireFiniteTimestamp(event, 'timedOutAtMs');
+    const expected = event.phase.endsWith('awaiting-start')
+      ? 'awaiting-start'
+      : 'awaiting-terminal';
+    if (event.timedOutPhase !== expected) throw new Error(`timedOutPhase must be ${expected}`);
+    if (event.coordinatorObservedActivePlaybackOwnershipCount !== 0) {
+      throw new Error('timeout diagnostic must prove coordinator ownership released');
+    }
+  } else if (event.phase.startsWith('late-callback-')) {
+    requireFiniteTimestamp(event, 'eventTimestampMs');
+    if (!NATIVE_CALLBACKS.has(event.nativeCallback)) {
+      throw new Error('late callback must identify onDone, onStopped, or onError');
+    }
+  } else {
+    requireFiniteTimestamp(event, 'eventTimestampMs');
+  }
+
+  if (['submitted-to-native-speech', 'started', 'completed', 'cancelled'].includes(event.phase)) {
+    requireFiniteTimestamp(event, 'speechSubmittedAtMs');
+  }
+  if (event.phase === 'started') requireFiniteTimestamp(event, 'playbackStartedAtMs');
+  if (event.phase === 'completed') requireFiniteTimestamp(event, 'playbackFinishedAtMs');
+  if (event.phase === 'cancelled') requireFiniteTimestamp(event, 'cancellationAtMs');
+  if (event.phase === 'failed') requireFiniteTimestamp(event, 'failureAtMs');
+
+  if (event.phase === 'rejected-duplicate') {
+    if (
+      typeof event.activePlaybackOwnerRequestId !== 'string' ||
+      !REQUEST_ID_PATTERN.test(event.activePlaybackOwnerRequestId) ||
+      event.activePlaybackOwnerRequestId === event.requestId
+    ) {
+      throw new Error('rejected duplicate must identify a different active owner');
+    }
+  }
+}
+
+function initialLifecycleState(lineNumber) {
+  return {
+    requested: false,
+    accepted: false,
+    submitted: false,
+    started: false,
+    rejected: false,
+    timedOut: false,
+    terminalCount: 0,
+    admissionLineNumber: lineNumber,
+    terminalPhase: null,
+  };
+}
+
+function validateLifecycle(records) {
+  const states = new Map();
+  const failures = [];
+  const fail = (lineNumber, message) => failures.push({ lineNumber, message });
+
+  for (const { event, lineNumber } of records) {
+    const { phase, requestId } = event;
+    if (phase === 'late-callback-unknown-request') continue;
+
+    let state = states.get(requestId);
+    if (phase === 'requested') {
+      if (state) {
+        fail(lineNumber, 'requested must be the first ordinary event for a request');
+      } else {
+        state = initialLifecycleState(lineNumber);
+        state.requested = true;
+        states.set(requestId, state);
+      }
+      continue;
+    }
+
+    if (!state) {
+      fail(lineNumber, `${phase} requires a requested admission`);
+      continue;
+    }
+
+    if (phase === 'late-callback-after-timeout') {
+      if (!state.timedOut) fail(lineNumber, 'late callback requires a prior timeout');
+      continue;
+    }
+
+    if (TERMINAL_PHASES.has(phase) && state.terminalCount > 0) {
+      fail(lineNumber, `duplicate terminal outcome after ${state.terminalPhase}`);
+      continue;
+    }
+
+    switch (phase) {
+      case 'accepted':
+        if (state.rejected || state.accepted) {
+          fail(lineNumber, 'acceptance requires an unrejected request with no prior acceptance');
+        } else {
+          state.accepted = true;
+        }
+        break;
+      case 'rejected-duplicate':
+        if (state.accepted || state.rejected) {
+          fail(lineNumber, 'duplicate rejection requires an unaccepted request');
+        } else {
+          state.rejected = true;
+        }
+        break;
+      case 'submitted-to-native-speech':
+        if (!state.accepted) fail(lineNumber, 'submission requires acceptance');
+        else if (state.terminalCount > 0) fail(lineNumber, 'submission cannot follow a terminal outcome');
+        else state.submitted = true;
+        break;
+      case 'started':
+        if (!state.submitted) fail(lineNumber, 'start requires submission');
+        else if (state.terminalCount > 0) fail(lineNumber, 'start cannot follow a terminal outcome');
+        else state.started = true;
+        break;
+      case 'completed':
+      case 'cancelled':
+        if (!state.submitted) fail(lineNumber, `${phase} requires submission`);
+        else {
+          state.terminalCount += 1;
+          state.terminalPhase = phase;
+        }
+        break;
+      case 'failed':
+        if (!state.accepted) fail(lineNumber, 'failed requires acceptance');
+        else {
+          state.terminalCount += 1;
+          state.terminalPhase = phase;
+        }
+        break;
+      case 'ownership-timeout-awaiting-start':
+        if (!state.submitted) fail(lineNumber, 'awaiting-start timeout requires submission');
+        else if (state.started) fail(lineNumber, 'awaiting-start timeout cannot follow start');
+        else {
+          state.timedOut = true;
+          state.terminalCount += 1;
+          state.terminalPhase = phase;
+        }
+        break;
+      case 'ownership-timeout-awaiting-terminal':
+        if (!state.started) fail(lineNumber, 'awaiting-terminal timeout requires start');
+        else {
+          state.timedOut = true;
+          state.terminalCount += 1;
+          state.terminalPhase = phase;
+        }
+        break;
+      default:
+        fail(lineNumber, `unexpected lifecycle phase: ${phase}`);
+    }
+  }
+
+  for (const state of states.values()) {
+    if (state.accepted && state.terminalCount !== 1) {
+      fail(state.admissionLineNumber, 'accepted request requires exactly one terminal outcome');
+    }
+    if (state.requested && !state.accepted && !state.rejected) {
+      fail(state.admissionLineNumber, 'requested request must reach acceptance or rejection');
+    }
+  }
+  return failures;
+}
+
 function countPhases(events) {
   const counts = new Map();
   for (const event of events) {
@@ -103,24 +327,42 @@ function analyzeValidationLog(logText) {
     lifecycleFailures: [],
   };
   const events = [];
+  const invalidLineNumbers = new Set();
 
   for (const record of records) {
     try {
-      events.push(parseDiagnosticRecord(record));
+      const event = parseDiagnosticRecord(record);
+      try {
+        validateEventSchema(event, record.lineNumber);
+      } catch (error) {
+        error.category = 'schema';
+        throw error;
+      }
+      events.push({ event, lineNumber: record.lineNumber });
       parseSummary.parsedRecords += 1;
     } catch (error) {
-      parseSummary.invalidRecords += 1;
+      invalidLineNumbers.add(record.lineNumber);
       if (parseSummary.firstInvalidLineNumber === null) {
         parseSummary.firstInvalidLineNumber = record.lineNumber;
       }
       if (parseSummary.errors.length < MAX_REPRESENTATIVE_ERRORS) {
         parseSummary.errors.push({
           lineNumber: record.lineNumber,
-          category: 'parse',
+          category: error.category ?? 'parse',
           message: error.message,
         });
       }
     }
+  }
+
+  const lifecycleFailures = validateLifecycle(events);
+  parseSummary.lifecycleFailures.push(...lifecycleFailures);
+  for (const failure of lifecycleFailures) invalidLineNumbers.add(failure.lineNumber);
+  parseSummary.invalidRecords = invalidLineNumbers.size;
+  parseSummary.parsedRecords -= [...invalidLineNumbers]
+    .filter((lineNumber) => events.some((record) => record.lineNumber === lineNumber)).length;
+  if (invalidLineNumbers.size > 0) {
+    parseSummary.firstInvalidLineNumber = Math.min(...invalidLineNumbers);
   }
 
   if (records.length === 0) {
@@ -141,7 +383,8 @@ function analyzeValidationLog(logText) {
     };
   }
 
-  const phases = countPhases(events);
+  const eventValues = events.map(({ event }) => event);
+  const phases = countPhases(eventValues);
   const count = (phase) => phases.get(phase) ?? 0;
 
   const submitted = count('submitted-to-native-speech');
@@ -190,7 +433,7 @@ function analyzeValidationLog(logText) {
       total: lateCallbacks.total,
     },
     unexpectedRecoveries,
-    requestIds: collectRequestIds(events),
+    requestIds: collectRequestIds(eventValues),
     clean,
     captureStatus: 'VALID',
     parseSummary,
@@ -282,6 +525,9 @@ function formatEvidenceReport({ captureStatus, parseSummary }) {
   for (const error of parseSummary.errors) {
     lines.push(`Line ${error.lineNumber} (${error.category}): ${error.message}`);
   }
+  for (const failure of parseSummary.lifecycleFailures) {
+    lines.push(`Line ${failure.lineNumber} (lifecycle): ${failure.message}`);
+  }
 
   lines.push('='.repeat(60));
   return lines.join('\n');
@@ -292,6 +538,8 @@ module.exports = {
   formatValidationReport,
   scanDiagnosticRecords,
   parseDiagnosticRecord,
+  validateEventSchema,
+  validateLifecycle,
 };
 
 if (require.main === module) {

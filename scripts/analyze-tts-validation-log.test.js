@@ -3,6 +3,10 @@
 // timeouts and late callbacks is not a manual eyeball exercise over hundreds of
 // lines.
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
 const {
   analyzeValidationLog,
   formatValidationReport,
@@ -15,6 +19,20 @@ function runTest(name, fn) {
   } catch (error) {
     console.error(`not ok - ${name}`);
     throw error;
+  }
+}
+
+function runAnalyzerCli(capture) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'tts-validation-log-'));
+  const capturePath = path.join(directory, 'capture.log');
+  fs.writeFileSync(capturePath, capture);
+  try {
+    return spawnSync(process.execPath, [
+      path.join(__dirname, 'analyze-tts-validation-log.js'),
+      capturePath,
+    ], { encoding: 'utf8' });
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
   }
 }
 
@@ -138,6 +156,38 @@ runTest('distinguishes an empty capture from parser failure', () => {
   assert.strictEqual(broken.parseSummary.diagnosticRecordsFound, 1);
 });
 
+runTest('keeps empty captures as evidence-only reports', () => {
+  const report = analyzeValidationLog('Metro ready\nno diagnostic records');
+  const text = formatValidationReport(report);
+
+  assert.strictEqual(report.captureStatus, 'EMPTY_CAPTURE');
+  assert.strictEqual(report.metrics, null);
+  assert.strictEqual(report.runtimeVerdict, null);
+  assert.strictEqual(Object.hasOwn(report, 'attempts'), false);
+  assert.strictEqual(Object.hasOwn(report, 'clean'), false);
+  assert.strictEqual(Object.hasOwn(report, 'verdict'), false);
+  assert.match(text, /EMPTY_CAPTURE/);
+  assert.doesNotMatch(text, /Total playback attempts|Verdict:/);
+});
+
+runTest('formats invalid captures as evidence and exits nonzero without throwing', () => {
+  const capture = '[tts-playback] {"phase":"completed",}';
+  const report = analyzeValidationLog(capture);
+  const text = formatValidationReport(report);
+  const cli = runAnalyzerCli(capture);
+
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.strictEqual(report.metrics, null);
+  assert.strictEqual(report.runtimeVerdict, null);
+  assert.match(text, /INVALID_CAPTURE/);
+  assert.match(text, /records found\s+1/i);
+  assert.match(text, /line 1 \(parse\):/i);
+  assert.strictEqual(cli.status, 1);
+  assert.match(cli.stdout, /INVALID_CAPTURE/);
+  assert.match(cli.stdout, /line 1 \(parse\):/i);
+  assert.strictEqual(cli.stderr, '');
+});
+
 runTest('counts a healthy utterance as one attempt with no recoveries', () => {
   const report = analyzeValidationLog(HEALTHY_UTTERANCE);
 
@@ -224,14 +274,6 @@ runTest('falls back to accepted events when submissions are absent', () => {
 
   assert.strictEqual(report.attempts, 0);
   assert.strictEqual(report.attemptDenominatorAvailable, false);
-});
-
-runTest('an empty capture is reported as unusable rather than clean', () => {
-  const report = analyzeValidationLog('');
-
-  assert.strictEqual(report.attempts, 0);
-  assert.strictEqual(report.clean, false);
-  assert.match(report.verdict, /no \[tts-playback\] events/i);
 });
 
 runTest('a clean run recommends proceeding to Commit 2', () => {

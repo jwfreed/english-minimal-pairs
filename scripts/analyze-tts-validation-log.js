@@ -129,25 +129,6 @@ function analyzeValidationLog(logText) {
       parseSummary,
       metrics: null,
       runtimeVerdict: null,
-      attempts: 0,
-      attemptDenominatorAvailable: false,
-      completed: 0,
-      cancelled: 0,
-      failed: 0,
-      rejectedDuplicates: 0,
-      timeouts: { awaitingStart: 0, awaitingTerminal: 0, total: 0 },
-      lateCallbacks: { afterTimeout: 0, unknownRequest: 0, total: 0 },
-      unexpectedRecoveries: 0,
-      requestIds: [],
-      clean: false,
-      verdict: buildVerdict({
-        hasAnyEvent: false,
-        attemptDenominatorAvailable: false,
-        attempts: 0,
-        unexpectedRecoveries: 0,
-        lateCallbacks: 0,
-        failed: 0,
-      }),
     };
   }
 
@@ -256,6 +237,10 @@ function buildVerdict({
 }
 
 function formatValidationReport(report) {
+  if (report.captureStatus !== 'VALID') {
+    return formatEvidenceReport(report);
+  }
+
   const lines = [
     'TTS Commit 1 device validation',
     '='.repeat(60),
@@ -278,6 +263,27 @@ function formatValidationReport(report) {
     '='.repeat(60),
     `Verdict: ${report.verdict}`,
   ];
+  return lines.join('\n');
+}
+
+function formatEvidenceReport({ captureStatus, parseSummary }) {
+  const lines = [
+    'TTS Commit 1 device validation',
+    '='.repeat(60),
+    `Capture status                 ${captureStatus}`,
+    `Diagnostic records found       ${parseSummary.diagnosticRecordsFound}`,
+    `Parsed records                 ${parseSummary.parsedRecords}`,
+    `Invalid records                ${parseSummary.invalidRecords}`,
+  ];
+
+  if (parseSummary.firstInvalidLineNumber !== null) {
+    lines.push(`First invalid line             ${parseSummary.firstInvalidLineNumber}`);
+  }
+  for (const error of parseSummary.errors) {
+    lines.push(`Line ${error.lineNumber} (${error.category}): ${error.message}`);
+  }
+
+  lines.push('='.repeat(60));
   return lines.join('\n');
 }
 

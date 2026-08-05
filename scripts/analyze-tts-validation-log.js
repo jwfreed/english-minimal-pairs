@@ -368,7 +368,6 @@ function validateLifecycle(records) {
 
 function buildMetrics(events) {
   const count = (phase) => events.filter((event) => event.phase === phase).length;
-  const submitted = count('submitted-to-native-speech');
   const accepted = count('accepted');
   const awaitingStart = count('ownership-timeout-awaiting-start');
   const awaitingTerminal = count('ownership-timeout-awaiting-terminal');
@@ -376,7 +375,7 @@ function buildMetrics(events) {
   const unknownRequest = count('late-callback-unknown-request');
 
   return {
-    attempts: submitted || accepted,
+    attempts: accepted,
     completed: count('completed'),
     cancelled: count('cancelled'),
     failed: count('failed'),

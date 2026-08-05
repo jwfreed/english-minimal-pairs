@@ -658,6 +658,28 @@ runTest('counts a healthy utterance as one attempt with no recoveries', () => {
   assert.match(report.runtimeVerdict, /INCONCLUSIVE/);
 });
 
+runTest('counts every accepted admission when one request fails before submission', () => {
+  const completedRequestId = 'tts-3000-3';
+  const failedRequestId = 'tts-4000-4';
+  const capture = [
+    lifecycleEvent('requested', completedRequestId),
+    lifecycleEvent('accepted', completedRequestId),
+    lifecycleEvent('submitted-to-native-speech', completedRequestId),
+    lifecycleEvent('started', completedRequestId),
+    lifecycleEvent('completed', completedRequestId),
+    lifecycleEvent('requested', failedRequestId),
+    lifecycleEvent('accepted', failedRequestId),
+    lifecycleEvent('failed', failedRequestId),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.strictEqual(report.metrics.attempts, 2);
+  assert.strictEqual(report.metrics.completed, 1);
+  assert.strictEqual(report.metrics.failed, 1);
+  assert.match(report.runtimeVerdict, /REVIEW/);
+});
+
 runTest('does not mistake timedOutPhase for the event phase key', () => {
   // A naive /phase:/ regex matches `timedOutPhase:` too, which would
   // double-count every timeout event.

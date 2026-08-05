@@ -7,6 +7,7 @@ import type { AudioMode } from 'expo-audio';
 import type { Pair } from '@/src/constants/minimalPairs';
 import {
   buildSpeechOptions,
+  deriveSpeechTimeoutBudgets,
   getPlaybackWord,
   requireIosVoicesForPlayback,
 } from '@/src/domain/audioPlayback';
@@ -14,6 +15,7 @@ import {
   speechPlaybackCoordinator,
   type SpeechPlaybackAttempt,
   type SpeechPlaybackRequest,
+  type StaleSpeechCallbackClassification,
 } from '@/src/domain/speechPlaybackCoordinator';
 import { useSilentWarmupPlayer } from '@/src/hooks/useSilentWarmupPlayer';
 
@@ -76,6 +78,56 @@ type SpeechDiagnosticPhase =
   | 'completed'
   | 'cancelled'
   | 'failed';
+
+type SpeechRecoveryDiagnosticPhase =
+  | 'ownership-timeout-awaiting-start'
+  | 'ownership-timeout-awaiting-terminal'
+  | 'late-callback-after-timeout'
+  | 'late-callback-unknown-request';
+
+// Recovery diagnostics emit in release builds too: the internal validation
+// build is a release build, and a timeout that only logs in development would
+// be invisible exactly where it matters. Bounded so a device stuck in a
+// failing state cannot flood the log.
+const MAX_RECOVERY_DIAGNOSTICS_PER_RUNTIME = 20;
+let emittedRecoveryDiagnosticCount = 0;
+
+function logSpeechRecoveryDiagnostic(
+  phase: SpeechRecoveryDiagnosticPhase,
+  details: Record<string, unknown>
+) {
+  if (emittedRecoveryDiagnosticCount >= MAX_RECOVERY_DIAGNOSTICS_PER_RUNTIME) {
+    return;
+  }
+  emittedRecoveryDiagnosticCount += 1;
+  try {
+    console.warn('[tts-playback]', {
+      phase,
+      ...details,
+      recoveryDiagnosticSequence: emittedRecoveryDiagnosticCount,
+      coordinatorObservedActivePlaybackOwnershipCount:
+        speechPlaybackCoordinator.getActivePlaybackOwnershipCount(),
+    });
+  } catch {
+    // Diagnostics must never affect playback ownership.
+  }
+}
+
+const TIMEOUT_PHASE_TO_DIAGNOSTIC: Record<
+  'awaiting-start' | 'awaiting-terminal',
+  SpeechRecoveryDiagnosticPhase
+> = {
+  'awaiting-start': 'ownership-timeout-awaiting-start',
+  'awaiting-terminal': 'ownership-timeout-awaiting-terminal',
+};
+
+const STALE_CALLBACK_TO_DIAGNOSTIC: Record<
+  StaleSpeechCallbackClassification,
+  SpeechRecoveryDiagnosticPhase
+> = {
+  'after-timeout': 'late-callback-after-timeout',
+  'unknown-request': 'late-callback-unknown-request',
+};
 
 function logSpeechDiagnostic({
   phase,
@@ -172,6 +224,58 @@ export const useAudio = (
     setIsSpeaking(nextIsSpeaking);
   }, []);
 
+  // Recovery floor: if a native terminal callback is never delivered, the
+  // coordinator releases ownership on its own. Without this subscription the
+  // UI would keep rendering a playback that has already been abandoned, and
+  // isSpeaking would never return to false.
+  useEffect(() => {
+    const unsubscribe = speechPlaybackCoordinator.subscribeToOwnershipTimeout(
+      (attempt) => {
+        updateIsSpeaking(false);
+        logSpeechRecoveryDiagnostic(
+          TIMEOUT_PHASE_TO_DIAGNOSTIC[attempt.timedOutPhase ?? 'awaiting-start'],
+          {
+            requestId: attempt.requestId,
+            word: attempt.word,
+            difficulty: attempt.difficulty,
+            voiceIdentifier: attempt.voiceIdentifier,
+            requestedAtMs: attempt.requestedAtMs,
+            speechSubmittedAtMs: attempt.speechSubmittedAtMs,
+            playbackStartedAtMs: attempt.playbackStartedAtMs,
+            timedOutAtMs: attempt.timedOutAtMs,
+            timedOutPhase: attempt.timedOutPhase,
+          }
+        );
+      }
+    );
+    return unsubscribe;
+  }, [updateIsSpeaking]);
+
+  // A terminal callback the coordinator declined to act on. Classifying it
+  // keeps device logs honest about which of the two harmless cases occurred
+  // without ever touching playback state.
+  const reportStaleCallback = useCallback(
+    (
+      requestId: string,
+      nativeCallback: 'onDone' | 'onStopped' | 'onError',
+      eventTimestampMs: number
+    ) => {
+      const classification =
+        speechPlaybackCoordinator.classifyStaleCallback(requestId);
+      logSpeechRecoveryDiagnostic(
+        STALE_CALLBACK_TO_DIAGNOSTIC[classification],
+        {
+          requestId,
+          nativeCallback,
+          eventTimestampMs,
+          activePlaybackOwnerRequestId:
+            speechPlaybackCoordinator.getActivePlaybackOwnerRequestId(),
+        }
+      );
+    },
+    []
+  );
+
   // Check if we're on a real device vs simulator
   useEffect(() => {
     let cancelled = false;
@@ -261,9 +365,17 @@ export const useAudio = (
       }
 
       const word = getPlaybackWord(selectedPair, idx);
+      // Budgets are speech semantics and are derived in the audioPlayback
+      // domain; the coordinator receives them as opaque milliseconds.
+      const { startBudgetMs, completionBudgetMs } = deriveSpeechTimeoutBudgets({
+        word,
+        rate,
+      });
       const beginResult = speechPlaybackCoordinator.begin({
         word,
         difficulty: selectedPair.difficulty,
+        startBudgetMs,
+        completionBudgetMs,
       });
       const request = beginResult.accepted
         ? beginResult.attempt
@@ -338,7 +450,10 @@ export const useAudio = (
                 requestId,
                 finishedAtMs
               );
-              if (!finishedAttempt) return;
+              if (!finishedAttempt) {
+                reportStaleCallback(requestId, 'onDone', finishedAtMs);
+                return;
+              }
               updateIsSpeaking(false);
               logSpeechDiagnostic({
                 phase: 'completed',
@@ -355,7 +470,10 @@ export const useAudio = (
                 requestId,
                 cancelledAtMs
               );
-              if (!cancelledAttempt) return;
+              if (!cancelledAttempt) {
+                reportStaleCallback(requestId, 'onStopped', cancelledAtMs);
+                return;
+              }
               updateIsSpeaking(false);
               logSpeechDiagnostic({
                 phase: 'cancelled',
@@ -372,7 +490,10 @@ export const useAudio = (
                 requestId,
                 failedAtMs
               );
-              if (!failedAttempt) return;
+              if (!failedAttempt) {
+                reportStaleCallback(requestId, 'onError', failedAtMs);
+                return;
+              }
               updateIsSpeaking(false);
               logSpeechDiagnostic({
                 phase: 'failed',
@@ -461,6 +582,7 @@ export const useAudio = (
       rate,
       selectedPair,
       getNextVoice,
+      reportStaleCallback,
       updateIsSpeaking,
     ]
   );

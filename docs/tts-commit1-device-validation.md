@@ -85,6 +85,12 @@ Every accepted request must resolve to exactly one of `completed`, `cancelled`,
 `ownership-timeout-awaiting-terminal`; missing and duplicate terminal outcomes
 invalidate the capture.
 
+The coordinator has exactly one global playback owner. Active ordinary phases
+must report one owner, terminal and timeout phases must report ownership already
+released, accepted requests cannot overlap, and duplicate or late-callback
+diagnostics that name an active owner must identify the owner established by the
+lifecycle history. Any contradiction invalidates the capture.
+
 Every analysis reports one capture classification:
 
 - `VALID` — every diagnostic record parsed and passed schema/lifecycle checks,

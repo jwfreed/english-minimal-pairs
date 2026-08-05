@@ -33,6 +33,14 @@ const TERMINAL_PHASES = new Set([
   'ownership-timeout-awaiting-start',
   'ownership-timeout-awaiting-terminal',
 ]);
+const ACTIVE_ORDINARY_PHASES = new Set([
+  'requested',
+  'accepted',
+  'rejected-duplicate',
+  'submitted-to-native-speech',
+  'started',
+]);
+const RELEASED_ORDINARY_PHASES = new Set(['completed', 'cancelled', 'failed']);
 const LEGACY_FIELD_PATTERN =
   /^([A-Za-z][A-Za-z0-9]*)\s*:\s*(?:'([^']*)'|(-?\d+(?:\.\d+)?)|(true|false|null))$/;
 
@@ -193,10 +201,33 @@ function validateLifecycle(records) {
   const states = new Map();
   const failures = [];
   const fail = (lineNumber, message) => failures.push({ lineNumber, message });
+  let activeOwnerRequestId = null;
 
   for (const { event, lineNumber } of records) {
     const { phase, requestId } = event;
-    if (phase === 'late-callback-unknown-request') continue;
+    const ownershipCount = event.coordinatorObservedActivePlaybackOwnershipCount;
+
+    if (ACTIVE_ORDINARY_PHASES.has(phase) && ownershipCount !== 1) {
+      fail(lineNumber, `${phase} must report coordinator ownership count 1`);
+    }
+    if (RELEASED_ORDINARY_PHASES.has(phase) && ownershipCount !== 0) {
+      fail(lineNumber, `${phase} must report coordinator ownership count 0`);
+    }
+
+    if (phase.startsWith('late-callback-')) {
+      if (ownershipCount === 1) {
+        if (
+          activeOwnerRequestId === null ||
+          activeOwnerRequestId === requestId ||
+          event.activePlaybackOwnerRequestId !== activeOwnerRequestId
+        ) {
+          fail(lineNumber, 'late callback must identify the current newer active owner');
+        }
+      } else if (activeOwnerRequestId !== null) {
+        fail(lineNumber, 'late callback ownership count 0 contradicts the current active owner');
+      }
+      if (phase === 'late-callback-unknown-request') continue;
+    }
 
     let state = states.get(requestId);
     if (phase === 'requested') {
@@ -207,6 +238,7 @@ function validateLifecycle(records) {
         state.requested = true;
         states.set(requestId, state);
       }
+      if (activeOwnerRequestId === null) activeOwnerRequestId = requestId;
       continue;
     }
 
@@ -227,6 +259,9 @@ function validateLifecycle(records) {
 
     switch (phase) {
       case 'accepted':
+        if (activeOwnerRequestId !== requestId) {
+          fail(lineNumber, `acceptance cannot replace active owner ${activeOwnerRequestId}`);
+        }
         if (state.rejected || state.accepted) {
           fail(lineNumber, 'acceptance requires an unrejected request with no prior acceptance');
         } else {
@@ -234,13 +269,24 @@ function validateLifecycle(records) {
         }
         break;
       case 'rejected-duplicate':
+        if (
+          activeOwnerRequestId === null ||
+          activeOwnerRequestId === requestId ||
+          event.activePlaybackOwnerRequestId !== activeOwnerRequestId
+        ) {
+          fail(lineNumber, 'rejected duplicate must identify the current active owner');
+        }
         if (state.accepted || state.rejected) {
           fail(lineNumber, 'duplicate rejection requires an unaccepted request');
         } else {
           state.rejected = true;
         }
+        if (activeOwnerRequestId === requestId) activeOwnerRequestId = null;
         break;
       case 'submitted-to-native-speech':
+        if (activeOwnerRequestId !== requestId) {
+          fail(lineNumber, 'submission requires this request to be the active owner');
+        }
         if (!state.accepted) fail(lineNumber, 'submission requires acceptance');
         else if (state.terminalCount > 0) fail(lineNumber, 'submission cannot follow a terminal outcome');
         else if (state.started) fail(lineNumber, 'submission cannot follow start');
@@ -248,6 +294,9 @@ function validateLifecycle(records) {
         else state.submitted = true;
         break;
       case 'started':
+        if (activeOwnerRequestId !== requestId) {
+          fail(lineNumber, 'start requires this request to be the active owner');
+        }
         if (!state.submitted) fail(lineNumber, 'start requires submission');
         else if (state.terminalCount > 0) fail(lineNumber, 'start cannot follow a terminal outcome');
         else if (state.started) fail(lineNumber, 'duplicate start');
@@ -255,34 +304,50 @@ function validateLifecycle(records) {
         break;
       case 'completed':
       case 'cancelled':
+        if (activeOwnerRequestId !== requestId) {
+          fail(lineNumber, `${phase} requires this request to be the active owner`);
+        }
         if (!state.submitted) fail(lineNumber, `${phase} requires submission`);
         else {
           state.terminalCount += 1;
           state.terminalPhase = phase;
+          if (activeOwnerRequestId === requestId) activeOwnerRequestId = null;
         }
         break;
       case 'failed':
+        if (activeOwnerRequestId !== requestId) {
+          fail(lineNumber, 'failed requires this request to be the active owner');
+        }
         if (!state.accepted) fail(lineNumber, 'failed requires acceptance');
         else {
           state.terminalCount += 1;
           state.terminalPhase = phase;
+          if (activeOwnerRequestId === requestId) activeOwnerRequestId = null;
         }
         break;
       case 'ownership-timeout-awaiting-start':
+        if (activeOwnerRequestId !== requestId) {
+          fail(lineNumber, 'awaiting-start timeout requires this request to be the active owner');
+        }
         if (!state.submitted) fail(lineNumber, 'awaiting-start timeout requires submission');
         else if (state.started) fail(lineNumber, 'awaiting-start timeout cannot follow start');
         else {
           state.timedOut = true;
           state.terminalCount += 1;
           state.terminalPhase = phase;
+          if (activeOwnerRequestId === requestId) activeOwnerRequestId = null;
         }
         break;
       case 'ownership-timeout-awaiting-terminal':
+        if (activeOwnerRequestId !== requestId) {
+          fail(lineNumber, 'awaiting-terminal timeout requires this request to be the active owner');
+        }
         if (!state.started) fail(lineNumber, 'awaiting-terminal timeout requires start');
         else {
           state.timedOut = true;
           state.terminalCount += 1;
           state.terminalPhase = phase;
+          if (activeOwnerRequestId === requestId) activeOwnerRequestId = null;
         }
         break;
       default:

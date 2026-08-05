@@ -364,6 +364,110 @@ runTest('invalidates submission after playback start', () => {
   assert.match(report.parseSummary.lifecycleFailures[0].message, /submission cannot follow start/i);
 });
 
+runTest('invalidates a second accepted request while the first owner is active', () => {
+  const ownerId = 'tts-1000-1';
+  const secondId = 'tts-2000-2';
+  const capture = [
+    lifecycleEvent('requested', ownerId),
+    lifecycleEvent('accepted', ownerId),
+    lifecycleEvent('submitted-to-native-speech', ownerId),
+    lifecycleEvent('started', ownerId),
+    lifecycleEvent('requested', secondId),
+    lifecycleEvent('accepted', secondId),
+    lifecycleEvent('completed', ownerId),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.parseSummary.lifecycleFailures.some(({ message }) => /active owner/i.test(message))
+  );
+});
+
+runTest('invalidates a rejected duplicate that names a nonexistent owner', () => {
+  const duplicateId = 'tts-2000-2';
+  const capture = [
+    lifecycleEvent('requested', duplicateId),
+    lifecycleEvent('rejected-duplicate', duplicateId, {
+      activePlaybackOwnerRequestId: 'tts-9000-9',
+    }),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.parseSummary.lifecycleFailures.some(({ message }) => /current active owner/i.test(message))
+  );
+});
+
+runTest('invalidates a rejected duplicate that names an inactive owner', () => {
+  const oldOwnerId = 'tts-1000-1';
+  const duplicateId = 'tts-2000-2';
+  const capture = [
+    lifecycleEvent('requested', oldOwnerId),
+    lifecycleEvent('accepted', oldOwnerId),
+    lifecycleEvent('submitted-to-native-speech', oldOwnerId),
+    lifecycleEvent('completed', oldOwnerId),
+    lifecycleEvent('requested', duplicateId),
+    lifecycleEvent('rejected-duplicate', duplicateId, {
+      activePlaybackOwnerRequestId: oldOwnerId,
+    }),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.parseSummary.lifecycleFailures.some(({ message }) => /current active owner/i.test(message))
+  );
+});
+
+runTest('invalidates an active ordinary phase that reports zero owners', () => {
+  const capture = [
+    lifecycleEvent('requested', 'tts-1000-1', {
+      coordinatorObservedActivePlaybackOwnershipCount: 0,
+    }),
+    lifecycleEvent('accepted'),
+    lifecycleEvent('failed'),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.parseSummary.lifecycleFailures.some(({ message }) => /ownership count.*1/i.test(message))
+  );
+});
+
+runTest('invalidates an ordinary terminal phase that reports an active owner', () => {
+  const capture = [
+    lifecycleEvent('requested'),
+    lifecycleEvent('accepted'),
+    lifecycleEvent('failed', 'tts-1000-1', {
+      coordinatorObservedActivePlaybackOwnershipCount: 1,
+    }),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.parseSummary.lifecycleFailures.some(({ message }) => /ownership count.*0/i.test(message))
+  );
+});
+
+runTest('invalidates a late callback that names its own request as the active owner', () => {
+  const requestId = 'tts-1000-1';
+  const capture = [
+    lifecycleEvent('requested', requestId),
+    lifecycleEvent('accepted', requestId),
+    lifecycleEvent('submitted-to-native-speech', requestId),
+    lifecycleEvent('started', requestId),
+    lateCallbackEvent('late-callback-unknown-request', requestId, {
+      coordinatorObservedActivePlaybackOwnershipCount: 1,
+      activePlaybackOwnerRequestId: requestId,
+    }),
+    lifecycleEvent('completed', requestId),
+  ].map(jsonRecord).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.parseSummary.lifecycleFailures.some(({ message }) => /newer active owner/i.test(message))
+  );
+});
+
 runTest('allows a terminal callback when the started callback is missing', () => {
   const capture = [
     'requested',
@@ -595,12 +699,16 @@ runTest('separates the two late-callback classifications', () => {
 
 runTest('counts duplicate rejections without counting them as attempts', () => {
   const report = analyzeValidationLog([
-    healthyJsonRequest(),
+    lifecycleEvent('requested', 'tts-1000-1'),
+    lifecycleEvent('accepted', 'tts-1000-1'),
+    lifecycleEvent('submitted-to-native-speech', 'tts-1000-1'),
+    lifecycleEvent('started', 'tts-1000-1'),
     lifecycleEvent('requested', 'tts-1001-2'),
     lifecycleEvent('rejected-duplicate', 'tts-1001-2', {
       activePlaybackOwnerRequestId: 'tts-1000-1',
     }),
-  ].flatMap((record) => typeof record === 'string' ? [record] : [jsonRecord(record)]).join('\n'));
+    lifecycleEvent('completed', 'tts-1000-1'),
+  ].map(jsonRecord).join('\n'));
 
   assert.strictEqual(report.metrics.attempts, 1);
   assert.strictEqual(report.metrics.rejectedDuplicates, 1);

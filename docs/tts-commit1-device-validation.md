@@ -60,10 +60,13 @@ late, or silence.
 
 ## Analyzer input integrity
 
-Each `[tts-playback]` marker begins one diagnostic record. The analyzer accepts
-the real one-line JSON emitted by the iPhone development client and the legacy
-multiline Metro representation with unquoted keys and single-quoted values.
-Unrelated console output is ignored.
+The analyzer accepts the real one-line JSON emitted by the iPhone development
+client and the constrained legacy multiline Metro representation with unquoted
+keys and single-quoted values. A diagnostic record begins only on a line
+containing `[tts-playback]`. Unmarked console lines are unrelated noise and are
+ignored. After a marked record begins, a missing closing boundary, malformed
+payload, or a second marker before completion invalidates that record and the
+entire capture.
 
 The analyzer is a verification tool, not a best-effort log viewer. Every
 discovered diagnostic record must parse and satisfy the known Commit 1 event
@@ -77,6 +80,10 @@ Lifecycle validation preserves the intended exceptional paths: rejected
 duplicates, terminal callbacks after a missing `started` callback, both timeout
 phases, callbacks arriving after a timeout and newer ownership, and
 `late-callback-unknown-request` events without a known request lifecycle.
+Every accepted request must resolve to exactly one of `completed`, `cancelled`,
+`failed`, `ownership-timeout-awaiting-start`, or
+`ownership-timeout-awaiting-terminal`; missing and duplicate terminal outcomes
+invalidate the capture.
 
 Every analysis reports one capture classification:
 
@@ -92,15 +99,28 @@ unusable, and withhold partial metrics. The parse summary always includes lines
 inspected, records found, parsed and invalid record counts, the first invalid
 line, representative parse/schema errors, and lifecycle validation failures.
 
+`VALID`, `INVALID_CAPTURE`, and `EMPTY_CAPTURE` describe whether the evidence
+can be trusted. `PROCEED`, `INCONCLUSIVE`, `REVIEW`, and `BLOCKED` describe the
+runtime behavior observed only after the evidence is `VALID`. `VALID` alone is
+not a pass, and the analyzer exits 0 only for `PROCEED`.
+
 ## 4. Confirm the diagnostics are actually visible
 
 Zero timeouts in a healthy run proves nothing about whether a timeout would be
 *seen*. Provoke one once, on a scratch build:
 
 Temporarily lower `START_BUDGET_MS` in `src/domain/audioPlayback.ts` to a value
-below normal start latency (for example 50), rebuild, play one word, and
-confirm a `[tts-playback] { phase: 'ownership-timeout-awaiting-start', ... }`
-line appears in the capture and that the UI stops showing the speaking state.
+below normal start latency (for example 50), rebuild, and play one word. For
+the separate authorized timeout-visibility run, record all three facts:
+
+1. The timeout diagnostic appears in the capture.
+2. `coordinatorObservedActivePlaybackOwnershipCount` is `0`, proving ownership
+   released before the diagnostic was emitted.
+3. The operator visually confirms the UI speaking state clears.
+
+The analyzer can prove the first two from the diagnostic payload. The third is
+a required physical-device observation because the timeout diagnostic does not
+emit React UI state.
 
 **Revert the constant before the real validation run.** Record in the results
 that this check was performed and reverted.

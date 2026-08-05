@@ -390,7 +390,7 @@ runTest('useAudio keeps Expo Speech fallback and selects the experiment only at 
   );
   assert.ok(
     useAudioSource.includes(
-      "'retained' as IosSynthesizerLifecycleExperimentMode"
+      "'reset-per-utterance' as IosSynthesizerLifecycleExperimentMode"
     )
   );
   assert.ok(useAudioSource.includes('isDevelopment: __DEV__'));

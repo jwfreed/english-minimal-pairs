@@ -336,19 +336,22 @@ retain the warmup and remove the experiment selector.
 
 ## 18. TEMPORARY — iOS AVSpeechSynthesizer Lifecycle Experiment
 
-> **Status:** Implementation verified locally; physical-device retained control
-> not yet run. This is a causal probe, not a production fix. Do not promote the
-> experiment module or its allocation policy into release behavior from these
-> implementation results alone.
+> **Status:** Physical-device comparison completed on 2026-08-05. The retained
+> control reproduced the defect and the reset comparison remained clean under
+> the matched conditions below. This supports the lifecycle hypothesis for this
+> device/configuration, but it is still a causal probe, not a production fix. Do
+> not promote the experiment module or its allocation policy into release
+> behavior from these results alone.
 
 ### Boundary and selector
 
 The development-only selector is
 `IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE` in `src/hooks/useAudio.ts`.
-It is currently `retained`, the required control. In iOS development builds,
-`useAudio` sends its existing `word` and `speechOptions` through the local
-experiment adapter. Release builds and all Android/web builds continue to call
-Expo Speech's existing `Speech.speak(word, speechOptions)` path.
+It is currently `reset-per-utterance`, selected only after the retained control
+reproduced the defect. In iOS development builds, `useAudio` sends its existing
+`word` and `speechOptions` through the local experiment adapter. Release builds
+and all Android/web builds continue to call Expo Speech's existing
+`Speech.speak(word, speechOptions)` path.
 
 Both experimental modes use the same local module, delegate, utterance type,
 option mapping, event bridge, callback adapter, coordinator, diagnostics,
@@ -394,10 +397,37 @@ Do not run or interpret reset mode until retained mode reproduces
 `clean → stutter → stutter` under those controls. If retained does not
 reproduce, stop and report the lifecycle experiment as inconclusive.
 
-| Mode | Device / iOS | Voice ID | Word | Rate | Route | Playback 1 | Playback 2 | Playback 3 | Valid control? |
-|---|---|---|---|---:|---|---|---|---|---|
-| `retained` | Not run | Not run | Not run | — | Not run | Not run | Not run | Not run | No evidence yet |
-| `reset-per-utterance` | Blocked until retained reproduces | Same as retained | Same as retained | Same as retained | Same as retained | Not run | Not run | Not run | Requires valid retained control |
+Device/build conditions: iPhone 16 Pro (`iPhone17,1`, UDID
+`00008140-000E30802228801C`), iOS 26.5.2 (`23F84`), app 1.1.3 build 57,
+Debug iPhoneOS build at commit `5d85bb7` plus the development-only selector
+change, voice `com.apple.eloquence.en-GB.Reed`, word `oath`, rate `0.85`,
+difficulty 6, playback/default audio session, experiment variant
+`C-system-speech-session`, and silent warmup disabled. The operator held the
+physical output route, volume, and environment constant; the exact route is not
+exposed by the current JavaScript diagnostics. Counted sequences used quick
+replays, generally less than one second after completion.
+
+| Mode / cold launch | Sequence 1 | Sequence 2 | Sequence 3 | Synthesizer evidence | Background/resume |
+|---|---|---|---|---|---|
+| `retained` R1 | clean → very slight stutter → clean | clean → clean → clean | stutter → stutter → stutter | `experimental-synthesizer-1`, creation count 1 throughout | Included after sequence 3; post-resume sequence was clean → clean → clean |
+| `retained` R2 | clean → stutter → stutter | stutter → stutter → stutter | stutter → less stutter → clean | `experimental-synthesizer-1`, creation count 1 throughout | No |
+| `retained` R3 | clean → clean → clean | clean → clean → clean | clean → clean → clean | `experimental-synthesizer-1`, creation count 1 throughout | No |
+| `reset-per-utterance` X1 | clean → clean → clean | clean → clean → clean | clean → clean → clean | New ID/count for every utterance (1–10 including one excluded identification play) | No |
+| `reset-per-utterance` X2 | clean → clean → clean | clean → clean → clean | clean → clean → clean | New ID/count for every utterance (1–10 including one excluded identification play) | Included between sequences 1 and 2 |
+| `reset-per-utterance` X3 | clean → clean → clean | clean → clean → clean | clean → clean → clean | New ID/count for every utterance (1–10 including one excluded identification play) | No |
+
+The retained gate is valid because R2 reproduced the required
+`clean → stutter → stutter` transition in the same build conditions. Reset then
+produced 27/27 clean counted utterances across three cold launches and nine
+sequences. Initial word-identification plays and cold launches that selected
+`oat` were excluded before interpretation so that the counted comparison kept
+the word constant.
+
+The operator also observed that waiting at least four seconds before replaying
+could clear the stutter in retained mode. This indicates a timing/cooldown
+covariate and limits the conclusion: retained synthesizer reuse is supported as
+a causal or necessary trigger under the tested rapid-replay conditions, but the
+experiment does not establish a production design or universal iOS result.
 
 Interpret only a matched comparison with a valid retained control:
 

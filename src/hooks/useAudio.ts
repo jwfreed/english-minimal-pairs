@@ -81,10 +81,10 @@ const IOS_AUDIO_SESSION_EXPERIMENT =
 const IOS_SILENT_WARMUP_ENABLED =
   IOS_AUDIO_SESSION_EXPERIMENT === 'A-silent-warmup';
 
-// EXPERIMENT (temporary, iOS development builds only): the retained build is
-// the required control. Change only this selector for the reset comparison.
+// EXPERIMENT (temporary, iOS development builds only): reset comparison after
+// the retained control reproduced the defect. Change only this selector.
 const IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE =
-  'retained' as IosSynthesizerLifecycleExperimentMode;
+  'reset-per-utterance' as IosSynthesizerLifecycleExperimentMode;
 
 const SPEECH_SYNTHESIZER_LIFECYCLE_MODE =
   resolveSpeechSynthesizerLifecycleMode({

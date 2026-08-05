@@ -78,7 +78,7 @@ const IOS_SILENT_WARMUP_ENABLED =
 // EXPERIMENT (temporary, iOS development builds only): retained is the
 // required control. Change only this selector for the matched reset arm.
 const IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE =
-  'retained' as IosSynthesizerLifecycleExperimentMode;
+  'reset-per-utterance' as IosSynthesizerLifecycleExperimentMode;
 
 const SPEECH_SYNTHESIZER_LIFECYCLE_MODE =
   resolveSpeechSynthesizerLifecycleMode({

@@ -351,7 +351,7 @@ runTest('unmounting stops timeout notifications without locking ownership', asyn
 });
 
 runTest(
-  'the retained development arm preserves callbacks and exposes native lifecycle evidence',
+  'the selected development arm preserves callbacks and exposes native lifecycle evidence',
   async () => {
     const scenario = createAudioScenario({ useDevelopmentExperiment: true });
     let hook = await playOnce(scenario);
@@ -360,7 +360,7 @@ runTest(
     assert.strictEqual(scenario.experimentSpeakCalls.length, 1);
     const submission = scenario.experimentSpeakCalls[0];
     assert.strictEqual(submission.word, 'oath');
-    assert.strictEqual(submission.selectedMode, 'retained');
+    assert.strictEqual(submission.selectedMode, 'reset-per-utterance');
 
     const metadata = {
       synthesizerInstanceIdentifier: 'experimental-synthesizer-1',
@@ -386,7 +386,7 @@ runTest(
         creationCount: started.synthesizerCreationCount,
       },
       {
-        mode: 'experimental-retained',
+        mode: 'experimental-reset-per-utterance',
         identifier: 'experimental-synthesizer-1',
         creationCount: 1,
       }

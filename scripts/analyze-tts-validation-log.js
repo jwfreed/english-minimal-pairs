@@ -5,36 +5,162 @@
 //   npm run analyze:tts-log -- <captured-log-file>
 //   npx expo start 2>&1 | tee /tmp/tts-validation.log   (capture first)
 //
-// Metro prints console objects across multiple lines with unquoted keys, so
-// this scans for phase tokens rather than attempting to parse JSON. That is
-// deliberately tolerant: the capture is a human-collected artifact and its
-// exact formatting varies between Metro, Xcode, and Console.app.
 const fs = require('fs');
 
-// `[^A-Za-z]` guards against matching `timedOutPhase:`, which would otherwise
-// double-count every timeout event.
-const PHASE_PATTERN = /(?:^|[^A-Za-z])phase:\s*'([a-z-]+)'/g;
-const REQUEST_ID_PATTERN = /requestId:\s*'([^']+)'/g;
+const MARKER = '[tts-playback]';
+const MAX_REPRESENTATIVE_ERRORS = 5;
+const JSON_OBJECT_PATTERN = /^\{\s*"/;
+const LEGACY_FIELD_PATTERN =
+  /^([A-Za-z][A-Za-z0-9]*)\s*:\s*(?:'([^']*)'|(-?\d+(?:\.\d+)?)|(true|false|null))$/;
 
-function countPhases(logText) {
+function scanDiagnosticRecords(logText) {
+  const lines = logText.length === 0 ? [] : logText.split(/\r?\n/);
+  const records = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const markerIndex = lines[index].indexOf(MARKER);
+    if (markerIndex === -1) continue;
+
+    const lineNumber = index + 1;
+    const firstPayload = lines[index].slice(markerIndex + MARKER.length).trim();
+    const payloadLines = [firstPayload];
+    let incomplete = !firstPayload.endsWith('}');
+
+    while (incomplete && index + 1 < lines.length) {
+      if (lines[index + 1].includes(MARKER)) break;
+      index += 1;
+      payloadLines.push(lines[index]);
+      incomplete = !lines[index].trimEnd().endsWith('}');
+    }
+
+    records.push({
+      lineNumber,
+      payload: payloadLines.join('\n').trim(),
+      incomplete,
+    });
+  }
+
+  return { linesInspected: lines.length, records };
+}
+
+function parseLegacyObject(payload) {
+  if (!payload.startsWith('{') || !payload.endsWith('}')) {
+    throw new Error('legacy diagnostic payload must be a complete object');
+  }
+  const body = payload.slice(1, -1).trim();
+  if (!body) return {};
+
+  const event = {};
+  for (const rawField of body.split(',')) {
+    const match = rawField.trim().match(LEGACY_FIELD_PATTERN);
+    if (!match) throw new Error(`invalid legacy field: ${rawField.trim()}`);
+    const [, key, stringValue, numberValue, literalValue] = match;
+    if (Object.hasOwn(event, key)) throw new Error(`duplicate legacy field: ${key}`);
+    if (stringValue !== undefined) event[key] = stringValue;
+    else if (numberValue !== undefined) event[key] = Number(numberValue);
+    else if (literalValue === 'true') event[key] = true;
+    else if (literalValue === 'false') event[key] = false;
+    else event[key] = null;
+  }
+  return event;
+}
+
+function parseDiagnosticRecord(record) {
+  if (record.incomplete) throw new Error('incomplete diagnostic record');
+  if (!record.payload.startsWith('{')) {
+    throw new Error('diagnostic payload must be an object');
+  }
+  if (JSON_OBJECT_PATTERN.test(record.payload)) return JSON.parse(record.payload);
+  return parseLegacyObject(record.payload);
+}
+
+function countPhases(events) {
   const counts = new Map();
-  for (const match of logText.matchAll(PHASE_PATTERN)) {
-    const phase = match[1];
+  for (const event of events) {
+    const phase = event.phase;
     counts.set(phase, (counts.get(phase) ?? 0) + 1);
   }
   return counts;
 }
 
-function collectRequestIds(logText) {
-  const seen = [];
-  for (const match of logText.matchAll(REQUEST_ID_PATTERN)) {
-    if (!seen.includes(match[1])) seen.push(match[1]);
+function collectRequestIds(events) {
+  const seen = new Set();
+  for (const event of events) {
+    if (typeof event.requestId === 'string') seen.add(event.requestId);
   }
-  return seen;
+  return [...seen];
 }
 
 function analyzeValidationLog(logText) {
-  const phases = countPhases(logText);
+  const { linesInspected, records } = scanDiagnosticRecords(logText);
+  const parseSummary = {
+    linesInspected,
+    diagnosticRecordsFound: records.length,
+    parsedRecords: 0,
+    invalidRecords: 0,
+    firstInvalidLineNumber: null,
+    errors: [],
+    lifecycleFailures: [],
+  };
+  const events = [];
+
+  for (const record of records) {
+    try {
+      events.push(parseDiagnosticRecord(record));
+      parseSummary.parsedRecords += 1;
+    } catch (error) {
+      parseSummary.invalidRecords += 1;
+      if (parseSummary.firstInvalidLineNumber === null) {
+        parseSummary.firstInvalidLineNumber = record.lineNumber;
+      }
+      if (parseSummary.errors.length < MAX_REPRESENTATIVE_ERRORS) {
+        parseSummary.errors.push({
+          lineNumber: record.lineNumber,
+          category: 'parse',
+          message: error.message,
+        });
+      }
+    }
+  }
+
+  if (records.length === 0) {
+    return {
+      captureStatus: 'EMPTY_CAPTURE',
+      parseSummary,
+      metrics: null,
+      runtimeVerdict: null,
+      attempts: 0,
+      attemptDenominatorAvailable: false,
+      completed: 0,
+      cancelled: 0,
+      failed: 0,
+      rejectedDuplicates: 0,
+      timeouts: { awaitingStart: 0, awaitingTerminal: 0, total: 0 },
+      lateCallbacks: { afterTimeout: 0, unknownRequest: 0, total: 0 },
+      unexpectedRecoveries: 0,
+      requestIds: [],
+      clean: false,
+      verdict: buildVerdict({
+        hasAnyEvent: false,
+        attemptDenominatorAvailable: false,
+        attempts: 0,
+        unexpectedRecoveries: 0,
+        lateCallbacks: 0,
+        failed: 0,
+      }),
+    };
+  }
+
+  if (parseSummary.invalidRecords > 0) {
+    return {
+      captureStatus: 'INVALID_CAPTURE',
+      parseSummary,
+      metrics: null,
+      runtimeVerdict: null,
+    };
+  }
+
+  const phases = countPhases(events);
   const count = (phase) => phases.get(phase) ?? 0;
 
   const submitted = count('submitted-to-native-speech');
@@ -83,8 +209,12 @@ function analyzeValidationLog(logText) {
       total: lateCallbacks.total,
     },
     unexpectedRecoveries,
-    requestIds: collectRequestIds(logText),
+    requestIds: collectRequestIds(events),
     clean,
+    captureStatus: 'VALID',
+    parseSummary,
+    metrics: null,
+    runtimeVerdict: null,
     verdict: buildVerdict({
       hasAnyEvent,
       attemptDenominatorAvailable,
@@ -151,7 +281,12 @@ function formatValidationReport(report) {
   return lines.join('\n');
 }
 
-module.exports = { analyzeValidationLog, formatValidationReport };
+module.exports = {
+  analyzeValidationLog,
+  formatValidationReport,
+  scanDiagnosticRecords,
+  parseDiagnosticRecord,
+};
 
 if (require.main === module) {
   const logPath = process.argv[2];

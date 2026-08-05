@@ -222,6 +222,47 @@ runTest('invalidates duplicate terminal outcomes', () => {
   assert.match(report.parseSummary.lifecycleFailures[0].message, /duplicate terminal/i);
 });
 
+runTest('invalidates a duplicate native speech submission', () => {
+  const capture = [
+    'requested',
+    'accepted',
+    'submitted-to-native-speech',
+    'submitted-to-native-speech',
+    'completed',
+  ].map((phase) => jsonRecord(lifecycleEvent(phase))).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.lifecycleFailures[0].message, /duplicate submission/i);
+});
+
+runTest('invalidates a duplicate playback start', () => {
+  const capture = [
+    'requested',
+    'accepted',
+    'submitted-to-native-speech',
+    'started',
+    'started',
+    'completed',
+  ].map((phase) => jsonRecord(lifecycleEvent(phase))).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.lifecycleFailures[0].message, /duplicate start/i);
+});
+
+runTest('invalidates submission after playback start', () => {
+  const capture = [
+    'requested',
+    'accepted',
+    'submitted-to-native-speech',
+    'started',
+    'submitted-to-native-speech',
+    'completed',
+  ].map((phase) => jsonRecord(lifecycleEvent(phase))).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.match(report.parseSummary.lifecycleFailures[0].message, /submission cannot follow start/i);
+});
+
 runTest('allows a terminal callback when the started callback is missing', () => {
   const capture = [
     'requested',

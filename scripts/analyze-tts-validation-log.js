@@ -243,11 +243,14 @@ function validateLifecycle(records) {
       case 'submitted-to-native-speech':
         if (!state.accepted) fail(lineNumber, 'submission requires acceptance');
         else if (state.terminalCount > 0) fail(lineNumber, 'submission cannot follow a terminal outcome');
+        else if (state.started) fail(lineNumber, 'submission cannot follow start');
+        else if (state.submitted) fail(lineNumber, 'duplicate submission');
         else state.submitted = true;
         break;
       case 'started':
         if (!state.submitted) fail(lineNumber, 'start requires submission');
         else if (state.terminalCount > 0) fail(lineNumber, 'start cannot follow a terminal outcome');
+        else if (state.started) fail(lineNumber, 'duplicate start');
         else state.started = true;
         break;
       case 'completed':

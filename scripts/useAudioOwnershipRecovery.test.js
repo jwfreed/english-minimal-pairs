@@ -20,6 +20,10 @@ const { loadTsModule } = require('./load-ts-module');
 const ROOT = path.join(__dirname, '..');
 const useAudioPath = path.join(ROOT, 'src', 'hooks', 'useAudio.ts');
 const useAudioSource = fs.readFileSync(useAudioPath, 'utf8');
+const coordinatorSource = fs.readFileSync(
+  path.join(ROOT, 'src', 'domain', 'speechPlaybackCoordinator.ts'),
+  'utf8'
+);
 
 const tests = [];
 
@@ -96,15 +100,27 @@ const VOICE = {
  * Renders the real useAudio hook with host boundaries substituted and the
  * coordinator's timers under test control.
  */
-function createAudioScenario({ rate = 0.85 } = {}) {
+function createAudioScenario({
+  rate = 0.85,
+  useDevelopmentExperiment = false,
+  experimentMode = 'retained',
+} = {}) {
   const timers = createControllableTimers();
   const harness = createHookHarness();
   const speakCalls = [];
+  const experimentSpeakCalls = [];
   // Recovery diagnostics deliberately emit outside __DEV__, so capture them
   // rather than letting them pollute the suite output — and assert on them.
   const diagnostics = [];
   const capturingConsole = {
     ...console,
+    log(prefix, event) {
+      if (prefix === '[tts-playback]') {
+        diagnostics.push(event);
+        return;
+      }
+      console.log(prefix, event);
+    },
     warn(prefix, event) {
       if (prefix === '[tts-playback]') {
         diagnostics.push(event);
@@ -134,10 +150,41 @@ function createAudioScenario({ rate = 0.85 } = {}) {
       '@/src/hooks/useSilentWarmupPlayer': {
         useSilentWarmupPlayer: () => ({ play() {} }),
       },
+      '@/src/experiments/ttsSynthesizerLifecycleExperiment': {
+        resolveSpeechSynthesizerLifecycleMode({
+          isDevelopment,
+          platform,
+          experimentMode: selectedMode,
+        }) {
+          if (!isDevelopment || platform !== 'ios') {
+            return 'expo-retained-production-path';
+          }
+          return selectedMode === 'retained'
+            ? 'experimental-retained'
+            : 'experimental-reset-per-utterance';
+        },
+        speakWithSynthesizerLifecycleExperiment(
+          word,
+          options,
+          selectedMode,
+          onLifecycleMetadata
+        ) {
+          experimentSpeakCalls.push({
+            word,
+            options,
+            selectedMode,
+            onLifecycleMetadata,
+          });
+        },
+      },
       // Metro resolves this asset require; Node cannot.
       '../../assets/audio/silent.mp3': 1,
     },
-    { ...timers.globals, console: capturingConsole }
+    {
+      ...timers.globals,
+      console: capturingConsole,
+      __DEV__: useDevelopmentExperiment,
+    }
   );
 
   const render = () =>
@@ -148,6 +195,7 @@ function createAudioScenario({ rate = 0.85 } = {}) {
   return {
     timers,
     speakCalls,
+    experimentSpeakCalls,
     diagnostics,
     render,
     unmount: harness.unmount,
@@ -302,6 +350,77 @@ runTest('unmounting stops timeout notifications without locking ownership', asyn
   assert.strictEqual(scenario.speakCalls.length, 2);
 });
 
+runTest(
+  'the retained development arm preserves callbacks and exposes native lifecycle evidence',
+  async () => {
+    const scenario = createAudioScenario({ useDevelopmentExperiment: true });
+    let hook = await playOnce(scenario);
+
+    assert.strictEqual(scenario.speakCalls.length, 0);
+    assert.strictEqual(scenario.experimentSpeakCalls.length, 1);
+    const submission = scenario.experimentSpeakCalls[0];
+    assert.strictEqual(submission.word, 'oath');
+    assert.strictEqual(submission.selectedMode, 'retained');
+
+    const metadata = {
+      synthesizerInstanceIdentifier: 'experimental-synthesizer-1',
+      synthesizerCreationCount: 1,
+    };
+    submission.onLifecycleMetadata(metadata);
+    submission.options.onStart();
+    submission.onLifecycleMetadata(metadata);
+    submission.options.onDone();
+    hook = scenario.render();
+
+    assert.strictEqual(hook.isSpeaking, false);
+    const started = scenario.diagnostics.find(
+      (event) => event.phase === 'started'
+    );
+    const completed = scenario.diagnostics.find(
+      (event) => event.phase === 'completed'
+    );
+    assert.deepStrictEqual(
+      {
+        mode: started.synthesizerLifecycleMode,
+        identifier: started.synthesizerInstanceIdentifier,
+        creationCount: started.synthesizerCreationCount,
+      },
+      {
+        mode: 'experimental-retained',
+        identifier: 'experimental-synthesizer-1',
+        creationCount: 1,
+      }
+    );
+    assert.strictEqual(
+      completed.synthesizerInstanceIdentifier,
+      'experimental-synthesizer-1'
+    );
+  }
+);
+
+runTest(
+  'the experiment arm leaves the Commit 1 watchdog recovery path intact',
+  async () => {
+    const scenario = createAudioScenario({
+      useDevelopmentExperiment: true,
+      experimentMode: 'reset-per-utterance',
+    });
+    let hook = await playOnce(scenario);
+
+    assert.strictEqual(scenario.experimentSpeakCalls.length, 1);
+    assert.strictEqual(hook.isSpeaking, true);
+
+    scenario.timers.advanceTo(9000);
+    scenario.timers.expireAll();
+    hook = scenario.render();
+    assert.strictEqual(hook.isSpeaking, false);
+
+    await hook.play(0);
+    await flushPromises();
+    assert.strictEqual(scenario.experimentSpeakCalls.length, 2);
+  }
+);
+
 // ---------------------------------------------------------------------------
 // Commit boundary guards. Commit 1 is the reliability floor only; synthesizer
 // lifecycle work belongs to Commit 2 behind its own experiment flag.
@@ -314,15 +433,11 @@ runTest('the reliability floor introduces no Speech.stop() call', () => {
   );
 });
 
-runTest('the reliability floor introduces no synthesizer lifecycle concepts', () => {
-  // Deliberately narrow. useAudio already carries an explanatory comment about
-  // AVSpeechSynthesizer audio-session latching and the pre-existing silent-warmup
-  // experiment selector; neither is Commit 2 work. What must not appear is the
-  // recycling policy itself.
+runTest('the Commit 2 experiment leaves coordinator ownership lifecycle-agnostic', () => {
   for (const forbidden of ['recycle', 'recreateSynthesizer', 'ttsRecycle']) {
     assert.ok(
-      !new RegExp(forbidden, 'i').test(useAudioSource),
-      `Commit 1 must not reference ${forbidden}; that is Commit 2's boundary`
+      !new RegExp(forbidden, 'i').test(coordinatorSource),
+      `the validated coordinator must not reference ${forbidden}`
     );
   }
 });

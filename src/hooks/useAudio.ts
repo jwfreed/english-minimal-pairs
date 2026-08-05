@@ -17,6 +17,12 @@ import {
   type SpeechPlaybackRequest,
   type StaleSpeechCallbackClassification,
 } from '@/src/domain/speechPlaybackCoordinator';
+import {
+  resolveSpeechSynthesizerLifecycleMode,
+  speakWithSynthesizerLifecycleExperiment,
+  type IosSynthesizerLifecycleExperimentMode,
+  type SynthesizerLifecycleMetadata,
+} from '@/src/experiments/ttsSynthesizerLifecycleExperiment';
 import { useSilentWarmupPlayer } from '@/src/hooks/useSilentWarmupPlayer';
 
 // Audio-session configuration for TTS playback. `playsInSilentMode` is the
@@ -68,6 +74,18 @@ const IOS_AUDIO_SESSION_EXPERIMENT =
 
 const IOS_SILENT_WARMUP_ENABLED =
   IOS_AUDIO_SESSION_EXPERIMENT === 'A-silent-warmup';
+
+// EXPERIMENT (temporary, iOS development builds only): retained is the
+// required control. Change only this selector for the matched reset arm.
+const IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE =
+  'retained' as IosSynthesizerLifecycleExperimentMode;
+
+const SPEECH_SYNTHESIZER_LIFECYCLE_MODE =
+  resolveSpeechSynthesizerLifecycleMode({
+    isDevelopment: __DEV__,
+    platform: Platform.OS,
+    experimentMode: IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE,
+  });
 
 type SpeechDiagnosticPhase =
   | 'requested'
@@ -136,6 +154,7 @@ function logSpeechDiagnostic({
   eventTimestampMs,
   isSpeaking,
   activePlaybackOwnerRequestId,
+  synthesizerLifecycleMetadata = null,
 }: {
   phase: SpeechDiagnosticPhase;
   request: SpeechPlaybackRequest;
@@ -143,6 +162,7 @@ function logSpeechDiagnostic({
   eventTimestampMs: number;
   isSpeaking: boolean;
   activePlaybackOwnerRequestId?: string;
+  synthesizerLifecycleMetadata?: SynthesizerLifecycleMetadata | null;
 }) {
   if (!__DEV__) return;
   console.log('[tts-playback]', {
@@ -153,6 +173,11 @@ function logSpeechDiagnostic({
     ...(activePlaybackOwnerRequestId
       ? { activePlaybackOwnerRequestId }
       : {}),
+    synthesizerLifecycleMode: SPEECH_SYNTHESIZER_LIFECYCLE_MODE,
+    synthesizerInstanceIdentifier:
+      synthesizerLifecycleMetadata?.synthesizerInstanceIdentifier ?? null,
+    synthesizerCreationCount:
+      synthesizerLifecycleMetadata?.synthesizerCreationCount ?? null,
     isSpeaking,
     coordinatorObservedActivePlaybackOwnershipCount:
       speechPlaybackCoordinator.getActivePlaybackOwnershipCount(),
@@ -398,6 +423,8 @@ export const useAudio = (
       }
 
       const { requestId } = beginResult.attempt;
+      let synthesizerLifecycleMetadata: SynthesizerLifecycleMetadata | null =
+        null;
       logSpeechDiagnostic({
         phase: 'accepted',
         request: beginResult.attempt,
@@ -461,6 +488,7 @@ export const useAudio = (
                 attempt: finishedAttempt,
                 eventTimestampMs: finishedAtMs,
                 isSpeaking: isSpeakingRef.current,
+                synthesizerLifecycleMetadata,
               });
               debugLog(`✅ Successfully spoke: "${word}"`);
             },
@@ -481,6 +509,7 @@ export const useAudio = (
                 attempt: cancelledAttempt,
                 eventTimestampMs: cancelledAtMs,
                 isSpeaking: isSpeakingRef.current,
+                synthesizerLifecycleMetadata,
               });
               debugLog(`⏸️ Speech stopped for: "${word}"`);
             },
@@ -501,6 +530,7 @@ export const useAudio = (
                 attempt: failedAttempt,
                 eventTimestampMs: failedAtMs,
                 isSpeaking: isSpeakingRef.current,
+                synthesizerLifecycleMetadata,
               });
               debugError(`❌ TTS Error for "${word}":`, error);
             },
@@ -518,6 +548,7 @@ export const useAudio = (
               attempt: startedAttempt,
               eventTimestampMs: startedAtMs,
               isSpeaking: isSpeakingRef.current,
+              synthesizerLifecycleMetadata,
             });
           },
           // Experiment variant C only: hand the speech audio session to iOS.
@@ -540,7 +571,22 @@ export const useAudio = (
           voice: voice?.name || 'system default',
         });
 
-        Speech.speak(word, speechOptions);
+        if (
+          SPEECH_SYNTHESIZER_LIFECYCLE_MODE === 'experimental-retained' ||
+          SPEECH_SYNTHESIZER_LIFECYCLE_MODE ===
+            'experimental-reset-per-utterance'
+        ) {
+          speakWithSynthesizerLifecycleExperiment(
+            word,
+            speechOptions,
+            IOS_SYNTHESIZER_LIFECYCLE_EXPERIMENT_MODE,
+            (metadata) => {
+              synthesizerLifecycleMetadata = metadata;
+            }
+          );
+        } else {
+          Speech.speak(word, speechOptions);
+        }
         const submittedAtMs = Date.now();
         const submittedAttempt = speechPlaybackCoordinator.submitSpeech(
           requestId,

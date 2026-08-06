@@ -1,0 +1,192 @@
+diff --git a/node_modules/expo-speech/ios/SpeechGenerationLifecycle.swift b/node_modules/expo-speech/ios/SpeechGenerationLifecycle.swift
+new file mode 100644
+index 0000000..ba6280c
+--- /dev/null
++++ b/node_modules/expo-speech/ios/SpeechGenerationLifecycle.swift
+@@ -0,0 +1,186 @@
++import Foundation
++
++enum SpeechTerminalKind: String {
++  case done
++  case stopped
++}
++
++enum SpeechTerminalSource: String {
++  case delegateFinish
++  case delegateCancel
++  case explicitSuccessfulStop
++}
++
++enum SpeechLifecycleAnomaly: Equatable {
++  case duplicateTerminal(id: String)
++  case unknownTerminal(id: String)
++  case terminalAfterHistoryEviction(id: String)
++  case stopFailedWithOutstanding(count: Int)
++  case missingTerminalWhileSynthesizerIdle(count: Int)
++  case invariantMismatch
++}
++
++struct SpeechSubmissionDecision: Equatable {
++  let generation: Int
++  let shouldRotateSynthesizer: Bool
++  let trackedOutstandingUtterances: Int
++}
++
++enum SpeechTerminalDecision: Equatable {
++  case deliverTrusted(kind: SpeechTerminalKind, source: SpeechTerminalSource)
++  case deliverUnknownWithoutAccounting(kind: SpeechTerminalKind)
++  case suppressDuplicate
++  case suppressAfterHistoryEviction
++}
++
++private struct BoundedIdentifierHistory {
++  private let capacity: Int
++  private var orderedIds: [String] = []
++  private var ids: Set<String> = []
++
++  init(capacity: Int) {
++    self.capacity = capacity
++  }
++
++  func contains(_ id: String) -> Bool {
++    ids.contains(id)
++  }
++
++  mutating func remember(_ id: String) -> Bool {
++    guard ids.insert(id).inserted else {
++      return false
++    }
++
++    orderedIds.append(id)
++    guard orderedIds.count > capacity else {
++      return false
++    }
++
++    let evictedId = orderedIds.removeFirst()
++    ids.remove(evictedId)
++    return true
++  }
++}
++
++final class SpeechGenerationLifecycle {
++  private static let terminalHistoryCapacity = 64
++
++  private(set) var generation = 1
++  private var hasUsedGeneration = false
++  private var outstandingIds: [String] = []
++  private var outstandingIdSet: Set<String> = []
++  private var resolvedHistory = BoundedIdentifierHistory(
++    capacity: SpeechGenerationLifecycle.terminalHistoryCapacity
++  )
++  private var forwardedUnknownHistory = BoundedIdentifierHistory(
++    capacity: SpeechGenerationLifecycle.terminalHistoryCapacity
++  )
++  private var terminalClassificationSaturated = false
++
++  var trackedOutstandingUtterances: Int {
++    outstandingIds.count
++  }
++
++  var trackedOutstandingUtteranceIds: Set<String> {
++    outstandingIdSet
++  }
++
++  func registerSubmission(id: String) -> SpeechSubmissionDecision {
++    let shouldRotateSynthesizer = hasUsedGeneration && outstandingIds.isEmpty
++    if shouldRotateSynthesizer {
++      generation += 1
++    }
++    hasUsedGeneration = true
++
++    if outstandingIdSet.insert(id).inserted {
++      outstandingIds.append(id)
++    }
++
++    return SpeechSubmissionDecision(
++      generation: generation,
++      shouldRotateSynthesizer: shouldRotateSynthesizer,
++      trackedOutstandingUtterances: trackedOutstandingUtterances
++    )
++  }
++
++  func resolveDelegateTerminal(
++    id: String,
++    kind: SpeechTerminalKind,
++    source: SpeechTerminalSource
++  ) -> (SpeechTerminalDecision, SpeechLifecycleAnomaly?) {
++    if outstandingIdSet.remove(id) != nil {
++      guard let index = outstandingIds.firstIndex(of: id) else {
++        return (
++          .deliverTrusted(kind: kind, source: source),
++          .invariantMismatch
++        )
++      }
++
++      outstandingIds.remove(at: index)
++      rememberResolved(id)
++      return (.deliverTrusted(kind: kind, source: source), nil)
++    }
++
++    if resolvedHistory.contains(id) || forwardedUnknownHistory.contains(id) {
++      return (.suppressDuplicate, .duplicateTerminal(id: id))
++    }
++
++    if terminalClassificationSaturated {
++      return (
++        .suppressAfterHistoryEviction,
++        .terminalAfterHistoryEviction(id: id)
++      )
++    }
++
++    rememberForwardedUnknown(id)
++    return (
++      .deliverUnknownWithoutAccounting(kind: kind),
++      .unknownTerminal(id: id)
++    )
++  }
++
++  func resolveSuccessfulStop() -> [(id: String, decision: SpeechTerminalDecision)] {
++    let idsToResolve = outstandingIds
++    outstandingIds.removeAll(keepingCapacity: true)
++    outstandingIdSet.removeAll(keepingCapacity: true)
++
++    return idsToResolve.map { id in
++      rememberResolved(id)
++      return (
++        id: id,
++        decision: .deliverTrusted(
++          kind: .stopped,
++          source: .explicitSuccessfulStop
++        )
++      )
++    }
++  }
++
++  func noteFailedStop() -> SpeechLifecycleAnomaly? {
++    guard trackedOutstandingUtterances > 0 else {
++      return nil
++    }
++    return .stopFailedWithOutstanding(count: trackedOutstandingUtterances)
++  }
++
++  func observeSynthesizerIdle() -> SpeechLifecycleAnomaly? {
++    guard trackedOutstandingUtterances > 0 else {
++      return nil
++    }
++    return .missingTerminalWhileSynthesizerIdle(
++      count: trackedOutstandingUtterances
++    )
++  }
++
++  private func rememberResolved(_ id: String) {
++    if resolvedHistory.remember(id) {
++      terminalClassificationSaturated = true
++    }
++  }
++
++  private func rememberForwardedUnknown(_ id: String) {
++    if forwardedUnknownHistory.remember(id) {
++      terminalClassificationSaturated = true
++    }
++  }
++}

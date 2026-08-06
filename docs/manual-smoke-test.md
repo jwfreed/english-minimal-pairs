@@ -336,10 +336,11 @@ retain the warmup and remove the experiment selector.
 
 ## 18. TEMPORARY — iOS Synthesizer Lifecycle Causal Experiment
 
-> **Status:** Commit 1 is approved. The temporary probe is implemented on an
-> isolated branch; physical-device retained and reset arms are not yet
-> complete. This experiment is evidence only and must not be promoted directly
-> into production playback.
+> **Status:** Physical-device comparison completed on 2026-08-06. The retained
+> control reproduced the stutter and reset-per-utterance produced no reported
+> stutters. This supports synthesizer retention as a causal or necessary
+> trigger on this device/configuration. It is evidence only and must not be
+> promoted directly into production playback.
 
 ### Arms and boundary
 
@@ -394,14 +395,48 @@ trace before interpreting the experiment as safe.
 
 | Arm | Build / commit | Attempts | Clean | Stutter | Watchdogs | Late callbacks | Synthesizer evidence | Memory observations |
 |---|---|---:|---:|---:|---:|---:|---|---|
-| `retained` | Not run | 0 | 0 | 0 | — | — | Not run | Not run |
-| `reset-per-utterance` | Blocked until retained control is captured | 0 | 0 | 0 | — | — | Not run | Not run |
+| `retained` | 1.1.3 (57), `278aac392393b54a8131021ed0bba127ebc22551` | 34 completed | 14 labels* | 24 labels* | 0 | 0 | One identifier, creation count 1 throughout | Instruments could not attach; no playback-time crash or memory warning observed |
+| `reset-per-utterance` | 1.1.3 (57), `5d1a78711d136af85557f06f9fd995cb5815eccb` | 34 counted + 1 excluded calibration | 32 counted labels + 1 calibration* | 0 reported | 0 | 0 | 35 unique identifiers; creation counts 1–35 sequential | Instruments could not attach; no playback-time crash or memory warning observed |
+
+Both arms ran on iPhone 16 Pro (`iPhone17,1`), iOS 26.5.2 (`23F84`),
+speaker route at the operator-held volume, word `oath`, rate `0.85`, and voice
+`com.apple.eloquence.en-GB.Shelley`. The retained capture is
+`/tmp/tts-lifecycle-retained-278aac3.log`; the reset capture is
+`/tmp/tts-lifecycle-reset-5d1a787.log`.
+
+Both analyzer runs classified their captures `VALID` with runtime verdict
+`PROCEED`. Retained recorded 34 each of requested, accepted, submitted,
+started, and completed. Reset recorded 35 each including the excluded
+calibration. Neither arm recorded cancellation, native failure, duplicate
+rejection, watchdog recovery, or late callback. Submit-to-start latency was
+22–41 ms (30 ms mean) retained and 24–55 ms (30 ms mean) reset. The reset
+effect therefore did not coincide with a material onset delay.
+
+\* The operator annotations do not exactly match the diagnostic denominators.
+The retained response contains 38 acoustic labels (14 clean, 24 stutter) for
+34 logged completions. The reset response contains 32 clean labels for 34
+counted completions, plus one separately recorded clean calibration. The
+capture denominators and lifecycle metrics are trustworthy; exact per-attempt
+acoustic rates are not. The qualitative comparison remains strong because the
+retained arm contains many explicitly reported stutters while reset contains
+no reported stutter, but this mismatch lowers interpretation confidence.
+
+Quantitative memory evidence is unavailable: `xctrace` listed the connected
+phone as offline and produced no usable Allocations trace. A development-client
+TurboModule invalidation timeout also occurred while repeatedly replacing the
+JS bridge before the reset run. A fresh integrated `expo run:ios` launch loaded
+the reset arm, after which all 35 playbacks completed normally. The invalidation
+event is treated as development-tooling teardown evidence, not a playback
+callback result; it remains a risk to investigate if the probe is extended.
 
 Interpretation is causal and bounded: a stuttering retained arm with a clean
 reset arm under matched controls supports retained synthesizer lifetime as a
 causal or necessary trigger. It does not establish root cause, generalize to
 other devices/iOS versions, authorize production code, or select a permanent
-mitigation.
+mitigation. Confidence for this single-device causal comparison is moderate:
+native allocation, callback, timing, and ownership evidence are strong; audio
+annotation denominators, memory measurement, arm ordering, and device coverage
+remain limited.
 
 ### Removal
 

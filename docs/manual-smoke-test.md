@@ -334,6 +334,26 @@ retain the warmup and remove the experiment selector.
 
 ---
 
+## 18. TEMPORARY — iOS TTS Generation-Drain Mitigation Release Gate (pointer only)
+
+Generation rotation is currently disabled in every build
+(`soundwiseGenerationRotationEnabled = false`); nothing in this section
+applies to any release build today. This is a placeholder for a later
+device-validation task, not the device matrix itself — no matrix, acceptance
+thresholds, or run instructions are recorded here yet.
+
+Once rotation is a candidate for a release decision, a Release build using
+this mitigation must additionally pass, before production approval: normal
+callback behavior, UI behavior, route-change behavior, interruption-recovery
+behavior, and source-provenance verification
+(`npm run verify:expo-speech-patch`). See
+`docs/tts-expo-speech-native-contract.md` for the mechanism, its Debug/Release
+policy, and its removal criteria. Remove this section once that decision
+(enable, reject, remove, or defer — see the native contract doc) is made and
+recorded.
+
+---
+
 ## Failure Log
 
 Record any failures below. Do not ship if any item marked Critical is failing.

@@ -7,17 +7,19 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "postinstall": "patch-package",
+    "postinstall": "patch-package && node scripts/verify-expo-speech-patch.js --installed",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/run-tests.js",
     "validate:data": "node scripts/validate-data.js",
     "validate:audio": "node scripts/validate-audio-assets.js",
+    "verify:expo-speech-patch": "node scripts/verify-expo-speech-patch.js --installed",
+    "test:expo-speech-native": "node scripts/expoSpeechGenerationLifecycle.test.js && node scripts/expoSpeechNativeWiring.test.js",
     "audit:sparse-tiers": "node scripts/audit-sparse-tiers.js",
     "audit:pair-targets": "node scripts/audit-pair-expansion-targets.js",
     "audit:pronunciation": "node scripts/audit-pronunciation-risk.js",
     "analyze:tts-log": "node scripts/analyze-tts-validation-log.js",
-    "check": "npm run lint && npm run typecheck && npm run validate:data && npm run validate:audio && npm run test"
+    "check": "npm run lint && npm run typecheck && npm run validate:data && npm run validate:audio && npm run verify:expo-speech-patch && npm run test"
   },
   "dependencies": {
     "@expo-google-fonts/public-sans": "^0.4.2",

@@ -1,13 +1,41 @@
 #!/usr/bin/env node
-// Turns a raw device-validation capture into the Commit 1 validation metrics.
+// Turns a raw device-validation capture into the Commit 1 validation metrics,
+// and optionally into strict Task 4 native-lifecycle evidence and per-attempt
+// latency once expo-speech generation rotation is a candidate for comparison.
 //
 // Usage:
-//   npm run analyze:tts-log -- <captured-log-file>
+//   npm run analyze:tts-log -- [--require-native-lifecycle] [--json] <captured-log-file>
 //   npx expo start 2>&1 | tee /tmp/tts-validation.log   (capture first)
 //
+// --json report contract (schemaVersion 1), the stable shape consumed by
+// scripts/compare-tts-lifecycle-validation.js:
+//   {
+//     schemaVersion: 1,
+//     requireNativeLifecycle: boolean,        // whether --require-native-lifecycle was passed
+//     captureStatus: 'EMPTY_CAPTURE' | 'INVALID_CAPTURE' | 'VALID',
+//     validationPassed: boolean,
+//     runtimeVerdict: string | null,
+//     metrics: {                               // null unless captureStatus === 'VALID'
+//       attempts, completed, cancelled, failed, rejectedDuplicates,
+//       timeouts: { awaitingStart, awaitingTerminal, total },
+//       lateCallbacks: { afterTimeout, unknownRequest, total },
+//       requestIds: string[],
+//     } | null,
+//     latency: {                                // null unless captureStatus === 'VALID'
+//       attempts, n, missingStarts, minMs, medianMs, p95Ms, maxMs,
+//     } | null,
+//     parseSummary: { linesInspected, diagnosticRecordsFound, parsedRecords,
+//                      invalidRecords, firstInvalidLineNumber, errors, lifecycleFailures },
+//     nativeParseSummary: <same shape as parseSummary> | null,  // null unless requireNativeLifecycle
+//   }
+// A schemaVersion bump is required for any breaking change to this shape.
 const fs = require('fs');
 
+const JSON_REPORT_SCHEMA_VERSION = 1;
+
 const MARKER = '[tts-playback]';
+const NATIVE_MARKER = '[tts-synthesizer-lifecycle]';
+const NATIVE_CONTRACT = 'SOUNDWISE_EXPO_SPEECH_GENERATION_DRAIN_V1';
 const MAX_REPRESENTATIVE_ERRORS = 5;
 const JSON_OBJECT_PATTERN = /^\{\s*"/;
 const PHASES = new Set([
@@ -23,6 +51,19 @@ const PHASES = new Set([
   'ownership-timeout-awaiting-terminal',
   'late-callback-after-timeout',
   'late-callback-unknown-request',
+]);
+const NATIVE_PHASES = new Set([
+  'creation',
+  'submission',
+  'terminal',
+  'retirement',
+  'invariantFailure',
+]);
+const TERMINAL_KINDS = new Set(['done', 'stopped']);
+const TERMINAL_SOURCES = new Set([
+  'delegateFinish',
+  'delegateCancel',
+  'explicitSuccessfulStop',
 ]);
 const REQUEST_ID_PATTERN = /^tts-\d+-\d+$/;
 const NATIVE_CALLBACKS = new Set(['onDone', 'onStopped', 'onError']);
@@ -44,21 +85,21 @@ const RELEASED_ORDINARY_PHASES = new Set(['completed', 'cancelled', 'failed']);
 const LEGACY_FIELD_PATTERN =
   /^([A-Za-z][A-Za-z0-9]*)\s*:\s*(?:'([^']*)'|(-?\d+(?:\.\d+)?)|(true|false|null))$/;
 
-function scanDiagnosticRecords(logText) {
+function scanDiagnosticRecords(logText, marker = MARKER) {
   const lines = logText.length === 0 ? [] : logText.split(/\r?\n/);
   const records = [];
 
   for (let index = 0; index < lines.length; index += 1) {
-    const markerIndex = lines[index].indexOf(MARKER);
+    const markerIndex = lines[index].indexOf(marker);
     if (markerIndex === -1) continue;
 
     const lineNumber = index + 1;
-    const firstPayload = lines[index].slice(markerIndex + MARKER.length).trim();
+    const firstPayload = lines[index].slice(markerIndex + marker.length).trim();
     const payloadLines = [firstPayload];
     let incomplete = !firstPayload.endsWith('}');
 
     while (incomplete && index + 1 < lines.length) {
-      if (lines[index + 1].includes(MARKER)) break;
+      if (lines[index + 1].includes(marker)) break;
       index += 1;
       payloadLines.push(lines[index]);
       incomplete = !lines[index].trimEnd().endsWith('}');
@@ -167,7 +208,12 @@ function validateEventSchema(event, lineNumber) {
   if (['submitted-to-native-speech', 'started', 'completed', 'cancelled'].includes(event.phase)) {
     requireFiniteTimestamp(event, 'speechSubmittedAtMs');
   }
-  if (event.phase === 'started') requireFiniteTimestamp(event, 'playbackStartedAtMs');
+  if (event.phase === 'started') {
+    requireFiniteTimestamp(event, 'playbackStartedAtMs');
+    if (event.playbackStartedAtMs < event.speechSubmittedAtMs) {
+      throw new Error('playbackStartedAtMs must not precede speechSubmittedAtMs');
+    }
+  }
   if (event.phase === 'completed') requireFiniteTimestamp(event, 'playbackFinishedAtMs');
   if (event.phase === 'cancelled') requireFiniteTimestamp(event, 'cancellationAtMs');
   if (event.phase === 'failed') requireFiniteTimestamp(event, 'failureAtMs');
@@ -180,6 +226,70 @@ function validateEventSchema(event, lineNumber) {
     ) {
       throw new Error('rejected duplicate must identify a different active owner');
     }
+  }
+}
+
+function validateNativeEventSchema(event) {
+  if (!event || typeof event !== 'object' || Array.isArray(event)) {
+    throw new Error('native diagnostic payload must be an object');
+  }
+  if (event.contract !== NATIVE_CONTRACT) {
+    throw new Error(`native diagnostic contract must be ${NATIVE_CONTRACT}`);
+  }
+  if (!NATIVE_PHASES.has(event.phase)) {
+    throw new Error(`unknown native phase: ${String(event.phase)}`);
+  }
+  if (!Number.isInteger(event.generation) || event.generation < 0) {
+    throw new Error('native generation must be a non-negative integer');
+  }
+  if (
+    !Number.isInteger(event.trackedOutstandingUtterances) ||
+    event.trackedOutstandingUtterances < 0
+  ) {
+    throw new Error('trackedOutstandingUtterances must be a non-negative integer');
+  }
+  requireFiniteTimestamp(event, 'timestampMs');
+
+  const requiresUtteranceId = ['submission', 'terminal', 'retirement'].includes(event.phase);
+  if (requiresUtteranceId) {
+    if (typeof event.utteranceId !== 'string' || event.utteranceId.length === 0) {
+      throw new Error(`${event.phase} must contain a non-empty utteranceId`);
+    }
+  } else if (event.phase === 'creation') {
+    if (event.utteranceId !== null) {
+      throw new Error('creation must not carry an utteranceId');
+    }
+  } else if (event.utteranceId !== null && typeof event.utteranceId !== 'string') {
+    throw new Error('utteranceId must be a string or null');
+  }
+
+  const requiresTerminalFields = ['terminal', 'retirement'].includes(event.phase);
+  if (requiresTerminalFields) {
+    if (!TERMINAL_KINDS.has(event.terminalKind)) {
+      throw new Error(`${event.phase} must contain a valid terminalKind`);
+    }
+    if (!TERMINAL_SOURCES.has(event.terminalSource)) {
+      throw new Error(`${event.phase} must contain a valid terminalSource`);
+    }
+  } else if (['creation', 'submission'].includes(event.phase)) {
+    if (event.terminalKind !== null || event.terminalSource !== null) {
+      throw new Error(`${event.phase} must not carry terminal fields`);
+    }
+  } else {
+    if (event.terminalKind !== null && !TERMINAL_KINDS.has(event.terminalKind)) {
+      throw new Error('terminalKind must be a valid kind or null');
+    }
+    if (event.terminalSource !== null && !TERMINAL_SOURCES.has(event.terminalSource)) {
+      throw new Error('terminalSource must be a valid source or null');
+    }
+  }
+
+  if (event.phase === 'invariantFailure') {
+    if (typeof event.anomaly !== 'string' || event.anomaly.length === 0) {
+      throw new Error('invariantFailure must contain a non-empty anomaly');
+    }
+  } else if (event.anomaly !== null) {
+    throw new Error(`${event.phase} must not carry an anomaly`);
   }
 }
 
@@ -366,6 +476,76 @@ function validateLifecycle(records) {
   return failures;
 }
 
+// Validates the native [tts-synthesizer-lifecycle] stream as evidence, not as
+// a full port of SpeechGenerationLifecycle.swift's runtime accounting. Only
+// 'submission' and 'retirement' phases affect this accounting: 'terminal'
+// records are emitted for every delegate callback including suppressed
+// duplicates (see SpeechModule.swift's handleTerminal), so only 'retirement'
+// represents a trusted, publicly-delivered outcome.
+function validateNativeLifecycle(nativeEvents) {
+  const failures = [];
+  const fail = (lineNumber, message) => failures.push({ lineNumber, message });
+
+  const outstanding = new Set();
+  const retired = new Set();
+  const submissionLineNumberByUtteranceId = new Map();
+  let lastGeneration = null;
+
+  for (const { event, lineNumber } of nativeEvents) {
+    const { phase, generation, utteranceId } = event;
+
+    if (phase === 'invariantFailure') {
+      fail(lineNumber, `native invariant failure reported: ${event.anomaly}`);
+      continue;
+    }
+
+    if (phase === 'submission') {
+      if (lastGeneration !== null) {
+        if (generation > lastGeneration && outstanding.size > 0) {
+          fail(
+            lineNumber,
+            `generation rotated to ${generation} while ${outstanding.size} utterance(s) remained outstanding`
+          );
+        } else if (generation < lastGeneration) {
+          fail(lineNumber, `generation ${generation} regressed from ${lastGeneration}`);
+        }
+      }
+      if (
+        submissionLineNumberByUtteranceId.has(utteranceId) &&
+        !retired.has(utteranceId)
+      ) {
+        fail(lineNumber, `duplicate submission for outstanding utterance ${utteranceId}`);
+      }
+      submissionLineNumberByUtteranceId.set(utteranceId, lineNumber);
+      outstanding.add(utteranceId);
+      lastGeneration = generation;
+      continue;
+    }
+
+    if (phase === 'retirement') {
+      if (!submissionLineNumberByUtteranceId.has(utteranceId)) {
+        fail(lineNumber, `retirement for utterance ${utteranceId} with no prior submission`);
+        continue;
+      }
+      if (retired.has(utteranceId)) {
+        fail(lineNumber, `duplicate retirement for utterance ${utteranceId}`);
+        continue;
+      }
+      retired.add(utteranceId);
+      outstanding.delete(utteranceId);
+      continue;
+    }
+  }
+
+  for (const [utteranceId, lineNumber] of submissionLineNumberByUtteranceId) {
+    if (!retired.has(utteranceId)) {
+      fail(lineNumber, `utterance ${utteranceId} was submitted but never retired`);
+    }
+  }
+
+  return failures;
+}
+
 function buildMetrics(events) {
   const count = (phase) => events.filter((event) => event.phase === phase).length;
   const accepted = count('accepted');
@@ -394,8 +574,43 @@ function buildMetrics(events) {
   };
 }
 
-function analyzeValidationLog(logText) {
-  const { linesInspected, records } = scanDiagnosticRecords(logText);
+function nearestRankPercentile(sortedValues, percentile) {
+  const n = sortedValues.length;
+  const index = Math.ceil(percentile * n) - 1;
+  return sortedValues[Math.min(Math.max(index, 0), n - 1)];
+}
+
+function buildLatencyMetrics(events, attempts) {
+  const samples = events
+    .filter((event) => event.phase === 'started')
+    .map((event) => event.playbackStartedAtMs - event.speechSubmittedAtMs)
+    .sort((a, b) => a - b);
+
+  const n = samples.length;
+  const missingStarts = Math.max(attempts - n, 0);
+
+  if (n === 0) {
+    return { attempts, n, missingStarts, minMs: null, medianMs: null, p95Ms: null, maxMs: null };
+  }
+
+  const medianMs =
+    n % 2 === 1
+      ? samples[(n - 1) / 2]
+      : (samples[n / 2 - 1] + samples[n / 2]) / 2;
+
+  return {
+    attempts,
+    n,
+    missingStarts,
+    minMs: samples[0],
+    medianMs,
+    p95Ms: nearestRankPercentile(samples, 0.95),
+    maxMs: samples[n - 1],
+  };
+}
+
+function parseMarkedRecords(logText, marker, { validateSchema, lifecycleValidator }) {
+  const { linesInspected, records } = scanDiagnosticRecords(logText, marker);
   const parseSummary = {
     linesInspected,
     diagnosticRecordsFound: records.length,
@@ -412,7 +627,7 @@ function analyzeValidationLog(logText) {
     try {
       const event = parseDiagnosticRecord(record);
       try {
-        validateEventSchema(event, record.lineNumber);
+        validateSchema(event, record.lineNumber);
       } catch (error) {
         error.category = 'schema';
         throw error;
@@ -434,7 +649,7 @@ function analyzeValidationLog(logText) {
     }
   }
 
-  const lifecycleFailures = validateLifecycle(events);
+  const lifecycleFailures = lifecycleValidator(events);
   parseSummary.lifecycleFailures.push(...lifecycleFailures);
   for (const failure of lifecycleFailures) invalidLineNumbers.add(failure.lineNumber);
   parseSummary.invalidRecords = invalidLineNumbers.size;
@@ -444,21 +659,50 @@ function analyzeValidationLog(logText) {
     parseSummary.firstInvalidLineNumber = Math.min(...invalidLineNumbers);
   }
 
+  return { parseSummary, events, records };
+}
+
+function analyzeValidationLog(logText, { requireNativeLifecycle = false } = {}) {
+  const { parseSummary, events, records } = parseMarkedRecords(logText, MARKER, {
+    validateSchema: validateEventSchema,
+    lifecycleValidator: validateLifecycle,
+  });
+
+  let nativeParseSummary = null;
+  let nativeInvalid = false;
+  if (requireNativeLifecycle) {
+    const nativeResult = parseMarkedRecords(logText, NATIVE_MARKER, {
+      validateSchema: (event) => validateNativeEventSchema(event),
+      lifecycleValidator: validateNativeLifecycle,
+    });
+    nativeParseSummary = nativeResult.parseSummary;
+    nativeInvalid =
+      nativeResult.records.length === 0 || nativeResult.parseSummary.invalidRecords > 0;
+  }
+
   if (records.length === 0) {
     return {
+      schemaVersion: JSON_REPORT_SCHEMA_VERSION,
+      requireNativeLifecycle,
       captureStatus: 'EMPTY_CAPTURE',
       parseSummary,
+      nativeParseSummary,
       metrics: null,
+      latency: null,
       runtimeVerdict: null,
       validationPassed: false,
     };
   }
 
-  if (parseSummary.invalidRecords > 0) {
+  if (parseSummary.invalidRecords > 0 || nativeInvalid) {
     return {
+      schemaVersion: JSON_REPORT_SCHEMA_VERSION,
+      requireNativeLifecycle,
       captureStatus: 'INVALID_CAPTURE',
       parseSummary,
+      nativeParseSummary,
       metrics: null,
+      latency: null,
       runtimeVerdict: null,
       validationPassed: false,
     };
@@ -475,20 +719,29 @@ function analyzeValidationLog(logText) {
       message: 'marked diagnostics contain no accepted or submitted attempt denominator',
     });
     return {
+      schemaVersion: JSON_REPORT_SCHEMA_VERSION,
+      requireNativeLifecycle,
       captureStatus: 'INVALID_CAPTURE',
       parseSummary,
+      nativeParseSummary,
       metrics: null,
+      latency: null,
       runtimeVerdict: null,
       validationPassed: false,
     };
   }
 
   const runtimeVerdict = buildRuntimeVerdict(metrics);
+  const latency = buildLatencyMetrics(eventValues, metrics.attempts);
 
   return {
+    schemaVersion: JSON_REPORT_SCHEMA_VERSION,
+    requireNativeLifecycle,
     captureStatus: 'VALID',
     parseSummary,
+    nativeParseSummary,
     metrics,
+    latency,
     runtimeVerdict,
     validationPassed: runtimeVerdict.startsWith('PROCEED'),
   };
@@ -515,11 +768,12 @@ function formatValidationReport(report) {
     return formatEvidenceReport(report);
   }
 
-  const { metrics } = report;
+  const { metrics, latency } = report;
   const lines = [
     'TTS Commit 1 device validation',
     '='.repeat(60),
     ...formatEvidenceSummary(report.parseSummary, report.captureStatus),
+    ...formatNativeEvidenceSummary(report),
     '',
     `Total playback attempts        ${metrics.attempts}`,
     `  completed                    ${metrics.completed}`,
@@ -535,6 +789,13 @@ function formatValidationReport(report) {
     `Late callbacks                 ${metrics.lateCallbacks.total}`,
     `  after-timeout                ${metrics.lateCallbacks.afterTimeout}`,
     `  unknown-request              ${metrics.lateCallbacks.unknownRequest}`,
+    '',
+    `Latency samples (n / attempts) ${latency.n} / ${latency.attempts}`,
+    `  missing starts                ${latency.missingStarts}`,
+    `  min                           ${latency.minMs ?? 'n/a'}ms`,
+    `  median                        ${latency.medianMs ?? 'n/a'}ms`,
+    `  p95                           ${latency.p95Ms ?? 'n/a'}ms`,
+    `  max                           ${latency.maxMs ?? 'n/a'}ms`,
     '='.repeat(60),
     `Runtime verdict: ${report.runtimeVerdict}`,
   ];
@@ -552,11 +813,22 @@ function formatEvidenceSummary(parseSummary, captureStatus) {
   ];
 }
 
-function formatEvidenceReport({ captureStatus, parseSummary }) {
+function formatNativeEvidenceSummary(report) {
+  if (!report.requireNativeLifecycle) return [];
+  const summary = report.nativeParseSummary;
+  return [
+    `Native lifecycle required      yes`,
+    `Native records found           ${summary?.diagnosticRecordsFound ?? 0}`,
+    `Native invalid records         ${summary?.invalidRecords ?? 0}`,
+  ];
+}
+
+function formatEvidenceReport({ captureStatus, parseSummary, nativeParseSummary, requireNativeLifecycle }) {
   const lines = [
     'TTS Commit 1 device validation',
     '='.repeat(60),
     ...formatEvidenceSummary(parseSummary, captureStatus),
+    ...formatNativeEvidenceSummary({ requireNativeLifecycle, nativeParseSummary }),
   ];
 
   const diagnostics = [
@@ -564,6 +836,14 @@ function formatEvidenceReport({ captureStatus, parseSummary }) {
     ...parseSummary.lifecycleFailures.map((failure) => ({
       ...failure,
       category: 'lifecycle',
+    })),
+    ...(nativeParseSummary?.errors ?? []).map((error) => ({
+      ...error,
+      category: `native-${error.category}`,
+    })),
+    ...(nativeParseSummary?.lifecycleFailures ?? []).map((failure) => ({
+      ...failure,
+      category: 'native-lifecycle',
     })),
   ];
   const representativeDiagnostics = diagnostics.slice(0, MAX_REPRESENTATIVE_ERRORS);
@@ -574,9 +854,11 @@ function formatEvidenceReport({ captureStatus, parseSummary }) {
   const representedLineNumbers = new Set(
     representativeDiagnostics.map((diagnostic) => diagnostic.lineNumber)
   );
+  const totalInvalid =
+    parseSummary.invalidRecords + (nativeParseSummary?.invalidRecords ?? 0);
   const additionalDiagnostics = Math.max(
     diagnostics.length - representativeDiagnostics.length,
-    parseSummary.invalidRecords - representedLineNumbers.size,
+    totalInvalid - representedLineNumbers.size,
     0
   );
   if (additionalDiagnostics > 0) {
@@ -603,15 +885,49 @@ module.exports = {
   parseDiagnosticRecord,
   validateEventSchema,
   validateLifecycle,
+  validateNativeEventSchema,
+  validateNativeLifecycle,
+  JSON_REPORT_SCHEMA_VERSION,
 };
 
+function parseCliArgs(argv) {
+  const args = { requireNativeLifecycle: false, json: false, logPath: null };
+  for (const arg of argv) {
+    if (arg === '--require-native-lifecycle') {
+      args.requireNativeLifecycle = true;
+    } else if (arg === '--json') {
+      args.json = true;
+    } else if (arg.startsWith('--')) {
+      throw new Error(`Unknown argument: ${arg}`);
+    } else if (args.logPath === null) {
+      args.logPath = arg;
+    } else {
+      throw new Error(`Unexpected extra argument: ${arg}`);
+    }
+  }
+  return args;
+}
+
 if (require.main === module) {
-  const logPath = process.argv[2];
-  if (!logPath) {
-    console.error('Usage: node scripts/analyze-tts-validation-log.js <log-file>');
+  let args;
+  try {
+    args = parseCliArgs(process.argv.slice(2));
+  } catch (error) {
+    console.error(error.message);
+    console.error(
+      'Usage: node scripts/analyze-tts-validation-log.js [--require-native-lifecycle] [--json] <log-file>'
+    );
     process.exit(2);
   }
-  const report = analyzeValidationLog(fs.readFileSync(logPath, 'utf8'));
-  console.log(formatValidationReport(report));
+  if (!args.logPath) {
+    console.error(
+      'Usage: node scripts/analyze-tts-validation-log.js [--require-native-lifecycle] [--json] <log-file>'
+    );
+    process.exit(2);
+  }
+  const report = analyzeValidationLog(fs.readFileSync(args.logPath, 'utf8'), {
+    requireNativeLifecycle: args.requireNativeLifecycle,
+  });
+  console.log(args.json ? JSON.stringify(report, null, 2) : formatValidationReport(report));
   process.exit(exitCodeForReport(report));
 }

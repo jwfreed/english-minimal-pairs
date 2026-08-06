@@ -19,6 +19,7 @@
     "audit:pair-targets": "node scripts/audit-pair-expansion-targets.js",
     "audit:pronunciation": "node scripts/audit-pronunciation-risk.js",
     "analyze:tts-log": "node scripts/analyze-tts-validation-log.js",
+    "compare:tts-lifecycle": "node scripts/compare-tts-lifecycle-validation.js",
     "check": "npm run lint && npm run typecheck && npm run validate:data && npm run validate:audio && npm run verify:expo-speech-patch && npm run test"
   },
   "dependencies": {

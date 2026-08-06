@@ -23,13 +23,14 @@ function runTest(name, fn) {
   }
 }
 
-function runAnalyzerCli(capture) {
+function runAnalyzerCli(capture, flags = []) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'tts-validation-log-'));
   const capturePath = path.join(directory, 'capture.log');
   fs.writeFileSync(capturePath, capture);
   try {
     return spawnSync(process.execPath, [
       path.join(__dirname, 'analyze-tts-validation-log.js'),
+      ...flags,
       capturePath,
     ], { encoding: 'utf8' });
   } finally {
@@ -115,6 +116,42 @@ const TIMED_OUT_UTTERANCE = [
 ]
   .map(legacyRecord)
   .join('\n');
+
+const NATIVE_CONTRACT = 'SOUNDWISE_EXPO_SPEECH_GENERATION_DRAIN_V1';
+
+const nativeRecord = (event) =>
+  ` LOG  [tts-synthesizer-lifecycle] ${JSON.stringify(event)}`;
+
+const nativeEvent = (phase, overrides = {}) => ({
+  contract: NATIVE_CONTRACT,
+  phase,
+  generation: 0,
+  utteranceId: null,
+  terminalKind: null,
+  terminalSource: null,
+  trackedOutstandingUtterances: 0,
+  timestampMs: 1000,
+  anomaly: null,
+  ...overrides,
+});
+
+const nativeSubmission = (utteranceId, generation, overrides = {}) =>
+  nativeEvent('submission', { utteranceId, generation, ...overrides });
+
+const nativeTerminal = (utteranceId, generation, terminalKind, terminalSource, overrides = {}) =>
+  nativeEvent('terminal', { utteranceId, generation, terminalKind, terminalSource, ...overrides });
+
+const nativeRetirement = (utteranceId, generation, terminalKind, terminalSource, overrides = {}) =>
+  nativeEvent('retirement', { utteranceId, generation, terminalKind, terminalSource, ...overrides });
+
+const healthyNativeUtterance = (utteranceId = 'a', generation = 0) =>
+  [
+    nativeSubmission(utteranceId, generation),
+    nativeTerminal(utteranceId, generation, 'done', 'delegateFinish'),
+    nativeRetirement(utteranceId, generation, 'done', 'delegateFinish'),
+  ]
+    .map(nativeRecord)
+    .join('\n');
 
 runTest('withholds all metrics and runtime verdicts for invalid captures', () => {
   const report = analyzeValidationLog(
@@ -796,4 +833,236 @@ runTest('the formatted report includes every required validation metric', () => 
   ]) {
     assert.ok(text.includes(required), `report must include "${required}"`);
   }
+});
+
+// --- Task 4: strict native evidence and latency comparison -----------------
+
+runTest('the JSON report contract carries a schemaVersion the comparator can pin to', () => {
+  const report = analyzeValidationLog(healthyJsonRequest());
+  assert.strictEqual(report.schemaVersion, 1);
+  assert.strictEqual(report.requireNativeLifecycle, false);
+});
+
+runTest('the default mode remains fully backward-compatible with no flag', () => {
+  const capture = Array.from({ length: 30 }, (_, index) =>
+    healthyJsonRequest(`tts-${1000 + index}-${index + 1}`)
+  ).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.strictEqual(report.metrics.attempts, 30);
+  assert.strictEqual(report.nativeParseSummary, null);
+});
+
+runTest('strict mode requires a native lifecycle stream to be present at all', () => {
+  const report = analyzeValidationLog(healthyJsonRequest(), {
+    requireNativeLifecycle: true,
+  });
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.parseSummary.errors.concat(report.nativeParseSummary?.errors ?? []).length >= 0
+  );
+});
+
+runTest('strict mode accepts a healthy single-utterance native stream', () => {
+  const capture = `${healthyJsonRequest()}\n${healthyNativeUtterance('a', 0)}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.strictEqual(report.nativeParseSummary.invalidRecords, 0);
+});
+
+runTest('a malformed native record invalidates strict native evidence', () => {
+  const capture = `${healthyJsonRequest()}\n LOG [tts-synthesizer-lifecycle] {"phase":"submission",}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+});
+
+runTest(
+  'a mixed-stream corruption invalidates the whole capture under strict mode even though the JS stream alone is healthy',
+  () => {
+    const capture = `${healthyJsonRequest()}\n LOG [tts-synthesizer-lifecycle] {"phase":"submission",}`;
+    const strict = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+    assert.strictEqual(strict.captureStatus, 'INVALID_CAPTURE');
+
+    const lenient = analyzeValidationLog(capture);
+    assert.strictEqual(
+      lenient.captureStatus,
+      'VALID',
+      'default mode must ignore the native stream entirely, corrupt or not'
+    );
+  }
+);
+
+runTest('a native submission without a matching retirement invalidates strict evidence', () => {
+  const capture = `${healthyJsonRequest()}\n${nativeRecord(nativeSubmission('a', 0))}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.nativeParseSummary.lifecycleFailures.some((failure) =>
+      failure.message.includes('never retired')
+    )
+  );
+});
+
+runTest('a duplicate native retirement for the same utterance invalidates strict evidence', () => {
+  const capture = `${healthyJsonRequest()}\n${healthyNativeUtterance('a', 0)}\n${nativeRecord(
+    nativeRetirement('a', 0, 'done', 'delegateFinish')
+  )}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.nativeParseSummary.lifecycleFailures.some((failure) =>
+      failure.message.includes('duplicate retirement')
+    )
+  );
+});
+
+runTest('sequential submissions may rotate generation once the prior utterance retired', () => {
+  const capture = `${healthyJsonRequest()}\n${healthyNativeUtterance('a', 0)}\n${healthyNativeUtterance(
+    'b',
+    1
+  )}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'VALID');
+});
+
+runTest('a submission that rotates generation while an utterance is still outstanding invalidates strict evidence', () => {
+  const capture = `${healthyJsonRequest()}\n${[
+    nativeSubmission('a', 0),
+    nativeSubmission('b', 1),
+    nativeTerminal('a', 0, 'done', 'delegateFinish'),
+    nativeRetirement('a', 0, 'done', 'delegateFinish'),
+    nativeTerminal('b', 1, 'done', 'delegateFinish'),
+    nativeRetirement('b', 1, 'done', 'delegateFinish'),
+  ]
+    .map(nativeRecord)
+    .join('\n')}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+  assert.ok(
+    report.nativeParseSummary.lifecycleFailures.some((failure) =>
+      failure.message.includes('remained outstanding')
+    )
+  );
+});
+
+runTest('queued submissions must share one generation while an earlier utterance is outstanding', () => {
+  const capture = `${healthyJsonRequest()}\n${[
+    nativeSubmission('a', 0),
+    nativeSubmission('b', 0),
+    nativeTerminal('a', 0, 'done', 'delegateFinish'),
+    nativeRetirement('a', 0, 'done', 'delegateFinish'),
+    nativeTerminal('b', 0, 'done', 'delegateFinish'),
+    nativeRetirement('b', 0, 'done', 'delegateFinish'),
+  ]
+    .map(nativeRecord)
+    .join('\n')}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'VALID');
+});
+
+runTest('a successful explicit stop resolving one active and two queued utterances validates once each', () => {
+  const capture = `${healthyJsonRequest()}\n${[
+    nativeSubmission('a', 0),
+    nativeSubmission('b', 0),
+    nativeSubmission('c', 0),
+    nativeTerminal('a', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeRetirement('a', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeTerminal('b', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeRetirement('b', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeTerminal('c', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeRetirement('c', 0, 'stopped', 'explicitSuccessfulStop'),
+  ]
+    .map(nativeRecord)
+    .join('\n')}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'VALID');
+});
+
+runTest('a stop loop that leaves one queued utterance unretired invalidates strict evidence', () => {
+  const capture = `${healthyJsonRequest()}\n${[
+    nativeSubmission('a', 0),
+    nativeSubmission('b', 0),
+    nativeSubmission('c', 0),
+    nativeTerminal('a', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeRetirement('a', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeTerminal('b', 0, 'stopped', 'explicitSuccessfulStop'),
+    nativeRetirement('b', 0, 'stopped', 'explicitSuccessfulStop'),
+  ]
+    .map(nativeRecord)
+    .join('\n')}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+});
+
+runTest('a native invariant-failure diagnostic blocks proceed even with otherwise clean accounting', () => {
+  const capture = `${healthyJsonRequest()}\n${healthyNativeUtterance('a', 0)}\n${nativeRecord(
+    nativeEvent('invariantFailure', { anomaly: 'duplicateTerminal(id: "a")' })
+  )}`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+});
+
+runTest('unrelated console noise around native records remains ignored', () => {
+  const capture = `Metro ready\n${healthyJsonRequest()}\n${healthyNativeUtterance(
+    'a',
+    0
+  )}\nwarning: something unrelated`;
+  const report = analyzeValidationLog(capture, { requireNativeLifecycle: true });
+  assert.strictEqual(report.captureStatus, 'VALID');
+});
+
+runTest('latency is computed from existing JS timestamps and reported per attempt', () => {
+  const capture = Array.from({ length: 5 }, (_, index) =>
+    healthyJsonRequest(`tts-${1000 + index}-${index + 1}`)
+  ).join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.latency.attempts, 5);
+  assert.strictEqual(report.latency.n, 5);
+  assert.strictEqual(report.latency.missingStarts, 0);
+  assert.strictEqual(report.latency.minMs, 1);
+  assert.strictEqual(report.latency.medianMs, 1);
+  assert.strictEqual(report.latency.maxMs, 1);
+});
+
+runTest('a request that never starts is reported as a missing latency sample, not silently excluded', () => {
+  const cancelledBeforeStart = [
+    lifecycleEvent('requested', 'tts-3000-1'),
+    lifecycleEvent('accepted', 'tts-3000-1'),
+    lifecycleEvent('submitted-to-native-speech', 'tts-3000-1'),
+    lifecycleEvent('cancelled', 'tts-3000-1'),
+  ]
+    .map(jsonRecord)
+    .join('\n');
+  const report = analyzeValidationLog(`${healthyJsonRequest()}\n${cancelledBeforeStart}`);
+  assert.strictEqual(report.captureStatus, 'VALID');
+  assert.strictEqual(report.latency.attempts, 2);
+  assert.strictEqual(report.latency.n, 1);
+  assert.strictEqual(report.latency.missingStarts, 1);
+});
+
+runTest('a started event whose playback timestamp precedes submission invalidates the capture', () => {
+  const capture = [
+    lifecycleEvent('requested', 'tts-4000-1'),
+    lifecycleEvent('accepted', 'tts-4000-1'),
+    lifecycleEvent('submitted-to-native-speech', 'tts-4000-1'),
+    lifecycleEvent('started', 'tts-4000-1', { playbackStartedAtMs: 500 }),
+  ]
+    .map(jsonRecord)
+    .join('\n');
+  const report = analyzeValidationLog(capture);
+  assert.strictEqual(report.captureStatus, 'INVALID_CAPTURE');
+});
+
+runTest('--json emits a machine-readable report including schemaVersion', () => {
+  const cli = runAnalyzerCli(healthyJsonRequest(), ['--json']);
+  assert.strictEqual(cli.status, 1); // INCONCLUSIVE verdict with a single attempt
+  const parsed = JSON.parse(cli.stdout);
+  assert.strictEqual(parsed.schemaVersion, 1);
+  assert.strictEqual(parsed.captureStatus, 'VALID');
+});
+
+runTest('--require-native-lifecycle through the CLI enforces strict evidence end to end', () => {
+  const cli = runAnalyzerCli(healthyJsonRequest(), ['--require-native-lifecycle']);
+  assert.strictEqual(cli.status, 1);
+  assert.match(cli.stdout, /INVALID_CAPTURE/);
 });

@@ -76,36 +76,173 @@ enum SpeechGenerationLifecycleTests {
       precondition(afterDrain.shouldRotateSynthesizer == true)
     }
 
-    run("successful stop resolves outstanding IDs once in submission order") {
+    run("successful stop keeps one active and two queued IDs pending until delivery completes") {
       let state = SpeechGenerationLifecycle()
-      _ = state.registerSubmission(id: "first")
-      _ = state.registerSubmission(id: "second")
-      _ = state.registerSubmission(id: "third")
+      _ = state.registerSubmission(id: "active")
+      _ = state.registerSubmission(id: "queued-1")
+      _ = state.registerSubmission(id: "queued-2")
 
       let stopped = state.resolveSuccessfulStop()
-      precondition(stopped.map { $0.id } == ["first", "second", "third"])
+      precondition(stopped.map { $0.id } == ["active", "queued-1", "queued-2"])
       precondition(stopped.allSatisfy { item in
         item.decision == .deliverTrusted(
           kind: .stopped,
           source: .explicitSuccessfulStop
         )
       })
+      precondition(state.pendingExplicitCancellationResolutions == 3)
+      precondition(state.trackedOutstandingUtterances == 3)
+      precondition(state.trackedOutstandingUtteranceIds == [
+        "active", "queued-1", "queued-2",
+      ])
+
+      // A second begin cannot request duplicate bridge delivery while the
+      // first batch remains lifecycle-owned and pending.
+      precondition(state.resolveSuccessfulStop().isEmpty)
+      precondition(state.pendingExplicitCancellationResolutions == 3)
+      precondition(state.trackedOutstandingUtterances == 3)
+
+      precondition(state.completeSuccessfulStopDelivery(id: "active") == nil)
+      precondition(state.pendingExplicitCancellationResolutions == 2)
+      precondition(state.trackedOutstandingUtterances == 2)
+      precondition(state.trackedOutstandingUtteranceIds == ["queued-1", "queued-2"])
+      precondition(state.resolveSuccessfulStop().isEmpty)
+      precondition(state.pendingExplicitCancellationResolutions == 2)
+      precondition(state.trackedOutstandingUtterances == 2)
+
+      precondition(state.completeSuccessfulStopDelivery(id: "queued-1") == nil)
+      precondition(state.pendingExplicitCancellationResolutions == 1)
+      precondition(state.trackedOutstandingUtterances == 1)
+      precondition(state.trackedOutstandingUtteranceIds == ["queued-2"])
+
+      precondition(state.completeSuccessfulStopDelivery(id: "queued-2") == nil)
+      precondition(state.pendingExplicitCancellationResolutions == 0)
       precondition(state.trackedOutstandingUtterances == 0)
       precondition(state.trackedOutstandingUtteranceIds.isEmpty)
-      precondition(state.resolveSuccessfulStop().isEmpty)
-
-      for id in ["first", "second", "third"] {
-        let (decision, anomaly) = state.resolveDelegateTerminal(
-          id: id,
-          kind: .stopped,
-          source: .delegateCancel
-        )
-        precondition(decision == .suppressDuplicate)
-        precondition(anomaly == .duplicateTerminal(id: id))
-      }
     }
 
-    run("evicted resolved terminals remain fail-closed") {
+    run("submission cannot rotate while successful stop delivery is pending") {
+      let state = SpeechGenerationLifecycle()
+      _ = state.registerSubmission(id: "stopping")
+      precondition(state.resolveSuccessfulStop().map { $0.id } == ["stopping"])
+
+      let submittedWhilePending = state.registerSubmission(id: "submitted-later")
+      precondition(submittedWhilePending.generation == 1)
+      precondition(submittedWhilePending.shouldRotateSynthesizer == false)
+      precondition(state.pendingExplicitCancellationResolutions == 1)
+      precondition(state.trackedOutstandingUtterances == 2)
+
+      precondition(state.completeSuccessfulStopDelivery(id: "stopping") == nil)
+      precondition(state.pendingExplicitCancellationResolutions == 0)
+      precondition(state.trackedOutstandingUtteranceIds == ["submitted-later"])
+    }
+
+    run("delegate terminal for a pending stop ID fails closed without accounting") {
+      let state = SpeechGenerationLifecycle()
+      _ = state.registerSubmission(id: "pending-delegate")
+      precondition(
+        state.resolveSuccessfulStop().map { $0.id } == ["pending-delegate"]
+      )
+
+      let (decision, anomaly) = state.resolveDelegateTerminal(
+        id: "pending-delegate",
+        kind: .stopped,
+        source: .delegateCancel
+      )
+
+      precondition(decision == .suppressDuplicate)
+      precondition(anomaly == .invariantMismatch)
+      precondition(state.pendingExplicitCancellationResolutions == 1)
+      precondition(state.trackedOutstandingUtterances == 1)
+      precondition(state.trackedOutstandingUtteranceIds == ["pending-delegate"])
+      precondition(
+        state.completeSuccessfulStopDelivery(id: "pending-delegate") == nil
+      )
+    }
+
+    run("wrong and duplicate stop completions leave the pending batch sticky") {
+      let state = SpeechGenerationLifecycle()
+      _ = state.registerSubmission(id: "first")
+      _ = state.registerSubmission(id: "second")
+      precondition(
+        state.resolveSuccessfulStop().map { $0.id } == ["first", "second"]
+      )
+
+      precondition(
+        state.completeSuccessfulStopDelivery(id: "second") == .invariantMismatch
+      )
+      precondition(state.pendingExplicitCancellationResolutions == 2)
+      precondition(state.trackedOutstandingUtteranceIds == ["first", "second"])
+
+      let submittedAfterMismatch = state.registerSubmission(id: "after-mismatch")
+      precondition(submittedAfterMismatch.generation == 1)
+      precondition(submittedAfterMismatch.shouldRotateSynthesizer == false)
+      precondition(state.pendingExplicitCancellationResolutions == 2)
+      precondition(state.trackedOutstandingUtteranceIds == [
+        "first", "second", "after-mismatch",
+      ])
+
+      precondition(state.completeSuccessfulStopDelivery(id: "first") == nil)
+      precondition(state.pendingExplicitCancellationResolutions == 1)
+      precondition(state.trackedOutstandingUtteranceIds == ["second", "after-mismatch"])
+
+      precondition(
+        state.completeSuccessfulStopDelivery(id: "first") == .invariantMismatch
+      )
+      precondition(state.pendingExplicitCancellationResolutions == 1)
+      precondition(state.trackedOutstandingUtteranceIds == ["second", "after-mismatch"])
+
+      precondition(state.completeSuccessfulStopDelivery(id: "second") == nil)
+      precondition(state.pendingExplicitCancellationResolutions == 0)
+      precondition(state.trackedOutstandingUtteranceIds == ["after-mismatch"])
+    }
+
+    run("late cancel after successful stop completion is a duplicate without accounting change") {
+      let state = SpeechGenerationLifecycle()
+      _ = state.registerSubmission(id: "explicitly-stopped")
+
+      precondition(
+        state.resolveSuccessfulStop().map { $0.id } == ["explicitly-stopped"]
+      )
+      precondition(
+        state.completeSuccessfulStopDelivery(id: "explicitly-stopped") == nil
+      )
+      _ = state.registerSubmission(id: "still-tracked")
+
+      let countBeforeDuplicate = state.trackedOutstandingUtterances
+      let idsBeforeDuplicate = state.trackedOutstandingUtteranceIds
+      let (decision, anomaly) = state.resolveDelegateTerminal(
+        id: "explicitly-stopped",
+        kind: .stopped,
+        source: .delegateCancel
+      )
+
+      precondition(decision == .suppressDuplicate)
+      precondition(anomaly == .duplicateTerminal(id: "explicitly-stopped"))
+      precondition(state.trackedOutstandingUtterances == countBeforeDuplicate)
+      precondition(state.trackedOutstandingUtteranceIds == idsBeforeDuplicate)
+    }
+
+    run("natural cancel delivers one trusted stopped terminal and drains") {
+      let state = SpeechGenerationLifecycle()
+      _ = state.registerSubmission(id: "naturally-cancelled")
+
+      let (decision, anomaly) = state.resolveDelegateTerminal(
+        id: "naturally-cancelled",
+        kind: .stopped,
+        source: .delegateCancel
+      )
+
+      precondition(decision == .deliverTrusted(
+        kind: .stopped,
+        source: .delegateCancel
+      ))
+      precondition(anomaly == nil)
+      precondition(state.pendingExplicitCancellationResolutions == 0)
+      precondition(state.trackedOutstandingUtterances == 0)
+    }
+
+    run("late terminal after resolved-history eviction remains fail-closed") {
       let state = SpeechGenerationLifecycle()
 
       for index in 0..<65 {
@@ -150,6 +287,42 @@ enum SpeechGenerationLifecycleTests {
           id: "unknown-after-resolved-eviction"
         )
       )
+    }
+
+    run("known outstanding terminal still delivers after terminal history saturation") {
+      let state = SpeechGenerationLifecycle()
+      _ = state.registerSubmission(id: "known-outstanding")
+
+      for index in 0..<65 {
+        let id = "saturating-terminal-\(index)"
+        _ = state.registerSubmission(id: id)
+        let (decision, anomaly) = state.resolveDelegateTerminal(
+          id: id,
+          kind: .done,
+          source: .delegateFinish
+        )
+        precondition(decision == .deliverTrusted(
+          kind: .done,
+          source: .delegateFinish
+        ))
+        precondition(anomaly == nil)
+      }
+
+      precondition(state.trackedOutstandingUtterances == 1)
+      precondition(state.trackedOutstandingUtteranceIds == ["known-outstanding"])
+
+      let (decision, anomaly) = state.resolveDelegateTerminal(
+        id: "known-outstanding",
+        kind: .done,
+        source: .delegateFinish
+      )
+      precondition(decision == .deliverTrusted(
+        kind: .done,
+        source: .delegateFinish
+      ))
+      precondition(anomaly == nil)
+      precondition(state.trackedOutstandingUtterances == 0)
+      precondition(state.trackedOutstandingUtteranceIds.isEmpty)
     }
 
     run("evicted unknown terminals remain fail-closed") {

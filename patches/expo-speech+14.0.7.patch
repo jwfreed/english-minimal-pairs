@@ -1,9 +1,9 @@
 diff --git a/node_modules/expo-speech/ios/SpeechGenerationLifecycle.swift b/node_modules/expo-speech/ios/SpeechGenerationLifecycle.swift
 new file mode 100644
-index 0000000..ba6280c
+index 0000000..3d5571a
 --- /dev/null
 +++ b/node_modules/expo-speech/ios/SpeechGenerationLifecycle.swift
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,228 @@
 +import Foundation
 +
 +enum SpeechTerminalKind: String {
@@ -75,6 +75,7 @@ index 0000000..ba6280c
 +  private var hasUsedGeneration = false
 +  private var outstandingIds: [String] = []
 +  private var outstandingIdSet: Set<String> = []
++  private var pendingExplicitCancellationIds: [String] = []
 +  private var resolvedHistory = BoundedIdentifierHistory(
 +    capacity: SpeechGenerationLifecycle.terminalHistoryCapacity
 +  )
@@ -91,8 +92,16 @@ index 0000000..ba6280c
 +    outstandingIdSet
 +  }
 +
++  var pendingExplicitCancellationResolutions: Int {
++    pendingExplicitCancellationIds.count
++  }
++
 +  func registerSubmission(id: String) -> SpeechSubmissionDecision {
-+    let shouldRotateSynthesizer = hasUsedGeneration && outstandingIds.isEmpty
++    let shouldRotateSynthesizer =
++      pendingExplicitCancellationIds.isEmpty &&
++      hasUsedGeneration &&
++      outstandingIds.isEmpty &&
++      outstandingIdSet.isEmpty
 +    if shouldRotateSynthesizer {
 +      generation += 1
 +    }
@@ -114,15 +123,22 @@ index 0000000..ba6280c
 +    kind: SpeechTerminalKind,
 +    source: SpeechTerminalSource
 +  ) -> (SpeechTerminalDecision, SpeechLifecycleAnomaly?) {
-+    if outstandingIdSet.remove(id) != nil {
-+      guard let index = outstandingIds.firstIndex(of: id) else {
++    if pendingExplicitCancellationIds.contains(id) {
++      return (.suppressDuplicate, .invariantMismatch)
++    }
++
++    let outstandingIndex = outstandingIds.firstIndex(of: id)
++    let isInOutstandingSet = outstandingIdSet.contains(id)
++    if outstandingIndex != nil || isInOutstandingSet {
++      guard let outstandingIndex, isInOutstandingSet else {
 +        return (
-+          .deliverTrusted(kind: kind, source: source),
++          .suppressDuplicate,
 +          .invariantMismatch
 +        )
 +      }
 +
-+      outstandingIds.remove(at: index)
++      outstandingIds.remove(at: outstandingIndex)
++      outstandingIdSet.remove(id)
 +      rememberResolved(id)
 +      return (.deliverTrusted(kind: kind, source: source), nil)
 +    }
@@ -146,12 +162,13 @@ index 0000000..ba6280c
 +  }
 +
 +  func resolveSuccessfulStop() -> [(id: String, decision: SpeechTerminalDecision)] {
-+    let idsToResolve = outstandingIds
-+    outstandingIds.removeAll(keepingCapacity: true)
-+    outstandingIdSet.removeAll(keepingCapacity: true)
++    guard pendingExplicitCancellationIds.isEmpty else {
++      return []
++    }
 +
-+    return idsToResolve.map { id in
-+      rememberResolved(id)
++    pendingExplicitCancellationIds = outstandingIds
++
++    return pendingExplicitCancellationIds.map { id in
 +      return (
 +        id: id,
 +        decision: .deliverTrusted(
@@ -160,6 +177,31 @@ index 0000000..ba6280c
 +        )
 +      )
 +    }
++  }
++
++  func completeSuccessfulStopDelivery(id: String) -> SpeechLifecycleAnomaly? {
++    let outstandingIdsAreUnique = Set(outstandingIds).count == outstandingIds.count
++    let orderedAndSetOutstandingMatch = Set(outstandingIds) == outstandingIdSet
++    let pendingIdsRemainAnOrderedPrefix =
++      Array(outstandingIds.prefix(pendingExplicitCancellationIds.count))
++        == pendingExplicitCancellationIds
++
++    guard
++      pendingExplicitCancellationIds.first == id,
++      outstandingIds.first == id,
++      outstandingIdSet.contains(id),
++      outstandingIdsAreUnique,
++      orderedAndSetOutstandingMatch,
++      pendingIdsRemainAnOrderedPrefix
++    else {
++      return .invariantMismatch
++    }
++
++    pendingExplicitCancellationIds.removeFirst()
++    outstandingIds.removeFirst()
++    outstandingIdSet.remove(id)
++    rememberResolved(id)
++    return nil
 +  }
 +
 +  func noteFailedStop() -> SpeechLifecycleAnomaly? {
@@ -190,3 +232,361 @@ index 0000000..ba6280c
 +    }
 +  }
 +}
+diff --git a/node_modules/expo-speech/ios/SpeechModule.swift b/node_modules/expo-speech/ios/SpeechModule.swift
+index 485d5d3..554116c 100644
+--- a/node_modules/expo-speech/ios/SpeechModule.swift
++++ b/node_modules/expo-speech/ios/SpeechModule.swift
+@@ -1,4 +1,6 @@
+ import ExpoModulesCore
++import Dispatch
++import Foundation
+ 
+ let SPEAKING_STARTED = "Exponent.speakingStarted"
+ let SPEAKING_WILL_SAY_NEXT_STRING = "Exponent.speakingWillSayNextString"
+@@ -7,15 +9,27 @@ let SPEAKING_STOPPED = "Exponent.speakingStopped"
+ let SPEAKING_ERROR = "Exponent.speakingError"
+ 
+ public final class SpeechModule: Module, SpeechResultHadler {
+-  private var synthesizer = AVSpeechSynthesizer()
++  private var synthesizer: AVSpeechSynthesizer?
+   private var delegate: SpeechDelegate?
++  private let lifecycle = SpeechGenerationLifecycle()
++  private let lifecycleQueue = DispatchQueue(
++    label: "expo.modules.speech.soundwiseLifecycle",
++    qos: .userInitiated
++  )
++  private let soundwiseGenerationRotationEnabled = false
++  private let soundwiseGenerationDrainSentinel =
++    "SOUNDWISE_EXPO_SPEECH_GENERATION_DRAIN_V1"
++  private let diagnosticMarker = "[tts-synthesizer-lifecycle]"
++  private let maxInvariantFailureDiagnostics = 20
++  private var invariantFailureDiagnosticsEmitted = 0
+ 
+   public func definition() -> ModuleDefinition {
+     Name("ExpoSpeech")
+ 
+     OnCreate {
+-      delegate = SpeechDelegate(resultHandler: self)
+-      synthesizer.delegate = delegate
++      lifecycleQueue.sync {
++        _ = createSynthesizer()
++      }
+     }
+ 
+     Events([
+@@ -49,12 +63,23 @@ public final class SpeechModule: Module, SpeechResultHadler {
+         utterance.rate = Float(rate) * AVSpeechUtteranceDefaultSpeechRate
+       }
+ 
++      let submission = lifecycle.registerSubmission(id: utteranceId)
++      var synthesizer = currentSynthesizer()
++      if soundwiseGenerationRotationEnabled && submission.shouldRotateSynthesizer {
++        synthesizer = createSynthesizer()
++      }
++
+       if let useApplicationAudioSession = options.useApplicationAudioSession {
+         synthesizer.usesApplicationAudioSession = useApplicationAudioSession
+       }
+ 
+       synthesizer.speak(utterance)
++      emitLifecycleEvent(
++        phase: "submission",
++        utteranceId: utteranceId
++      )
+     }
++    .runOnQueue(lifecycleQueue)
+ 
+     AsyncFunction("getVoices") { () -> [VoiceInfo] in
+       let voices = AVSpeechSynthesisVoice.speechVoices()
+@@ -72,23 +97,108 @@ public final class SpeechModule: Module, SpeechResultHadler {
+     }
+ 
+     AsyncFunction("stop") {
+-      synthesizer.stopSpeaking(at: .immediate)
++      let synthesizer = currentSynthesizer()
++      let didStop = synthesizer.stopSpeaking(at: .immediate)
++      if didStop {
++        for resolution in lifecycle.resolveSuccessfulStop() {
++          sendStoppedEvent(id: resolution.id)
++          if let anomaly = lifecycle.completeSuccessfulStopDelivery(id: resolution.id) {
++            emitInvariantFailure(
++              anomaly,
++              utteranceId: resolution.id,
++              terminalKind: .stopped,
++              terminalSource: .explicitSuccessfulStop
++            )
++          } else {
++            emitLifecycleEvent(
++              phase: "retirement",
++              utteranceId: resolution.id,
++              terminalKind: .stopped,
++              terminalSource: .explicitSuccessfulStop
++            )
++          }
++        }
++      } else if let anomaly = lifecycle.noteFailedStop() {
++        emitInvariantFailure(anomaly)
++      }
+     }
++    .runOnQueue(lifecycleQueue)
+ 
+     AsyncFunction("pause") {
+-      synthesizer.pauseSpeaking(at: .immediate)
++      let synthesizer = currentSynthesizer()
++      _ = synthesizer.pauseSpeaking(at: .immediate)
+     }
++    .runOnQueue(lifecycleQueue)
+ 
+     AsyncFunction("resume") {
+-      synthesizer.continueSpeaking()
++      let synthesizer = currentSynthesizer()
++      _ = synthesizer.continueSpeaking()
+     }
++    .runOnQueue(lifecycleQueue)
+ 
+     AsyncFunction("isSpeaking") {
+-      return synthesizer.isSpeaking
++      let synthesizer = currentSynthesizer()
++      let isSpeaking = synthesizer.isSpeaking
++      if !isSpeaking, let anomaly = lifecycle.observeSynthesizerIdle() {
++        emitInvariantFailure(anomaly)
++      }
++      return isSpeaking
+     }
++    .runOnQueue(lifecycleQueue)
+   }
+ 
+   func didStart(utterance: AVSpeechUtterance) {
++    lifecycleQueue.async { [weak self] in
++      self?.handleDidStart(utterance: utterance)
++    }
++  }
++
++  func willSpeak(characterRange: NSRange, utterance: AVSpeechUtterance) {
++    lifecycleQueue.async { [weak self] in
++      self?.handleWillSpeak(characterRange: characterRange, utterance: utterance)
++    }
++  }
++
++  func didCancel(utterance: AVSpeechUtterance) {
++    lifecycleQueue.async { [weak self] in
++      self?.handleTerminal(
++        utterance: utterance,
++        kind: .stopped,
++        source: .delegateCancel
++      )
++    }
++  }
++
++  func didFinish(utterance: AVSpeechUtterance) {
++    lifecycleQueue.async { [weak self] in
++      self?.handleTerminal(
++        utterance: utterance,
++        kind: .done,
++        source: .delegateFinish
++      )
++    }
++  }
++
++  private func createSynthesizer() -> AVSpeechSynthesizer {
++    if delegate == nil {
++      delegate = SpeechDelegate(resultHandler: self)
++    }
++
++    let synthesizer = AVSpeechSynthesizer()
++    synthesizer.delegate = delegate
++    self.synthesizer = synthesizer
++    emitLifecycleEvent(phase: "creation")
++    return synthesizer
++  }
++
++  private func currentSynthesizer() -> AVSpeechSynthesizer {
++    if let synthesizer {
++      return synthesizer
++    }
++    return createSynthesizer()
++  }
++
++  private func handleDidStart(utterance: AVSpeechUtterance) {
+     guard let utterance = utterance as? ExpoSpeechUtterance else {
+       return
+     }
+@@ -97,7 +207,7 @@ public final class SpeechModule: Module, SpeechResultHadler {
+     ])
+   }
+ 
+-  func willSpeak(characterRange: NSRange, utterance: AVSpeechUtterance) {
++  private func handleWillSpeak(characterRange: NSRange, utterance: AVSpeechUtterance) {
+     guard let utterance = utterance as? ExpoSpeechUtterance else {
+       return
+     }
+@@ -108,22 +218,162 @@ public final class SpeechModule: Module, SpeechResultHadler {
+     ])
+   }
+ 
+-  func didCancel(utterance: AVSpeechUtterance) {
++  private func handleTerminal(
++    utterance: AVSpeechUtterance,
++    kind: SpeechTerminalKind,
++    source: SpeechTerminalSource
++  ) {
+     guard let utterance = utterance as? ExpoSpeechUtterance else {
+       return
+     }
++
++    let trackedOutstandingBeforeResolution = lifecycle.trackedOutstandingUtterances
++    let (decision, anomaly) = lifecycle.resolveDelegateTerminal(
++      id: utterance.id,
++      kind: kind,
++      source: source
++    )
++    emitLifecycleEvent(
++      phase: "terminal",
++      utteranceId: utterance.id,
++      terminalKind: kind,
++      terminalSource: source,
++      trackedOutstandingUtterances: trackedOutstandingBeforeResolution
++    )
++    if let anomaly {
++      emitInvariantFailure(
++        anomaly,
++        utteranceId: utterance.id,
++        terminalKind: kind,
++        terminalSource: source
++      )
++    }
++
++    switch decision {
++    case .deliverTrusted(let terminalKind, let terminalSource):
++      sendTerminalEvent(id: utterance.id, kind: terminalKind)
++      if anomaly == nil {
++        emitLifecycleEvent(
++          phase: "retirement",
++          utteranceId: utterance.id,
++          terminalKind: terminalKind,
++          terminalSource: terminalSource
++        )
++      }
++    case .deliverUnknownWithoutAccounting(let terminalKind):
++      sendTerminalEvent(id: utterance.id, kind: terminalKind)
++    case .suppressDuplicate, .suppressAfterHistoryEviction:
++      break
++    }
++  }
++
++  private func sendTerminalEvent(id: String, kind: SpeechTerminalKind) {
++    switch kind {
++    case .done:
++      sendEvent(SPEAKING_DONE, [
++        "id": id
++      ])
++    case .stopped:
++      sendEvent(SPEAKING_STOPPED, [
++        "id": id
++      ])
++    }
++  }
++
++  private func sendStoppedEvent(id: String) {
++    emitLifecycleEvent(
++      phase: "terminal",
++      utteranceId: id,
++      terminalKind: .stopped,
++      terminalSource: .explicitSuccessfulStop
++    )
+     sendEvent(SPEAKING_STOPPED, [
+-      "id": utterance.id
++      "id": id
+     ])
+   }
+ 
+-  func didFinish(utterance: AVSpeechUtterance) {
+-    guard let utterance = utterance as? ExpoSpeechUtterance else {
++  private func emitLifecycleEvent(
++    phase: String,
++    utteranceId: String? = nil,
++    terminalKind: SpeechTerminalKind? = nil,
++    terminalSource: SpeechTerminalSource? = nil,
++    trackedOutstandingUtterances: Int? = nil
++  ) {
++#if DEBUG || EXPO_CONFIGURATION_DEBUG
++    let payload = diagnosticPayload(
++      phase: phase,
++      utteranceId: utteranceId,
++      terminalKind: terminalKind,
++      terminalSource: terminalSource,
++      trackedOutstandingUtterances: trackedOutstandingUtterances
++        ?? lifecycle.trackedOutstandingUtterances
++    )
++    log.debug("\(diagnosticMarker) \(serializeDiagnostic(payload))")
++#endif
++  }
++
++  private func emitInvariantFailure(
++    _ anomaly: SpeechLifecycleAnomaly,
++    utteranceId: String? = nil,
++    terminalKind: SpeechTerminalKind? = nil,
++    terminalSource: SpeechTerminalSource? = nil
++  ) {
++    guard invariantFailureDiagnosticsEmitted < maxInvariantFailureDiagnostics else {
+       return
+     }
+-    sendEvent(SPEAKING_DONE, [
+-      "id": utterance.id
+-    ])
++    invariantFailureDiagnosticsEmitted += 1
++
++    let payload = diagnosticPayload(
++      phase: "invariantFailure",
++      utteranceId: utteranceId,
++      terminalKind: terminalKind,
++      terminalSource: terminalSource,
++      trackedOutstandingUtterances: lifecycle.trackedOutstandingUtterances,
++      anomaly: anomaly
++    )
++    log.error("\(diagnosticMarker) \(serializeDiagnostic(payload))")
++  }
++
++  private func diagnosticPayload(
++    phase: String,
++    utteranceId: String?,
++    terminalKind: SpeechTerminalKind?,
++    terminalSource: SpeechTerminalSource?,
++    trackedOutstandingUtterances: Int,
++    anomaly: SpeechLifecycleAnomaly? = nil
++  ) -> [String: Any] {
++    return [
++      "contract": soundwiseGenerationDrainSentinel,
++      "phase": phase,
++      "generation": lifecycle.generation,
++      "utteranceId": diagnosticValue(utteranceId),
++      "terminalKind": diagnosticValue(terminalKind?.rawValue),
++      "terminalSource": diagnosticValue(terminalSource?.rawValue),
++      "trackedOutstandingUtterances": trackedOutstandingUtterances,
++      "timestampMs": Int64(Date().timeIntervalSince1970 * 1000),
++      "anomaly": diagnosticValue(anomaly.map { String(describing: $0) })
++    ]
++  }
++
++  private func diagnosticValue(_ value: String?) -> Any {
++    if let value {
++      return value
++    }
++    return NSNull()
++  }
++
++  private func serializeDiagnostic(_ payload: [String: Any]) -> String {
++    guard
++      JSONSerialization.isValidJSONObject(payload),
++      let data = try? JSONSerialization.data(
++        withJSONObject: payload,
++        options: [.sortedKeys]
++      ),
++      let serialized = String(data: data, encoding: .utf8)
++    else {
++      return "{\"serialization\":\"failed\"}"
++    }
++    return serialized
+   }
+ }
+ 

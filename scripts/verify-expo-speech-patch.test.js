@@ -407,3 +407,108 @@ runTest(
     assert.deepStrictEqual(result.errors, []);
   }
 );
+
+// --- Task 6: macOS native CI workflow contract -----------------------------
+//
+// This is a deliberately minimal, line-scoped parser for this repository's
+// simple workflow style (single-line `run: <command>` steps, no `run: |`
+// blocks, no anchors/aliases) — not a general YAML parser. A real parser is
+// available only as a transitive dependency (via eslint), not a direct one,
+// and adding a direct dependency for one CI-contract test is out of scope.
+
+function parseWorkflowJobs(yamlText) {
+  const lines = yamlText.split(/\r?\n/);
+  const jobsIndex = lines.findIndex((line) => /^jobs:\s*$/.test(line));
+  if (jobsIndex === -1) return {};
+
+  const jobs = {};
+  let currentJobName = null;
+
+  for (let index = jobsIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    const jobHeaderMatch = line.match(/^ {2}([A-Za-z0-9_-]+):\s*$/);
+    if (jobHeaderMatch) {
+      currentJobName = jobHeaderMatch[1];
+      jobs[currentJobName] = { runsOn: null, timeoutMinutes: null, runCommands: [] };
+      continue;
+    }
+
+    if (currentJobName === null) continue;
+    if (/^\S/.test(line)) break; // dedented past `jobs:` entirely
+
+    const runsOnMatch = line.match(/^\s+runs-on:\s*(.+)$/);
+    if (runsOnMatch) {
+      jobs[currentJobName].runsOn = runsOnMatch[1].trim();
+      continue;
+    }
+    const timeoutMatch = line.match(/^\s+timeout-minutes:\s*(\d+)\s*$/);
+    if (timeoutMatch) {
+      jobs[currentJobName].timeoutMinutes = Number(timeoutMatch[1]);
+      continue;
+    }
+    const runMatch = line.match(/^\s+run:\s*(.+)$/);
+    if (runMatch) {
+      jobs[currentJobName].runCommands.push(runMatch[1].trim());
+    }
+  }
+
+  return jobs;
+}
+
+function loadWorkflowJobs() {
+  const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'test.yml');
+  return parseWorkflowJobs(fs.readFileSync(workflowPath, 'utf8'));
+}
+
+runTest('CI still runs the existing Ubuntu check job unmodified', () => {
+  const jobs = loadWorkflowJobs();
+  const ubuntuJob = Object.values(jobs).find((job) => job.runsOn === 'ubuntu-latest');
+  assert.ok(ubuntuJob, 'expected an ubuntu-latest job to remain in the workflow');
+  assert.ok(
+    ubuntuJob.runCommands.some((cmd) => cmd.includes('npm run check')),
+    'expected the ubuntu-latest job to still run npm run check'
+  );
+});
+
+runTest('CI adds a macOS job that runs npm ci, patch provenance, then native Swift tests, in that order', () => {
+  const jobs = loadWorkflowJobs();
+  const macJob = Object.values(jobs).find((job) => /^macos-/.test(job.runsOn || ''));
+  assert.ok(macJob, 'expected a macos-* job in the workflow');
+
+  const ciIndex = macJob.runCommands.findIndex((cmd) => cmd.includes('npm ci'));
+  const verifyIndex = macJob.runCommands.findIndex((cmd) =>
+    cmd.includes('npm run verify:expo-speech-patch')
+  );
+  const nativeIndex = macJob.runCommands.findIndex((cmd) =>
+    cmd.includes('npm run test:expo-speech-native')
+  );
+
+  assert.notStrictEqual(ciIndex, -1, 'expected the macOS job to run npm ci');
+  assert.notStrictEqual(verifyIndex, -1, 'expected the macOS job to verify patch provenance');
+  assert.notStrictEqual(nativeIndex, -1, 'expected the macOS job to run the native Swift tests');
+  assert.ok(ciIndex < verifyIndex, 'npm ci must run before patch provenance verification');
+  assert.ok(
+    verifyIndex < nativeIndex,
+    'patch provenance must be verified before compiling native Swift tests'
+  );
+});
+
+runTest('the macOS job declares a bounded timeout', () => {
+  const jobs = loadWorkflowJobs();
+  const macJob = Object.values(jobs).find((job) => /^macos-/.test(job.runsOn || ''));
+  assert.ok(macJob, 'expected a macos-* job in the workflow');
+  assert.ok(
+    Number.isInteger(macJob.timeoutMinutes) && macJob.timeoutMinutes > 0,
+    'expected the macOS job to declare a positive timeout-minutes'
+  );
+});
+
+runTest('the macOS job does not run the full lint/typecheck/full-suite check', () => {
+  const jobs = loadWorkflowJobs();
+  const macJob = Object.values(jobs).find((job) => /^macos-/.test(job.runsOn || ''));
+  assert.ok(macJob, 'expected a macos-* job in the workflow');
+  assert.ok(
+    macJob.runCommands.every((cmd) => !cmd.includes('npm run check')),
+    'the macOS job should only run the two commands that actually need Darwin, not the full check suite'
+  );
+});

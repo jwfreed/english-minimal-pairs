@@ -334,23 +334,210 @@ retain the warmup and remove the experiment selector.
 
 ---
 
-## 18. TEMPORARY — iOS TTS Generation-Drain Mitigation Release Gate (pointer only)
+## 18. TEMPORARY — iOS TTS Generation-Drain Mitigation Phase 1 Ship Gate
 
-Generation rotation is currently disabled in every build
-(`soundwiseGenerationRotationEnabled = false`); nothing in this section
-applies to any release build today. This is a placeholder for a later
-device-validation task, not the device matrix itself — no matrix, acceptance
-thresholds, or run instructions are recorded here yet.
+**Status: rotation is disabled in every build today**
+(`soundwiseGenerationRotationEnabled = false`) and stays disabled until every
+blocking criterion below passes on real device evidence. Nothing in this
+section authorizes a change to that constant by itself — only a completed run
+of the procedure below does. See `docs/tts-expo-speech-native-contract.md`
+for the mechanism, its Debug/Release policy, and its removal criteria (a
+larger, separate process from the rollback defined here).
 
-Once rotation is a candidate for a release decision, a Release build using
-this mitigation must additionally pass, before production approval: normal
-callback behavior, UI behavior, route-change behavior, interruption-recovery
-behavior, and source-provenance verification
-(`npm run verify:expo-speech-patch`). See
-`docs/tts-expo-speech-native-contract.md` for the mechanism, its Debug/Release
-policy, and its removal criteria. Remove this section once that decision
-(enable, reject, remove, or defer — see the native contract doc) is made and
-recorded.
+This section is written and committed **before** any physical-device attempt
+is run, specifically so the acceptance rules, the labeling procedure, and the
+blocking/advisory split cannot be adjusted after seeing results.
+
+**Who can execute this:** an agent cannot run this section. It requires a
+physical iPhone, an Apple Developer signing/deploy setup, and a human
+listening to and labeling audio. Tooling support (patch regeneration, patch
+provenance verification, strict log analysis, control-vs-candidate
+comparison) is already built and ready — see the Build-arm procedure and
+Analysis subsections — but the acoustic judgment and the physical execution
+are not delegable.
+
+### Build-arm procedure
+
+Two adjacent commits, identical except for one Swift boolean:
+
+1. Edit `node_modules/expo-speech/ios/SpeechModule.swift`, flip only
+   `soundwiseGenerationRotationEnabled`.
+2. Regenerate the patch: `npx patch-package expo-speech`.
+3. Recompute the source hash:
+   `shasum -a 256 node_modules/expo-speech/ios/SpeechModule.swift`, and
+   update the `sha256` field in `scripts/expoSpeechPatchManifest.json` to
+   match — the constant flip changes the file's hash, so this step is
+   mandatory, not optional. `npm run verify:expo-speech-patch` fails loudly
+   if it's skipped.
+4. `npm run verify:expo-speech-patch` — confirm it passes against the new
+   hash.
+5. `npm run check` — full local verification.
+6. `git diff --check`; confirm the diff against the prior validation commit
+   touches only `patches/expo-speech+14.0.7.patch` (regenerated) and
+   `scripts/expoSpeechPatchManifest.json` (the hash), and that
+   `src/domain/speechPlaybackCoordinator.ts`, `src/domain/audioPlayback.ts`,
+   and `src/hooks/useAudio.ts` are untouched.
+7. Commit as the "control" build identity (constant `false`) or the
+   "candidate" build identity (constant `true`), then produce a Debug
+   physical-device build from that exact commit.
+
+**Control arm:** constant `false` — this is the current committed state, so
+the control build identity is effectively already at step 7 pending an
+actual device build.
+**Candidate arm:** constant `true` — built only after the control arm's
+device matrix (below) has actually reproduced the original failure. Building
+the candidate arm before that would make the comparison meaningless (there
+would be no confirmed baseline to compare against).
+
+### Acoustic labeling procedure
+
+Defined now, before any attempt is run, so labeling cannot be biased by
+having already seen a result:
+
+1. **Label before reviewing logs.** For each attempt, the reviewer records
+   an acoustic label — `clean`, `stutter`, or `ambiguous` — immediately after
+   listening, before opening or reviewing that attempt's native lifecycle
+   diagnostics or the analyzer's output. The log evidence and the acoustic
+   evidence are two independent checks on the same mitigation; collapsing
+   them by letting one bias the other defeats the purpose of having both.
+2. **`ambiguous` is a real, retained label**, not a forced binary choice. An
+   ambiguous attempt is not discarded and is not silently folded into either
+   `clean` or `stutter` — it is logged as its own row and requires a second
+   listen (ideally by the same reviewer, noted as a second pass) before the
+   matrix is considered complete. If a second listen doesn't resolve it, it
+   stays `ambiguous` and is called out explicitly when the gate is applied.
+3. **Document reviewer and conditions** for every session: reviewer name,
+   date, device, iOS version, playback condition (device speaker vs.
+   headphones — specify which), and environment (quiet room vs. ambient
+   noise). Acoustic perception is condition-sensitive; a session run through
+   headphones in a quiet room is not directly comparable to one run on a
+   speaker with background noise, and mixing them without noting it would
+   quietly corrupt the comparison.
+4. **Known limitation, not solved here:** the reviewer knows which arm
+   (control or candidate) they are testing, since the two arms are built and
+   installed sequentially, not interleaved or randomized. This is expectation
+   bias risk that this procedure does not eliminate — only the log-blinding
+   in step 1 is enforced. Treat any single reviewer's result with that in
+   mind; a second, independent reviewer on at least the original-device
+   configuration would reduce this risk if resourcing allows, but is not a
+   blocking requirement below.
+
+### Device matrix
+
+Restated precisely because the source plan's phrasing ("60 attempts on the
+original device and at least 30 per arm on...") is ambiguous about whether
+the two additional configurations need both arms or only the candidate arm.
+**Both arms, on all three configurations**, is the reading used here — the
+gate requires a like-for-like comparison on every configuration tested, not
+just the original device, or "no new stutter on other configurations"
+(Blocking, below) would have nothing to compare against on those two configs:
+
+| Configuration | Control attempts | Candidate attempts |
+|---|---:|---:|
+| Original failing device/iOS (where the bug reproduces today) | 60 | 60 |
+| One different iPhone generation | ≥30 | ≥30 |
+| One different supported iOS major version | ≥30 | ≥30 |
+
+Scenario coverage, one acoustic label per completed request, applied across
+the attempt counts above: cold launch, normal, rapid replay,
+background/resume, identical word, multiple voices, explicit stop,
+pause/resume, interruption, route-change.
+
+### Analysis (tooling already built, ready to use)
+
+Per capture file, per arm, per configuration:
+
+```bash
+npm run analyze:tts-log -- --require-native-lifecycle --json <capture>.log > <capture>.json
+node scripts/compare-tts-lifecycle-validation.js <control>.json <candidate>.json
+```
+
+### Blocking acceptance criteria (all required; any failure stops the decision)
+
+- the control arm reproduces the original failure on the original device
+  often enough to make the comparison meaningful (procedural validity — if
+  the control arm doesn't show the bug, there is nothing to have fixed);
+- every capture, every arm, every configuration classifies `VALID`
+  (`analyze-tts-validation-log.js`'s `captureStatus`);
+- zero watchdogs, late callbacks, duplicate terminals, or callback failures,
+  every arm, every configuration;
+- zero confirmed candidate-arm stutters on the tested matrix (per the
+  labeling procedure above — a candidate attempt labeled `stutter` after the
+  second-listen step is a confirmed stutter and blocks the gate; an
+  attempt still `ambiguous` after a second listen does not by itself block
+  the gate, but must be recorded and called out explicitly in the Decision
+  record, not silently passed over);
+- median latency delta ≤ 15ms and p95 delta ≤ 30ms, per configuration
+  (`compare-tts-lifecycle-validation.js`'s thresholds);
+- zero user-visible regressions in stop/pause/resume/background/
+  interruption/route-change behavior, on any configuration;
+- no crash and no explicit iOS low-memory warning during the matrix.
+
+**Reading note on the comparator's "unexpected cancellations" check:** it is
+a proxy over total `cancelled` count (documented in
+`docs/tts-expo-speech-native-contract.md`), because the JS event schema
+doesn't distinguish a deliberate stop-initiated cancellation from an
+unexpected one. The matrix includes an explicit-stop and a pause/resume
+scenario by design — those will legitimately produce `cancelled` events. Read
+the comparator's automated verdict for those two scenarios by hand; do not
+treat an automated FAIL there as a blocking failure without checking whether
+it's explained entirely by the deliberate-stop scenarios.
+
+### Advisory observations (inform the decision; do not gate it)
+
+- **Acoustic improvement magnitude** — how much better (or not) the
+  candidate arm sounds relative to the control arm's confirmed failure rate,
+  beyond the binary "zero confirmed stutters" blocking bar.
+- **Memory observations** — informal resident-memory behavior noticed during
+  the Phase 1 matrix. A rigorous quantitative memory gate (Instruments
+  Allocations/Leaks across a 500-utterance soak, ≤10MB settled-memory delta)
+  is Task 8's job, not Task 7's; Phase 1 only records what was informally
+  observed. A genuine crash or an explicit system memory-warning event is
+  **not** advisory — see Blocking above.
+- **Cross-device confidence** — how consistent results were across the three
+  configurations; informs how much weight the decision below places on this
+  evidence, without being itself a pass/fail line.
+
+### Rollback vs. removal — not the same action
+
+**Rollback** (this section's concern): if a problem is found after the
+candidate arm is built — during Phase 1 testing, or hypothetically after a
+later production enable — the remedy is reverting
+`soundwiseGenerationRotationEnabled` back to `false`, or reverting the
+specific commit that flipped it. This is a one-line, single-commit action.
+Everything built in Tasks 1–6 (the generation/terminal accounting, the
+serialized native lifecycle queue, the patch-provenance verifier, the CI
+provenance job, the log analyzer and comparator) stays in place regardless —
+none of that is rotation-specific, and rolling back the flag does not touch
+any of it.
+
+**Removal** (a separate, larger process, not triggered by this section): the
+full Removal criteria in `docs/tts-expo-speech-native-contract.md` — deleting
+the patch entirely, which requires re-running this same device matrix in
+reverse, a clean install, and unpatched source-provenance verification. Do
+not conflate a rotation rollback with mitigation removal; they are different
+actions with different evidence requirements.
+
+### Decision record
+
+To be filled in once the gate above is evaluated against real evidence — one
+of exactly four values, per `docs/tts-expo-speech-native-contract.md`'s
+Debug/Release policy: **enable**, **reject**, **defer**, or **remove**. Not
+recorded yet; execution has not started.
+
+| Field | Value |
+|---|---|
+| Decision | _(not yet recorded)_ |
+| Decided by | |
+| Date | |
+| Evidence summary | |
+
+### Results log
+
+_(Empty — populated once physical-device attempts are run. One row per
+capture per configuration per arm, plus the acoustic labeling log and the
+comparator verdict per configuration, following the format established in
+section 17's Results log above.)_
 
 ---
 

@@ -443,6 +443,65 @@ the attempt counts above: cold launch, normal, rapid replay,
 background/resume, identical word, multiple voices, explicit stop,
 pause/resume, interruption, route-change.
 
+### Capture naming and provenance convention
+
+Defined before any build so captures from different sessions, arms, and
+configurations can never be silently confused with each other.
+
+**Raw capture files** (Metro/Xcode console output, containing the
+`[tts-playback]` and `[tts-synthesizer-lifecycle]` marked diagnostics):
+
+```
+/tmp/soundwise-tts-<arm>-<config-id>.log
+```
+
+- `<arm>` — `retained` or `mitigation`, matching the Build-arm procedure
+  above.
+- `<config-id>` — `device1` (the original failing device/iOS), `device2`
+  (the different iPhone generation), or `device3` (the different iOS major
+  version), matching the Device matrix table above. `device1` always means
+  the original failing configuration, regardless of which specific physical
+  unit is used as `device2`/`device3`.
+
+One file per arm per configuration, covering that entire cell's attempts (60
+or ≥30). Cold-launch scenarios necessarily interrupt a live console capture
+by relaunching the app; if a session produces multiple log segments,
+concatenate them in chronological capture order into the single named file
+before analysis (`cat segment1.log segment2.log > /tmp/soundwise-tts-<arm>-<config-id>.log`)
+rather than analyzing fragments separately.
+`scripts/analyze-tts-validation-log.js` validates marked lines in file order,
+so concatenation in true capture order is safe; concatenation out of order is
+not, since the JS lifecycle validator enforces per-request event ordering.
+
+**Analyzer JSON output**, one per raw capture:
+
+```bash
+npm run analyze:tts-log -- --require-native-lifecycle --json \
+  /tmp/soundwise-tts-<arm>-<config-id>.log > /tmp/soundwise-tts-<arm>-<config-id>.json
+```
+
+**Comparator output**, one per configuration, comparing the two arms with the
+same `<config-id>`:
+
+```bash
+node scripts/compare-tts-lifecycle-validation.js \
+  /tmp/soundwise-tts-retained-<config-id>.json \
+  /tmp/soundwise-tts-mitigation-<config-id>.json
+```
+
+**Provenance stays in the Results log, not the filename.** Filenames encode
+only arm and configuration — deliberately not device model, iOS version,
+commit SHA, reviewer, or date, which would make them unwieldy and still
+wouldn't be authoritative. That metadata belongs in the Results log row for
+that capture, following the same pattern as the "Verified TestFlight build
+log" table in section 17 above: build/commit verified via `eas build:list`
+or `git show`, never inferred from a filename or marketing version.
+
+**Captures are not committed.** Raw `.log` and `.json` files stay local
+(`/tmp` or wherever convenient) and are never added to git — only the
+Results log summary, the comparator's verdict per configuration, and the
+Decision record get committed to this document.
+
 ### Analysis (tooling already built, ready to use)
 
 Per capture file, per arm, per configuration:

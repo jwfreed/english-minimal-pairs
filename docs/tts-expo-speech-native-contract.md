@@ -11,10 +11,14 @@
   scoped to that exact version; any version bump invalidates it until
   re-verified — see [Removal criteria](#removal-criteria).
 - **Status: temporary mitigation, not permanent architecture.** Generation
-  rotation itself is currently disabled in every build
-  (`soundwiseGenerationRotationEnabled = false` in `SpeechModule.swift`).
-  This document describes a mechanism under evaluation, not a shipped
-  production behavior.
+  rotation is enabled as of 2026-08-08
+  (`soundwiseGenerationRotationEnabled = true` in `SpeechModule.swift`), by
+  explicit decision recorded in `docs/manual-smoke-test.md` section 18's
+  Decision record and Enablement exception. It was enabled without running
+  that section's Phase 1 physical-device matrix — see that document for the
+  evidence basis and unmeasured risk. The constant itself is unchanged in
+  form (still a deletable native-only compile-time flag, not yet made
+  unconditional) so rollback remains a one-line revert.
 - **Removal lifecycle ownership:** there is no separate designated owner.
   Whoever next touches this patch, the `expo-speech` dependency, or its
   verification tooling is responsible for checking whether the
@@ -88,27 +92,34 @@ Release: identical mitigation/accounting; ordinary lifecycle logs suppressed;
          at most 20 invariant-failure diagnostics per module runtime.
 Validation control: soundwiseGenerationRotationEnabled is a native-only
          compile-time constant, one value per commit — false is the retained
-         control build, true is the rotation-candidate build.
+         control build, true is the rotation-candidate build. Current value:
+         true, as of 2026-08-08, by the enable-by-exception decision below.
 ```
 
-**The Phase 1 outcome is not assumed in advance.** The validation constant's
-final disposition is one of:
+**The Phase 1 device matrix was not run before this decision.** The
+validation constant's disposition, normally one of four values decided after
+that matrix, was instead decided by exception:
 
-- **enable** — the constant is deleted and rotation becomes unconditional
-  (the plan's original "production final" path), if the device matrix and
-  acceptance gate pass cleanly;
+- **enable** _(current, by exception)_ — the constant is `true` in production.
+  Ordinarily this requires the constant to then be deleted so rotation
+  becomes unconditional (the plan's original "production final" path), which
+  requires the device matrix and acceptance gate to pass cleanly first. That
+  step has **not** happened — the constant remains present and settable back
+  to `false`, deliberately, so the decision stays a one-line rollback until
+  Phase 1 evidence exists to justify deleting it;
 - **reject** — the constant is deleted with rotation permanently disabled,
   and the patch is removed per [Removal criteria](#removal-criteria), if the
-  matrix shows no benefit or a regression;
+  matrix (were it run) shows no benefit or a regression;
 - **remove** — the patch is withdrawn regardless of device-matrix outcome, if
   measured cost (allocation churn, maintenance burden) outweighs the
   reliability benefit even where the mechanism itself works;
 - **defer** — the constant is retained at `false` and no production decision
   is made, if the evidence gathered is inconclusive and more is required.
+  (Superseded for now by the enable-by-exception decision above.)
 
-This document does not predetermine which of the four applies; that
-determination belongs to whatever device-validation gate consumes this
-mitigation's evidence.
+See `docs/manual-smoke-test.md` section 18's Decision record and Enablement
+exception for who made this call, on what evidence, and what remains
+unverified.
 
 ## Patch application lifecycle
 

@@ -233,7 +233,7 @@ index 0000000..3d5571a
 +  }
 +}
 diff --git a/node_modules/expo-speech/ios/SpeechModule.swift b/node_modules/expo-speech/ios/SpeechModule.swift
-index 485d5d3..554116c 100644
+index 485d5d3..9301dd5 100644
 --- a/node_modules/expo-speech/ios/SpeechModule.swift
 +++ b/node_modules/expo-speech/ios/SpeechModule.swift
 @@ -1,4 +1,6 @@
@@ -255,7 +255,7 @@ index 485d5d3..554116c 100644
 +    label: "expo.modules.speech.soundwiseLifecycle",
 +    qos: .userInitiated
 +  )
-+  private let soundwiseGenerationRotationEnabled = false
++  private let soundwiseGenerationRotationEnabled = true
 +  private let soundwiseGenerationDrainSentinel =
 +    "SOUNDWISE_EXPO_SPEECH_GENERATION_DRAIN_V1"
 +  private let diagnosticMarker = "[tts-synthesizer-lifecycle]"

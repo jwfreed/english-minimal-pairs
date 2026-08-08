@@ -305,7 +305,7 @@ runTest('native diagnostics carry the sentinel, required fields, and release-saf
   );
   assert.match(
     speechModuleSource,
-    /private let soundwiseGenerationRotationEnabled = false/
+    /private let soundwiseGenerationRotationEnabled = true/
   );
   assert.ok(speechModuleSource.includes('[tts-synthesizer-lifecycle]'));
   assert.match(speechModuleSource, /maxInvariantFailureDiagnostics = 20/);

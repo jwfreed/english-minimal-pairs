@@ -336,17 +336,23 @@ retain the warmup and remove the experiment selector.
 
 ## 18. TEMPORARY — iOS TTS Generation-Drain Mitigation Phase 1 Ship Gate
 
-**Status: rotation is disabled in every build today**
-(`soundwiseGenerationRotationEnabled = false`) and stays disabled until every
-blocking criterion below passes on real device evidence. Nothing in this
-section authorizes a change to that constant by itself — only a completed run
-of the procedure below does. See `docs/tts-expo-speech-native-contract.md`
-for the mechanism, its Debug/Release policy, and its removal criteria (a
-larger, separate process from the rollback defined here).
+**Status: rotation is enabled by explicit exception, not by satisfying this
+gate.** (`soundwiseGenerationRotationEnabled = true` as of 2026-08-08.) The
+blocking acceptance criteria below were written to gate this constant and
+were **not** evaluated — the 60-attempt physical-device matrix in Step 2 was
+not run, and no candidate-arm device evidence exists. See "Enablement
+exception" immediately below the Build-arm procedure for the actual decision
+basis, evidence used, and residual risk. See
+`docs/tts-expo-speech-native-contract.md` for the mechanism, its
+Debug/Release policy, and its removal criteria (a larger, separate process
+from the rollback defined here).
 
-This section is written and committed **before** any physical-device attempt
-is run, specifically so the acceptance rules, the labeling procedure, and the
-blocking/advisory split cannot be adjusted after seeing results.
+This section was originally written and committed **before** any
+physical-device attempt was run, specifically so the acceptance rules, the
+labeling procedure, and the blocking/advisory split could not be adjusted
+after seeing results. The rules below are preserved unmodified as the
+standard this exception deviates from — they were not weakened to fit the
+decision that was actually made.
 
 **Who can execute this:** an agent cannot run this section. It requires a
 physical iPhone, an Apple Developer signing/deploy setup, and a human
@@ -381,13 +387,52 @@ Two adjacent commits, identical except for one Swift boolean:
    "candidate" build identity (constant `true`), then produce a Debug
    physical-device build from that exact commit.
 
-**Control arm:** constant `false` — this is the current committed state, so
-the control build identity is effectively already at step 7 pending an
-actual device build.
-**Candidate arm:** constant `true` — built only after the control arm's
-device matrix (below) has actually reproduced the original failure. Building
-the candidate arm before that would make the comparison meaningless (there
-would be no confirmed baseline to compare against).
+**Control arm:** constant `false` — this was the committed state through
+2026-08-08.
+**Candidate arm:** constant `true` — normally built only after the control
+arm's device matrix (below) has actually reproduced the original failure.
+That sequencing was not followed for the current production state; see
+Enablement exception immediately below.
+
+### Enablement exception (2026-08-08) — Task 7 matrix not run
+
+Rotation was enabled in production (`soundwiseGenerationRotationEnabled =
+true`) by explicit user decision, without running Step 2's 60-attempt
+physical-device matrix or building/testing a candidate arm on any device.
+This is documented here, in the same section that defines the gate it
+bypasses, so the exception cannot be mistaken for the gate having been
+satisfied.
+
+- **Decision basis:** the existing controlled experiment on
+  `experiment/tts-lifecycle-commit2` (commit `1c81d90`, physical iPhone 16
+  Pro, iOS 26.5.2, voice `com.apple.eloquence.en-GB.Shelley`, 34 retained
+  attempts vs. 34 counted + 1 calibration reset attempts, analyzer-classified
+  `VALID`/`PROCEED`). That experiment's own findings doc states its
+  conclusion is causal-evidence only: it "does not establish root cause,
+  generalize to other devices/iOS versions, authorize production code, or
+  select a permanent mitigation," and rates confidence as "moderate" with
+  memory measurement, acoustic-label denominators, arm ordering, and device
+  coverage explicitly called out as limited.
+- **What was substituted for the gate:** nothing quantitative. No production
+  build (Debug or Release) with `soundwiseGenerationRotationEnabled = true`
+  has been installed on a physical device under this decision. The change
+  that shipped is the native constant flip plus its provenance bookkeeping
+  (regenerated patch, updated `sha256` in
+  `scripts/expoSpeechPatchManifest.json`) and the existing automated test
+  suite (`npm test`, `npm run verify:expo-speech-patch`), not new
+  device-level evidence.
+- **Not satisfied by this exception:** every item in "Blocking acceptance
+  criteria" below remains unevaluated — zero-confirmed-candidate-stutter
+  across 60 attempts, cross-device replication, the latency-delta thresholds,
+  and absence of user-visible regressions in stop/pause/resume/background/
+  interruption/route-change behavior are all unmeasured for the
+  candidate arm. Task 8's memory/soak gate (Instruments Allocations/Leaks
+  across a 500-utterance soak) has also not been run.
+- **Rollback trigger:** any report of TTS stutter, crash, memory warning, or
+  playback-control regression after this change ships — see Rollback vs.
+  removal below, which remains a one-line, single-commit action
+  (`soundwiseGenerationRotationEnabled` back to `false`, or reverting the
+  enabling commit).
 
 ### Acoustic labeling procedure
 
@@ -579,17 +624,15 @@ actions with different evidence requirements.
 
 ### Decision record
 
-To be filled in once the gate above is evaluated against real evidence — one
-of exactly four values, per `docs/tts-expo-speech-native-contract.md`'s
-Debug/Release policy: **enable**, **reject**, **defer**, or **remove**. Not
-recorded yet; execution has not started.
+One of exactly four values, per `docs/tts-expo-speech-native-contract.md`'s
+Debug/Release policy: **enable**, **reject**, **defer**, or **remove**.
 
 | Field | Value |
 |---|---|
-| Decision | _(not yet recorded)_ |
-| Decided by | |
-| Date | |
-| Evidence summary | |
+| Decision | **enable** — by exception, not by satisfying the gate above |
+| Decided by | Repository owner (Jonathan Freed), explicit chat instruction |
+| Date | 2026-08-08 |
+| Evidence summary | `experiment/tts-lifecycle-commit2` (commit `1c81d90`) single-device causal comparison, not the Step 2 60-attempt matrix defined above. See "Enablement exception" under Build-arm procedure for the full basis and what remains unmeasured. |
 
 ### Results log
 

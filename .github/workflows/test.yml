@@ -24,3 +24,39 @@ jobs:
 
       - name: Run Checks
         run: npm run check
+
+  # Runs the two checks that actually require Darwin: compiling and
+  # executing the native Swift lifecycle test suite (xcrun swiftc), and the
+  # patch-provenance verifier against the real installed package. Everything
+  # else (lint, typecheck, the rest of the test suite) stays on the cheaper
+  # ubuntu-latest job above; duplicating it here would cost macOS runner
+  # minutes for zero additional coverage.
+  #
+  # This job does NOT run an actual iOS/xcodebuild compile of the app. This
+  # is a managed Expo project with no ios/ directory checked in (see
+  # .gitignore), so CI cannot build it without a prebuild step this workflow
+  # doesn't perform. A local `xcodebuild ... | verify-expo-speech-patch.js
+  # --build-log` run proves only that one specific local build invocation
+  # actually compiled the patched source — it is a one-off manual check, not
+  # a substitute for the provenance checks this job runs on every push/PR.
+  native-provenance:
+    runs-on: macos-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Verify Expo Speech Patch Provenance
+        run: npm run verify:expo-speech-patch
+
+      - name: Run Expo Speech Native Swift Tests
+        run: npm run test:expo-speech-native

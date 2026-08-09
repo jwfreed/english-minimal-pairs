@@ -1,0 +1,8 @@
+{
+  "packageName": "expo-speech",
+  "version": "14.0.7",
+  "patchFile": "patches/expo-speech+14.0.7.patch",
+  "swiftSource": "node_modules/expo-speech/ios/SpeechModule.swift",
+  "sentinel": "SOUNDWISE_EXPO_SPEECH_GENERATION_DRAIN_V1",
+  "sha256": "a1db8440d69f33a8d0b6234a4330a0f350b6c520167d06a7c71b61c10a273dc3"
+}

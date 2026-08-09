@@ -334,6 +334,475 @@ retain the warmup and remove the experiment selector.
 
 ---
 
+## 18. TEMPORARY — iOS TTS Generation-Drain Mitigation Phase 1 Ship Gate
+
+**Status: rotation is enabled by explicit exception, not by satisfying this
+gate.** (`soundwiseGenerationRotationEnabled = true` as of 2026-08-08.) The
+blocking acceptance criteria below were written to gate this constant and
+were **not** evaluated — the 60-attempt physical-device matrix in Step 2 was
+not run, and no candidate-arm device evidence exists. See "Enablement
+exception" immediately below the Build-arm procedure for the actual decision
+basis, evidence used, and residual risk. See
+`docs/tts-expo-speech-native-contract.md` for the mechanism, its
+Debug/Release policy, and its removal criteria (a larger, separate process
+from the rollback defined here).
+
+This section was originally written and committed **before** any
+physical-device attempt was run, specifically so the acceptance rules, the
+labeling procedure, and the blocking/advisory split could not be adjusted
+after seeing results. The rules below are preserved unmodified as the
+standard this exception deviates from — they were not weakened to fit the
+decision that was actually made.
+
+**Who can execute this:** an agent cannot run this section. It requires a
+physical iPhone, an Apple Developer signing/deploy setup, and a human
+listening to and labeling audio. Tooling support (patch regeneration, patch
+provenance verification, strict log analysis, control-vs-candidate
+comparison) is already built and ready — see the Build-arm procedure and
+Analysis subsections — but the acoustic judgment and the physical execution
+are not delegable.
+
+### Build-arm procedure
+
+Two adjacent commits, differing in one Swift boolean — but note that flipping
+that boolean requires **four coordinated file updates**, not one. The constant
+is pinned by a source hash and asserted by a test, both of which fail the build
+if left stale:
+
+1. Edit `node_modules/expo-speech/ios/SpeechModule.swift`, flip only
+   `soundwiseGenerationRotationEnabled`.
+2. Regenerate the patch: `npx patch-package expo-speech`.
+3. Recompute the source hash:
+   `shasum -a 256 node_modules/expo-speech/ios/SpeechModule.swift`, and
+   update the `sha256` field in `scripts/expoSpeechPatchManifest.json` to
+   match — the constant flip changes the file's hash, so this step is
+   mandatory, not optional. `npm run verify:expo-speech-patch` fails loudly
+   if it's skipped.
+4. Update the wiring assertion in `scripts/expoSpeechNativeWiring.test.js`,
+   which matches `/private let soundwiseGenerationRotationEnabled = <value>/`
+   against the installed source and fails if it still expects the old value.
+   This is a documentation-of-record assertion about which arm is committed,
+   not test logic to be weakened — update the expected value, do not delete
+   or relax the assertion.
+5. `npm run verify:expo-speech-patch` — confirm it passes against the new
+   hash.
+6. `npm run check` — full local verification (this is what catches a missed
+   step 3 or 4).
+7. `git diff --check`; confirm the diff against the prior validation commit
+   touches only `patches/expo-speech+14.0.7.patch` (regenerated),
+   `scripts/expoSpeechPatchManifest.json` (the hash), and
+   `scripts/expoSpeechNativeWiring.test.js` (the asserted value), and that
+   `src/domain/speechPlaybackCoordinator.ts`, `src/domain/audioPlayback.ts`,
+   and `src/hooks/useAudio.ts` are untouched.
+8. Commit as the "control" build identity (constant `false`) or the
+   "candidate" build identity (constant `true`), then produce a Debug
+   physical-device build from that exact commit. Keep all four coordinated
+   files in that single commit, so the arm can later be reverted atomically.
+
+**Control arm:** constant `false` — this was the committed state through
+2026-08-08.
+**Candidate arm:** constant `true` — normally built only after the control
+arm's device matrix (below) has actually reproduced the original failure.
+That sequencing was not followed for the current production state; see
+Enablement exception immediately below.
+
+### Enablement exception (2026-08-08) — Task 7 matrix not run
+
+Rotation was enabled in production (`soundwiseGenerationRotationEnabled =
+true`) by explicit user decision, without running Step 2's 60-attempt
+physical-device matrix or building/testing a candidate arm on any device.
+This is documented here, in the same section that defines the gate it
+bypasses, so the exception cannot be mistaken for the gate having been
+satisfied.
+
+- **Decision basis:** the existing controlled experiment on
+  `experiment/tts-lifecycle-commit2` (commit `1c81d90`, physical iPhone 16
+  Pro, iOS 26.5.2, voice `com.apple.eloquence.en-GB.Shelley`, 34 retained
+  attempts vs. 34 counted + 1 calibration reset attempts, analyzer-classified
+  `VALID`/`PROCEED`). That experiment's own findings doc states its
+  conclusion is causal-evidence only: it "does not establish root cause,
+  generalize to other devices/iOS versions, authorize production code, or
+  select a permanent mitigation," and rates confidence as "moderate" with
+  memory measurement, acoustic-label denominators, arm ordering, and device
+  coverage explicitly called out as limited.
+- **What was substituted for the gate:** nothing quantitative. No production
+  build (Debug or Release) with `soundwiseGenerationRotationEnabled = true`
+  has been installed on a physical device under this decision. The change
+  that shipped is the native constant flip plus its provenance bookkeeping
+  (regenerated patch, updated `sha256` in
+  `scripts/expoSpeechPatchManifest.json`) and the existing automated test
+  suite (`npm test`, `npm run verify:expo-speech-patch`), not new
+  device-level evidence.
+- **Not satisfied by this exception:** every item in "Blocking acceptance
+  criteria" below remains unevaluated — zero-confirmed-candidate-stutter
+  across 60 attempts, cross-device replication, the latency-delta thresholds,
+  and absence of user-visible regressions in stop/pause/resume/background/
+  interruption/route-change behavior are all unmeasured for the
+  candidate arm. Task 8's memory/soak gate (Instruments Allocations/Leaks
+  across a 500-utterance soak) has also not been run.
+- **Rollback trigger:** any report of TTS stutter, crash, memory warning, or
+  playback-control regression after this change ships — see Rollback vs.
+  removal below. Rollback is a single-commit action, but **not** a one-line
+  edit: it reverts `881eac6`'s `patches/` and `scripts/` paths together, so
+  the constant, the patch, the manifest hash, and the wiring assertion move
+  as one. Hand-editing `soundwiseGenerationRotationEnabled` back to `false`
+  on its own leaves the tree failing `npm run check`.
+
+### Post-enablement smoke test (2026-08-09) — partial coverage, not the Phase 1 matrix
+
+An informal enabled-arm smoke test was run after the enable-by-exception
+decision above, on the same device used throughout this investigation
+(`Chiang Mai Express`, iPhone 16 Pro, iOS 26.5.2), commit `881eac6`, Debug
+build, `soundwiseGenerationRotationEnabled = true`. This is **not** the
+Step 2 60-attempt matrix and does not satisfy the Blocking acceptance
+criteria below — it is a smaller check that the enabled mitigation runs at
+all before further work continues.
+
+**Captured evidence:** 15 completed utterances across one session
+(`/tmp/soundwise-tts-enabled-smoke.log`, merged from Metro and native device
+console streams).
+
+> **Evidence-retention gap — recorded 2026-08-09.** The capture cited above no
+> longer exists. It was written to `/tmp`, was never committed to this
+> repository, and is not recoverable; no raw artifact backs this section. The
+> figures below therefore rest entirely on the prose summary written at the
+> time. They can no longer be re-checked with
+> `scripts/analyze-tts-validation-log.js`, cannot be fed to
+> `scripts/compare-tts-lifecycle-validation.js`, and cannot be re-derived by
+> any means short of re-running the session on a device. Read them as an
+> operator report, which is a weaker evidence class than the
+> analyzer-classified `VALID`/`PROCEED` capture cited for the Commit 2
+> experiment — they were not reconstructed after the fact, and must not be.
+> Any future capture cited in this document must be written to a retained
+> path and committed, or stored at a durable referenced location, before it
+> is relied on.
+
+- All 15 `[tts-playback]` sequences completed cleanly: `requested →
+  accepted → submitted-to-native-speech → started → completed`. Zero
+  `cancellationAtMs`, zero `timedOutAtMs`, zero `failureAtMs`.
+- All 15 `[tts-synthesizer-lifecycle]` sequences completed with `anomaly:
+  null`: `creation → submission → terminal(done/delegateFinish) →
+  retirement`.
+- **Rotation fired on every single request** — `generation` incremented
+  sequentially 1 through 15, one per utterance, with
+  `trackedOutstandingUtterances` draining to 0 each time.
+- Submission-to-terminal duration was tight and uniform across all 15
+  (920–1150ms), with no outliers suggesting an interrupted or paused
+  utterance.
+- Background/resume was exercised and clean: 3 `appEntersBackground` /
+  `appEntersForeground` event pairs, all completed round-trips.
+- Acoustic result reported by the operator: all 15 played back clean, no
+  reported stutter.
+
+**Structural finding — three of the five originally-scoped scenarios are
+unreachable in the current app, not merely untested:**
+
+- **Explicit stop**: `Speech.stop()` is never called anywhere in `src/` or
+  `app/` — not in the production practice screen, not in
+  `src/components/TTSDebugScreen.tsx`. There is no code path a user or
+  tester can trigger that invokes it.
+- **Pause/resume**: same — `Speech.pause()` and `Speech.resume()` are never
+  called anywhere in the codebase.
+- **True rapid/overlapping replay**: the practice screen's replay control is
+  rendered `disabled={playedIdx === null || feedback !== null || isSpeaking}`
+  (`app/(tabs)/index.tsx:200`), so it cannot be tapped again until the prior
+  utterance's `isSpeaking` flips false at full completion. The fastest
+  possible next request is bounded by human reaction time after re-enable,
+  not by any sub-second overlap — the smallest gaps actually observed in
+  this session were ~1.4–1.7s, not the near-immediate replay the original
+  regression and the Phase 1 protocol describe.
+
+This means the achievable coverage from this smoke test is **normal
+playback and background/resume only** — the other two scenarios in the
+original 5-scenario request (stop, pause/resume) and true rapid-replay
+timing cannot be exercised as user-facing paths in this app as currently
+built. **Unreachable is not the same status as passed.** These three
+conditions were not attempted and did not succeed; they are absent from
+this evidence entirely. Recording them as "achievable coverage: 2 of 5"
+means the validation *scope* shrank to what the app makes reachable, not
+that the app was tested against all five conditions and cleared three of
+them silently. It also means the production UI's own request serialization
+is, independently of the native rotation mitigation, already structurally
+preventing the overlapping-tap condition most associated with the original
+regression — a separate, favorable structural fact, but not a substitute
+for having actually run those scenarios.
+
+### What this evidence does and does not establish
+
+Two different claims are easy to conflate here and must be kept separate:
+
+1. **Mitigation stability on reachable app flows** — supported by this
+   smoke test. On the scenarios the shipped app can actually exercise
+   (normal playback, background/resume), the enabled build ran 15/15
+   utterances cleanly: no native anomalies, no watchdogs, no timeouts, no
+   cancellations, rotation firing on every request, uniform submission-to-
+   terminal timing. This is real, if narrow, evidence that enabling
+   rotation did not destabilize the flows this app can reach.
+2. **Evidence that the original retained-synthesizer failure is
+   eliminated** — **not supported by this smoke test.** The original
+   failure was characterized (in the Commit 2 experiment) under rapid
+   back-to-back replay on a retained synthesizer — exactly the condition
+   this app's UI structurally prevents from being tested at all here. A
+   clean 15/15 result on scenarios that don't reproduce the failure
+   condition is not evidence the failure condition is fixed; it's evidence
+   the reachable, non-failure-triggering flows still work after the change.
+   The failure this mitigation targets remains unreproduced and
+   unretested end-to-end in this session.
+
+Claim 1 is established. Claim 2 is not, and nothing in this section should
+be read as implying it. This does not establish that the mitigation fixes
+the underlying bug.
+
+### Acoustic labeling procedure
+
+Defined now, before any attempt is run, so labeling cannot be biased by
+having already seen a result:
+
+1. **Label before reviewing logs.** For each attempt, the reviewer records
+   an acoustic label — `clean`, `stutter`, or `ambiguous` — immediately after
+   listening, before opening or reviewing that attempt's native lifecycle
+   diagnostics or the analyzer's output. The log evidence and the acoustic
+   evidence are two independent checks on the same mitigation; collapsing
+   them by letting one bias the other defeats the purpose of having both.
+2. **`ambiguous` is a real, retained label**, not a forced binary choice. An
+   ambiguous attempt is not discarded and is not silently folded into either
+   `clean` or `stutter` — it is logged as its own row and requires a second
+   listen (ideally by the same reviewer, noted as a second pass) before the
+   matrix is considered complete. If a second listen doesn't resolve it, it
+   stays `ambiguous` and is called out explicitly when the gate is applied.
+3. **Document reviewer and conditions** for every session: reviewer name,
+   date, device, iOS version, playback condition (device speaker vs.
+   headphones — specify which), and environment (quiet room vs. ambient
+   noise). Acoustic perception is condition-sensitive; a session run through
+   headphones in a quiet room is not directly comparable to one run on a
+   speaker with background noise, and mixing them without noting it would
+   quietly corrupt the comparison.
+4. **Known limitation, not solved here:** the reviewer knows which arm
+   (control or candidate) they are testing, since the two arms are built and
+   installed sequentially, not interleaved or randomized. This is expectation
+   bias risk that this procedure does not eliminate — only the log-blinding
+   in step 1 is enforced. Treat any single reviewer's result with that in
+   mind; a second, independent reviewer on at least the original-device
+   configuration would reduce this risk if resourcing allows, but is not a
+   blocking requirement below.
+
+### Device matrix
+
+Restated precisely because the source plan's phrasing ("60 attempts on the
+original device and at least 30 per arm on...") is ambiguous about whether
+the two additional configurations need both arms or only the candidate arm.
+**Both arms, on all three configurations**, is the reading used here — the
+gate requires a like-for-like comparison on every configuration tested, not
+just the original device, or "no new stutter on other configurations"
+(Blocking, below) would have nothing to compare against on those two configs:
+
+| Configuration | Control attempts | Candidate attempts |
+|---|---:|---:|
+| Original failing device/iOS (where the bug reproduces today) | 60 | 60 |
+| One different iPhone generation | ≥30 | ≥30 |
+| One different supported iOS major version | ≥30 | ≥30 |
+
+Scenario coverage, one acoustic label per completed request, applied across
+the attempt counts above: cold launch, normal, rapid replay,
+background/resume, identical word, multiple voices, explicit stop,
+pause/resume, interruption, route-change.
+
+### Capture naming and provenance convention
+
+Defined before any build so captures from different sessions, arms, and
+configurations can never be silently confused with each other.
+
+**Raw capture files** (Metro/Xcode console output, containing the
+`[tts-playback]` and `[tts-synthesizer-lifecycle]` marked diagnostics):
+
+```
+/tmp/soundwise-tts-<arm>-<config-id>.log
+```
+
+- `<arm>` — `retained` or `mitigation`, matching the Build-arm procedure
+  above.
+- `<config-id>` — `device1` (the original failing device/iOS), `device2`
+  (the different iPhone generation), or `device3` (the different iOS major
+  version), matching the Device matrix table above. `device1` always means
+  the original failing configuration, regardless of which specific physical
+  unit is used as `device2`/`device3`.
+
+One file per arm per configuration, covering that entire cell's attempts (60
+or ≥30). Cold-launch scenarios necessarily interrupt a live console capture
+by relaunching the app; if a session produces multiple log segments,
+concatenate them in chronological capture order into the single named file
+before analysis (`cat segment1.log segment2.log > /tmp/soundwise-tts-<arm>-<config-id>.log`)
+rather than analyzing fragments separately.
+`scripts/analyze-tts-validation-log.js` validates marked lines in file order,
+so concatenation in true capture order is safe; concatenation out of order is
+not, since the JS lifecycle validator enforces per-request event ordering.
+
+**Analyzer JSON output**, one per raw capture:
+
+```bash
+npm run analyze:tts-log -- --require-native-lifecycle --json \
+  /tmp/soundwise-tts-<arm>-<config-id>.log > /tmp/soundwise-tts-<arm>-<config-id>.json
+```
+
+**Comparator output**, one per configuration, comparing the two arms with the
+same `<config-id>`:
+
+```bash
+node scripts/compare-tts-lifecycle-validation.js \
+  /tmp/soundwise-tts-retained-<config-id>.json \
+  /tmp/soundwise-tts-mitigation-<config-id>.json
+```
+
+**Provenance stays in the Results log, not the filename.** Filenames encode
+only arm and configuration — deliberately not device model, iOS version,
+commit SHA, reviewer, or date, which would make them unwieldy and still
+wouldn't be authoritative. That metadata belongs in the Results log row for
+that capture, following the same pattern as the "Verified TestFlight build
+log" table in section 17 above: build/commit verified via `eas build:list`
+or `git show`, never inferred from a filename or marketing version.
+
+**Captures are not committed.** Raw `.log` and `.json` files stay local
+(`/tmp` or wherever convenient) and are never added to git — only the
+Results log summary, the comparator's verdict per configuration, and the
+Decision record get committed to this document.
+
+### Analysis (tooling already built, ready to use)
+
+Per capture file, per arm, per configuration:
+
+```bash
+npm run analyze:tts-log -- --require-native-lifecycle --json <capture>.log > <capture>.json
+node scripts/compare-tts-lifecycle-validation.js <control>.json <candidate>.json
+```
+
+### Blocking acceptance criteria (all required; any failure stops the decision)
+
+- the control arm reproduces the original failure on the original device
+  often enough to make the comparison meaningful (procedural validity — if
+  the control arm doesn't show the bug, there is nothing to have fixed);
+- every capture, every arm, every configuration classifies `VALID`
+  (`analyze-tts-validation-log.js`'s `captureStatus`);
+- zero watchdogs, late callbacks, duplicate terminals, or callback failures,
+  every arm, every configuration;
+- zero confirmed candidate-arm stutters on the tested matrix (per the
+  labeling procedure above — a candidate attempt labeled `stutter` after the
+  second-listen step is a confirmed stutter and blocks the gate; an
+  attempt still `ambiguous` after a second listen does not by itself block
+  the gate, but must be recorded and called out explicitly in the Decision
+  record, not silently passed over);
+- median latency delta ≤ 15ms and p95 delta ≤ 30ms, per configuration
+  (`compare-tts-lifecycle-validation.js`'s thresholds);
+- zero user-visible regressions in stop/pause/resume/background/
+  interruption/route-change behavior, on any configuration;
+- no crash and no explicit iOS low-memory warning during the matrix.
+
+**Reading note on the comparator's "unexpected cancellations" check:** it is
+a proxy over total `cancelled` count (documented in
+`docs/tts-expo-speech-native-contract.md`), because the JS event schema
+doesn't distinguish a deliberate stop-initiated cancellation from an
+unexpected one. The matrix includes an explicit-stop and a pause/resume
+scenario by design — those will legitimately produce `cancelled` events. Read
+the comparator's automated verdict for those two scenarios by hand; do not
+treat an automated FAIL there as a blocking failure without checking whether
+it's explained entirely by the deliberate-stop scenarios.
+
+### Advisory observations (inform the decision; do not gate it)
+
+- **Acoustic improvement magnitude** — how much better (or not) the
+  candidate arm sounds relative to the control arm's confirmed failure rate,
+  beyond the binary "zero confirmed stutters" blocking bar.
+- **Memory observations** — informal resident-memory behavior noticed during
+  the Phase 1 matrix. A rigorous quantitative memory gate (Instruments
+  Allocations/Leaks across a 500-utterance soak, ≤10MB settled-memory delta)
+  is Task 8's job, not Task 7's; Phase 1 only records what was informally
+  observed. A genuine crash or an explicit system memory-warning event is
+  **not** advisory — see Blocking above.
+- **Cross-device confidence** — how consistent results were across the three
+  configurations; informs how much weight the decision below places on this
+  evidence, without being itself a pass/fail line.
+
+### Rollback vs. removal — not the same action
+
+**Rollback** (this section's concern): if a problem is found after the
+candidate arm is built — during Phase 1 testing, or hypothetically after a
+later production enable — the remedy is to restore
+`soundwiseGenerationRotationEnabled = false`.
+
+**Preferred procedure — revert `881eac6`'s mechanical files.** That commit
+contains the constant flip together with every artifact pinned to it. Revert
+those paths and the tree returns to a self-consistent `false` state in one
+commit:
+
+```sh
+git show 881eac6 -- patches/ scripts/ | git apply -R
+npm run check && npm run test:expo-speech-native   # both must pass
+git commit -am "revert: disable Expo Speech generation rotation"
+```
+
+**Do not use a bare `git revert 881eac6`** unless you intend to resolve
+conflicts: that commit also carries the enablement-exception *documentation*,
+which has been edited since and will not reverse-apply. (Verified
+2026-08-09: the `patches/` and `scripts/` hunks reverse-apply cleanly; the
+`docs/` hunks do not.) The exception is part of this project's decision
+history and should survive a rollback — if you do run the full revert,
+resolve by keeping the current documentation (`git checkout HEAD -- docs/`)
+and adding a new note recording the rollback, rather than erasing the record
+that the enablement happened.
+
+This is a single-commit action, but it is **not** a one-line edit.
+
+**Manual rollback, if a clean revert is unavailable, requires four
+coordinated updates** — the constant is hash-pinned and test-asserted, and
+changing it alone breaks `npm run check`:
+
+1. `soundwiseGenerationRotationEnabled` → `false` in
+   `node_modules/expo-speech/ios/SpeechModule.swift`;
+2. regenerate `patches/expo-speech+14.0.7.patch` (`npx patch-package
+   expo-speech`);
+3. update the `sha256` in `scripts/expoSpeechPatchManifest.json` — the flip
+   changes the source hash, so `npm run verify:expo-speech-patch` fails
+   until this matches;
+4. update the asserted value in `scripts/expoSpeechNativeWiring.test.js`,
+   which matches the constant's committed value against the installed
+   source. Update the expected value; do not delete or weaken the assertion.
+
+Verify with `npm run check` and `npm run test:expo-speech-native` before
+committing; both must pass. See the Build-arm procedure above for the same
+four-file sequence in the enabling direction.
+Everything built in Tasks 1–6 (the generation/terminal accounting, the
+serialized native lifecycle queue, the patch-provenance verifier, the CI
+provenance job, the log analyzer and comparator) stays in place regardless —
+none of that is rotation-specific, and rolling back the flag does not touch
+any of it.
+
+**Removal** (a separate, larger process, not triggered by this section): the
+full Removal criteria in `docs/tts-expo-speech-native-contract.md` — deleting
+the patch entirely, which requires re-running this same device matrix in
+reverse, a clean install, and unpatched source-provenance verification. Do
+not conflate a rotation rollback with mitigation removal; they are different
+actions with different evidence requirements.
+
+### Decision record
+
+One of exactly four values, per `docs/tts-expo-speech-native-contract.md`'s
+Debug/Release policy: **enable**, **reject**, **defer**, or **remove**.
+
+| Field | Value |
+|---|---|
+| Decision | **enable** — by exception, not by satisfying the gate above |
+| Decided by | Repository owner (Jonathan Freed), explicit chat instruction |
+| Date | 2026-08-08 |
+| Evidence summary | `experiment/tts-lifecycle-commit2` (commit `1c81d90`) single-device causal comparison, not the Step 2 60-attempt matrix defined above. See "Enablement exception" under Build-arm procedure for the full basis and what remains unmeasured. |
+
+### Results log
+
+_(Empty — populated once physical-device attempts are run. One row per
+capture per configuration per arm, plus the acoustic labeling log and the
+comparator verdict per configuration, following the format established in
+section 17's Results log above.)_
+
+---
+
 ## Failure Log
 
 Record any failures below. Do not ship if any item marked Critical is failing.

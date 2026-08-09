@@ -121,3 +121,24 @@ Repeat the five rows for background/resume and for each tested voice.
   across both affected and control words, investigate audio-session activation.
 - Do not change rate, add delays, or exclude voices without one of these evidence
   patterns.
+
+## Generation-drain hypothesis (follow-on work)
+
+A separate, later hypothesis under evaluation: a retained `AVSpeechSynthesizer`
+instance may accumulate stutter risk across many sequential utterances,
+independent of the phoneme-artifact hypothesis above. This is a candidate
+explanation supported by one matched physical-device experiment, not a
+confirmed root cause, and the two hypotheses are not mutually exclusive.
+
+A native mitigation (idle-to-active synthesizer generation rotation, patched
+into `expo-speech`) exists and has been **enabled** since 2026-08-08, by
+explicit exception rather than by satisfying its own Phase 1 physical-device
+ship gate — see `docs/tts-expo-speech-native-contract.md` for the mechanism,
+its Debug/Release policy, and its removal criteria, and
+`docs/manual-smoke-test.md` section 18 for the enablement exception, the
+evidence it was based on, and what it leaves unmeasured. Enabling it is not a
+claim that either hypothesis is confirmed or that the original acoustic
+failure is fixed. It does not change anything described above:
+the coordinator-level fix and the physical-device acoustic matrix in this
+document remain the reference evidence for the phoneme-artifact hypothesis,
+independent of whatever the generation-drain evaluation concludes.

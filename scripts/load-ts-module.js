@@ -59,6 +59,14 @@ function loadTsModule(
   const script = new vm.Script(output, { filename: resolvedEntry });
   const context = vm.createContext({
     console,
+    // Standard host globals a React Native module may legitimately reference.
+    // Without these the sandbox is less faithful than the runtime it stands in
+    // for, and modules fail on `setTimeout is not defined` rather than on
+    // anything the test is actually asserting.
+    setTimeout,
+    clearTimeout,
+    setInterval,
+    clearInterval,
     __DEV__: false,
     ...contextGlobals,
     require: localRequire,

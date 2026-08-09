@@ -4,7 +4,11 @@ const { loadTsModule } = require('./load-ts-module');
 
 const {
   IOS_TTS_UNAVAILABLE_MESSAGE,
+  MAX_COMPLETION_BUDGET_MS,
+  MIN_COMPLETION_BUDGET_MS,
+  START_BUDGET_MS,
   buildSpeechOptions,
+  deriveSpeechTimeoutBudgets,
   getPlaybackWord,
   requireIosVoicesForPlayback,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'audioPlayback.ts'));
@@ -125,6 +129,80 @@ runTest('buildSpeechOptions preserves a selected non-US English voice\'s own loc
 
   assert.strictEqual(options.language, 'en-AU');
   assert.strictEqual(options.voice, 'voice-au');
+});
+
+// -----------------------------------------------------------------------------
+// Timeout budget derivation. These budgets are speech semantics — utterance
+// length and rate — and therefore live here rather than in the playback
+// coordinator, which stays speech-agnostic and receives them as plain numbers.
+// -----------------------------------------------------------------------------
+
+runTest('deriveSpeechTimeoutBudgets returns a constant start budget independent of the utterance', () => {
+  const short = deriveSpeechTimeoutBudgets({ word: 'oath', rate: 0.85 });
+  const long = deriveSpeechTimeoutBudgets({ word: 'extraordinarily', rate: 0.5 });
+
+  assert.strictEqual(short.startBudgetMs, START_BUDGET_MS);
+  assert.strictEqual(long.startBudgetMs, START_BUDGET_MS);
+});
+
+runTest('deriveSpeechTimeoutBudgets raises the documented "oath" example to the completion floor', () => {
+  // 4 chars * 140ms / 0.85 = 659ms; * 3 slack = 1976ms; below the 3000ms floor.
+  const budgets = deriveSpeechTimeoutBudgets({ word: 'oath', rate: 0.85 });
+
+  assert.strictEqual(budgets.completionBudgetMs, MIN_COMPLETION_BUDGET_MS);
+});
+
+runTest('deriveSpeechTimeoutBudgets scales the completion budget with word length', () => {
+  const shortWord = deriveSpeechTimeoutBudgets({ word: 'oath', rate: 1 });
+  const longWord = deriveSpeechTimeoutBudgets({ word: 'unconscionable', rate: 1 });
+
+  assert.ok(
+    longWord.completionBudgetMs > shortWord.completionBudgetMs,
+    `expected a longer word to earn a larger budget, got ${longWord.completionBudgetMs} vs ${shortWord.completionBudgetMs}`
+  );
+});
+
+runTest('deriveSpeechTimeoutBudgets scales the completion budget inversely with rate', () => {
+  const fast = deriveSpeechTimeoutBudgets({ word: 'unconscionable', rate: 1.5 });
+  const slow = deriveSpeechTimeoutBudgets({ word: 'unconscionable', rate: 0.5 });
+
+  assert.ok(
+    slow.completionBudgetMs > fast.completionBudgetMs,
+    `expected a slower rate to earn a larger budget, got ${slow.completionBudgetMs} vs ${fast.completionBudgetMs}`
+  );
+});
+
+runTest('deriveSpeechTimeoutBudgets clamps the completion budget to the documented ceiling', () => {
+  const budgets = deriveSpeechTimeoutBudgets({
+    word: 'a'.repeat(500),
+    rate: 0.1,
+  });
+
+  assert.strictEqual(budgets.completionBudgetMs, MAX_COMPLETION_BUDGET_MS);
+});
+
+runTest('deriveSpeechTimeoutBudgets never emits a non-finite budget for a degenerate rate', () => {
+  // A zero or corrupt rate must not become an Infinity/NaN timer delay, which
+  // would silently disarm the watchdog and restore the permanent-lock bug.
+  for (const rate of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    const budgets = deriveSpeechTimeoutBudgets({ word: 'oath', rate });
+
+    assert.ok(
+      Number.isFinite(budgets.completionBudgetMs),
+      `rate ${rate} produced a non-finite completion budget`
+    );
+    assert.ok(
+      budgets.completionBudgetMs >= MIN_COMPLETION_BUDGET_MS &&
+        budgets.completionBudgetMs <= MAX_COMPLETION_BUDGET_MS,
+      `rate ${rate} produced an out-of-range completion budget: ${budgets.completionBudgetMs}`
+    );
+  }
+});
+
+runTest('deriveSpeechTimeoutBudgets handles an empty word without dropping below the floor', () => {
+  const budgets = deriveSpeechTimeoutBudgets({ word: '', rate: 1 });
+
+  assert.strictEqual(budgets.completionBudgetMs, MIN_COMPLETION_BUDGET_MS);
 });
 
 runTest('buildSpeechOptions falls back to en-US when the selected voice has a blank language', () => {

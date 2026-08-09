@@ -3,8 +3,24 @@ const assert = require('assert');
 const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
+const moduleCache = new Map();
+const recommendationPath = path.join(
+  __dirname,
+  '..',
+  'utils',
+  'recommendNextPractice.ts'
+);
 const { computePracticeNextRecommendation } = loadTsModule(
-  path.join(__dirname, '..', 'utils', 'recommendNextPractice.ts')
+  recommendationPath,
+  moduleCache
+);
+const { buildPairId } = loadTsModule(
+  path.join(__dirname, '..', 'utils', 'idHelpers.ts'),
+  moduleCache
+);
+const { minimalPairs } = loadTsModule(
+  path.join(__dirname, '..', 'src', 'constants', 'minimalPairs.ts'),
+  moduleCache
 );
 
 function runTest(name, fn) {
@@ -42,6 +58,46 @@ const pairId = (category, pair) =>
   `${category}__${pair.group}__${pair.word1}_${pair.word2}`;
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
+
+runTest('buildPairId preserves the legacy key for every shipped pair', () => {
+  let checked = 0;
+  for (const category of minimalPairs) {
+    for (const pair of category.pairs) {
+      assert.strictEqual(
+        buildPairId(pair, category.category),
+        pairId(category.category, pair)
+      );
+      checked++;
+    }
+  }
+  assert.ok(checked > 0, 'expected shipped pair identities');
+});
+
+runTest('recommendation reads progress through the authoritative pair identity', () => {
+  const ownedPairId = 'owned-pair-id';
+  const { computePracticeNextRecommendation: computeWithOwnedPairId } =
+    loadTsModule(
+      recommendationPath,
+      new Map(),
+      {
+        '@/utils/idHelpers': {
+          buildPairId: () => ownedPairId,
+        },
+      }
+    );
+  const pair = makePair('rL', 'r', 'l', 'rake', 'lake');
+  const progress = {
+    [ownedPairId]: {
+      attempts: [makeAttempt(true), makeAttempt(false), makeAttempt(false)],
+    },
+  };
+
+  const result = computeWithOwnedPairId(progress, [pair], 'Japanese');
+
+  assert.strictEqual(result?.reason, 'lowAccuracy');
+  assert.strictEqual(result?.groupId, 'rL');
+  assert.ok(Math.abs((result?.recentAccuracy ?? 0) - 1 / 3) < 0.01);
+});
 
 runTest('recommends a new pair when nothing has been practiced', () => {
   const pairs = [makePair('rL', 'r', 'l', 'rake', 'lake')];

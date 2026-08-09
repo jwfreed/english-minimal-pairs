@@ -1,6 +1,7 @@
 // utils/recommendNextPractice.ts
 import type { Pair } from '@/src/constants/minimalPairs';
 import type { PairAttempt, PairStats } from '@/src/storage/progressStorage';
+import { buildPairId } from '@/utils/idHelpers';
 
 export interface PracticeNextRecommendation {
   groupId: string;
@@ -35,9 +36,6 @@ const STRONG_ACCURACY = 0.9;
  *   3. Otherwise, if eligible groups exist (all strong, nothing new left), the
  *      lowest-accuracy eligible group → reason 'lowAccuracy'.
  *   4. Otherwise null.
- *
- * Pair ID format mirrors buildPairId in idHelpers.ts:
- *   `${category}__${group}__${word1}_${word2}`
  */
 export function computePracticeNextRecommendation(
   progress: Record<string, PairStats>,
@@ -53,8 +51,7 @@ export function computePracticeNextRecommendation(
   const byGroup = new Map<string, GroupData>();
 
   for (const pair of pairs) {
-    // Must match buildPairId in idHelpers.ts exactly.
-    const id = `${category}__${pair.group}__${pair.word1}_${pair.word2}`;
+    const id = buildPairId(pair, category);
     const stats = progress[id];
     if (!stats?.attempts?.length) continue;
 
@@ -104,7 +101,7 @@ export function computePracticeNextRecommendation(
 
   // ── 4. Nothing weak: steer toward the first unpracticed pair ─────────────
   const fresh = pairs.find((pair) => {
-    const id = `${category}__${pair.group}__${pair.word1}_${pair.word2}`;
+    const id = buildPairId(pair, category);
     return !progress[id]?.attempts?.length;
   });
   if (fresh) {

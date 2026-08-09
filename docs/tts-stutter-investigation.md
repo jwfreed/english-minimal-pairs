@@ -131,9 +131,14 @@ explanation supported by one matched physical-device experiment, not a
 confirmed root cause, and the two hypotheses are not mutually exclusive.
 
 A native mitigation (idle-to-active synthesizer generation rotation, patched
-into `expo-speech`) exists but is currently disabled in every build — see
-`docs/tts-expo-speech-native-contract.md` for the mechanism, its Debug/Release
-policy, and its removal criteria. It does not change anything described above:
+into `expo-speech`) exists and has been **enabled** since 2026-08-08, by
+explicit exception rather than by satisfying its own Phase 1 physical-device
+ship gate — see `docs/tts-expo-speech-native-contract.md` for the mechanism,
+its Debug/Release policy, and its removal criteria, and
+`docs/manual-smoke-test.md` section 18 for the enablement exception, the
+evidence it was based on, and what it leaves unmeasured. Enabling it is not a
+claim that either hypothesis is confirmed or that the original acoustic
+failure is fixed. It does not change anything described above:
 the coordinator-level fix and the physical-device acoustic matrix in this
 document remain the reference evidence for the phoneme-artifact hypothesis,
 independent of whatever the generation-drain evaluation concludes.

@@ -448,6 +448,21 @@ all before further work continues.
 (`/tmp/soundwise-tts-enabled-smoke.log`, merged from Metro and native device
 console streams).
 
+> **Evidence-retention gap — recorded 2026-08-09.** The capture cited above no
+> longer exists. It was written to `/tmp`, was never committed to this
+> repository, and is not recoverable; no raw artifact backs this section. The
+> figures below therefore rest entirely on the prose summary written at the
+> time. They can no longer be re-checked with
+> `scripts/analyze-tts-validation-log.js`, cannot be fed to
+> `scripts/compare-tts-lifecycle-validation.js`, and cannot be re-derived by
+> any means short of re-running the session on a device. Read them as an
+> operator report, which is a weaker evidence class than the
+> analyzer-classified `VALID`/`PROCEED` capture cited for the Commit 2
+> experiment — they were not reconstructed after the fact, and must not be.
+> Any future capture cited in this document must be written to a retained
+> path and committed, or stored at a durable referenced location, before it
+> is relied on.
+
 - All 15 `[tts-playback]` sequences completed cleanly: `requested →
   accepted → submitted-to-native-speech → started → completed`. Zero
   `cancellationAtMs`, zero `timedOutAtMs`, zero `failureAtMs`.

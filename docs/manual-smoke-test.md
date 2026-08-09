@@ -434,6 +434,96 @@ satisfied.
   (`soundwiseGenerationRotationEnabled` back to `false`, or reverting the
   enabling commit).
 
+### Post-enablement smoke test (2026-08-09) — partial coverage, not the Phase 1 matrix
+
+An informal enabled-arm smoke test was run after the enable-by-exception
+decision above, on the same device used throughout this investigation
+(`Chiang Mai Express`, iPhone 16 Pro, iOS 26.5.2), commit `881eac6`, Debug
+build, `soundwiseGenerationRotationEnabled = true`. This is **not** the
+Step 2 60-attempt matrix and does not satisfy the Blocking acceptance
+criteria below — it is a smaller check that the enabled mitigation runs at
+all before further work continues.
+
+**Captured evidence:** 15 completed utterances across one session
+(`/tmp/soundwise-tts-enabled-smoke.log`, merged from Metro and native device
+console streams).
+
+- All 15 `[tts-playback]` sequences completed cleanly: `requested →
+  accepted → submitted-to-native-speech → started → completed`. Zero
+  `cancellationAtMs`, zero `timedOutAtMs`, zero `failureAtMs`.
+- All 15 `[tts-synthesizer-lifecycle]` sequences completed with `anomaly:
+  null`: `creation → submission → terminal(done/delegateFinish) →
+  retirement`.
+- **Rotation fired on every single request** — `generation` incremented
+  sequentially 1 through 15, one per utterance, with
+  `trackedOutstandingUtterances` draining to 0 each time.
+- Submission-to-terminal duration was tight and uniform across all 15
+  (920–1150ms), with no outliers suggesting an interrupted or paused
+  utterance.
+- Background/resume was exercised and clean: 3 `appEntersBackground` /
+  `appEntersForeground` event pairs, all completed round-trips.
+- Acoustic result reported by the operator: all 15 played back clean, no
+  reported stutter.
+
+**Structural finding — three of the five originally-scoped scenarios are
+unreachable in the current app, not merely untested:**
+
+- **Explicit stop**: `Speech.stop()` is never called anywhere in `src/` or
+  `app/` — not in the production practice screen, not in
+  `src/components/TTSDebugScreen.tsx`. There is no code path a user or
+  tester can trigger that invokes it.
+- **Pause/resume**: same — `Speech.pause()` and `Speech.resume()` are never
+  called anywhere in the codebase.
+- **True rapid/overlapping replay**: the practice screen's replay control is
+  rendered `disabled={playedIdx === null || feedback !== null || isSpeaking}`
+  (`app/(tabs)/index.tsx:200`), so it cannot be tapped again until the prior
+  utterance's `isSpeaking` flips false at full completion. The fastest
+  possible next request is bounded by human reaction time after re-enable,
+  not by any sub-second overlap — the smallest gaps actually observed in
+  this session were ~1.4–1.7s, not the near-immediate replay the original
+  regression and the Phase 1 protocol describe.
+
+This means the achievable coverage from this smoke test is **normal
+playback and background/resume only** — the other two scenarios in the
+original 5-scenario request (stop, pause/resume) and true rapid-replay
+timing cannot be exercised as user-facing paths in this app as currently
+built. **Unreachable is not the same status as passed.** These three
+conditions were not attempted and did not succeed; they are absent from
+this evidence entirely. Recording them as "achievable coverage: 2 of 5"
+means the validation *scope* shrank to what the app makes reachable, not
+that the app was tested against all five conditions and cleared three of
+them silently. It also means the production UI's own request serialization
+is, independently of the native rotation mitigation, already structurally
+preventing the overlapping-tap condition most associated with the original
+regression — a separate, favorable structural fact, but not a substitute
+for having actually run those scenarios.
+
+### What this evidence does and does not establish
+
+Two different claims are easy to conflate here and must be kept separate:
+
+1. **Mitigation stability on reachable app flows** — supported by this
+   smoke test. On the scenarios the shipped app can actually exercise
+   (normal playback, background/resume), the enabled build ran 15/15
+   utterances cleanly: no native anomalies, no watchdogs, no timeouts, no
+   cancellations, rotation firing on every request, uniform submission-to-
+   terminal timing. This is real, if narrow, evidence that enabling
+   rotation did not destabilize the flows this app can reach.
+2. **Evidence that the original retained-synthesizer failure is
+   eliminated** — **not supported by this smoke test.** The original
+   failure was characterized (in the Commit 2 experiment) under rapid
+   back-to-back replay on a retained synthesizer — exactly the condition
+   this app's UI structurally prevents from being tested at all here. A
+   clean 15/15 result on scenarios that don't reproduce the failure
+   condition is not evidence the failure condition is fixed; it's evidence
+   the reachable, non-failure-triggering flows still work after the change.
+   The failure this mitigation targets remains unreproduced and
+   unretested end-to-end in this session.
+
+Claim 1 is established. Claim 2 is not, and nothing in this section should
+be read as implying it. This does not establish that the mitigation fixes
+the underlying bug.
+
 ### Acoustic labeling procedure
 
 Defined now, before any attempt is run, so labeling cannot be biased by

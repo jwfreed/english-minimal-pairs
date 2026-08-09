@@ -2,7 +2,7 @@ export type MasteryMap = Record<string, number>;
 
 const MASTERY_STORAGE_KEY_PREFIX = '@mastery_';
 const MIN_MASTERY_TIER = 1;
-const MAX_MASTERY_TIER = 6;
+export const MAX_MASTERY_TIER = 6;
 
 /** Legacy global placement key — kept for one-time migration reads only. */
 export const PLACEMENT_DONE_KEY = '@placementDone';

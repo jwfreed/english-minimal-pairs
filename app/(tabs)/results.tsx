@@ -20,6 +20,7 @@ import { useContrastPairs } from '@/src/hooks/useContrastPairs';
 import { computePracticeNextRecommendation } from '@/utils/recommendNextPractice';
 import { usePracticeTarget } from '@/src/context/PracticeTargetContext';
 import { formatTranslation } from '@/utils/formatTranslation';
+import { buildMasterySummary } from '@/src/domain/contrast/masterySummary';
 
 type ContrastHeader = {
   type: 'header';
@@ -72,27 +73,10 @@ export default function ResultsScreen() {
   const { mastery, refresh: refreshMastery } = useContrastPairs(catObj?.pairs ?? [], catObj?.category ?? '');
 
   // Compute mastery summary stats
-  const masterySummary = useMemo(() => {
-    if (!catObj) return { totalGroups: 0, masteredGroups: 0, totalLevels: 0, completedLevels: 0 };
-    const groups = new Set<string>();
-    catObj.pairs.forEach((p) => groups.add(p.group));
-    const totalGroups = groups.size;
-    const TOTAL_TIERS = 6;
-    let masteredGroups = 0;
-    let completedLevels = 0;
-    for (const g of groups) {
-      const tier = mastery[g] ?? 1;
-      // Tiers start at 1; completed levels = tier - 1 (levels already passed)
-      completedLevels += Math.min(tier - 1, TOTAL_TIERS);
-      if (tier >= TOTAL_TIERS) masteredGroups++;
-    }
-    return {
-      totalGroups,
-      masteredGroups,
-      totalLevels: totalGroups * TOTAL_TIERS,
-      completedLevels,
-    };
-  }, [catObj, mastery]);
+  const masterySummary = useMemo(
+    () => buildMasterySummary({ pairs: catObj?.pairs ?? [], mastery }),
+    [catObj, mastery]
+  );
 
   // Refresh mastery from AsyncStorage whenever this tab gains focus,
   // so it stays in sync with promotions made on the practice screen.

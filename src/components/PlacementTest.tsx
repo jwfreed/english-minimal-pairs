@@ -11,11 +11,12 @@ import { useAllThemeColors } from '@/src/context/theme';
 import { useSettings } from '@/src/context/SettingsContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
-import { recommendPlacementTier } from '@/src/domain/practiceSession';
+import {
+  buildPlacementItems,
+  recommendPlacementTier,
+} from '@/src/domain/practice/placementAssessment';
 import type { Pair } from '@/src/constants/minimalPairs';
 import { useAudio } from '@/src/hooks/useAudio';
-
-const TOTAL_QUESTIONS = 10;
 
 interface Props {
   /** All pairs for the current category */
@@ -26,47 +27,16 @@ interface Props {
   onSkip: () => void;
 }
 
-/** Shuffle array (Fisher-Yates) */
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { getNextVoice } = useSettings();
   const { translate } = useLanguage();
 
-  // Build the test items: sample one pair from each difficulty tier (1-6),
-  // then fill remaining slots with random extras for variety.
-  const testItems = useMemo(() => {
-    const byTier = new Map<number, Pair[]>();
-    for (const p of pairs) {
-      if (!byTier.has(p.difficulty)) byTier.set(p.difficulty, []);
-      byTier.get(p.difficulty)!.push(p);
-    }
-
-    const sampled: Pair[] = [];
-    const seen = new Set<Pair>();
-
-    // One random pair per available tier
-    for (const [, tierPairs] of byTier) {
-      const pick = tierPairs[Math.floor(Math.random() * tierPairs.length)];
-      sampled.push(pick);
-      seen.add(pick);
-    }
-
-    // Fill remaining slots from unused pairs
-    const remaining = pairs.filter(p => !seen.has(p));
-    const extras = shuffle(remaining).slice(0, TOTAL_QUESTIONS - sampled.length);
-
-    return shuffle([...sampled, ...extras]).slice(0, TOTAL_QUESTIONS);
-  }, [pairs]);
+  const testItems = useMemo(
+    () => buildPlacementItems({ pairs, random: Math.random }),
+    [pairs]
+  );
 
   const [qIndex, setQIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);

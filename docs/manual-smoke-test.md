@@ -364,7 +364,10 @@ are not delegable.
 
 ### Build-arm procedure
 
-Two adjacent commits, identical except for one Swift boolean:
+Two adjacent commits, differing in one Swift boolean — but note that flipping
+that boolean requires **four coordinated file updates**, not one. The constant
+is pinned by a source hash and asserted by a test, both of which fail the build
+if left stale:
 
 1. Edit `node_modules/expo-speech/ios/SpeechModule.swift`, flip only
    `soundwiseGenerationRotationEnabled`.
@@ -375,17 +378,26 @@ Two adjacent commits, identical except for one Swift boolean:
    match — the constant flip changes the file's hash, so this step is
    mandatory, not optional. `npm run verify:expo-speech-patch` fails loudly
    if it's skipped.
-4. `npm run verify:expo-speech-patch` — confirm it passes against the new
+4. Update the wiring assertion in `scripts/expoSpeechNativeWiring.test.js`,
+   which matches `/private let soundwiseGenerationRotationEnabled = <value>/`
+   against the installed source and fails if it still expects the old value.
+   This is a documentation-of-record assertion about which arm is committed,
+   not test logic to be weakened — update the expected value, do not delete
+   or relax the assertion.
+5. `npm run verify:expo-speech-patch` — confirm it passes against the new
    hash.
-5. `npm run check` — full local verification.
-6. `git diff --check`; confirm the diff against the prior validation commit
-   touches only `patches/expo-speech+14.0.7.patch` (regenerated) and
-   `scripts/expoSpeechPatchManifest.json` (the hash), and that
+6. `npm run check` — full local verification (this is what catches a missed
+   step 3 or 4).
+7. `git diff --check`; confirm the diff against the prior validation commit
+   touches only `patches/expo-speech+14.0.7.patch` (regenerated),
+   `scripts/expoSpeechPatchManifest.json` (the hash), and
+   `scripts/expoSpeechNativeWiring.test.js` (the asserted value), and that
    `src/domain/speechPlaybackCoordinator.ts`, `src/domain/audioPlayback.ts`,
    and `src/hooks/useAudio.ts` are untouched.
-7. Commit as the "control" build identity (constant `false`) or the
+8. Commit as the "control" build identity (constant `false`) or the
    "candidate" build identity (constant `true`), then produce a Debug
-   physical-device build from that exact commit.
+   physical-device build from that exact commit. Keep all four coordinated
+   files in that single commit, so the arm can later be reverted atomically.
 
 **Control arm:** constant `false` — this was the committed state through
 2026-08-08.
@@ -430,9 +442,11 @@ satisfied.
   across a 500-utterance soak) has also not been run.
 - **Rollback trigger:** any report of TTS stutter, crash, memory warning, or
   playback-control regression after this change ships — see Rollback vs.
-  removal below, which remains a one-line, single-commit action
-  (`soundwiseGenerationRotationEnabled` back to `false`, or reverting the
-  enabling commit).
+  removal below. Rollback is a single-commit action, but **not** a one-line
+  edit: it reverts `881eac6`'s `patches/` and `scripts/` paths together, so
+  the constant, the patch, the manifest hash, and the wiring assertion move
+  as one. Hand-editing `soundwiseGenerationRotationEnabled` back to `false`
+  on its own leaves the tree failing `npm run check`.
 
 ### Post-enablement smoke test (2026-08-09) — partial coverage, not the Phase 1 matrix
 
@@ -711,9 +725,50 @@ it's explained entirely by the deliberate-stop scenarios.
 
 **Rollback** (this section's concern): if a problem is found after the
 candidate arm is built — during Phase 1 testing, or hypothetically after a
-later production enable — the remedy is reverting
-`soundwiseGenerationRotationEnabled` back to `false`, or reverting the
-specific commit that flipped it. This is a one-line, single-commit action.
+later production enable — the remedy is to restore
+`soundwiseGenerationRotationEnabled = false`.
+
+**Preferred procedure — revert `881eac6`'s mechanical files.** That commit
+contains the constant flip together with every artifact pinned to it. Revert
+those paths and the tree returns to a self-consistent `false` state in one
+commit:
+
+```sh
+git show 881eac6 -- patches/ scripts/ | git apply -R
+npm run check && npm run test:expo-speech-native   # both must pass
+git commit -am "revert: disable Expo Speech generation rotation"
+```
+
+**Do not use a bare `git revert 881eac6`** unless you intend to resolve
+conflicts: that commit also carries the enablement-exception *documentation*,
+which has been edited since and will not reverse-apply. (Verified
+2026-08-09: the `patches/` and `scripts/` hunks reverse-apply cleanly; the
+`docs/` hunks do not.) The exception is part of this project's decision
+history and should survive a rollback — if you do run the full revert,
+resolve by keeping the current documentation (`git checkout HEAD -- docs/`)
+and adding a new note recording the rollback, rather than erasing the record
+that the enablement happened.
+
+This is a single-commit action, but it is **not** a one-line edit.
+
+**Manual rollback, if a clean revert is unavailable, requires four
+coordinated updates** — the constant is hash-pinned and test-asserted, and
+changing it alone breaks `npm run check`:
+
+1. `soundwiseGenerationRotationEnabled` → `false` in
+   `node_modules/expo-speech/ios/SpeechModule.swift`;
+2. regenerate `patches/expo-speech+14.0.7.patch` (`npx patch-package
+   expo-speech`);
+3. update the `sha256` in `scripts/expoSpeechPatchManifest.json` — the flip
+   changes the source hash, so `npm run verify:expo-speech-patch` fails
+   until this matches;
+4. update the asserted value in `scripts/expoSpeechNativeWiring.test.js`,
+   which matches the constant's committed value against the installed
+   source. Update the expected value; do not delete or weaken the assertion.
+
+Verify with `npm run check` and `npm run test:expo-speech-native` before
+committing; both must pass. See the Build-arm procedure above for the same
+four-file sequence in the enabling direction.
 Everything built in Tasks 1–6 (the generation/terminal accounting, the
 serialized native lifecycle queue, the patch-provenance verifier, the CI
 provenance job, the log analyzer and comparator) stays in place regardless —

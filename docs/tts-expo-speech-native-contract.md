@@ -18,7 +18,14 @@
   that section's Phase 1 physical-device matrix — see that document for the
   evidence basis and unmeasured risk. The constant itself is unchanged in
   form (still a deletable native-only compile-time flag, not yet made
-  unconditional) so rollback remains a one-line revert.
+  unconditional) so rollback remains a single commit: revert `881eac6`'s
+  `patches/` and `scripts/` paths. It is **not** a one-line edit — the
+  constant is pinned by the patch, by the `sha256` in
+  `scripts/expoSpeechPatchManifest.json`, and by an assertion in
+  `scripts/expoSpeechNativeWiring.test.js`, so all of them must move
+  together. See `docs/manual-smoke-test.md` section 18's "Rollback vs.
+  removal" for the exact verified commands and for why a bare `git revert` of
+  that commit is not the recommended form.
 - **Removal lifecycle ownership:** there is no separate designated owner.
   Whoever next touches this patch, the `expo-speech` dependency, or its
   verification tooling is responsible for checking whether the
@@ -105,8 +112,9 @@ that matrix, was instead decided by exception:
   becomes unconditional (the plan's original "production final" path), which
   requires the device matrix and acceptance gate to pass cleanly first. That
   step has **not** happened — the constant remains present and settable back
-  to `false`, deliberately, so the decision stays a one-line rollback until
-  Phase 1 evidence exists to justify deleting it;
+  to `false`, deliberately, so the decision stays reversible in a single
+  commit (not a one-line edit; see Status above) until Phase 1 evidence
+  exists to justify deleting it;
 - **reject** — the constant is deleted with rotation permanently disabled,
   and the patch is removed per [Removal criteria](#removal-criteria), if the
   matrix (were it run) shows no benefit or a regression;

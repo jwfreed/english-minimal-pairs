@@ -96,7 +96,7 @@ const VOICE = {
  * Renders the real useAudio hook with host boundaries substituted and the
  * coordinator's timers under test control.
  */
-function createAudioScenario({ rate = 0.85 } = {}) {
+function createAudioScenario({ rate = 0.85, pair = PAIR } = {}) {
   const timers = createControllableTimers();
   const harness = createHookHarness();
   const speakCalls = [];
@@ -142,7 +142,7 @@ function createAudioScenario({ rate = 0.85 } = {}) {
 
   const render = () =>
     harness.renderUntilStable(() =>
-      useAudio(PAIR, rate, () => VOICE)
+      useAudio(pair, rate, () => VOICE)
     );
 
   return {
@@ -285,6 +285,91 @@ runTest('a normal completion leaves no timer armed', async () => {
   scenario.lastOptions().onDone();
 
   assert.deepStrictEqual(scenario.timers.pendingDelays(), []);
+});
+
+runTest('one play observer receives only its request-scoped start and completion', async () => {
+  const scenario = createAudioScenario();
+  const outcomes = [];
+  const hook = scenario.render();
+
+  await hook.play(0, (outcome) => outcomes.push(outcome));
+  await flushPromises();
+  scenario.lastOptions().onStart();
+  scenario.lastOptions().onDone();
+
+  assert.deepStrictEqual(
+    outcomes.map(({ kind, requestId }) => ({ kind, requestId })),
+    [
+      { kind: 'started', requestId: outcomes[0]?.requestId },
+      { kind: 'completed', requestId: outcomes[0]?.requestId },
+    ]
+  );
+  assert.match(outcomes[0].requestId, /^tts-/);
+});
+
+runTest('a rejected duplicate reports its allocated request id only to that invocation', async () => {
+  const scenario = createAudioScenario();
+  const firstOutcomes = [];
+  const rejectedOutcomes = [];
+  const hook = scenario.render();
+
+  await hook.play(0, (outcome) => firstOutcomes.push(outcome));
+  await hook.play(1, (outcome) => rejectedOutcomes.push(outcome));
+
+  assert.deepStrictEqual(firstOutcomes, []);
+  assert.strictEqual(rejectedOutcomes.length, 1);
+  assert.strictEqual(rejectedOutcomes[0].kind, 'failed');
+  assert.strictEqual(rejectedOutcomes[0].reason, 'request-rejected');
+  assert.match(rejectedOutcomes[0].requestId, /^tts-/);
+});
+
+runTest('a late callback from an older request cannot reach a newer observer', async () => {
+  const scenario = createAudioScenario();
+  const firstOutcomes = [];
+  const secondOutcomes = [];
+  let hook = scenario.render();
+
+  await hook.play(0, (outcome) => firstOutcomes.push(outcome));
+  await flushPromises();
+  const oldOptions = scenario.lastOptions();
+  oldOptions.onStart();
+  scenario.timers.expireAll();
+
+  hook = scenario.render();
+  await hook.play(1, (outcome) => secondOutcomes.push(outcome));
+  await flushPromises();
+  const newOptions = scenario.lastOptions();
+  oldOptions.onDone();
+  newOptions.onStart();
+  newOptions.onDone();
+
+  assert.deepStrictEqual(
+    firstOutcomes.map(({ kind, reason }) => ({ kind, reason })),
+    [
+      { kind: 'started', reason: undefined },
+      { kind: 'failed', reason: 'completion-timeout' },
+    ]
+  );
+  assert.deepStrictEqual(
+    secondOutcomes.map(({ kind }) => kind),
+    ['started', 'completed']
+  );
+  assert.notStrictEqual(
+    firstOutcomes[0].requestId,
+    secondOutcomes[0].requestId
+  );
+});
+
+runTest('failure before coordinator admission does not fabricate a request id', async () => {
+  const scenario = createAudioScenario({ pair: null });
+  const outcomes = [];
+  const hook = scenario.render();
+
+  await assert.rejects(
+    hook.play(0, (outcome) => outcomes.push(outcome)),
+    /No pair selected/
+  );
+  assert.deepStrictEqual(outcomes, []);
 });
 
 runTest('unmounting stops timeout notifications without locking ownership', async () => {

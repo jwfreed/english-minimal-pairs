@@ -56,6 +56,7 @@ export default function HomeScreen() {
   const {
     activeGroupPairs,
     audioModeReady,
+    canAnswer,
     contrastDetailPairs,
     feedback,
     handleAnswer,
@@ -66,6 +67,7 @@ export default function HomeScreen() {
     handlePickerScrollStart,
     handlePlay,
     isLoading,
+    isPromptPlaybackActive,
     isSpeaking,
     mastery,
     playedIdx,
@@ -183,8 +185,8 @@ export default function HomeScreen() {
         <ListenControls
           label={playAudioText}
           onPlay={handlePlay}
-          disabled={!audioModeReady || isSpeaking}
-          isPlaying={isSpeaking}
+          disabled={!audioModeReady || isPromptPlaybackActive || isSpeaking}
+          isPlaying={isPromptPlaybackActive || isSpeaking}
           styles={styles}
         />
 
@@ -197,8 +199,8 @@ export default function HomeScreen() {
             pair={selectedPair}
             onAnswer={handleAnswer}
             feedback={feedback}
-            disabled={playedIdx === null || feedback !== null || isSpeaking}
-            isPlaybackActive={isSpeaking}
+            disabled={!canAnswer}
+            isPlaybackActive={isPromptPlaybackActive}
             playedIdx={playedIdx}
             onCompareWord={handleCompareWord}
             compareDisabled={!audioModeReady || isSpeaking}

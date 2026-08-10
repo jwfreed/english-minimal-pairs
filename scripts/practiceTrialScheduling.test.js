@@ -357,7 +357,184 @@ module.exports = (async () => {
     assert.deepStrictEqual(synchronousRound.renderEventTypes, []);
   });
 
-  await runTest('deferred playback remains pending while the rendered pair id mismatches', async () => {
+  await runTest('loading and playing block answers until completion enables one answer', async () => {
+    const scenario = createPracticeTrialSchedulingHarness(fixture);
+    scenario.setAudioAutoComplete(false);
+    scenario.render();
+
+    await scenario.current.handlePlay();
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'loading');
+    assert.strictEqual(scenario.current.canAnswer, false);
+
+    const playedIdx = scenario.current.playedIdx;
+    scenario.current.handleAnswer(playedIdx);
+    assert.strictEqual(
+      scenario.events.filter((event) => event.type === 'answer-submitted').length,
+      0
+    );
+
+    scenario.emitAudioOutcome(0, { kind: 'started' });
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'playing');
+    assert.strictEqual(scenario.current.canAnswer, false);
+    scenario.current.handleAnswer(playedIdx);
+    assert.strictEqual(
+      scenario.events.filter((event) => event.type === 'answer-submitted').length,
+      0
+    );
+
+    scenario.emitAudioOutcome(0, { kind: 'completed' });
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'awaiting-answer');
+    assert.strictEqual(scenario.current.canAnswer, true);
+    scenario.current.handleAnswer(playedIdx);
+    scenario.current.handleAnswer(playedIdx);
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'completed');
+    assert.strictEqual(
+      scenario.events.filter((event) => event.type === 'answer-submitted').length,
+      1,
+      'the lifecycle ref must synchronously reject a duplicate answer'
+    );
+  });
+
+  await runTest('failed playback blocks answers and retry recovers', async () => {
+    const scenario = createPracticeTrialSchedulingHarness(fixture);
+    scenario.setAudioAutoComplete(false);
+    scenario.render();
+
+    await scenario.current.handlePlay();
+    scenario.render();
+    scenario.emitAudioOutcome(0, {
+      kind: 'failed',
+      reason: 'playback-error',
+    });
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'failed');
+    assert.strictEqual(scenario.current.canAnswer, false);
+
+    await scenario.current.handlePlay();
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'loading');
+    assert.strictEqual(scenario.audioRequestCount, 2);
+    scenario.emitAudioOutcome(1, { kind: 'started' });
+    scenario.emitAudioOutcome(1, { kind: 'completed' });
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'awaiting-answer');
+    assert.strictEqual(scenario.current.canAnswer, true);
+  });
+
+  await runTest('retry preserves the prompt schedule and original response clock', async () => {
+    const scenario = createPracticeTrialSchedulingHarness(fixture);
+    scenario.setAudioAutoComplete(false);
+    scenario.render();
+
+    await scenario.current.handlePlay();
+    scenario.render();
+    const playedIdx = scenario.current.playedIdx;
+    const presentedBeforeRetry = scenario.events.filter(
+      (event) => event.type === 'pair-presented'
+    ).length;
+    const schedulingQueriesBeforeRetry = scenario.events.filter(
+      (event) => event.type === 'trial-scheduling-query'
+    ).length;
+    const randomDrawsBeforeRetry = scenario.randomDrawCount;
+
+    scenario.advanceClock(2200);
+    scenario.emitAudioOutcome(0, {
+      kind: 'failed',
+      reason: 'playback-error',
+    });
+    scenario.render();
+    await scenario.current.handlePlay();
+    scenario.render();
+
+    assert.strictEqual(
+      scenario.events.filter((event) => event.type === 'pair-presented').length,
+      presentedBeforeRetry,
+      'retry must not present or schedule a different pair'
+    );
+    assert.strictEqual(
+      scenario.events.filter((event) => event.type === 'trial-scheduling-query')
+        .length,
+      schedulingQueriesBeforeRetry,
+      'retry must not enter trial scheduling'
+    );
+    assert.strictEqual(
+      scenario.randomDrawCount,
+      randomDrawsBeforeRetry + 1,
+      'retry preserves the existing replay-word random draw without adding a scheduling draw'
+    );
+
+    scenario.emitAudioOutcome(1, { kind: 'completed' });
+    scenario.render();
+    scenario.advanceClock(800);
+    scenario.current.handleAnswer(playedIdx);
+    const answer = scenario.events.find(
+      (event) => event.type === 'answer-submitted'
+    );
+    assert.strictEqual(
+      answer?.responseTimeMs,
+      3000,
+      'retry must retain the original prompt start time'
+    );
+  });
+
+  await runTest('an older audio callback cannot affect a newer practice attempt', async () => {
+    const scenario = createPracticeTrialSchedulingHarness(fixture);
+    scenario.setAudioAutoComplete(false);
+    scenario.render();
+
+    await scenario.current.handlePlay();
+    scenario.render();
+    scenario.emitAudioOutcome(0, {
+      kind: 'failed',
+      reason: 'start-timeout',
+    });
+    scenario.render();
+    await scenario.current.handlePlay();
+    scenario.render();
+
+    scenario.emitAudioOutcome(0, { kind: 'completed' });
+    scenario.render();
+    assert.strictEqual(
+      scenario.current.playbackStatus,
+      'loading',
+      'the old attempt closure must not complete the retry'
+    );
+
+    scenario.emitAudioOutcome(1, { kind: 'completed' });
+    scenario.render();
+    assert.strictEqual(scenario.current.playbackStatus, 'awaiting-answer');
+  });
+
+  await runTest('an eligible deferred prompt survives a transient rendered mismatch', async () => {
+    const scenario = createPracticeTrialSchedulingHarness(fixture);
+    scenario.render();
+
+    await scenario.current.handlePlay();
+    const requestedPair = scenario.current.stableVisible.find(
+      (pair) => scenario.buildPairId(pair) === 'rL:rock:lock'
+    );
+    const otherPairs = scenario.current.stableVisible.filter(
+      (pair) => scenario.buildPairId(pair) !== 'rL:rock:lock'
+    );
+    scenario.replaceCategoryPairs(
+      'Test A',
+      [requestedPair, ...otherPairs],
+      'transient-deferred-render-mismatch'
+    );
+    scenario.render();
+
+    const playback = scenario.events.find(
+      (event) => event.type === 'audio-played'
+    );
+    assert.strictEqual(playback?.pairId, 'rL:rock:lock');
+    assert.strictEqual(scenario.current.playbackStatus, 'awaiting-answer');
+  });
+
+  await runTest('unavailable deferred playback fails and does not revive when restored', async () => {
     const scenario = createPracticeTrialSchedulingHarness(fixture);
     scenario.render();
 
@@ -384,6 +561,8 @@ module.exports = (async () => {
         .some((event) => event.type === 'audio-played'),
       'a mismatched selected pair must leave playback unplayed'
     );
+    assert.strictEqual(scenario.current.playbackStatus, 'failed');
+    assert.strictEqual(scenario.current.playbackFailureReason, 'deferred-prompt-mismatch');
 
     const restoreStart = scenario.events.length;
     scenario.replaceMastery(
@@ -392,13 +571,20 @@ module.exports = (async () => {
       'restore-scheduled-pair'
     );
     scenario.render();
-    const resumedPlayback = scenario.events
-      .slice(restoreStart)
-      .find((event) => event.type === 'audio-played');
-    assert.strictEqual(
-      resumedPlayback?.pairId,
-      'rL:rock:lock',
-      'the original deferred request remains pending until its pair renders again'
+    assert.ok(
+      !scenario.events
+        .slice(restoreStart)
+        .some((event) => event.type === 'audio-played'),
+      'restoring eligibility must not revive a superseded deferred request'
+    );
+
+    await scenario.current.handlePlay();
+    scenario.render();
+    assert.ok(
+      scenario.events
+        .slice(restoreStart)
+        .some((event) => event.type === 'audio-played'),
+      'an explicit retry must recover playback after the prompt is eligible again'
     );
   });
 

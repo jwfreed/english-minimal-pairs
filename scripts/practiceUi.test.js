@@ -128,6 +128,37 @@ runTest('overflowing practice controls use viewport-safe presentation states', (
   );
 });
 
+runTest('practice controls derive learner eligibility from the playback lifecycle', () => {
+  assert.ok(
+    practiceScreenSource.includes(
+      'disabled={!audioModeReady || isPromptPlaybackActive || isSpeaking}'
+    ) &&
+      practiceScreenSource.includes(
+        'isPlaying={isPromptPlaybackActive || isSpeaking}'
+      ) &&
+      practiceSessionHookSource.includes(
+        'isPracticePlaybackActive(currentPlayback) || isSpeaking'
+      ),
+    'regular prompt replay must respect lifecycle state and shared transport availability'
+  );
+  assert.ok(
+    practiceScreenSource.includes('disabled={!canAnswer}') &&
+      practiceScreenSource.includes('isPlaybackActive={isPromptPlaybackActive}'),
+    'answer controls must use the lifecycle as their sole eligibility authority'
+  );
+  assert.ok(
+    !practiceScreenSource.includes(
+      'disabled={playedIdx === null || feedback !== null || isSpeaking}'
+    ),
+    'the previous implicit answer-eligibility signals must not remain authoritative'
+  );
+  assert.ok(
+    practiceSessionHookSource.includes("playback.status !== 'awaiting-answer'") &&
+      practiceSessionHookSource.includes("kind: 'answer-accepted'"),
+    'the handler boundary must enforce and synchronously consume answer eligibility'
+  );
+});
+
 runTest('pair selector renders the optional example-selection copy', () => {
   const copyUsages = pairSelectorSource.match(/tKeys\.chooseAnotherExample/g) || [];
   assert.strictEqual(

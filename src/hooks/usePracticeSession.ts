@@ -21,11 +21,20 @@ import {
   type TrialSchedulingEvent,
 } from '@/src/domain/practice/trialScheduling';
 import {
+  canAnswerPracticePrompt,
+  classifyDeferredPromptRender,
+  initialPracticePlaybackState,
+  isPracticePlaybackActive,
+  reducePracticePlayback,
+  type PracticePlaybackAttempt,
+  type PracticePlaybackEvent,
+} from '@/src/domain/practice/practicePlaybackLifecycle';
+import {
   applyProgressionAnswer,
   getGroupProgression,
   initialProgressionState,
 } from '@/src/domain/practice/progressionState';
-import { useAudio } from '@/src/hooks/useAudio';
+import { useAudio, type AudioPlaybackOutcome } from '@/src/hooks/useAudio';
 import { useContrastPairs } from '@/src/hooks/useContrastPairs';
 import { useHaptics } from '@/src/hooks/useHaptics';
 import {
@@ -62,6 +71,21 @@ export function usePracticeSession({
 
   const progressionStateRef = useRef(initialProgressionState());
   const [, forceRender] = useState(0);
+  const playbackStateRef = useRef(initialPracticePlaybackState());
+  const nextPlaybackAttemptIdRef = useRef(0);
+  const dispatchPracticePlayback = useCallback(
+    (event: PracticePlaybackEvent) => {
+      const nextState = reducePracticePlayback(
+        playbackStateRef.current,
+        event
+      );
+      if (nextState !== playbackStateRef.current) {
+        playbackStateRef.current = nextState;
+        forceRender((value) => value + 1);
+      }
+    },
+    []
+  );
 
   const { visible, promote, mastery, setAllGroupsToTier, isLoading } =
     useContrastPairs(catObj.pairs, catObj.category);
@@ -70,12 +94,6 @@ export function usePracticeSession({
   const [pairIndex, setPairIndex] = useState(0);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
-  const [playedIdx, setPlayedIdx] = useState<0 | 1 | null>(null);
-  const [startTime, setStartTime] = useState<number | null>(null);
-  const [pendingPlayback, setPendingPlayback] = useState<{
-    pairId: string;
-    playedIdx: 0 | 1;
-  } | null>(null);
   /** Tier the user just promoted to — drives inline celebration in AnswerButtons */
   const [promotedTier, setPromotedTier] = useState<number | null>(null);
   const trialSchedulingRef = useRef(initialTrialSchedulingState());
@@ -90,18 +108,16 @@ export function usePracticeSession({
     []
   );
 
-  // Reset round state when the category changes so stale startTime / playedIdx
-  // from a previous category can't bleed into a new one.
+  // Reset round state when the category changes so prompt identity and late
+  // playback callbacks from the previous category cannot bleed into the next.
   useEffect(() => {
     setPairIndex(0);
     setActiveGroup(null);
     setFeedback(null);
-    setPlayedIdx(null);
-    setStartTime(null);
-    setPendingPlayback(null);
+    dispatchPracticePlayback({ kind: 'session-reset' });
     dispatchTrialScheduling({ kind: 'session-reset' });
     lastStartedContrastRef.current = null;
-  }, [categoryIndex, dispatchTrialScheduling]);
+  }, [categoryIndex, dispatchPracticePlayback, dispatchTrialScheduling]);
 
   // Jump to a pair requested from the Results "Practice this next" card.
   // The target is a group id. visible may include multiple same-tier examples
@@ -113,12 +129,17 @@ export function usePracticeSession({
     setActiveGroup(targetGroup);
     setPairIndex(idx);
     setFeedback(null);
-    setPlayedIdx(null);
-    setStartTime(null);
-    setPendingPlayback(null);
+    dispatchPracticePlayback({ kind: 'session-reset' });
     dispatchTrialScheduling({ kind: 'session-reset' });
     consumeTarget();
-  }, [targetGroup, visible, isLoading, consumeTarget, dispatchTrialScheduling]);
+  }, [
+    targetGroup,
+    visible,
+    isLoading,
+    consumeTarget,
+    dispatchPracticePlayback,
+    dispatchTrialScheduling,
+  ]);
 
   // Clamp pairIndex when visible list shrinks.
   const safePairIndex =
@@ -197,20 +218,94 @@ export function usePracticeSession({
     getNextVoice
   );
 
-  useEffect(() => {
-    if (!pendingPlayback || !selectedPair) return;
-    if (buildTrialPairId(selectedPair) !== pendingPlayback.pairId) return;
+  const observePracticePlayback = useCallback(
+    (attemptId: number, outcome: AudioPlaybackOutcome) => {
+      if (outcome.kind === 'started') {
+        dispatchPracticePlayback({ kind: 'playback-started', attemptId });
+      } else if (outcome.kind === 'completed') {
+        dispatchPracticePlayback({ kind: 'playback-completed', attemptId });
+      } else {
+        dispatchPracticePlayback({
+          kind: 'playback-failed',
+          attemptId,
+          reason: outcome.reason,
+        });
+      }
+    },
+    [dispatchPracticePlayback]
+  );
 
-    const playback = pendingPlayback;
-    setPendingPlayback(null);
-    play(playback.playedIdx).catch((error) => {
-      console.error('Audio playback error:', error);
-      Alert.alert(
-        translate(tKeys.audioError),
-        translate(tKeys.audioPlaybackFailed)
-      );
+  const submitPracticePlayback = useCallback(
+    async (attempt: PracticePlaybackAttempt) => {
+      try {
+        await play(attempt.prompt.playedIdx, (outcome) => {
+          observePracticePlayback(attempt.attemptId, outcome);
+        });
+      } catch (error) {
+        dispatchPracticePlayback({
+          kind: 'playback-failed',
+          attemptId: attempt.attemptId,
+          reason: 'playback-error',
+        });
+        console.error('Audio playback error:', error);
+        Alert.alert(
+          translate(tKeys.audioError),
+          translate(tKeys.audioPlaybackFailed)
+        );
+      }
+    },
+    [dispatchPracticePlayback, observePracticePlayback, play, translate]
+  );
+
+  useEffect(() => {
+    const playback = playbackStateRef.current;
+    if (
+      playback.status !== 'loading' ||
+      playback.submission !== 'awaiting-render'
+    ) {
+      return;
+    }
+
+    const requestedPairId = playback.attempt.prompt.pairId;
+    const eligiblePairIds = visible.map(buildTrialPairId);
+    const renderedPairId = selectedPair
+      ? buildTrialPairId(selectedPair)
+      : null;
+    const renderState = classifyDeferredPromptRender({
+      requestedPairId,
+      renderedPairId,
+      eligiblePairIds,
     });
-  }, [pendingPlayback, play, selectedPair, translate]);
+
+    if (renderState === 'stale-mismatch') {
+      dispatchPracticePlayback({
+        kind: 'playback-failed',
+        attemptId: playback.attempt.attemptId,
+        reason: 'deferred-prompt-mismatch',
+      });
+      return;
+    }
+
+    if (renderState === 'transient-mismatch') {
+      const requestedPairIndex = eligiblePairIds.indexOf(requestedPairId);
+      if (requestedPairIndex !== pairIndex) {
+        setPairIndex(requestedPairIndex);
+      }
+      return;
+    }
+
+    dispatchPracticePlayback({
+      kind: 'playback-submitted',
+      attemptId: playback.attempt.attemptId,
+    });
+    void submitPracticePlayback(playback.attempt);
+  }, [
+    dispatchPracticePlayback,
+    pairIndex,
+    selectedPair,
+    submitPracticePlayback,
+    visible,
+  ]);
 
   const markScheduledPair = useCallback(
     (pair: Pair) => {
@@ -242,6 +337,9 @@ export function usePracticeSession({
   );
 
   const handlePlay = useCallback(async () => {
+    const currentPlayback = playbackStateRef.current;
+    if (isPracticePlaybackActive(currentPlayback) || isSpeaking) return;
+
     timerRef.current?.poke();
     debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
     if (!audioModeReady) {
@@ -254,17 +352,26 @@ export function usePracticeSession({
     }
     triggerHaptic('light');
 
+    const retryingUnavailablePrompt =
+      currentPlayback.status === 'failed' &&
+      currentPlayback.reason === 'deferred-prompt-mismatch';
+    const currentPrompt =
+      currentPlayback.status === 'idle' || retryingUnavailablePrompt
+        ? null
+        : currentPlayback.attempt.prompt;
     const playback = choosePlaybackForRound({
-      playedIdx,
+      playedIdx: currentPrompt?.playedIdx ?? null,
       feedback,
       randomValue: Math.random(),
     });
+    let promptPair = selectedPair;
+    let promptStartedAtMs = currentPrompt?.startedAtMs ?? Date.now();
+    let submission: 'awaiting-render' | 'submitted' = 'submitted';
 
     if (playback.startsNewRound) {
       setFeedback(null);
       setPromotedTier(null);
-      setStartTime(Date.now());
-      setPlayedIdx(playback.playedIdx);
+      promptStartedAtMs = Date.now();
 
       const group = activeGroup ?? selectedPair?.group ?? null;
       const nextPair = planNextTrial({
@@ -277,7 +384,8 @@ export function usePracticeSession({
       dispatchTrialScheduling({ kind: 'round-started' });
 
       if (nextPair) {
-        const nextPairId = markScheduledPair(nextPair);
+        promptPair = nextPair;
+        markScheduledPair(nextPair);
         practiceAnalytics.pairPresented({
           pair: nextPair,
           category: catObj.category,
@@ -285,23 +393,28 @@ export function usePracticeSession({
         const nextPairIndex = findVisiblePairIndex(nextPair);
         if (nextPairIndex !== -1 && nextPairIndex !== safePairIndex) {
           setPairIndex(nextPairIndex);
-          setPendingPlayback({
-            pairId: nextPairId,
-            playedIdx: playback.playedIdx,
-          });
-          return;
+          submission = 'awaiting-render';
         }
       }
     }
 
-    try {
-      await play(playback.playedIdx);
-    } catch (error) {
-      console.error('Audio playback error:', error);
-      Alert.alert(
-        translate(tKeys.audioError),
-        translate(tKeys.audioPlaybackFailed)
-      );
+    if (!promptPair) return;
+    const attempt: PracticePlaybackAttempt = {
+      attemptId: ++nextPlaybackAttemptIdRef.current,
+      prompt: {
+        pairId: buildTrialPairId(promptPair),
+        playedIdx: playback.playedIdx,
+        startedAtMs: promptStartedAtMs,
+      },
+    };
+    dispatchPracticePlayback({
+      kind: 'playback-requested',
+      attempt,
+      submission,
+    });
+
+    if (submission === 'submitted') {
+      await submitPracticePlayback(attempt);
     }
   }, [
     activeGroup,
@@ -309,13 +422,14 @@ export function usePracticeSession({
     catObj.category,
     debugLog,
     dispatchTrialScheduling,
+    dispatchPracticePlayback,
     feedback,
     findVisiblePairIndex,
     markScheduledPair,
-    play,
-    playedIdx,
+    isSpeaking,
     safePairIndex,
     selectedPair,
+    submitPracticePlayback,
     translate,
     triggerHaptic,
     visible,
@@ -336,7 +450,15 @@ export function usePracticeSession({
 
   const handleAnswer = useCallback(
     (idx: 0 | 1) => {
-      if (playedIdx === null || !selectedPair) return;
+      const playback = playbackStateRef.current;
+      if (
+        playback.status !== 'awaiting-answer' ||
+        !selectedPair ||
+        buildTrialPairId(selectedPair) !== playback.attempt.prompt.pairId
+      ) {
+        return;
+      }
+      const { playedIdx, startedAtMs } = playback.attempt.prompt;
       timerRef.current?.poke();
       const group = selectedPair.group;
       const progression = getGroupProgression(
@@ -352,7 +474,7 @@ export function usePracticeSession({
         category: catObj.category,
         answerIdx: idx,
         playedIdx,
-        startTime,
+        startTime: startedAtMs,
         nowMs: Date.now(),
         currentSpeed: curSpeed,
         fastStreak,
@@ -361,6 +483,10 @@ export function usePracticeSession({
       });
       if (!result) return;
 
+      dispatchPracticePlayback({
+        kind: 'answer-accepted',
+        attemptId: playback.attempt.attemptId,
+      });
       setFeedback(result.feedback);
       recordAttempt(result.pairId, result.correct, result.durationMin);
       practiceAnalytics.answerSubmitted({
@@ -416,8 +542,7 @@ export function usePracticeSession({
         if (result.resetPairIndex) {
           setPairIndex(0);
           setFeedback(null);
-          setPlayedIdx(null);
-          setStartTime(null);
+          dispatchPracticePlayback({ kind: 'session-reset' });
         }
         if (__DEV__) {
           console.log(
@@ -429,9 +554,8 @@ export function usePracticeSession({
       forceRender((value) => value + 1);
     },
     [
-      playedIdx,
-      startTime,
       selectedPair,
+      dispatchPracticePlayback,
       dispatchTrialScheduling,
       promote,
       mastery,
@@ -448,15 +572,18 @@ export function usePracticeSession({
       dispatchTrialScheduling({ kind: 'manual-selection', groupChanged });
       setPairIndex(index);
       setFeedback(null);
-      setPlayedIdx(null);
-      setStartTime(null);
-      setPendingPlayback(null);
+      dispatchPracticePlayback({ kind: 'session-reset' });
       practiceAnalytics.pairSelected({
         pair: nextPair,
         category: catObj.category,
       });
     },
-    [activeGroup, catObj.category, dispatchTrialScheduling]
+    [
+      activeGroup,
+      catObj.category,
+      dispatchPracticePlayback,
+      dispatchTrialScheduling,
+    ]
   );
 
   const handlePairChange = useCallback(
@@ -490,9 +617,18 @@ export function usePracticeSession({
     setStableVisible(visible);
   }, [visible]);
 
+  const playbackState = playbackStateRef.current;
+  const playedIdx =
+    playbackState.status === 'idle'
+      ? null
+      : playbackState.attempt.prompt.playedIdx;
+  const canAnswer = canAnswerPracticePrompt(playbackState);
+  const isPromptPlaybackActive = isPracticePlaybackActive(playbackState);
+
   return {
     activeGroupPairs,
     audioModeReady,
+    canAnswer,
     contrastDetailPairs,
     feedback,
     handleAnswer,
@@ -503,9 +639,13 @@ export function usePracticeSession({
     handlePickerScrollStart,
     handlePlay,
     isLoading,
+    isPromptPlaybackActive,
     isSpeaking,
     mastery,
     playedIdx,
+    playbackFailureReason:
+      playbackState.status === 'failed' ? playbackState.reason : null,
+    playbackStatus: playbackState.status,
     promotedTier,
     safePairIndex,
     selectedPair,

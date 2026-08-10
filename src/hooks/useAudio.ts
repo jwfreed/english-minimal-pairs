@@ -85,6 +85,35 @@ type SpeechRecoveryDiagnosticPhase =
   | 'late-callback-after-timeout'
   | 'late-callback-unknown-request';
 
+export type AudioPlaybackFailureReason =
+  | 'request-rejected'
+  | 'playback-error'
+  | 'playback-stopped'
+  | 'start-timeout'
+  | 'completion-timeout';
+
+export type AudioPlaybackOutcome =
+  | { kind: 'started'; requestId: string }
+  | { kind: 'completed'; requestId: string }
+  | {
+      kind: 'failed';
+      requestId: string;
+      reason: AudioPlaybackFailureReason;
+    };
+
+export type AudioPlaybackObserver = (outcome: AudioPlaybackOutcome) => void;
+
+function notifyAudioPlaybackObserver(
+  observer: AudioPlaybackObserver | undefined,
+  outcome: AudioPlaybackOutcome
+) {
+  try {
+    observer?.(outcome);
+  } catch {
+    // Learner-state projection must never interfere with transport ownership.
+  }
+}
+
 // Recovery diagnostics emit in release builds too: the internal validation
 // build is a release build, and a timeout that only logs in development would
 // be invisible exactly where it matters. Bounded so a device stuck in a
@@ -177,6 +206,7 @@ export const useAudio = (
   const isSpeakingRef = useRef(false);
   const availableVoicesRef = useRef<Speech.Voice[] | null>(null);
   const audioModeConfiguredRef = useRef(false);
+  const playbackObserversRef = useRef(new Map<string, AudioPlaybackObserver>());
 
   // Lifecycle-managed player for the one-time iOS warmup; released
   // automatically on unmount. Non-iOS platforms — and no-warmup experiment
@@ -224,6 +254,24 @@ export const useAudio = (
     setIsSpeaking(nextIsSpeaking);
   }, []);
 
+  const emitPlaybackOutcome = useCallback(
+    (outcome: AudioPlaybackOutcome, terminal = false) => {
+      const observer = playbackObserversRef.current.get(outcome.requestId);
+      if (terminal) {
+        playbackObserversRef.current.delete(outcome.requestId);
+      }
+      notifyAudioPlaybackObserver(observer, outcome);
+    },
+    []
+  );
+
+  useEffect(
+    () => () => {
+      playbackObserversRef.current.clear();
+    },
+    []
+  );
+
   // Recovery floor: if a native terminal callback is never delivered, the
   // coordinator releases ownership on its own. Without this subscription the
   // UI would keep rendering a playback that has already been abandoned, and
@@ -232,6 +280,17 @@ export const useAudio = (
     const unsubscribe = speechPlaybackCoordinator.subscribeToOwnershipTimeout(
       (attempt) => {
         updateIsSpeaking(false);
+        emitPlaybackOutcome(
+          {
+            kind: 'failed',
+            requestId: attempt.requestId,
+            reason:
+              attempt.timedOutPhase === 'awaiting-terminal'
+                ? 'completion-timeout'
+                : 'start-timeout',
+          },
+          true
+        );
         logSpeechRecoveryDiagnostic(
           TIMEOUT_PHASE_TO_DIAGNOSTIC[attempt.timedOutPhase ?? 'awaiting-start'],
           {
@@ -249,7 +308,7 @@ export const useAudio = (
       }
     );
     return unsubscribe;
-  }, [updateIsSpeaking]);
+  }, [emitPlaybackOutcome, updateIsSpeaking]);
 
   // A terminal callback the coordinator declined to act on. Classifying it
   // keeps device logs honest about which of the two harmless cases occurred
@@ -359,7 +418,7 @@ export const useAudio = (
    * @param idx 0 for word1, 1 for word2
    */
   const play = useCallback(
-    async (idx: 0 | 1) => {
+    async (idx: 0 | 1, observer?: AudioPlaybackObserver) => {
       if (!selectedPair) {
         throw new Error('No pair selected');
       }
@@ -394,10 +453,18 @@ export const useAudio = (
           isSpeaking: isSpeakingRef.current,
           activePlaybackOwnerRequestId: beginResult.activeAttempt.requestId,
         });
+        notifyAudioPlaybackObserver(observer, {
+          kind: 'failed',
+          requestId: beginResult.request.requestId,
+          reason: 'request-rejected',
+        });
         return;
       }
 
       const { requestId } = beginResult.attempt;
+      if (observer) {
+        playbackObserversRef.current.set(requestId, observer);
+      }
       logSpeechDiagnostic({
         phase: 'accepted',
         request: beginResult.attempt,
@@ -455,6 +522,10 @@ export const useAudio = (
                 return;
               }
               updateIsSpeaking(false);
+              emitPlaybackOutcome(
+                { kind: 'completed', requestId },
+                true
+              );
               logSpeechDiagnostic({
                 phase: 'completed',
                 request: finishedAttempt,
@@ -475,6 +546,14 @@ export const useAudio = (
                 return;
               }
               updateIsSpeaking(false);
+              emitPlaybackOutcome(
+                {
+                  kind: 'failed',
+                  requestId,
+                  reason: 'playback-stopped',
+                },
+                true
+              );
               logSpeechDiagnostic({
                 phase: 'cancelled',
                 request: cancelledAttempt,
@@ -495,6 +574,14 @@ export const useAudio = (
                 return;
               }
               updateIsSpeaking(false);
+              emitPlaybackOutcome(
+                {
+                  kind: 'failed',
+                  requestId,
+                  reason: 'playback-error',
+                },
+                true
+              );
               logSpeechDiagnostic({
                 phase: 'failed',
                 request: failedAttempt,
@@ -512,6 +599,7 @@ export const useAudio = (
               startedAtMs
             );
             if (!startedAttempt) return;
+            emitPlaybackOutcome({ kind: 'started', requestId });
             logSpeechDiagnostic({
               phase: 'started',
               request: startedAttempt,
@@ -563,6 +651,14 @@ export const useAudio = (
         );
         if (failedAttempt) {
           updateIsSpeaking(false);
+          emitPlaybackOutcome(
+            {
+              kind: 'failed',
+              requestId,
+              reason: 'playback-error',
+            },
+            true
+          );
           logSpeechDiagnostic({
             phase: 'failed',
             request: failedAttempt,
@@ -579,6 +675,7 @@ export const useAudio = (
       debugError,
       debugLog,
       debugWarn,
+      emitPlaybackOutcome,
       rate,
       selectedPair,
       getNextVoice,

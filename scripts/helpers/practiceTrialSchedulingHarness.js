@@ -49,6 +49,9 @@ function createPracticeTrialSchedulingHarness(fixture) {
   let randomIndex = 0;
   let contrastRevisionSetter = null;
   let currentResult = null;
+  let autoCompleteAudio = true;
+  let nextAudioRequestId = 1;
+  const audioRequests = [];
 
   const record = (event) => events.push(plain(event));
   const buildPairId = (pair) =>
@@ -265,7 +268,8 @@ function createPracticeTrialSchedulingHarness(fixture) {
 
   function useAudio(selectedPair, rate) {
     const play = harness.react.useCallback(
-      async (playedIdx) => {
+      async (playedIdx, observer) => {
+        const requestId = `mock-audio-${nextAudioRequestId++}`;
         record({
           type: 'audio-played',
           pairId: buildPairId(selectedPair),
@@ -273,6 +277,11 @@ function createPracticeTrialSchedulingHarness(fixture) {
           rate,
         });
         if (!selectedPair) throw new Error('No pair selected');
+        audioRequests.push({ requestId, observer });
+        if (autoCompleteAudio && observer) {
+          observer({ kind: 'started', requestId });
+          observer({ kind: 'completed', requestId });
+        }
       },
       [selectedPair, rate]
     );
@@ -373,6 +382,18 @@ function createPracticeTrialSchedulingHarness(fixture) {
     contrastRevisionSetter?.((revision) => revision + 1);
   }
 
+  function replaceCategoryPairs(categoryName, pairs, reason) {
+    const category = categories.get(categoryName);
+    if (!category) throw new Error(`Unknown category: ${categoryName}`);
+    const replacement = { ...category, pairs: [...pairs] };
+    categories.set(categoryName, replacement);
+    if (currentCategory.category === categoryName) {
+      currentCategory = replacement;
+    }
+    record({ type: 'category-pairs-replaced', category: categoryName, reason });
+    contrastRevisionSetter?.((revision) => revision + 1);
+  }
+
   return {
     advanceClock(durationMs) {
       nowMs += durationMs;
@@ -397,12 +418,26 @@ function createPracticeTrialSchedulingHarness(fixture) {
     get randomDrawCount() {
       return randomIndex;
     },
+    get audioRequestCount() {
+      return audioRequests.length;
+    },
+    emitAudioOutcome(requestIndex, outcome) {
+      const request = audioRequests[requestIndex];
+      if (!request) {
+        throw new Error(`Unknown audio request index: ${requestIndex}`);
+      }
+      request.observer?.({ requestId: request.requestId, ...outcome });
+    },
     render,
     remount() {
       harness.unmount();
       currentResult = null;
     },
+    replaceCategoryPairs,
     replaceMastery,
+    setAudioAutoComplete(value) {
+      autoCompleteAudio = value;
+    },
     setCategory,
     setTarget,
   };

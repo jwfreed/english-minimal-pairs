@@ -29,9 +29,10 @@ import {
   type PracticePlaybackAttempt,
   type PracticePlaybackEvent,
 } from '@/src/domain/practice/practicePlaybackLifecycle';
+import { resolveProgressionKey } from '@/src/domain/practice/progressionIdentity';
 import {
   applyProgressionAnswer,
-  getGroupProgression,
+  getContrastProgression,
   initialProgressionState,
 } from '@/src/domain/practice/progressionState';
 import { useAudio, type AudioPlaybackOutcome } from '@/src/hooks/useAudio';
@@ -209,8 +210,10 @@ export function usePracticeSession({
   }, [visible, isLoading]);
 
   const speedTier = selectedPair
-    ? getGroupProgression(progressionStateRef.current, selectedPair.group)
-        .speedTier
+    ? getContrastProgression(
+        progressionStateRef.current,
+        resolveProgressionKey(catObj.category, selectedPair.group)
+      ).speedTier
     : 0;
   const { play, audioModeReady, isSpeaking } = useAudio(
     selectedPair,
@@ -461,9 +464,13 @@ export function usePracticeSession({
       const { playedIdx, startedAtMs } = playback.attempt.prompt;
       timerRef.current?.poke();
       const group = selectedPair.group;
-      const progression = getGroupProgression(
+      // Progression is keyed by contrast identity, not by the group string:
+      // group names are reused across languages, and this hook survives a
+      // category change without resetting progression.
+      const progressionKey = resolveProgressionKey(catObj.category, group);
+      const progression = getContrastProgression(
         progressionStateRef.current,
-        group
+        progressionKey
       );
       const curSpeed = progression.speedTier;
       const longStreak = progression.longStreak;
@@ -512,6 +519,7 @@ export function usePracticeSession({
 
       progressionStateRef.current = applyProgressionAnswer(
         progressionStateRef.current,
+        progressionKey,
         result
       );
 

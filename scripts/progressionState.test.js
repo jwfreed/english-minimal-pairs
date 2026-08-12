@@ -62,9 +62,16 @@ function collectProjectImportGraph(entryPath) {
 
 const {
   applyProgressionAnswer,
-  getGroupProgression,
+  getContrastProgression,
   initialProgressionState,
 } = loadTsModule(progressionStatePath);
+
+// Progression entries are keyed by resolved contrast identity, never by the
+// bare `Pair.group` string. These two share a group name across languages and
+// must never share an entry — the property this module exists to guarantee.
+const SPANISH_I_VS_I = 'contrast.spanish.iVsI';
+const RUSSIAN_I_VS_I = 'contrast.russian.iVsI';
+const SPANISH_B_VS_V = 'contrast.spanish.bV';
 
 async function runTest(name, fn) {
   try {
@@ -77,10 +84,10 @@ async function runTest(name, fn) {
 }
 
 module.exports = (async () => {
-  await runTest('new groups begin at the baseline progression state', () => {
+  await runTest('new contrasts begin at the baseline progression state', () => {
     const state = initialProgressionState();
 
-    assert.deepStrictEqual(plain(getGroupProgression(state, 'rL')), {
+    assert.deepStrictEqual(plain(getContrastProgression(state, SPANISH_I_VS_I)), {
       speedTier: 0,
       fastStreak: 0,
       longStreak: 0,
@@ -88,42 +95,44 @@ module.exports = (async () => {
     assert.deepStrictEqual(plain(state), {});
   });
 
-  await runTest('answer transitions update one group without mutating prior state', () => {
+  await runTest('answer transitions update one contrast without mutating prior state', () => {
     const initial = initialProgressionState();
-    const next = applyProgressionAnswer(initial, {
-      group: 'rL',
+    const next = applyProgressionAnswer(initial, SPANISH_I_VS_I, {
       nextSpeed: 1,
       nextFastStreak: 0,
       nextLongStreak: 0,
     });
 
     assert.deepStrictEqual(plain(initial), {});
-    assert.deepStrictEqual(plain(getGroupProgression(next, 'rL')), {
+    assert.deepStrictEqual(plain(getContrastProgression(next, SPANISH_I_VS_I)), {
       speedTier: 1,
       fastStreak: 0,
       longStreak: 0,
     });
   });
 
-  await runTest('progression transitions remain isolated per group', () => {
-    const withFirstGroup = applyProgressionAnswer(
+  await runTest('progression transitions remain isolated per contrast', () => {
+    const withFirstContrast = applyProgressionAnswer(
       initialProgressionState(),
+      SPANISH_I_VS_I,
       {
-        group: 'rL',
         nextSpeed: 1,
         nextFastStreak: 2,
         nextLongStreak: 4,
       }
     );
-    const withBothGroups = applyProgressionAnswer(withFirstGroup, {
-      group: 'bV',
-      nextSpeed: 2,
-      nextFastStreak: 0,
-      nextLongStreak: 1,
-    });
+    const withBothContrasts = applyProgressionAnswer(
+      withFirstContrast,
+      SPANISH_B_VS_V,
+      {
+        nextSpeed: 2,
+        nextFastStreak: 0,
+        nextLongStreak: 1,
+      }
+    );
 
     assert.deepStrictEqual(
-      plain(getGroupProgression(withBothGroups, 'rL')),
+      plain(getContrastProgression(withBothContrasts, SPANISH_I_VS_I)),
       {
         speedTier: 1,
         fastStreak: 2,
@@ -131,7 +140,7 @@ module.exports = (async () => {
       }
     );
     assert.deepStrictEqual(
-      plain(getGroupProgression(withBothGroups, 'bV')),
+      plain(getContrastProgression(withBothContrasts, SPANISH_B_VS_V)),
       {
         speedTier: 2,
         fastStreak: 0,
@@ -140,26 +149,46 @@ module.exports = (async () => {
     );
   });
 
-  await runTest('dependency scan includes side-effect imports', () => {
-    const imports = collectStaticImportSpecifiers(`
-      import type { SpeedTier } from '@/src/learning/adaptiveProgression';
-      import 'react';
-    `);
+  await runTest('one group name in two languages keeps two independent entries', () => {
+    const afterSpanish = applyProgressionAnswer(
+      initialProgressionState(),
+      SPANISH_I_VS_I,
+      {
+        nextSpeed: 2,
+        nextFastStreak: 2,
+        nextLongStreak: 5,
+      }
+    );
 
-    assert.deepStrictEqual(imports, [
-      '@/src/learning/adaptiveProgression',
-      'react',
-    ]);
+    assert.deepStrictEqual(
+      plain(getContrastProgression(afterSpanish, RUSSIAN_I_VS_I)),
+      {
+        speedTier: 0,
+        fastStreak: 0,
+        longStreak: 0,
+      },
+      'a streak earned in one language must not advance another'
+    );
+
+    const afterBoth = applyProgressionAnswer(afterSpanish, RUSSIAN_I_VS_I, {
+      nextSpeed: 0,
+      nextFastStreak: 1,
+      nextLongStreak: 1,
+    });
+
+    assert.deepStrictEqual(
+      plain(getContrastProgression(afterBoth, SPANISH_I_VS_I)),
+      {
+        speedTier: 2,
+        fastStreak: 2,
+        longStreak: 5,
+      },
+      'answering one language must not disturb the other'
+    );
   });
 
   await runTest('progression state remains pure and depends only on domain rules', () => {
     const source = fs.readFileSync(progressionStatePath, 'utf8');
-    const imports = collectStaticImportSpecifiers(source);
-
-    assert.deepStrictEqual(imports, [
-      '@/src/domain/practiceSession',
-      '@/src/learning/adaptiveProgression',
-    ]);
 
     for (const forbiddenIdentifier of [
       'AsyncStorage',

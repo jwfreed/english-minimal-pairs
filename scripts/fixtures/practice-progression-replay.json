@@ -1,9 +1,9 @@
 {
   "clockStartMs": 100000,
-  "initialCategory": "Shared A",
+  "initialCategory": "日本語",
   "initialMastery": {
-    "Shared A": { "rL": 1, "bV": 1 },
-    "Shared B": { "rL": 1 }
+    "日本語": { "rL": 1, "bV": 1 },
+    "한국어": { "rL": 1 }
   },
   "randomValues": [
     0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.15, 0.85,
@@ -15,7 +15,7 @@
   ],
   "categories": [
     {
-      "category": "Shared A",
+      "category": "日本語",
       "pairs": [
         { "word1": "rake", "word2": "lake", "ipa1": "/reɪk/", "ipa2": "/leɪk/", "difficulty": 1, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" },
         { "word1": "rate", "word2": "late", "ipa1": "/reɪt/", "ipa2": "/leɪt/", "difficulty": 2, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" },
@@ -24,7 +24,7 @@
       ]
     },
     {
-      "category": "Shared B",
+      "category": "한국어",
       "pairs": [
         { "word1": "right", "word2": "light", "ipa1": "/raɪt/", "ipa2": "/laɪt/", "difficulty": 1, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" },
         { "word1": "road", "word2": "load", "ipa1": "/roʊd/", "ipa2": "/loʊd/", "difficulty": 2, "group": "rL", "position": "initial", "contrastPhoneme1": "r", "contrastPhoneme2": "l" }
@@ -34,7 +34,7 @@
   "scenarios": [
     {
       "name": "fast-mastery-ladder",
-      "initialCategory": "Shared A",
+      "initialCategory": "日本語",
       "actions": [
         { "type": "answer", "label": "fast-1", "group": "rL", "answer": "correct", "responseMs": 4999 },
         { "type": "answer", "label": "fast-2", "group": "rL", "answer": "correct", "responseMs": 4999 },
@@ -50,7 +50,7 @@
     },
     {
       "name": "long-mastery-ladder",
-      "initialCategory": "Shared A",
+      "initialCategory": "日本語",
       "actions": [
         { "type": "answer", "label": "slow-1", "group": "rL", "answer": "correct", "responseMs": 5000 },
         { "type": "answer", "label": "slow-2", "group": "rL", "answer": "correct", "responseMs": 5000 },
@@ -75,7 +75,7 @@
     },
     {
       "name": "long-streak-reset",
-      "initialCategory": "Shared A",
+      "initialCategory": "日本語",
       "actions": [
         { "type": "answer", "label": "pre-miss-slow-1", "group": "rL", "answer": "correct", "responseMs": 5000 },
         { "type": "answer", "label": "pre-miss-slow-2", "group": "rL", "answer": "correct", "responseMs": 5000 },
@@ -94,7 +94,7 @@
     },
     {
       "name": "fast-reset-without-demotion",
-      "initialCategory": "Shared A",
+      "initialCategory": "日本語",
       "actions": [
         { "type": "answer", "label": "build-speed-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
         { "type": "answer", "label": "build-speed-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
@@ -110,7 +110,7 @@
     },
     {
       "name": "per-group-fast-isolation",
-      "initialCategory": "Shared A",
+      "initialCategory": "日本語",
       "actions": [
         { "type": "answer", "label": "rl-fast-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
         { "type": "answer", "label": "rl-fast-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
@@ -124,7 +124,7 @@
     },
     {
       "name": "per-group-long-isolation",
-      "initialCategory": "Shared A",
+      "initialCategory": "日本語",
       "actions": [
         { "type": "answer", "label": "rl-slow-1", "group": "rL", "answer": "correct", "responseMs": 5000 },
         { "type": "answer", "label": "bv-slow-1", "group": "bV", "answer": "correct", "responseMs": 5000 },
@@ -145,21 +145,21 @@
     },
     {
       "name": "category-change-same-mount",
-      "initialCategory": "Shared A",
+      "initialCategory": "日本語",
       "actions": [
         { "type": "answer", "label": "category-a-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
         { "type": "answer", "label": "category-a-2", "group": "rL", "answer": "correct", "responseMs": 1000 },
-        { "type": "category-switch", "label": "switch-to-category-b", "category": "Shared B" },
-        { "type": "answer", "label": "category-b-shared-group-promotes", "group": "rL", "answer": "correct", "responseMs": 1000 },
-        { "type": "observe-rate", "label": "category-b-sees-carried-speed", "group": "rL" }
+        { "type": "category-switch", "label": "switch-to-category-b", "category": "한국어" },
+        { "type": "answer", "label": "category-b-shared-group-does-not-promote", "group": "rL", "answer": "correct", "responseMs": 1000 },
+        { "type": "observe-rate", "label": "category-b-starts-at-baseline", "group": "rL" }
       ]
     },
     {
       "name": "same-module-hook-remount",
-      "initialCategory": "Shared B",
+      "initialCategory": "한국어",
       "initialMastery": {
-        "Shared A": { "rL": 1, "bV": 1 },
-        "Shared B": { "rL": 2 }
+        "日本語": { "rL": 1, "bV": 1 },
+        "한국어": { "rL": 2 }
       },
       "actions": [
         { "type": "answer", "label": "before-remount-1", "group": "rL", "answer": "correct", "responseMs": 1000 },
@@ -237,8 +237,8 @@
       "remounts": []
     },
     "category-change-same-mount": {
-      "answers": [["category-a-1", 0.85, "correct", null, 0], ["category-a-2", 0.85, "correct", null, 0], ["category-b-shared-group-promotes", 0.85, "correct", null, 0]],
-      "observations": [["category-b-sees-carried-speed", 1, 0]],
+      "answers": [["category-a-1", 0.85, "correct", null, 0], ["category-a-2", 0.85, "correct", null, 0], ["category-b-shared-group-does-not-promote", 0.85, "correct", null, 0]],
+      "observations": [["category-b-starts-at-baseline", 0.85, 0]],
       "masteryChanges": [],
       "remounts": []
     },

@@ -521,7 +521,7 @@ module.exports = (async () => {
       (pair) => scenario.buildPairId(pair) !== 'rL:rock:lock'
     );
     scenario.replaceCategoryPairs(
-      'Test A',
+      '日本語',
       [requestedPair, ...otherPairs],
       'transient-deferred-render-mismatch'
     );
@@ -550,7 +550,7 @@ module.exports = (async () => {
 
     const mismatchStart = scenario.events.length;
     scenario.replaceMastery(
-      'Test A',
+      '日本語',
       { rL: 2, bV: 1 },
       'deferred-playback-mismatch'
     );
@@ -566,7 +566,7 @@ module.exports = (async () => {
 
     const restoreStart = scenario.events.length;
     scenario.replaceMastery(
-      'Test A',
+      '日本語',
       { rL: 1, bV: 1 },
       'restore-scheduled-pair'
     );
@@ -593,7 +593,7 @@ module.exports = (async () => {
     scenario.render();
     scenario.current.handlePickerScrollStart();
     scenario.replaceMastery(
-      'Test A',
+      '日本語',
       { rL: 2, bV: 1 },
       'picker-scroll-live-visible-check'
     );

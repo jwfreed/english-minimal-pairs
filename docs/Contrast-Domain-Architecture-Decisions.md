@@ -953,6 +953,114 @@ Tradeoffs:
 
 ---
 
+# **Decision 015**
+
+Date:
+2026-08-12
+
+Status:
+Accepted
+
+## **Title**
+
+Architecture Authority And Phase Numbering Have One Source
+
+## **Context**
+
+`docs/ENGINEERING_ROADMAP.md` was authored as an independent roadmap and
+introduced its own phase numbering (Phase 0 through Phase 6) alongside the
+existing numbering in
+`docs/Contrast-Domain-Architecture-Evolution Plan.md` (Phase 0 through Phase 5).
+
+A repository review on 2026-08-12 established that the two numbering schemes
+collide, and that the roadmap describes a repository state that no longer
+exists:
+
+* its Phase 1 ("move learning rules out of React hooks"; "create
+  `src/domain/learning/progression.ts`") was delivered as tracked Phase 4.2 in
+  commit `eb41f1b`, which created
+  [`src/domain/practice/progressionState.ts`](../src/domain/practice/progressionState.ts)
+* its Phase 1 target, a `PracticeEngine`, had already been rejected on recorded
+  grounds in `docs/Phase-4.2-Mastery-Progress-Lifecycle-Review.md` §7.3
+* its Phase 5 (schema version, migration, recovery) was delivered as tracked
+  Phase 3.5 through 3.7
+* its Phase 6 (observability of persistence and migration failures) was
+  delivered as tracked Phase 3.8A
+* its Phase 2 and Phase 3 overlap the tracked Phase 3, whose production
+  enablement is gated by Decision 011 on operational evidence that does not yet
+  exist
+
+The failure mode this creates is specific and severe. An agent instructed to
+"execute Phase 1" or "continue to Phase 3" cannot determine which document is
+meant. One reading of "Phase 3" leads into a migration that Decision 011
+protects.
+
+## **Decision**
+
+There is exactly one architecture authority in this repository, and phase
+numbers belong to it alone.
+
+**Authoritative sources, in precedence order:**
+
+1. `docs/Contrast-Domain-Architecture-Decisions.md` — accepted Decisions.
+2. `docs/Contrast-Domain-Architecture-Evolution Plan.md` — phase definitions,
+   completion records, exit gates.
+3. Phase-scoped plans and reviews (`docs/Phase-*.md`) — slice scope and
+   invariants within an already-defined phase.
+
+**No other document may define, number, or renumber a phase.** A document that
+describes product direction may do so only in themes that carry no phase
+number and no implementation sequencing.
+
+`docs/ENGINEERING_ROADMAP.md` is retained as a **product vision document**. Its
+phase headings are removed, its themes are annotated with their actual tracked
+status, and it carries a non-authority banner. It is not an implementation
+instruction and must not be cited as one.
+
+A phase number appearing in a prompt, issue, or commit message refers to the
+Evolution Plan numbering unless the citing text names a different document
+explicitly.
+
+## **Reason**
+
+Two numbering schemes in one `docs/` directory is not a documentation-hygiene
+problem; it is an authorization problem. The tracked phases carry gates —
+Decision 011's retirement evidence requirements, the Phase 3 architecture review
+gate, the Phase 4 frozen-surface list. A parallel numbering scheme lets an agent
+satisfy a phase name while bypassing the gate attached to the phase it actually
+matches.
+
+Retaining the vision content while stripping its numbering preserves the
+product intent that motivated it without preserving the ambiguity. Deleting it
+outright would lose stated product direction that no other document records.
+
+## **Consequences**
+
+Positive:
+
+* a phase number resolves to exactly one definition and one gate
+* product vision can evolve in its own document without implying a work sequence
+* future roadmap-style documents have a stated place to live and a stated limit
+
+Tradeoffs:
+
+* product-direction changes now require an explicit translation step before they
+  become sequenced work
+* the vision document will drift from implementation status unless re-checked;
+  its annotations are dated and must be treated as point-in-time
+
+## **Required statements**
+
+* The Evolution Plan and this Decisions document are the only sources of phase
+  numbering.
+* `docs/ENGINEERING_ROADMAP.md` is a vision document, not an implementation
+  instruction, and defines no phases.
+* An unqualified phase number refers to the Evolution Plan.
+* This decision does not renumber or alter Decisions 001–011, and does not
+  accept, reject, or alter proposed Decisions 012–014.
+
+---
+
 # **Proposed Decisions — not accepted**
 
 Everything below this line is a **proposal**. Proposed entries are not binding,
@@ -960,11 +1068,12 @@ do not constrain implementation, and must not be cited as authority. They
 become effective only when a human changes their `Status` to `Accepted` and
 records the approval date.
 
-Decisions 001–011 above are unchanged by this section. No entry below renumbers,
-alters, supersedes, or weakens any accepted Decision. Decision 011's retirement
-evidence requirements in particular remain in force exactly as written — the
-proposals below constrain how evidence is *classified and evaluated*, which
-makes Decision 011's gates harder to satisfy accidentally, never easier.
+Decisions 001–011 and 015 above are unchanged by this section. No entry below
+renumbers, alters, supersedes, or weakens any accepted Decision. Decision 011's
+retirement evidence requirements in particular remain in force exactly as
+written — the proposals below constrain how evidence is *classified and
+evaluated*, which makes Decision 011's gates harder to satisfy accidentally,
+never easier.
 
 Origin: the Phase 3.8B safety-gate design review recorded in
 `docs/Phase-3.8B-Safety-Gate-Evidence-Model.md`.

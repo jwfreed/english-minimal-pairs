@@ -271,15 +271,15 @@ module.exports = (async () => {
     );
   });
 
-  await runTest('category changes preserve same-group progression within a mounted hook', () => {
+  await runTest('category changes isolate same-group progression within a mounted hook', () => {
     assert.strictEqual(
       findStep(
         replays,
         'category-change-same-mount',
-        'category-b-sees-carried-speed'
+        'category-b-starts-at-baseline'
       ).playbackRate,
-      1,
-      'the current hook does not category-scope progression for shared group IDs'
+      0.85,
+      'progression is keyed by contrast identity, so a shared group ID must not carry speed across categories'
     );
   });
 

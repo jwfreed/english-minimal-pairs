@@ -111,6 +111,37 @@ module.exports = (async () => {
     });
   });
 
+  await runTest('a fresh practice session does not inherit prior practice state', () => {
+    const completedSession = applyProgressionAnswer(
+      initialProgressionState(),
+      SPANISH_I_VS_I,
+      {
+        nextSpeed: 2,
+        nextFastStreak: 2,
+        nextLongStreak: 5,
+      }
+    );
+    const freshSession = initialProgressionState();
+
+    assert.deepStrictEqual(
+      plain(getContrastProgression(completedSession, SPANISH_I_VS_I)),
+      {
+        speedTier: 2,
+        fastStreak: 2,
+        longStreak: 5,
+      }
+    );
+    assert.deepStrictEqual(plain(freshSession), {});
+    assert.deepStrictEqual(
+      plain(getContrastProgression(freshSession, SPANISH_I_VS_I)),
+      {
+        speedTier: 0,
+        fastStreak: 0,
+        longStreak: 0,
+      }
+    );
+  });
+
   await runTest('progression transitions remain isolated per contrast', () => {
     const withFirstContrast = applyProgressionAnswer(
       initialProgressionState(),
@@ -187,7 +218,7 @@ module.exports = (async () => {
     );
   });
 
-  await runTest('progression state remains pure and depends only on domain rules', () => {
+  await runTest('practice state remains pure and cannot depend on mastery or storage', () => {
     const source = fs.readFileSync(progressionStatePath, 'utf8');
 
     for (const forbiddenIdentifier of [

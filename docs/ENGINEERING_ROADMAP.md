@@ -194,8 +194,9 @@ not create additional authority.
   `historicalIdentityMapping`. Category labels and pair content have both
   changed over the life of the application; that is why Decisions 006–008 exist.
 * **No new progress model.** Three contrast-progress-shaped types already exist
-  (`ContrastPairProgress`, `ContrastMasteryRecord`, `ContrastProgression`). A
-  fourth requires saying explicitly what it supersedes.
+  (`ContrastPairProgress`, `ContrastMasteryRecord`, `ContrastPracticeState`).
+  The last is explicitly transient practice state under Decision 016, not
+  learner mastery. A fourth requires saying explicitly what it supersedes.
 * **Smallest cohesive change.** No unrelated refactors, no new dependencies, no
   opportunistic fixes folded into a move.
 

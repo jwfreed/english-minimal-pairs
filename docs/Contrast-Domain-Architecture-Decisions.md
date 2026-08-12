@@ -1061,6 +1061,83 @@ Tradeoffs:
 
 ---
 
+# **Decision 016**
+
+Date:
+2026-08-12
+
+Status:
+Accepted
+
+## **Title**
+
+Practice State And Mastery State Are Separate Concepts
+
+## **Context**
+
+`src/domain/practice/progressionState.ts` represents three values for each
+contrast: `speedTier`, `fastStreak`, and `longStreak`. React owns the map in
+`usePracticeSession` memory. A new hook instance starts with an empty map, and
+no storage adapter reads or writes it.
+
+The exported name `ContrastProgression` obscured that lifecycle. "Progression"
+can reasonably be read as durable learner improvement, even though this state
+only controls the in-session run toward the next promotion. The repository also
+has durable mastery state and a future product direction toward richer learner
+knowledge, retention, and long-term improvement. Those concepts have different
+lifecycles and authorities.
+
+## **Decision**
+
+Transient practice mechanics and durable learner mastery are separate domain
+concepts.
+
+The per-contrast session values are named `ContrastPracticeState`. They own only
+temporary speed and streak mechanics used during a mounted practice session.
+Their lifecycle remains session-scoped and non-persistent.
+
+Durable mastery remains under its existing authority and persistence contracts.
+This decision does not create, name fields for, or specify the behavior of a
+future richer mastery model. It also does not decide whether practice sessions
+may one day become resumable; any such change requires its own product and data
+lifecycle decision and must still remain distinct from mastery.
+
+## **Reason**
+
+Lifecycle and meaning are both domain boundaries. Treating an in-memory streak
+as learner knowledge would make it easy to couple practice mechanics to mastery
+persistence, retention policy, or scheduling before those product decisions
+exist. A practice-specific name makes the current ownership visible while
+preserving the established listening, choice, feedback, and promotion behavior.
+
+## **Consequences**
+
+Positive:
+
+* current speed and streak mechanics have a name that states their owner and
+  lifecycle
+* durable mastery can evolve independently without absorbing session mechanics
+* tests can protect the no-storage and no-mastery dependency boundary directly
+
+Tradeoffs:
+
+* existing progression-oriented runtime function and file names remain for API
+  stability, so the type and documentation carry the sharper distinction
+* session resumption remains an explicit open product question rather than an
+  accidental consequence of this clarification
+
+## **Required statements**
+
+* Practice State is not Mastery State.
+* `ContrastPracticeState` is transient, session-scoped, and not persisted.
+* No mastery model, persistence behavior, storage key, learner-facing behavior,
+  progression rule, or scheduling policy changes under this decision.
+* A future durable mastery model remains intentionally undefined.
+* `CONTRAST_MASTERY_ROLLOUT_STATE` remains `disabled`, and Decision 011's
+  operational evidence gate remains unchanged.
+
+---
+
 # **Proposed Decisions — not accepted**
 
 Everything below this line is a **proposal**. Proposed entries are not binding,
@@ -1068,10 +1145,10 @@ do not constrain implementation, and must not be cited as authority. They
 become effective only when a human changes their `Status` to `Accepted` and
 records the approval date.
 
-Decisions 001–011 and 015 above are unchanged by this section. No entry below
-renumbers, alters, supersedes, or weakens any accepted Decision. Decision 011's
-retirement evidence requirements in particular remain in force exactly as
-written — the proposals below constrain how evidence is *classified and
+Decisions 001–011 and 015–016 above are unchanged by this section. No entry
+below renumbers, alters, supersedes, or weakens any accepted Decision. Decision
+011's retirement evidence requirements in particular remain in force exactly
+as written — the proposals below constrain how evidence is *classified and
 evaluated*, which makes Decision 011's gates harder to satisfy accidentally,
 never easier.
 

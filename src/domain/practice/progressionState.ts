@@ -3,40 +3,44 @@ import type { ContrastId } from '@/src/domain/identity';
 import type { SpeedTier } from '@/src/learning/adaptiveProgression';
 
 /**
- * The in-flight progression ladder for one contrast.
+ * Session-scoped practice mechanics for one contrast.
  *
- * This is not learner history and not persisted mastery. It is the transient
- * run toward the next promotion. `ContrastPairProgress`
+ * This state exists only while practice is mounted and is discarded with that
+ * session. It is not learner history or durable mastery. `ContrastPairProgress`
  * (`@/src/domain/contrast/pairProgressProjection`) projects accumulated attempt
  * history; `ContrastMasteryRecord`
  * (`@/src/domain/contrastMasteryPersistence`) is the durable tier. This type is
- * neither, and owns no durability.
+ * neither. A future richer mastery model remains a separate domain concept.
  */
-export interface ContrastProgression {
+export interface ContrastPracticeState {
   readonly speedTier: SpeedTier;
   readonly fastStreak: number;
   readonly longStreak: number;
 }
 
-export type ProgressionState = Readonly<
-  Record<ContrastId, ContrastProgression>
+export type PracticeStateByContrast = Readonly<
+  Record<ContrastId, ContrastPracticeState>
 >;
 
-const INITIAL_CONTRAST_PROGRESSION: ContrastProgression = {
+const INITIAL_CONTRAST_PRACTICE_STATE: ContrastPracticeState = {
   speedTier: 0,
   fastStreak: 0,
   longStreak: 0,
 };
 
-export function initialProgressionState(): ProgressionState {
+/**
+ * Creates state for one practice-session lifetime. Persistence and mastery
+ * ownership deliberately remain outside this module.
+ */
+export function initialProgressionState(): PracticeStateByContrast {
   return {};
 }
 
 export function getContrastProgression(
-  state: ProgressionState,
+  state: PracticeStateByContrast,
   key: ContrastId
-): ContrastProgression {
-  return state[key] ?? INITIAL_CONTRAST_PROGRESSION;
+): ContrastPracticeState {
+  return state[key] ?? INITIAL_CONTRAST_PRACTICE_STATE;
 }
 
 /**
@@ -46,13 +50,13 @@ export function getContrastProgression(
  * result.
  */
 export function applyProgressionAnswer(
-  state: ProgressionState,
+  state: PracticeStateByContrast,
   key: ContrastId,
   result: Pick<
     PracticeAnswerResult,
     'nextSpeed' | 'nextFastStreak' | 'nextLongStreak'
   >
-): ProgressionState {
+): PracticeStateByContrast {
   return {
     ...state,
     [key]: {

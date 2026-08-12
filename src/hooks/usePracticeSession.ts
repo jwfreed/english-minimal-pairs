@@ -70,7 +70,9 @@ export function usePracticeSession({
     []
   );
 
-  const progressionStateRef = useRef(initialProgressionState());
+  // Practice mechanics intentionally live only for this mounted session. They
+  // are not hydrated from or written to durable learner mastery.
+  const practiceStateRef = useRef(initialProgressionState());
   const [, forceRender] = useState(0);
   const playbackStateRef = useRef(initialPracticePlaybackState());
   const nextPlaybackAttemptIdRef = useRef(0);
@@ -211,7 +213,7 @@ export function usePracticeSession({
 
   const speedTier = selectedPair
     ? getContrastProgression(
-        progressionStateRef.current,
+        practiceStateRef.current,
         resolveProgressionKey(catObj.category, selectedPair.group)
       ).speedTier
     : 0;
@@ -464,17 +466,17 @@ export function usePracticeSession({
       const { playedIdx, startedAtMs } = playback.attempt.prompt;
       timerRef.current?.poke();
       const group = selectedPair.group;
-      // Progression is keyed by contrast identity, not by the group string:
-      // group names are reused across languages, and this hook survives a
-      // category change without resetting progression.
+      // Practice state is keyed by contrast identity, not by the group string:
+      // group names are reused across languages, and one mounted session can
+      // cross a category change without resetting its transient state.
       const progressionKey = resolveProgressionKey(catObj.category, group);
-      const progression = getContrastProgression(
-        progressionStateRef.current,
+      const contrastPracticeState = getContrastProgression(
+        practiceStateRef.current,
         progressionKey
       );
-      const curSpeed = progression.speedTier;
-      const longStreak = progression.longStreak;
-      const fastStreak = progression.fastStreak;
+      const curSpeed = contrastPracticeState.speedTier;
+      const longStreak = contrastPracticeState.longStreak;
+      const fastStreak = contrastPracticeState.fastStreak;
 
       const result = applyPracticeAnswer({
         selectedPair,
@@ -517,8 +519,8 @@ export function usePracticeSession({
         wasCorrect: result.correct,
       });
 
-      progressionStateRef.current = applyProgressionAnswer(
-        progressionStateRef.current,
+      practiceStateRef.current = applyProgressionAnswer(
+        practiceStateRef.current,
         progressionKey,
         result
       );

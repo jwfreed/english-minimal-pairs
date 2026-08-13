@@ -67,6 +67,12 @@ export function deriveContrastKnowledge({
     );
   }
 
+  if (!Number.isFinite(evaluationTimestamp)) {
+    throw new Error(
+      'ContrastKnowledge evaluation timestamp must be a finite number'
+    );
+  }
+
   if (completeness === 'unattested') {
     return Object.freeze({ standing: 'indeterminate' });
   }

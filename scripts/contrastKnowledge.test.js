@@ -124,6 +124,50 @@ runTest('the caller minimum must be a positive safe integer', () => {
   }
 });
 
+runTest('the evaluation timestamp must be a finite number', () => {
+  for (const evaluationTimestamp of [
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ]) {
+    assert.throws(
+      () =>
+        derive({
+          evaluationTimestamp,
+          attributedAttempts: [attempt(1_000)],
+          minimumAttributedAttemptCount: 1,
+        }),
+      /evaluation timestamp must be a finite number/
+    );
+  }
+});
+
+runTest('a non-finite evaluation timestamp is rejected before completeness', () => {
+  assert.throws(
+    () =>
+      derive({
+        evaluationTimestamp: Number.NaN,
+        completeness: 'unattested',
+        attributedAttempts: [],
+        minimumAttributedAttemptCount: 1,
+      }),
+    /evaluation timestamp must be a finite number/
+  );
+});
+
+runTest('a fractional evaluation timestamp remains valid', () => {
+  assert.deepStrictEqual(
+    plain(
+      derive({
+        evaluationTimestamp: 10_000.5,
+        attributedAttempts: [attempt(1_000)],
+        minimumAttributedAttemptCount: 1,
+      }).recency
+    ),
+    { elapsedMilliseconds: 9_000.5 }
+  );
+});
+
 runTest('evaluation time changes only the elapsed recency observation', () => {
   const attributedAttempts = [attempt(1_000, false), attempt(4_000)];
   const earlier = plain(

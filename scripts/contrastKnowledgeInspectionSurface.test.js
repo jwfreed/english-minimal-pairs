@@ -1,4 +1,5 @@
 const assert = require('assert');
+const fs = require('fs');
 const path = require('path');
 const { loadTsModule } = require('./load-ts-module');
 
@@ -253,6 +254,117 @@ runTest('standing census is descriptive and contains no score or ranking', () =>
     'unobserved',
   ]);
   assert.ok(!/score|rank|priority|ability/i.test(serialized));
+});
+
+const SETTINGS_PATH = path.join(ROOT, 'app', '(tabs)', 'settings.tsx');
+const TAB_LAYOUT_PATH = path.join(ROOT, 'app', '(tabs)', '_layout.tsx');
+const SECTION_PATH = path.join(
+  ROOT,
+  'src',
+  'dev',
+  'ContrastKnowledgeInspectionSection.tsx'
+);
+const settingsSource = fs.readFileSync(SETTINGS_PATH, 'utf8');
+const sectionSource = fs.readFileSync(SECTION_PATH, 'utf8');
+const reportSource = fs.readFileSync(REPORT_PATH, 'utf8');
+
+runTest('Settings directly guards the inspection section with __DEV__', () => {
+  assert.ok(
+    /\{__DEV__\s*&&\s*\(\s*<ContrastKnowledgeInspectionSection[\s\S]*?\/>\s*\)\}/m.test(
+      settingsSource
+    ),
+    'Settings must directly guard the inspection section with __DEV__'
+  );
+});
+
+runTest('the UI reads real evidence only through getContrastProgress', () => {
+  assert.ok(sectionSource.includes('getContrastProgress()'));
+  assert.ok(
+    sectionSource.includes(
+      "from '@/src/storage/contrastProgressStorage'"
+    )
+  );
+  assert.ok(!sectionSource.includes('AsyncStorage'));
+  assert.ok(!sectionSource.includes("from '@/src/storage/progressStorage'"));
+  assert.ok(
+    !/\b(saveAttempt|clearProgress|setItem|removeItem)\b/.test(
+      sectionSource
+    )
+  );
+});
+
+runTest('the async UI owns the evaluation clock and fixed minimum', () => {
+  assert.ok(sectionSource.includes('Date.now()'));
+  assert.ok(
+    sectionSource.includes('CONTRAST_KNOWLEDGE_INSPECTION_MINIMUM')
+  );
+  assert.ok(!reportSource.includes('Date.now()'));
+});
+
+runTest('inspection dependencies exclude protected behavior modules', () => {
+  const newSource = `${reportSource}\n${sectionSource}`;
+
+  assert.ok(
+    !/mastery|scheduling|trialScheduling|recommendNextPractice|analytics|featureFlags/i.test(
+      newSource
+    )
+  );
+});
+
+runTest('no route or navigation file mounts the inspection section', () => {
+  const appFiles = [];
+  function collect(directory) {
+    for (const entry of fs.readdirSync(directory, {
+      withFileTypes: true,
+    })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) collect(entryPath);
+      else if (/\.(ts|tsx)$/.test(entry.name)) appFiles.push(entryPath);
+    }
+  }
+  collect(path.join(ROOT, 'app'));
+  const consumers = appFiles.filter((file) =>
+    fs
+      .readFileSync(file, 'utf8')
+      .includes('<ContrastKnowledgeInspectionSection')
+  );
+
+  assert.deepStrictEqual(consumers, [SETTINGS_PATH]);
+  assert.ok(
+    !fs
+      .readFileSync(TAB_LAYOUT_PATH, 'utf8')
+      .includes('ContrastKnowledgeInspection')
+  );
+});
+
+runTest('developer inspection minimum is confined to src/dev', () => {
+  assert.ok(
+    reportSource.includes(
+      'CONTRAST_KNOWLEDGE_INSPECTION_MINIMUM = 5'
+    )
+  );
+
+  function sourceFiles(directory) {
+    return fs
+      .readdirSync(directory, { withFileTypes: true })
+      .flatMap((entry) => {
+        const entryPath = path.join(directory, entry.name);
+        if (entry.isDirectory()) return sourceFiles(entryPath);
+        return /\.(ts|tsx)$/.test(entry.name) ? [entryPath] : [];
+      });
+  }
+
+  const outsideDev = sourceFiles(path.join(ROOT, 'src')).filter(
+    (sourcePath) => !sourcePath.startsWith(path.join(ROOT, 'src', 'dev'))
+  );
+  for (const sourcePath of outsideDev) {
+    assert.ok(
+      !fs
+        .readFileSync(sourcePath, 'utf8')
+        .includes('CONTRAST_KNOWLEDGE_INSPECTION_MINIMUM'),
+      sourcePath
+    );
+  }
 });
 
 assert.strictEqual(CONTRAST_KNOWLEDGE_INSPECTION_MINIMUM, 5);

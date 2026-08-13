@@ -25,6 +25,7 @@ import createStyles from '@/src/constants/styles';
 import { tKeys } from '@/src/constants/translationKeys';
 import { minimalPairs } from '@/src/constants/minimalPairs';
 import { useHaptics } from '@/src/hooks/useHaptics';
+import { ContrastKnowledgeInspectionSection } from '@/src/dev/ContrastKnowledgeInspectionSection';
 import {
   PLACEMENT_LEGACY_MIGRATION_KEY,
   buildPlacementStorageKey,
@@ -430,6 +431,10 @@ export default function SettingsScreen() {
             />
           </FlashPressable>
         </View>
+
+        {__DEV__ && (
+          <ContrastKnowledgeInspectionSection categoryLabel={currentCatKey} />
+        )}
 
         {/* Footer Spacer */}
         <View style={styles.footer} />

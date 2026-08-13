@@ -1138,6 +1138,120 @@ Tradeoffs:
 
 ---
 
+# **Decision 017**
+
+Date:
+2026-08-13
+
+Status:
+Accepted
+
+## **Title**
+
+ContrastKnowledge Domain Boundary
+
+## **Context**
+
+The repository has stable Contrast identity and a pure read-side projection of
+legacy pair-progress evidence, but it has no domain representation for what
+that evidence supports for one contrast at a particular evaluation instant.
+Existing practice state, durable mastery, recommendation, and scheduling
+concepts have different meanings and owners. Reusing any of them would turn an
+inspection of evidence into an unsupported claim about learner ability or
+future practice.
+
+The projection can also contain unmapped entries, malformed entries, or
+malformed attempts. Treating a partial projection as complete would make
+unknown evidence appear weak or absent. Conversely, a contrast with no
+attributed attempts must remain distinguishable from a contrast whose
+attributed attempts were all incorrect.
+
+## **Decision**
+
+`ContrastKnowledge` represents the standing of the evidence for one Contrast
+at one caller-supplied evaluation instant. It is a pure derived value, not a
+learner ability, proficiency, mastery score, retention estimate, scheduler
+value, or curriculum position.
+
+Standing has four mutually exclusive states in this precedence order:
+
+1. `indeterminate` when evidence completeness is not attested, regardless of
+   attributed attempt count.
+2. `unobserved` when completeness is attested and there are zero attributed
+   attempts.
+3. `insufficient` when completeness is attested, at least one attributed
+   attempt exists, and the attempt count is below the caller-supplied minimum.
+4. `observed` when completeness is attested and the attributed attempt count
+   meets or exceeds that minimum.
+
+Sufficiency is required caller policy. The domain provides no default,
+fallback, optional threshold, or embedded product criterion.
+
+The single-contrast derivation consumes only attempts already attributed to
+that Contrast, an explicit completeness attestation, the evaluation instant,
+and the required minimum. It does not select evidence, resolve identities,
+inspect projection-wide diagnostics, read the clock, persist data, or know
+about tiers, scheduling, analytics, or UI.
+
+A pure inspection/composition layer owns the language scope. It attests the
+scope complete only when the full input projection reports zero unmapped
+entries, zero malformed entries, and zero malformed attempts. It includes
+every registered Contrast in the requested language, including Contrasts with
+zero attributed evidence, and returns entries in stable Contrast identity
+order rather than value order. It does not rank, summarize ability across
+Contrasts, or recommend practice.
+
+For attested positive evidence, attempt count, correct count, and recency are
+factual observations, not scores. Recency is only the elapsed time between the
+latest attributed attempt and the evaluation instant. It is absent when there
+is no complete positive evidence, and a future-dated attempt produces a
+negative elapsed value without clamping. No ability score, confidence score,
+percentage-as-proficiency, priority, due date, retention estimate, or generic
+`reasons[]` belongs to this boundary.
+
+## **Reason**
+
+Unknown evidence and weak evidence are different domain facts. Keeping
+completeness attestation outside the single-contrast interpretation prevents
+partial or unattributed data from becoming a low score. Keeping sufficiency
+outside the domain prevents an inspection primitive from silently becoming
+product policy. Explicit time input and observational recency preserve
+determinism without introducing retention or scheduling semantics.
+
+## **Consequences**
+
+Positive:
+
+* every registered Contrast can be inspected even before its first attempt
+* incomplete projections fail closed as `indeterminate`
+* callers can apply different explicit sufficiency criteria to the same
+  evidence
+* recency remains truthful, deterministic, and independent of input order
+* the existing projection remains the sole identity-attribution boundary
+
+Tradeoffs:
+
+* callers must supply both an evaluation instant and a sufficiency minimum
+* inspection cannot claim a standing stronger than the completeness attestation
+* this decision creates no production consumer or learner-facing behavior
+
+## **Required statements**
+
+* Unknown is not weak.
+* Never-attempted evidence is not equivalent to all-incorrect evidence.
+* Completeness is assembled by the inspection/composition layer from the full
+  projection scope.
+* Sufficiency is caller-owned policy with no domain default.
+* Recency is observational only and is not retention, forgetting, staleness,
+  or review due-ness.
+* Practice state, mastery state, persistence, scheduling, progression, and
+  learner-facing behavior do not change under this decision.
+* `CONTRAST_MASTERY_ROLLOUT_STATE` remains `disabled`, and Decision 011's
+  operational evidence gate remains unchanged.
+* This decision does not renumber, reinterpret, or modify any other decision.
+
+---
+
 # **Proposed Decisions — not accepted**
 
 Everything below this line is a **proposal**. Proposed entries are not binding,
@@ -1145,7 +1259,7 @@ do not constrain implementation, and must not be cited as authority. They
 become effective only when a human changes their `Status` to `Accepted` and
 records the approval date.
 
-Decisions 001–011 and 015–016 above are unchanged by this section. No entry
+Decisions 001–011 and 015–017 above are unchanged by this section. No entry
 below renumbers, alters, supersedes, or weakens any accepted Decision. Decision
 011's retirement evidence requirements in particular remain in force exactly
 as written — the proposals below constrain how evidence is *classified and

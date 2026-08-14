@@ -29,6 +29,12 @@ const REPORT_PATH = path.join(
   'dev',
   'contrastKnowledgeInspectionReport.ts'
 );
+const SUGGESTION_PATH = path.join(
+  SRC,
+  'domain',
+  'practice',
+  'nextContrastSuggestion.ts'
+);
 
 const { inspectContrastKnowledge } = loadTsModule(INSPECTION_PATH);
 const { contrastRegistry } = loadTsModule(
@@ -189,10 +195,10 @@ const callers = sourceFiles(SRC).filter(
     fs.readFileSync(sourcePath, 'utf8').includes('inspectContrastKnowledge(')
 );
 
-runTest('inspectContrastKnowledge has exactly one known caller', () => {
+runTest('inspectContrastKnowledge has exactly two reviewed callers', () => {
   assert.deepStrictEqual(
-    callers,
-    [REPORT_PATH],
+    callers.sort(),
+    [REPORT_PATH, SUGGESTION_PATH].sort(),
     'A new ContrastKnowledge consumer must be reviewed against the ' +
       'completeness invariant before this list changes.'
   );

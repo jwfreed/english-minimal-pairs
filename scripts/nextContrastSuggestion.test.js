@@ -11,6 +11,18 @@ const SOURCE_PATH = path.join(
   'practice',
   'nextContrastSuggestion.ts'
 );
+const HOOK_PATH = path.join(
+  ROOT,
+  'src',
+  'hooks',
+  'useNextContrastSuggestion.ts'
+);
+const FEATURE_FLAGS_PATH = path.join(
+  ROOT,
+  'src',
+  'config',
+  'featureFlags.ts'
+);
 
 assert.ok(
   fs.existsSync(SOURCE_PATH),
@@ -279,6 +291,194 @@ runTest('canonical registry evidence is used for current-language ownership', ()
     contrastRegistry.getById(current.contrastId)?.languageId,
     LANGUAGE_IDS.japanese
   );
+});
+
+function loadSuggestionHook({
+  flagEnabled,
+  isLoading = false,
+  progress = {},
+  categoryIndex = 0,
+  language = '日本語',
+  projectionResult = { whole: 'projection' },
+  projectionError,
+  suggestionResult = {
+    kind: 'continue-current',
+    contrastId: current.contrastId,
+  },
+  suggestionError,
+  evaluationTimestamp = 42_000,
+}) {
+  const calls = {
+    projection: 0,
+    suggestion: 0,
+    projectedProgress: undefined,
+    suggestionInput: undefined,
+  };
+  const moduleMocks = {
+    react: {
+      useMemo: (factory) => factory(),
+    },
+    '@/src/config/featureFlags': {
+      CONTRAST_PRACTICE_SUGGESTION_ENABLED: flagEnabled,
+    },
+    '@/src/context/PairProgressContext': {
+      usePairProgress: () => ({ progress, isLoading }),
+    },
+    '@/src/context/CategoryContext': {
+      useCategory: () => ({ categoryIndex }),
+    },
+    '@/src/context/LanguageContext': {
+      useLanguage: () => ({ language }),
+    },
+    '@/src/domain/contrast/pairProgressProjection': {
+      projectPairProgressToContrasts: (receivedProgress) => {
+        calls.projection += 1;
+        calls.projectedProgress = receivedProgress;
+        if (projectionError) throw projectionError;
+        return projectionResult;
+      },
+    },
+    '@/src/domain/practice/nextContrastSuggestion': {
+      PRODUCT_SUFFICIENCY_MINIMUM_ATTRIBUTED_ATTEMPTS: 6,
+      getNextContrastSuggestion: (input) => {
+        calls.suggestion += 1;
+        calls.suggestionInput = input;
+        if (suggestionError) throw suggestionError;
+        return suggestionResult;
+      },
+    },
+  };
+  const { useNextContrastSuggestion } = loadTsModule(
+    HOOK_PATH,
+    new Map(),
+    moduleMocks,
+    { Date: { now: () => evaluationTimestamp } }
+  );
+
+  return { calls, useNextContrastSuggestion };
+}
+
+runTest('the disabled hook performs zero projection or suggestion work', () => {
+  assert.ok(
+    fs.existsSync(HOOK_PATH),
+    'useNextContrastSuggestion.ts must exist before adapter behavior can pass'
+  );
+  const { calls, useNextContrastSuggestion } = loadSuggestionHook({
+    flagEnabled: false,
+  });
+
+  assert.strictEqual(useNextContrastSuggestion('rL'), null);
+  assert.deepStrictEqual(
+    { projection: calls.projection, suggestion: calls.suggestion },
+    { projection: 0, suggestion: 0 }
+  );
+});
+
+runTest('loading progress cannot be projected into unobserved evidence', () => {
+  const { calls, useNextContrastSuggestion } = loadSuggestionHook({
+    flagEnabled: true,
+    isLoading: true,
+    progress: {},
+  });
+
+  assert.strictEqual(useNextContrastSuggestion('rL'), null);
+  assert.deepStrictEqual(
+    { projection: calls.projection, suggestion: calls.suggestion },
+    { projection: 0, suggestion: 0 }
+  );
+});
+
+runTest('the enabled hook forwards whole progress and explicit policy inputs', () => {
+  const progress = {
+    [current.legacyPairProgressKey]: { attempts: attempts(2) },
+  };
+  const projectionResult = { whole: 'projection' };
+  const { calls, useNextContrastSuggestion } = loadSuggestionHook({
+    flagEnabled: true,
+    progress,
+    projectionResult,
+    evaluationTimestamp: 42_000,
+  });
+
+  assert.deepStrictEqual(plain(useNextContrastSuggestion('rL')), {
+    kind: 'continue-current',
+    contrastId: current.contrastId,
+  });
+  assert.strictEqual(calls.projection, 1);
+  assert.strictEqual(calls.suggestion, 1);
+  assert.strictEqual(calls.projectedProgress, progress);
+  assert.strictEqual(calls.suggestionInput.projection, projectionResult);
+  assert.strictEqual(
+    calls.suggestionInput.languageId,
+    LANGUAGE_IDS.japanese
+  );
+  assert.strictEqual(
+    calls.suggestionInput.currentContrastId,
+    current.contrastId
+  );
+  assert.strictEqual(calls.suggestionInput.evaluationTimestamp, 42_000);
+  assert.strictEqual(calls.suggestionInput.minimumAttributedAttemptCount, 6);
+});
+
+runTest('unresolved current identity returns before projection', () => {
+  const { calls, useNextContrastSuggestion } = loadSuggestionHook({
+    flagEnabled: true,
+  });
+
+  assert.strictEqual(useNextContrastSuggestion('unknown-group'), null);
+  assert.deepStrictEqual(
+    { projection: calls.projection, suggestion: calls.suggestion },
+    { projection: 0, suggestion: 0 }
+  );
+});
+
+runTest('category and language context mismatch returns before projection', () => {
+  const { calls, useNextContrastSuggestion } = loadSuggestionHook({
+    flagEnabled: true,
+    categoryIndex: 0,
+    language: 'Español',
+  });
+
+  assert.strictEqual(useNextContrastSuggestion('rL'), null);
+  assert.deepStrictEqual(
+    { projection: calls.projection, suggestion: calls.suggestion },
+    { projection: 0, suggestion: 0 }
+  );
+});
+
+runTest('projection failures return null without invoking the pure rule', () => {
+  const { calls, useNextContrastSuggestion } = loadSuggestionHook({
+    flagEnabled: true,
+    projectionError: new Error('projection failed'),
+  });
+
+  assert.strictEqual(useNextContrastSuggestion('rL'), null);
+  assert.deepStrictEqual(
+    { projection: calls.projection, suggestion: calls.suggestion },
+    { projection: 1, suggestion: 0 }
+  );
+});
+
+runTest('inspection failures return null instead of a stale suggestion', () => {
+  const { calls, useNextContrastSuggestion } = loadSuggestionHook({
+    flagEnabled: true,
+    suggestionError: new Error('inspection failed'),
+  });
+
+  assert.strictEqual(useNextContrastSuggestion('rL'), null);
+  assert.deepStrictEqual(
+    { projection: calls.projection, suggestion: calls.suggestion },
+    { projection: 1, suggestion: 1 }
+  );
+});
+
+runTest('the production practice suggestion flag is a false boolean', () => {
+  const { CONTRAST_PRACTICE_SUGGESTION_ENABLED } = loadTsModule(
+    FEATURE_FLAGS_PATH
+  );
+
+  assert.strictEqual(CONTRAST_PRACTICE_SUGGESTION_ENABLED, false);
+  assert.strictEqual(typeof CONTRAST_PRACTICE_SUGGESTION_ENABLED, 'boolean');
 });
 
 console.log('\nAll next Contrast suggestion tests passed.');

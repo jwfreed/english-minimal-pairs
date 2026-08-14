@@ -44,3 +44,5 @@ export const FEATURE_FLAGS = Object.freeze({
     CONTRAST_MASTERY_ROLLOUT_STATE
   ),
 });
+
+export const CONTRAST_PRACTICE_SUGGESTION_ENABLED = false;

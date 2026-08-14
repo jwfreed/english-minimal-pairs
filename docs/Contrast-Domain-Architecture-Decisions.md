@@ -1252,6 +1252,143 @@ Tradeoffs:
 
 ---
 
+# **Decision 018**
+
+Date:
+2026-08-14
+
+Status:
+Accepted
+
+## **Title**
+
+First Learner-Facing ContrastKnowledge Consumer Is Advisory And Isolated
+
+## **Context**
+
+Decision 017 established a pure observational boundary for the standing of
+Contrast evidence. It deliberately created no production consumer or
+learner-facing behavior. The first bounded product use is now needed on the
+Practice screen: a learner may benefit from knowing that Soundwise has recorded
+only a few attempts for the current Contrast, or that another Contrast has no
+attributed attempts.
+
+This use must not turn observational coverage into an ability judgment or a
+scheduler. The repository also already contains an accuracy-based Results
+recommender with different inputs, thresholds, and ranking semantics. The two
+systems cannot safely become independent long-term recommendation authorities
+without an explicit reconciliation decision.
+
+## **Decision**
+
+The first learner-facing `ContrastKnowledge` consumer is one feature-local,
+advisory Practice-screen suggestion. It remains disabled by default behind the
+standalone boolean `CONTRAST_PRACTICE_SUGGESTION_ENABLED = false`.
+
+The product sufficiency minimum is exactly six attributed attempts:
+
+* zero attributed attempts is `unobserved`
+* one through five attributed attempts is `insufficient`
+* six or more attributed attempts is `observed`
+
+This threshold means observational coverage only. It does not mean learned,
+mastered, proficient, strong, weak, retained, stable, due, overdue, or in need
+of review. It is intentionally independent from the developer inspection
+threshold and must not import, reference, or derive from
+`CONTRAST_KNOWLEDGE_INSPECTION_MINIMUM`.
+
+The consumer inspects the whole `ContrastPairProgressProjection` with the
+canonical `contrastRegistry`. It fails closed while evidence is loading, when
+projection or inspection is unavailable, when any inspection entry is
+`indeterminate`, or when active language, category, or current Contrast
+identity cannot be resolved exactly.
+
+For complete and resolved evidence, the rule is:
+
+1. If the current Contrast is `insufficient`, suggest continuing it.
+2. Otherwise, suggest the first other `unobserved` Contrast in stable
+   inspection identity order.
+3. Otherwise, make no suggestion.
+
+The current Contrast is never returned by the second rule. `observed` creates
+no suggestion by itself, and there is no fallback ranking among observed
+Contrasts.
+
+Accuracy, correct count, recency, response time, mastery, practice speed,
+streaks, session duration, retention, and scheduling do not participate in
+selection. The output carries only suggestion kind and `ContrastId`; display
+labels are resolved separately by presentation.
+
+The learner chooses whether to follow the suggestion. The feature does not
+auto-select, navigate, autoplay, interrupt feedback, hide choices, or persist a
+recommendation. An explicit tap reuses the existing Practice selection path.
+
+The legacy accuracy-based Results recommender remains unchanged in this
+disabled slice. Before broad rollout of the new consumer, the product and
+architecture must complete this explicit follow-up:
+
+> Review and reconcile the legacy accuracy-based Results recommender before
+> broad rollout of the new ContrastKnowledge-based recommendation.
+
+This follow-up does not block the false-by-default implementation. It does
+block enabling the new feature for a broad audience or treating the coexistence
+of both recommendation systems as settled recommendation architecture.
+
+## **Reason**
+
+Observational coverage can support a modest learner choice without making a
+claim about ability. A feature-local rule preserves Decision 017's semantic
+boundary, keeps global completeness intact, and avoids creating a generic
+learning-policy abstraction before the product has reconciled its two
+recommendation models.
+
+A separate false boolean provides an explicit product gate without coupling
+this consumer to mastery migration. Failing closed prevents loading placeholders,
+unmapped history, malformed evidence, or identity drift from being presented as
+an invitation to practice something new.
+
+## **Consequences**
+
+Positive:
+
+* the first product threshold is explicit and cannot masquerade as a domain
+  default
+* learner choice is preserved and default shipped behavior is unchanged
+* completeness and stable identity remain enforceable at the approved caller
+* accuracy and recency cannot silently become selection policy
+* the legacy Results recommender remains isolated until deliberate
+  reconciliation
+
+Tradeoffs:
+
+* global incompleteness suppresses the active-language suggestion even when the
+  unrelated evidence problem is in another language
+* a second recommendation surface exists in code while the new flag is off,
+  so broad rollout is intentionally blocked on reconciliation
+* locale placeholders require human review before enablement for non-English
+  audiences
+
+## **Required statements**
+
+* The product sufficiency minimum is six attributed attempts and means
+  observational coverage only.
+* The product minimum is independent from developer inspection policy.
+* Unknown or incomplete evidence produces no learner-facing suggestion.
+* Current `insufficient` evidence outranks another `unobserved` candidate.
+* The current Contrast is never returned by the other-unobserved rule.
+* The suggestion is advisory and learner-triggered; it has no automatic action.
+* The feature remains disabled by default.
+* The legacy Results recommender remains unchanged in this slice.
+* Broad rollout is blocked until the legacy accuracy-based Results recommender
+  is reviewed and reconciled with the new ContrastKnowledge-based
+  recommendation.
+* `CONTRAST_MASTERY_ROLLOUT_STATE` remains `disabled`, and Decision 011's
+  operational evidence gate remains unchanged.
+* This decision adds a bounded consumer without changing Decision 017's
+  `ContrastKnowledge` semantics or renumbering any other decision.
+
+---
+
 # **Proposed Decisions — not accepted**
 
 Everything below this line is a **proposal**. Proposed entries are not binding,
@@ -1259,7 +1396,7 @@ do not constrain implementation, and must not be cited as authority. They
 become effective only when a human changes their `Status` to `Accepted` and
 records the approval date.
 
-Decisions 001–011 and 015–017 above are unchanged by this section. No entry
+Decisions 001–011 and 015–018 above are unchanged by this section. No entry
 below renumbers, alters, supersedes, or weakens any accepted Decision. Decision
 011's retirement evidence requirements in particular remain in force exactly
 as written — the proposals below constrain how evidence is *classified and

@@ -117,6 +117,9 @@ export const tKeys = {
   youChose: 'youChose',
   compareTheSounds: 'compareTheSounds',
   closeContrastDetails: 'closeContrastDetails',
+  suggestedNext: 'suggestedNext',
+  continueCurrentSuggestion: 'continueCurrentSuggestion',
+  tryUnobservedSuggestion: 'tryUnobservedSuggestion',
 } as const;
 
 export type TranslationKey = keyof typeof tKeys;

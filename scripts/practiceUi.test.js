@@ -44,6 +44,24 @@ const contrastDetailsSource = fs.readFileSync(
   ),
   'utf8'
 );
+const nextSuggestionComponentPath = path.join(
+  __dirname,
+  '..',
+  'src',
+  'components',
+  'practice',
+  'NextContrastSuggestion.tsx'
+);
+const nextSuggestionHookSource = fs.readFileSync(
+  path.join(
+    __dirname,
+    '..',
+    'src',
+    'hooks',
+    'useNextContrastSuggestion.ts'
+  ),
+  'utf8'
+);
 
 function runTest(name, fn) {
   try {
@@ -361,6 +379,99 @@ runTest('answer state is committed before analytics observes the submission', ()
       'practiceAnalytics.answerSubmitted({',
     ],
     'answer state must not depend on analytics delivery'
+  );
+});
+
+runTest('practice suggestion is adjacent to the selector only without feedback', () => {
+  const noFeedbackStart = practiceScreenSource.indexOf(
+    '{feedback === null && ('
+  );
+  const noFeedbackEnd = practiceScreenSource.indexOf(
+    '\n        )}',
+    noFeedbackStart
+  );
+  const noFeedbackBlock = practiceScreenSource.slice(
+    noFeedbackStart,
+    noFeedbackEnd
+  );
+
+  assert.ok(noFeedbackStart !== -1 && noFeedbackEnd !== -1);
+  assertInOrder(
+    noFeedbackBlock,
+    ['<PracticePairSelector', '<NextContrastSuggestion'],
+    'suggestion must remain adjacent to the pair selector'
+  );
+  assert.strictEqual(
+    (practiceScreenSource.match(/<NextContrastSuggestion/g) || []).length,
+    1,
+    'suggestion must have exactly one Practice-screen mount'
+  );
+});
+
+runTest('practice suggestion reuses the existing manual pair selection path', () => {
+  assert.ok(
+    practiceScreenSource.includes(
+      'const suggestion = useNextContrastSuggestion(selectedPair?.group);'
+    ) &&
+      practiceScreenSource.includes(
+        'const suggestedContrast = contrastRegistry.getById(contrastId);'
+      ) &&
+      practiceScreenSource.includes(
+        'pair.group === suggestedContrast.legacyGroup'
+      ) &&
+      practiceScreenSource.includes(
+        'handlePairChange(suggestedPairIndex);'
+      ),
+    'suggestion taps must resolve a visible pair and delegate to handlePairChange'
+  );
+});
+
+runTest('suggestion presentation resolves canonical labels and emits explicit taps', () => {
+  assert.ok(
+    fs.existsSync(nextSuggestionComponentPath),
+    'NextContrastSuggestion.tsx must exist'
+  );
+  const source = fs.readFileSync(nextSuggestionComponentPath, 'utf8');
+
+  assert.ok(
+    source.includes('contrastRegistry.getById(suggestion.contrastId)') &&
+      source.includes('contrast.phoneme1') &&
+      source.includes('contrast.phoneme2') &&
+      source.includes(
+        'onPress={() => onSelect(suggestion.contrastId)}'
+      ),
+    'presentation must resolve canonical Contrast metadata and emit only the requested identity'
+  );
+  for (const forbiddenDependency of [
+    'useRouter',
+    'useNavigation',
+    'router.',
+    'navigation.',
+    'useAudio',
+    'AsyncStorage',
+    'inspectContrastKnowledge',
+    'projectPairProgressToContrasts',
+  ]) {
+    assert.ok(
+      !source.includes(forbiddenDependency),
+      `suggestion presentation must not reference ${forbiddenDependency}`
+    );
+  }
+});
+
+runTest('suggestion adapter guards flag and loading before projection', () => {
+  const adapterBody = nextSuggestionHookSource.slice(
+    nextSuggestionHookSource.indexOf('return useMemo')
+  );
+
+  assertInOrder(
+    adapterBody,
+    [
+      'if (!CONTRAST_PRACTICE_SUGGESTION_ENABLED) return null;',
+      'if (isLoading) return null;',
+      'projectPairProgressToContrasts(progress)',
+    ],
+    'adapter fail-closed order changed'
   );
 });
 

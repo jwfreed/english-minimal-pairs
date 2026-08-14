@@ -117,6 +117,9 @@ export const englishTranslations = {
     youChose: 'You chose',
     compareTheSounds: 'Compare the sounds',
     closeContrastDetails: 'Close contrast details',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   } as const;
 
 export type TranslationSchema = Record<keyof typeof englishTranslations, string>;
@@ -242,6 +245,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'あなたの回答',
     compareTheSounds: '音を比べる',
     closeContrastDetails: 'コントラストの詳細を閉じる',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
 
   中文: {
@@ -362,6 +368,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: '你的选择',
     compareTheSounds: '对比声音',
     closeContrastDetails: '关闭对比音详情',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
@@ -481,6 +490,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'คุณเลือก',
     compareTheSounds: 'เปรียบเทียบเสียง',
     closeContrastDetails: 'ปิดรายละเอียดเสียงคู่ตรงข้าม',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   Español: {
     home: 'Inicio',
@@ -601,6 +613,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'Elegiste',
     compareTheSounds: 'Compara los sonidos',
     closeContrastDetails: 'Cerrar detalles del contraste',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   العربية: {
     home: 'الرئيسية',
@@ -721,6 +736,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'اخترت',
     compareTheSounds: 'قارن بين الصوتين',
     closeContrastDetails: 'إغلاق تفاصيل التباين',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   Русский: {
     home: 'Главная',
@@ -841,6 +859,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'Вы выбрали',
     compareTheSounds: 'Сравните звуки',
     closeContrastDetails: 'Закрыть подробности контраста',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   한국어: {
     home: '홈',
@@ -961,6 +982,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: '선택한 단어',
     compareTheSounds: '소리 비교하기',
     closeContrastDetails: '대비음 상세 정보 닫기',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   'हिन्दी / اردو': {
     home: 'होम/ہوم',
@@ -1081,6 +1105,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'आपने चुना/آپ نے چنا',
     compareTheSounds: 'ध्वनियों की तुलना करें/آوازوں کا موازنہ کریں',
     closeContrastDetails: 'ध्वनि अंतर का विवरण बंद करें/آوازی فرق کی تفصیل بند کریں',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   Português: {
     home: 'Início',
@@ -1201,6 +1228,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'Você escolheu',
     compareTheSounds: 'Compare os sons',
     closeContrastDetails: 'Fechar detalhes do contraste',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
@@ -1321,6 +1351,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'Bạn đã chọn',
     compareTheSounds: 'So sánh các âm',
     closeContrastDetails: 'Đóng chi tiết cặp âm',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   Türkçe: {
     home: 'Ana Sayfa',
@@ -1441,6 +1474,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'Seçiminiz',
     compareTheSounds: 'Sesleri karşılaştırın',
     closeContrastDetails: 'Ses karşıtlığı ayrıntılarını kapat',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   فارسی: {
     home: 'خانه',
@@ -1561,6 +1597,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'انتخاب شما',
     compareTheSounds: 'صداها را مقایسه کنید',
     closeContrastDetails: 'بستن جزئیات تضاد',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   廣東話: {
     home: '首頁',
@@ -1679,6 +1718,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: '你揀咗',
     compareTheSounds: '比較聲音',
     closeContrastDetails: '關閉對比音詳情',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
   'Bahasa Indonesia': {
     home: 'Beranda',
@@ -1799,5 +1841,8 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     youChose: 'Pilihanmu',
     compareTheSounds: 'Bandingkan bunyinya',
     closeContrastDetails: 'Tutup detail kontras',
+    suggestedNext: 'Suggested next',
+    continueCurrentSuggestion: 'Just a few tries recorded here so far.',
+    tryUnobservedSuggestion: "You haven't tried {contrastLabel} yet.",
   },
 };

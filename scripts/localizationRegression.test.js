@@ -7,7 +7,7 @@ const projectRoot = path.join(__dirname, '..');
 const { tKeys } = loadTsModule(
   path.join(projectRoot, 'src', 'constants', 'translationKeys.ts')
 );
-const { alternateLanguages } = loadTsModule(
+const { englishTranslations, alternateLanguages } = loadTsModule(
   path.join(projectRoot, 'src', 'constants', 'alternateLanguages.ts')
 );
 const { formatTranslation } = loadTsModule(
@@ -131,6 +131,39 @@ runTest('every non-English locale resolves complete results and practice UI', ()
   }
 });
 
+runTest('practice suggestion placeholders preserve the approved English semantics', () => {
+  const suggestionKeys = [
+    tKeys.suggestedNext,
+    tKeys.continueCurrentSuggestion,
+    tKeys.tryUnobservedSuggestion,
+  ];
+
+  assert.deepStrictEqual(
+    suggestionKeys.map((key) => englishTranslations[key]),
+    [
+      'Suggested next',
+      'Just a few tries recorded here so far.',
+      "You haven't tried {contrastLabel} yet.",
+    ]
+  );
+
+  for (const language of Object.keys(alternateLanguages)) {
+    for (const key of suggestionKeys) {
+      assert.strictEqual(
+        alternateLanguages[language][key],
+        englishTranslations[key],
+        `${language}.${key} must remain an explicit English placeholder pending review`
+      );
+    }
+    assert.strictEqual(
+      formatTranslation(translate(language, tKeys.tryUnobservedSuggestion), {
+        contrastLabel: '/r/ vs /l/',
+      }),
+      "You haven't tried /r/ vs /l/ yet."
+    );
+  }
+});
+
 runTest('English UI preserves the migrated metadata copy', () => {
   const ui = buildLocalizedUi('English');
   assert.deepStrictEqual(ui.results, [
@@ -225,6 +258,14 @@ runTest('production components use localization keys for migrated UI states', ()
       ['tKeys.practiceExamples', 'tKeys.availableNow', 'tKeys.levelAt'],
     ],
     ['src/components/practice/ListenControls.tsx', ['tKeys.listening']],
+    [
+      'src/components/practice/NextContrastSuggestion.tsx',
+      [
+        'tKeys.suggestedNext',
+        'tKeys.continueCurrentSuggestion',
+        'tKeys.tryUnobservedSuggestion',
+      ],
+    ],
   ];
 
   for (const [relativePath, requiredKeys] of contracts) {

@@ -12,6 +12,7 @@ import PlacementTest from '@/src/components/PlacementTest';
 import ContrastDetailsModal from '@/src/components/practice/ContrastDetailsModal';
 import LevelUpCelebration from '@/src/components/practice/LevelUpCelebration';
 import ListenControls from '@/src/components/practice/ListenControls';
+import NextContrastSuggestion from '@/src/components/practice/NextContrastSuggestion';
 import PracticeHeader from '@/src/components/practice/PracticeHeader';
 import PracticePairSelector from '@/src/components/practice/PracticePairSelector';
 import { minimalPairs, type Pair } from '@/src/constants/minimalPairs';
@@ -20,6 +21,9 @@ import { tKeys } from '@/src/constants/translationKeys';
 import { useCategory } from '@/src/context/CategoryContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useAllThemeColors } from '@/src/context/theme';
+import { contrastRegistry } from '@/src/domain/contrast/contrastRegistry';
+import type { ContrastId } from '@/src/domain/identity';
+import { useNextContrastSuggestion } from '@/src/hooks/useNextContrastSuggestion';
 import { buildContrastLabel } from '@/utils/contrastLabel';
 
 export default function HomeScreen() {
@@ -82,10 +86,23 @@ export default function HomeScreen() {
     category: catObj,
     isPracticeReady,
   });
+  const suggestion = useNextContrastSuggestion(selectedPair?.group);
 
   const contrastLabel = useMemo(
     () => buildContrastLabel(selectedPair),
     [selectedPair]
+  );
+  const handleSuggestionSelect = useCallback(
+    (contrastId: ContrastId) => {
+      const suggestedContrast = contrastRegistry.getById(contrastId);
+      if (!suggestedContrast) return;
+      const suggestedPairIndex = stableVisible.findIndex(
+        (pair) => pair.group === suggestedContrast.legacyGroup
+      );
+      if (suggestedPairIndex === -1) return;
+      handlePairChange(suggestedPairIndex);
+    },
+    [handlePairChange, stableVisible]
   );
 
   // Contrast details are purely visual state and should not survive a category change.
@@ -208,19 +225,25 @@ export default function HomeScreen() {
         )}
 
         {feedback === null && (
-          <PracticePairSelector
-            isLoading={isLoading}
-            selectedPair={selectedPair}
-            pairs={stableVisible}
-            index={safePairIndex}
-            onIndexChange={handlePairChange}
-            color={theme.text}
-            accentColor={theme.primary}
-            loadingTextColor={theme.textSecondary}
-            styles={styles}
-            onScrollStart={handlePickerScrollStart}
-            onScrollEnd={handlePickerScrollEnd}
-          />
+          <>
+            <PracticePairSelector
+              isLoading={isLoading}
+              selectedPair={selectedPair}
+              pairs={stableVisible}
+              index={safePairIndex}
+              onIndexChange={handlePairChange}
+              color={theme.text}
+              accentColor={theme.primary}
+              loadingTextColor={theme.textSecondary}
+              styles={styles}
+              onScrollStart={handlePickerScrollStart}
+              onScrollEnd={handlePickerScrollEnd}
+            />
+            <NextContrastSuggestion
+              suggestion={suggestion}
+              onSelect={handleSuggestionSelect}
+            />
+          </>
         )}
       </View>
 

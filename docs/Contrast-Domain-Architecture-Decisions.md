@@ -1389,6 +1389,120 @@ Tradeoffs:
 
 ---
 
+# **Decision 019**
+
+Date:
+2026-08-15
+
+Status:
+Accepted
+
+## **Title**
+
+Retire The Legacy Results Recommender As Recommendation Authority
+
+## **Context**
+
+Soundwise currently contains two learner-facing recommendation approaches with
+different semantics:
+
+* the legacy Results recommender ranks contrasts using recent accuracy and can
+  make comparative performance-oriented recommendations
+* Decision 018 introduced a ContrastKnowledge-based Practice suggestion whose
+  semantics are limited to evidence standing and observational coverage
+
+These two approaches represent different recommendation authorities.
+
+Decision 018 explicitly requires reconciliation of the legacy Results
+recommender before broad rollout of the new Practice suggestion.
+
+## **Decision**
+
+The legacy accuracy-based Results recommender is retired as a learner-facing
+recommendation authority.
+
+Results becomes descriptive-only in this slice. It may display recorded
+observations, but it does not make a normative claim about what the learner
+should practice next.
+
+The Decision 018 Practice suggestion is the sole authorized learner-facing
+recommendation policy.
+
+It remains disabled.
+
+Authorized policy is not active product behavior.
+
+Raw or recent accuracy alone is not an authorized basis for cross-contrast
+learner-facing ranking or recommendation.
+
+Accuracy remains descriptive evidence and may only acquire normative meaning
+under a separately accepted policy.
+
+Retiring the Results recommender leaves `PracticeTargetContext` without its
+current producer in this narrow slice. Its removal is a separate cleanup
+candidate and is not an architectural commitment to preserve it.
+
+This decision discharges Decision 018's requirement to reconcile the legacy
+Results recommender before broad rollout.
+
+## **Reason**
+
+The legacy Results recommender and the Decision 018 Practice suggestion make
+materially different claims from the same broad learner evidence.
+
+The legacy flow can turn recent accuracy directly into a cross-contrast
+recommendation.
+
+The accepted ContrastKnowledge model does not treat sparse observations,
+accuracy, recency, mastery, retention, or due status as learner ability or
+recommendation authority.
+
+Keeping both systems would therefore preserve duplicate recommendation
+authority with incompatible semantics.
+
+Retiring the legacy recommender is the smallest coherent change:
+
+* it introduces no new learning semantics
+* it requires no new policy abstraction
+* it preserves learner agency
+* it removes an unsupported recommendation authority
+* it is reversible
+* it does not alter persistence, progression, mastery, or ContrastKnowledge
+
+## **Consequences**
+
+* Results is descriptive-only.
+* No replacement Results recommendation is introduced in this slice.
+* The Decision 018 Practice suggestion remains disabled by
+  `CONTRAST_PRACTICE_SUGGESTION_ENABLED = false`.
+* `CONTRAST_MASTERY_ROLLOUT_STATE` remains `disabled`.
+* Decision 011 and its evidence gate are unchanged.
+* No Learning Policy boundary is introduced.
+* No new weakness, strength, mastery, retention, recency, stale, due,
+  priority, or scheduling semantics are introduced.
+* Raw/recent accuracy may not independently authorize cross-contrast
+  learner-facing recommendation.
+* `PracticeTargetContext` orphan cleanup is a separate follow-up, not part of
+  this decision's implementation.
+* Broad rollout of the Practice suggestion still requires:
+  * human localization review
+  * explicit human enablement
+  * enabled-state device/internal smoke testing
+
+## **Required statements**
+
+* Results has no learner-facing recommendation authority after implementation
+  of this decision.
+* The Decision 018 Practice suggestion is the sole authorized recommendation
+  policy but is not active while its feature flag remains disabled.
+* Raw or recent accuracy alone is descriptive evidence, not recommendation
+  authority.
+* No replacement Results recommendation is authorized by this decision.
+* `PracticeTargetContext` is not authorized for removal or preservation by
+  this decision; cleanup is a separate task.
+
+---
+
 # **Proposed Decisions — not accepted**
 
 Everything below this line is a **proposal**. Proposed entries are not binding,

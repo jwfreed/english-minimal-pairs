@@ -76,11 +76,6 @@ export const tKeys = {
   onboardingBullet3: 'onboardingBullet3',
   onboardingBullet4: 'onboardingBullet4',
   onboardingBullet5: 'onboardingBullet5',
-  // Practice This Next nudge (Results screen)
-  practiceThisNext: 'practiceThisNext',
-  practiceThisNextReason: 'practiceThisNextReason',
-  practiceThisNextReasonNew: 'practiceThisNextReasonNew',
-  practiceThisNextEmpty: 'practiceThisNextEmpty',
   // Results empty state
   noPairsFound: 'noPairsFound',
   // Practice UI

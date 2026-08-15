@@ -1,9 +1,8 @@
 // app/(tabs)/results.tsx
 import React, { useMemo, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useNavigation, useRouter } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { minimalPairs } from '@/src/constants/minimalPairs';
 import { usePairProgress } from '@/src/context/PairProgressContext';
 import { useAllThemeColors } from '@/src/context/theme';
@@ -17,8 +16,6 @@ import LevelIndicator from '@/src/components/LevelIndicator';
 import { buildPairId } from '@/utils/idHelpers';
 import { estimateActivePracticeTime } from '@/src/storage/progressStorage';
 import { useContrastPairs } from '@/src/hooks/useContrastPairs';
-import { computePracticeNextRecommendation } from '@/utils/recommendNextPractice';
-import { usePracticeTarget } from '@/src/context/PracticeTargetContext';
 import { formatTranslation } from '@/utils/formatTranslation';
 import { buildMasterySummary } from '@/src/domain/contrast/masterySummary';
 
@@ -87,25 +84,6 @@ export default function ResultsScreen() {
     });
     return unsubscribe;
   }, [navigation, refreshMastery]);
-
-  const recommendation = useMemo(
-    () => computePracticeNextRecommendation(progress, catObj?.pairs ?? [], selectedCategoryName ?? ''),
-    [progress, catObj, selectedCategoryName]
-  );
-
-  const { requestPractice } = usePracticeTarget();
-  const router = useRouter();
-  const handlePracticeNextPress = useCallback(() => {
-    if (!recommendation) return;
-    requestPractice(recommendation.groupId);
-    router.navigate('/');
-  }, [recommendation, requestPractice, router]);
-
-  const reasonText = recommendation
-    ? recommendation.reason === 'newPair'
-      ? translate(tKeys.practiceThisNextReasonNew)
-      : translate(tKeys.practiceThisNextReason)
-    : translate(tKeys.practiceThisNextEmpty);
 
   const listData = useMemo((): ListItem[] => {
     if (!catObj || catObj.pairs.length === 0) return [];
@@ -222,40 +200,6 @@ export default function ResultsScreen() {
           </View>
         </View>
 
-        {/* Practice This Next Card — tappable when a recommendation exists */}
-        <Pressable
-          onPress={recommendation ? handlePracticeNextPress : undefined}
-          disabled={!recommendation}
-          accessible={true}
-          accessibilityRole={recommendation ? 'button' : undefined}
-          accessibilityLabel={
-            recommendation
-              ? `${translate(tKeys.practiceThisNext)}: ${recommendation.label}. ${reasonText}`
-              : translate(tKeys.practiceThisNextEmpty)
-          }
-          style={({ pressed }) => [
-            resultsStyles.nextCard,
-            pressed && recommendation ? { opacity: 0.7 } : null,
-          ]}
-        >
-          <View style={resultsStyles.nextContent}>
-            <Text style={resultsStyles.nextBadge}>{translate(tKeys.practiceThisNext)}</Text>
-            {recommendation ? (
-              <>
-                <Text style={resultsStyles.nextTitle}>{recommendation.label}</Text>
-                <Text style={resultsStyles.nextReason}>{reasonText}</Text>
-              </>
-            ) : (
-              <Text style={resultsStyles.nextReason}>{reasonText}</Text>
-            )}
-          </View>
-          {recommendation && (
-            <View style={resultsStyles.nextArrow}>
-              <Ionicons name="arrow-forward" size={17} color={themeColors.primaryText} />
-            </View>
-          )}
-        </Pressable>
-
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <FlashList
             data={listData}
@@ -334,57 +278,6 @@ const createResultsStyles = (colors: ThemeColors) =>
       fontSize: 12,
       fontWeight: '600',
       color: colors.textSecondary,
-    },
-    nextCard: {
-      minHeight: 104,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-      marginHorizontal: 16,
-      marginBottom: 14,
-      padding: 16,
-      borderRadius: 18,
-      backgroundColor: colors.surface,
-      ...getCardShadowStyles(colors),
-    },
-    nextContent: {
-      flex: 1,
-      alignItems: 'flex-start',
-    },
-    nextBadge: {
-      marginBottom: 7,
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 999,
-      overflow: 'hidden',
-      backgroundColor: colors.surfaceTint,
-      fontFamily: FontFamily.bold,
-      fontSize: 10,
-      fontWeight: '700',
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
-      color: colors.primaryText,
-    },
-    nextTitle: {
-      fontFamily: FontFamily.extraBold,
-      fontSize: 20,
-      fontWeight: '800',
-      color: colors.text,
-    },
-    nextReason: {
-      marginTop: 3,
-      fontFamily: FontFamily.regular,
-      fontSize: 12,
-      color: colors.textSecondary,
-    },
-    nextArrow: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.surfaceTint,
     },
     pairSectionHeader: {
       flexDirection: 'row',

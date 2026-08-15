@@ -105,9 +105,6 @@ async function runReplay(replayFixture) {
         action.reason
       );
       scenario.render();
-    } else if (action.type === 'target') {
-      scenario.setTarget(action.group);
-      scenario.render();
     } else if (action.type === 'category-switch') {
       scenario.setCategory(action.category);
       scenario.render();
@@ -322,19 +319,11 @@ module.exports = (async () => {
     assert.strictEqual(afterPromotion.recentlyMissedPairId, null);
   });
 
-  await runTest('manual selection owns one round and session resets disarm it', () => {
+  await runTest('manual selection owns one round and category resets disarm scheduling', () => {
     const manualRound = findStep(replay, 'manual-owned-round');
     const resumedRound = findStep(replay, 'scheduling-resumes');
     assert.strictEqual(manualRound.selectionInputs.length, 0);
     assert.strictEqual(resumedRound.selectionInputs.length, 1);
-
-    const targetRound = findStep(replay, 'round-after-target-reset');
-    assert.strictEqual(targetRound.selectionInputs[0].lastPairId, null);
-    assert.deepStrictEqual(targetRound.selectionInputs[0].seenThisCycle, []);
-    assert.strictEqual(
-      targetRound.selectionInputs[0].recentlyMissedPairId,
-      null
-    );
 
     const categoryRound = findStep(replay, 'round-after-category-reset');
     assert.strictEqual(categoryRound.selectionInputs[0].lastPairId, null);

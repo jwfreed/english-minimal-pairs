@@ -7,7 +7,6 @@ import type { Category, Pair } from '@/src/constants/minimalPairs';
 import { tKeys } from '@/src/constants/translationKeys';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { usePairProgress } from '@/src/context/PairProgressContext';
-import { usePracticeTarget } from '@/src/context/PracticeTargetContext';
 import { useSettings } from '@/src/context/SettingsContext';
 import {
   applyPracticeAnswer,
@@ -57,7 +56,6 @@ export function usePracticeSession({
   isPracticeReady,
 }: UsePracticeSessionOptions) {
   const { translate } = useLanguage();
-  const { targetGroup, consumeTarget } = usePracticeTarget();
   const { recordAttempt } = usePairProgress();
   const { getNextVoice } = useSettings();
   const { triggerHaptic } = useHaptics();
@@ -121,28 +119,6 @@ export function usePracticeSession({
     dispatchTrialScheduling({ kind: 'session-reset' });
     lastStartedContrastRef.current = null;
   }, [categoryIndex, dispatchPracticePlayback, dispatchTrialScheduling]);
-
-  // Jump to a pair requested from the Results "Practice this next" card.
-  // The target is a group id. visible may include multiple same-tier examples
-  // for a group, while mastery remains group-based.
-  useEffect(() => {
-    if (!targetGroup || isLoading) return;
-    const idx = visible.findIndex((pair) => pair.group === targetGroup);
-    if (idx === -1) return;
-    setActiveGroup(targetGroup);
-    setPairIndex(idx);
-    setFeedback(null);
-    dispatchPracticePlayback({ kind: 'session-reset' });
-    dispatchTrialScheduling({ kind: 'session-reset' });
-    consumeTarget();
-  }, [
-    targetGroup,
-    visible,
-    isLoading,
-    consumeTarget,
-    dispatchPracticePlayback,
-    dispatchTrialScheduling,
-  ]);
 
   // Clamp pairIndex when visible list shrinks.
   const safePairIndex =

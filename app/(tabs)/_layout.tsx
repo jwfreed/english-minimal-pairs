@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { PairProgressProvider } from '@/src/context/PairProgressContext';
 import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
 import { CategoryProvider } from '@/src/context/CategoryContext';
-import { PracticeTargetProvider } from '@/src/context/PracticeTargetContext';
 import { SettingsProvider } from '@/src/context/SettingsContext';
 import { ThemeProvider } from '@/src/context/theme';
 
@@ -90,9 +89,7 @@ export default function Layout() {
         <ThemeProvider>
           <SettingsProvider>
             <CategoryProvider>
-              <PracticeTargetProvider>
-                <TabLayout />
-              </PracticeTargetProvider>
+              <TabLayout />
             </CategoryProvider>
           </SettingsProvider>
         </ThemeProvider>

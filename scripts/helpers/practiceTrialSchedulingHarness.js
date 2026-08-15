@@ -44,7 +44,6 @@ function createPracticeTrialSchedulingHarness(fixture) {
     throw new Error(`Unknown initial category: ${fixture.initialCategory}`);
   }
   let categoryIndex = fixture.categories.indexOf(currentCategory);
-  let targetGroup = null;
   let nowMs = fixture.clockStartMs;
   let randomIndex = 0;
   let contrastRevisionSetter = null;
@@ -210,10 +209,6 @@ function createPracticeTrialSchedulingHarness(fixture) {
     };
   }
 
-  const consumeTarget = () => {
-    record({ type: 'target-consumed', group: targetGroup });
-    targetGroup = null;
-  };
   const recordAttempt = (pairId, correct, durationMin) => {
     record({
       type: 'attempt-recorded',
@@ -308,9 +303,6 @@ function createPracticeTrialSchedulingHarness(fixture) {
     '@/src/context/PairProgressContext': {
       usePairProgress: () => ({ recordAttempt }),
     },
-    '@/src/context/PracticeTargetContext': {
-      usePracticeTarget: () => ({ targetGroup, consumeTarget }),
-    },
     '@/src/context/SettingsContext': {
       useSettings: () => ({ getNextVoice }),
     },
@@ -365,10 +357,6 @@ function createPracticeTrialSchedulingHarness(fixture) {
     if (!nextCategory) throw new Error(`Unknown category: ${categoryName}`);
     currentCategory = nextCategory;
     categoryIndex = fixture.categories.indexOf(nextCategory);
-  }
-
-  function setTarget(group) {
-    targetGroup = group;
   }
 
   function replaceMastery(categoryName, mastery, reason) {
@@ -439,7 +427,6 @@ function createPracticeTrialSchedulingHarness(fixture) {
       autoCompleteAudio = value;
     },
     setCategory,
-    setTarget,
   };
 }
 

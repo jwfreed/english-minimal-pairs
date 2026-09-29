@@ -38,8 +38,8 @@ type ListItem = ContrastHeader | PairRow;
 
 export default function ResultsScreen() {
   const { progress } = usePairProgress();
-  const { translate } = useLanguage();
-  const { categoryIndex } = useCategory();
+  const { translate, learnerLanguageStatus } = useLanguage();
+  const { categoryIndex, isCategoryResolved } = useCategory();
   const themeColors = useAllThemeColors();
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
   const resultsStyles = useMemo(() => createResultsStyles(themeColors), [themeColors]);
@@ -60,7 +60,11 @@ export default function ResultsScreen() {
   }, [progress]);
 
   const categories = useMemo(() => minimalPairs.map((cat) => cat.category), []);
-  const selectedCategoryName = categories[categoryIndex];
+  // Until the learner's L1 is explicitly resolved, the category index is a
+  // placeholder and must not be read as their inventory.
+  const selectedCategoryName = isCategoryResolved
+    ? categories[categoryIndex]
+    : undefined;
   const catObj = useMemo(
     () => minimalPairs.find((cat) => cat.category === selectedCategoryName),
     [selectedCategoryName]
@@ -153,6 +157,29 @@ export default function ResultsScreen() {
     },
     [progress, mastery, translate, themeColors, styles, resultsStyles, numColumns, gap],
   );
+
+  if (!isCategoryResolved) {
+    return (
+      <View
+        style={[styles.container, { backgroundColor: themeColors.background }]}
+      >
+        {learnerLanguageStatus === 'unresolved' ? (
+          <>
+            <Text style={[styles.title, { color: themeColors.text }]}>
+              {translate(tKeys.chooseLearnerLanguage)}
+            </Text>
+            <Text style={[styles.sectionSubtitle, { color: themeColors.textSecondary }]}>
+              {translate(tKeys.learnerLanguageHint)}
+            </Text>
+          </>
+        ) : (
+          <Text style={{ color: themeColors.textSecondary }}>
+            {translate(tKeys.loading)}
+          </Text>
+        )}
+      </View>
+    );
+  }
 
   if (!catObj || catObj.pairs.length === 0) {
     return (

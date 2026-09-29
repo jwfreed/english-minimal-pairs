@@ -34,7 +34,7 @@ import {
 } from '@/src/domain/masteryPersistence';
 
 export default function SettingsScreen() {
-  const { translate, useEnglishUI, setUseEnglishUI, language } = useLanguage();
+  const { translate, useEnglishUI, setUseEnglishUI } = useLanguage();
   const { categoryIndex, isCategoryResolved, selectLearnerCategory } = useCategory();
   const theme = useAllThemeColors();
   const { themeMode, setThemeMode } = useTheme();
@@ -53,9 +53,9 @@ export default function SettingsScreen() {
     refreshVoices,
   } = useSettings();
 
-  // When language is English, the UI is always in English. We still allow users
-  // to toggle the stored preference so it takes effect when they switch languages.
-  const effectiveUseEnglishUI = useEnglishUI || language === 'English';
+  // The UI language follows the device unless English is forced; it is
+  // independent of the learner's native language.
+  const effectiveUseEnglishUI = useEnglishUI;
   
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 

@@ -99,8 +99,7 @@ async function mountProviders({ tag, storage }) {
     );
   });
   await flush();
-  view.uiLanguage = () =>
-    view.latest.useEnglishUI ? 'English' : view.latest.language;
+  view.uiLanguage = () => view.latest.uiLanguage;
   view.inventory = () => minimalPairs[view.latest.categoryIndex].category;
   view.unmount = () => TestRenderer.act(() => root.unmount());
   return view;
@@ -209,6 +208,80 @@ module.exports = (async () => {
     const view = await mountProviders({ tag: 'en-US', storage });
     assert.strictEqual(view.latest.learnerLanguageStatus, 'unresolved');
     assert.strictEqual(view.latest.isCategoryResolved, false);
+    view.unmount();
+  });
+
+  await runTest('choosing a native language never changes the UI language, now or after restart', async () => {
+    const thai = minimalPairs.findIndex((candidate) => candidate.category === 'ภาษาไทย');
+    for (const [tag, expectedUI] of [
+      ['fr-FR', 'English'],
+      ['sw-KE', 'English'],
+      ['en-US', 'English'],
+      ['ja-JP', '日本語'],
+      ['th-TH', 'ภาษาไทย'],
+    ]) {
+      const storage = createStorage();
+      const fresh = await mountProviders({ tag, storage });
+      assert.strictEqual(fresh.uiLanguage(), expectedUI, `${tag} fresh`);
+      await TestRenderer.act(async () => {
+        fresh.latest.selectLearnerCategory(thai);
+      });
+      await flush();
+      assert.strictEqual(fresh.inventory(), 'ภาษาไทย', `${tag} inventory`);
+      assert.strictEqual(fresh.uiLanguage(), expectedUI, `${tag} after choice`);
+      fresh.unmount();
+
+      // Restart with the persisted choice.
+      const restarted = await mountProviders({ tag, storage });
+      assert.strictEqual(restarted.latest.learnerLanguageStatus, 'resolved', tag);
+      assert.strictEqual(restarted.inventory(), 'ภาษาไทย', `${tag} inventory after restart`);
+      assert.strictEqual(restarted.uiLanguage(), expectedUI, `${tag} after restart`);
+      restarted.unmount();
+    }
+  });
+
+  await runTest('a persisted native language keeps the device UI language', async () => {
+    const storage = createStorage({ '@userLanguage': '한국어' });
+    const view = await mountProviders({ tag: 'es-MX', storage });
+    assert.strictEqual(view.inventory(), '한국어');
+    assert.strictEqual(view.uiLanguage(), 'Español');
+    view.unmount();
+  });
+
+  await runTest('Use English UI forces English, turning it off returns to the device, and both persist', async () => {
+    const storage = createStorage({ '@userLanguage': 'ภาษาไทย' });
+    const view = await mountProviders({ tag: 'ja-JP', storage });
+    assert.strictEqual(view.uiLanguage(), '日本語');
+    assert.strictEqual(view.latest.useEnglishUI, false);
+
+    await TestRenderer.act(async () => {
+      view.latest.setUseEnglishUI(true);
+    });
+    assert.strictEqual(view.uiLanguage(), 'English');
+    assert.strictEqual(view.latest.useEnglishUI, true);
+    view.unmount();
+
+    const forced = await mountProviders({ tag: 'ja-JP', storage });
+    assert.strictEqual(forced.uiLanguage(), 'English');
+    await TestRenderer.act(async () => {
+      forced.latest.setUseEnglishUI(false);
+    });
+    assert.strictEqual(forced.uiLanguage(), '日本語');
+    forced.unmount();
+
+    const released = await mountProviders({ tag: 'ja-JP', storage });
+    assert.strictEqual(released.uiLanguage(), '日本語');
+    assert.strictEqual(released.inventory(), 'ภาษาไทย');
+    released.unmount();
+  });
+
+  await runTest('an automatic English flag saved by older builds does not override the device', async () => {
+    const storage = createStorage({
+      '@userLanguage': 'ภาษาไทย',
+      '@useEnglishUI': 'true',
+    });
+    const view = await mountProviders({ tag: 'th-TH', storage });
+    assert.strictEqual(view.uiLanguage(), 'ภาษาไทย');
     view.unmount();
   });
 
@@ -353,6 +426,73 @@ module.exports = (async () => {
     render();
     assert.strictEqual(entryKeys.at(-1), minimalPairs[3].category);
     assert.ok(has('PlacementTest'));
+    TestRenderer.act(() => root.unmount());
+  });
+  await runTest('Results shows no inventory until the learner language is resolved', async () => {
+    const masteryReads = [];
+    let language = { learnerLanguageStatus: 'loading' };
+    let category = { categoryIndex: 0, isCategoryResolved: false };
+    const thai = minimalPairs.findIndex((candidate) => candidate.category === 'ภาษาไทย');
+    const { default: ResultsScreen } = loadTsModule(
+      path.join(ROOT, 'app', '(tabs)', 'results.tsx'),
+      new Map(),
+      {
+        'react-native': {
+          View: 'View',
+          Text: 'Text',
+          StyleSheet: { create: (styles) => styles },
+          useWindowDimensions: () => ({ width: 390, height: 844 }),
+        },
+        '@shopify/flash-list': { FlashList: 'FlashList' },
+        'expo-router': { useNavigation: () => ({ addListener: () => () => {} }) },
+        '@/src/context/PairProgressContext': { usePairProgress: () => ({ progress: {} }) },
+        '@/src/context/theme': { useAllThemeColors: () => new Proxy({}, { get: () => '#000000' }) },
+        '@/src/constants/styles': {
+          __esModule: true,
+          default: () => new Proxy({}, { get: () => ({}) }),
+          getCardShadowStyles: () => ({}),
+        },
+        '@/src/context/LanguageContext': {
+          useLanguage: () => ({ translate: (key) => key, ...language }),
+        },
+        '@/src/context/CategoryContext': { useCategory: () => category },
+        '@/src/components/PairItem': { __esModule: true, default: 'PairItem' },
+        '@/src/components/LevelIndicator': { __esModule: true, default: 'LevelIndicator' },
+        '@/src/storage/progressStorage': { estimateActivePracticeTime: () => 0 },
+        '@/src/hooks/useContrastPairs': {
+          useContrastPairs: (pairs, categoryKey) => {
+            masteryReads.push([pairs.length, categoryKey]);
+            return { mastery: {}, refresh: () => {} };
+          },
+        },
+      }
+    );
+    let root;
+    const render = () =>
+      TestRenderer.act(() => {
+        if (root) root.update(React.createElement(ResultsScreen));
+        else root = TestRenderer.create(React.createElement(ResultsScreen));
+      });
+    const texts = () =>
+      root.root.findAllByType('Text').map((node) => [node.props.children].flat().join(''));
+
+    render();
+    assert.deepStrictEqual(texts(), ['loading']);
+    assert.strictEqual(root.root.findAllByType('FlashList').length, 0);
+
+    language = { learnerLanguageStatus: 'unresolved' };
+    render();
+    assert.deepStrictEqual(texts(), ['chooseLearnerLanguage', 'learnerLanguageHint']);
+    assert.strictEqual(root.root.findAllByType('FlashList').length, 0);
+    // No inventory — in particular not the placeholder Japanese one — is read.
+    assert.ok(masteryReads.every(([count, key]) => count === 0 && key === ''));
+
+    language = { learnerLanguageStatus: 'resolved' };
+    category = { categoryIndex: thai, isCategoryResolved: true };
+    render();
+    assert.strictEqual(root.root.findAllByType('FlashList').length, 1);
+    assert.deepStrictEqual(masteryReads.at(-1), [minimalPairs[thai].pairs.length, 'ภาษาไทย']);
+    assert.ok(!texts().includes('chooseLearnerLanguage'));
     TestRenderer.act(() => root.unmount());
   });
 })().finally(() => {

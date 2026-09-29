@@ -14,7 +14,6 @@ import {
   DEFAULT_LANGUAGE_CODE,
   englishSpeakingRegions,
   localeLanguageMap,
-  regionLanguageMap,
 } from '@/src/constants/languageSelection';
 import { TranslationKey } from '@/src/constants/translationKeys';
 import { minimalPairs } from '@/src/constants/minimalPairs';
@@ -79,27 +78,25 @@ const getDeviceLocaleInfo = (): DeviceLocaleInfo => {
 };
 
 /**
- * Maps device locale codes to app language names
- */
-const getLanguageFromLocale = (languageCode: string): string => {
-  return localeLanguageMap[languageCode] || DEFAULT_LANGUAGE;
-};
-
-/**
- * Maps device region codes to app language names
- * Used when system language is English but region supports another language
- */
-const getLanguageFromRegion = (regionCode?: string): string | null => {
-  if (!regionCode) return null;
-  return regionLanguageMap[regionCode] || null;
-};
-
-/**
  * Checks if the region is English-speaking
  */
 const isEnglishSpeakingRegion = (regionCode?: string): boolean => {
   if (!regionCode) return false;
   return englishSpeakingRegions.has(regionCode);
+};
+
+/**
+ * The UI language the device asks for: its language when the app supports it
+ * as a UI language, otherwise English. English-speaking regions and English
+ * devices use English. Independent of the learner's native language.
+ */
+const resolveDeviceUILanguage = ({
+  languageCode,
+  regionCode,
+}: DeviceLocaleInfo): string => {
+  if (isEnglishSpeakingRegion(regionCode)) return 'English';
+  const detected = localeLanguageMap[languageCode];
+  return detected && alternateLanguages[detected] ? detected : 'English';
 };
 
 /** A learner language (L1 background) is one of the training inventories. */
@@ -115,15 +112,19 @@ export type LearnerLanguageStatus = 'loading' | 'unresolved' | 'resolved';
 
 interface LanguageContextValue {
   /**
-   * The chosen learner language once resolved; before that, a UI-language
-   * placeholder that must not be used to select an inventory.
+   * The chosen learner language once resolved; before that, a placeholder
+   * that must not be used to select an inventory. Never the UI language.
    */
   language: string;
   learnerLanguageStatus: LearnerLanguageStatus;
   /** Records an explicit learner-language (L1) choice. */
   setLanguage: (lang: string) => void;
+  /** Language the interface is shown in: the device's, or forced English. */
+  uiLanguage: string;
   translate: (key: TranslationKey) => string;
+  /** Whether the interface is currently shown in English. */
   useEnglishUI: boolean;
+  /** Explicitly forces English (true) or returns to the device language. */
   setUseEnglishUI: (value: boolean) => void;
 }
 
@@ -133,7 +134,11 @@ const LanguageContext = createContext<LanguageContextValue | undefined>(
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
-  const [useEnglishUI, setUseEnglishUIState] = useState(false);
+  const [deviceUILanguage, setDeviceUILanguage] = useState(() =>
+    resolveDeviceUILanguage(getDeviceLocaleInfo())
+  );
+  // Only an explicit toggle is a UI preference; null means "follow device".
+  const [manualEnglishUI, setManualEnglishUI] = useState<boolean | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [learnerLanguageStatus, setLearnerLanguageStatus] =
     useState<LearnerLanguageStatus>('loading');
@@ -143,110 +148,36 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     if (isInitialized) {
       return;
     }
-    
+
     const initializeLanguage = async () => {
       // Check if user has previously set a language
       let stored = await AsyncStorage.getItem(STORAGE_KEY);
       const englishUIOverride = await AsyncStorage.getItem(ENGLISH_UI_OVERRIDE_KEY);
       const manualToggle = await AsyncStorage.getItem(MANUAL_ENGLISH_UI_KEY);
-      
+
       // Migrate old language key names to new ones
       if (stored && LANGUAGE_KEY_MIGRATION[stored]) {
         stored = LANGUAGE_KEY_MIGRATION[stored];
         await AsyncStorage.setItem(STORAGE_KEY, stored);
       }
-      
-      // Check if user has MANUALLY toggled the English UI (not just auto-set)
-      const hasManualEnglishUIOverride = manualToggle === 'true';
-      
-      if (hasManualEnglishUIOverride) {
-        setUseEnglishUIState(englishUIOverride === 'true');
+
+      // The UI follows the device unless the learner explicitly toggled
+      // English UI; the learner language never changes it.
+      setDeviceUILanguage(resolveDeviceUILanguage(getDeviceLocaleInfo()));
+      if (manualToggle === 'true') {
+        setManualEnglishUI(englishUIOverride === 'true');
       }
-      
+
       setLearnerLanguageStatus(
         isLearnerLanguage(stored) ? 'resolved' : 'unresolved'
       );
-
       if (stored && alternateLanguages[stored]) {
-        // Use previously saved language
         setLanguageState(stored);
-        
-        // If user has a stored language but NO manual UI override, infer the UI setting
-        // based on their current locale (e.g., en-TH should have English UI even with Thai language)
-        if (!hasManualEnglishUIOverride) {
-          const { languageCode, regionCode } = getDeviceLocaleInfo();
-          const isEnglishRegion = isEnglishSpeakingRegion(regionCode);
-          const regionLanguage = getLanguageFromRegion(regionCode);
-          
-          // If in English-speaking region OR English language in non-English region → English UI
-          if (isEnglishRegion || (languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage])) {
-            setUseEnglishUIState(true);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
-          } else if (stored !== 'English') {
-            // Non-English language in native region → native UI
-            setUseEnglishUIState(false);
-            await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
-          }
-        }
-      } else {
-        // Auto-detect a UI language from the device locale. This never chooses
-        // the learner's training inventory; the learner confirms that
-        // explicitly before placement or practice.
-        const { languageCode, regionCode } = getDeviceLocaleInfo();
-        const detectedLanguage = getLanguageFromLocale(languageCode);
-        const regionLanguage = getLanguageFromRegion(regionCode);
-        const isEnglishRegion = isEnglishSpeakingRegion(regionCode);
-        
-        // Scenario 1: Locale English, System English
-        // Example: en-US -> UI: English; the learner language stays unresolved
-        if (isEnglishRegion && languageCode === 'en') {
-          setLanguageState(DEFAULT_LANGUAGE);
-          if (!hasManualEnglishUIOverride) {
-            setUseEnglishUIState(true);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
-          }
-        }
-        // Scenario 2: Locale English, System Supported (non-English)
-        // Example: ja-US -> App: Japanese, UI: English (Enabled)
-        else if (isEnglishRegion && alternateLanguages[detectedLanguage] && detectedLanguage !== 'English') {
-          setLanguageState(detectedLanguage);
-          if (!hasManualEnglishUIOverride) {
-            setUseEnglishUIState(true);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
-          }
-        }
-        // Scenario 3: Locale Supported, System Supported
-        // Example: ja-JP -> App: Japanese, UI: Native (Disabled)
-        else if (!isEnglishRegion && alternateLanguages[detectedLanguage] && detectedLanguage !== 'English') {
-          setLanguageState(detectedLanguage);
-          if (!hasManualEnglishUIOverride) {
-            setUseEnglishUIState(false);
-            await AsyncStorage.removeItem(ENGLISH_UI_OVERRIDE_KEY);
-          }
-        }
-        // Scenario 4: Locale Supported, System English
-        // Example: en-JP -> App: Japanese (from region), UI: English (Enabled)
-        else if (!isEnglishRegion && languageCode === 'en' && regionLanguage && alternateLanguages[regionLanguage]) {
-          setLanguageState(regionLanguage);
-          if (!hasManualEnglishUIOverride) {
-            setUseEnglishUIState(true);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
-          }
-        }
-        // Fallback: Unsupported locale/system
-        // Example: fr-FR -> App: English, UI: English (Enabled)
-        else {
-          setLanguageState(DEFAULT_LANGUAGE);
-          if (!hasManualEnglishUIOverride) {
-            setUseEnglishUIState(true);
-            await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
-          }
-        }
       }
-      
+
       setIsInitialized(true);
     };
-    
+
     initializeLanguage().catch(() => {
       // Unknown preferences must not leave practice blocked on loading; the
       // learner can still choose their language explicitly.
@@ -266,23 +197,22 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const setUseEnglishUI = useCallback((value: boolean) => {
-    setUseEnglishUIState(value);
+    setManualEnglishUI(value);
     AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, value.toString());
     // Mark this as a manual toggle so we don't override it with locale detection
     AsyncStorage.setItem(MANUAL_ENGLISH_UI_KEY, 'true');
   }, []);
 
-  const translate = useCallback(
-    (key: TranslationKey) => {
-      // If English UI override is enabled, always use English translations
-      const targetLanguage = useEnglishUI ? 'English' : language;
+  const useEnglishUI = manualEnglishUI === true || deviceUILanguage === 'English';
+  const uiLanguage = useEnglishUI ? 'English' : deviceUILanguage;
 
-      return resolveTranslation(targetLanguage, key, {
+  const translate = useCallback(
+    (key: TranslationKey) =>
+      resolveTranslation(uiLanguage, key, {
         isDevelopment: __DEV__,
         onMissing: __DEV__ ? (message) => console.warn(message) : undefined,
-      });
-    },
-    [language, useEnglishUI]
+      }),
+    [uiLanguage]
   );
 
   const value = useMemo(
@@ -290,6 +220,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       language,
       learnerLanguageStatus,
       setLanguage,
+      uiLanguage,
       translate,
       useEnglishUI,
       setUseEnglishUI,
@@ -298,6 +229,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       language,
       learnerLanguageStatus,
       setLanguage,
+      uiLanguage,
       translate,
       useEnglishUI,
       setUseEnglishUI,

@@ -14,6 +14,7 @@ import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { ThemedText } from '@/src/components/ThemedText';
 import { ThemedView } from '@/src/components/ThemedView';
+import { font } from '@/src/constants/typography';
 
 interface HelpOverlayProps {
   visible: boolean;
@@ -122,12 +123,14 @@ const createHelpOverlayStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
       elevation: 8,
     },
     title: {
+      ...font('700'),
       fontSize: 24,
       lineHeight: 30,
       marginBottom: 12,
       color: theme.text,
     },
     body: {
+      ...font('400'),
       fontSize: 16,
       lineHeight: 24,
       color: theme.text,

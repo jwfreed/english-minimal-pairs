@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Picker } from '@react-native-picker/picker';
 import { Dimensions, Platform } from 'react-native';
 import { useHaptics } from '@/src/hooks/useHaptics';
+import { font } from '@/src/constants/typography';
 
 const screenWidth = Dimensions.get('window').width;
 const isTablet = screenWidth > 700;
@@ -55,7 +56,7 @@ function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrol
         marginBottom: 10,
         height: Platform.OS === 'ios' ? IOS_PICKER_HEIGHT : undefined,
       }}
-      itemStyle={{ fontSize: isTablet ? 36 : 20, fontWeight: '600', color }}
+      itemStyle={{ ...font('600'), fontSize: isTablet ? 36 : 20, color }}
       accessibilityLabel={accessibilityLabel}
       {...(Platform.OS === 'ios' ? { onFocus: handleScrollStart } : {})}
     >

@@ -5,6 +5,7 @@ import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
 import { ThemedText } from '@/src/components/ThemedText';
 import createStyles from '@/src/constants/styles';
+import { font } from '@/src/constants/typography';
 
 interface OnboardingScreenProps {
   onDismiss: () => Promise<void>;
@@ -60,6 +61,7 @@ export default function OnboardingScreen({ onDismiss }: OnboardingScreenProps) {
 const createOnboardingStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
   StyleSheet.create({
     title: {
+      ...font('700'),
       fontSize: 24,
       lineHeight: 30,
       marginBottom: 20,
@@ -81,6 +83,7 @@ const createOnboardingStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
       color: theme.text,
     },
     bulletText: {
+      ...font('400'),
       flex: 1,
       fontSize: 16,
       lineHeight: 24,

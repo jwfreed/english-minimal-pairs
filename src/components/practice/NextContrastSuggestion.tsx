@@ -8,6 +8,7 @@ import { contrastRegistry } from '@/src/domain/contrast/contrastRegistry';
 import type { ContrastId } from '@/src/domain/identity';
 import type { ContrastPracticeSuggestion } from '@/src/domain/practice/nextContrastSuggestion';
 import { formatTranslation } from '@/utils/formatTranslation';
+import { font } from '@/src/constants/typography';
 
 interface NextContrastSuggestionProps {
   suggestion: ContrastPracticeSuggestion;
@@ -69,15 +70,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   eyebrow: {
+    ...font('700'),
     fontSize: 10,
-    fontWeight: '700',
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   body: {
+    ...font('600'),
     marginTop: 3,
     fontSize: 13,
-    fontWeight: '600',
     lineHeight: 18,
   },
 });

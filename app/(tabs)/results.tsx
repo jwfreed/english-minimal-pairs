@@ -7,7 +7,7 @@ import { minimalPairs } from '@/src/constants/minimalPairs';
 import { usePairProgress } from '@/src/context/PairProgressContext';
 import { useAllThemeColors } from '@/src/context/theme';
 import createStyles, { getCardShadowStyles, type ThemeColors } from '@/src/constants/styles';
-import { FontFamily } from '@/src/constants/typography';
+import { font } from '@/src/constants/typography';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useCategory } from '@/src/context/CategoryContext';
 import { tKeys } from '@/src/constants/translationKeys';
@@ -255,16 +255,14 @@ const createResultsStyles = (colors: ThemeColors) =>
       paddingHorizontal: 16,
     },
     screenTitle: {
-      fontFamily: FontFamily.extraBold,
+      ...font('800'),
       fontSize: 22,
-      fontWeight: '800',
       letterSpacing: -0.4,
       color: colors.text,
     },
     practicedLabel: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600',
       color: colors.textSecondary,
       fontVariant: ['tabular-nums'],
     },
@@ -287,23 +285,20 @@ const createResultsStyles = (colors: ThemeColors) =>
       ...getCardShadowStyles(colors),
     },
     statValue: {
-      fontFamily: FontFamily.extraBold,
+      ...font('800'),
       fontSize: 26,
-      fontWeight: '800',
       color: colors.primaryText,
       fontVariant: ['tabular-nums'],
     },
     statDenominator: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 15,
-      fontWeight: '700',
       color: colors.textSecondary,
     },
     statLabel: {
       marginTop: 4,
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600',
       color: colors.textSecondary,
     },
     pairSectionHeader: {
@@ -315,9 +310,8 @@ const createResultsStyles = (colors: ThemeColors) =>
       paddingHorizontal: 2,
     },
     pairSectionTitle: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 15,
-      fontWeight: '700',
       color: colors.text,
     },
   });

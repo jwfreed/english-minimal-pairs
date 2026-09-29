@@ -4,7 +4,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { useThemeColor } from '@/src/hooks/useThemeColor';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
-import { FontFamily } from '@/src/constants/typography';
+import { font } from '@/src/constants/typography';
 
 interface PracticeData {
   accuracy: number;
@@ -60,9 +60,8 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
     <View onLayout={(event: LayoutChangeEvent) => setChartWidth(event.nativeEvent.layout.width)}>
       <Text
         style={{
+          ...font('600'),
           fontSize: 14,
-          fontWeight: '600',
-          fontFamily: FontFamily.semibold,
           marginBottom: 4,
           color: themeColors.text,
         }}

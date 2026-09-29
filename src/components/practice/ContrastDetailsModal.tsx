@@ -18,6 +18,7 @@ import { useLanguage } from '@/src/context/LanguageContext';
 import { buildTrialPairId } from '@/src/domain/practiceSession';
 import { buildContrastLabel } from '@/utils/contrastLabel';
 import { formatTranslation } from '@/utils/formatTranslation';
+import { font } from '@/src/constants/typography';
 
 interface ContrastDetailsModalProps {
   visible: boolean;
@@ -212,16 +213,16 @@ const createStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
       flex: 1,
     },
     eyebrow: {
+      ...font('700'),
       color: theme.textSecondary,
       fontSize: 12,
-      fontWeight: '700',
       letterSpacing: 0.8,
       textTransform: 'uppercase',
     },
     title: {
+      ...font('800'),
       color: theme.text,
       fontSize: 26,
-      fontWeight: '800',
       marginTop: 2,
     },
     closeButton: {
@@ -234,9 +235,9 @@ const createStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
       borderColor: theme.border,
     },
     sectionTitle: {
+      ...font('800'),
       color: theme.text,
       fontSize: 17,
-      fontWeight: '800',
       marginTop: 22,
       marginBottom: 8,
     },
@@ -271,11 +272,12 @@ const createStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
       flex: 1,
     },
     pairWords: {
+      ...font('700'),
       color: theme.text,
       fontSize: 16,
-      fontWeight: '700',
     },
     pairIpa: {
+      ...font('400'),
       color: theme.textSecondary,
       fontSize: 13,
       marginTop: 2,
@@ -284,10 +286,10 @@ const createStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
       color: theme.textSecondary,
     },
     status: {
+      ...font('700'),
       maxWidth: 96,
       marginLeft: 8,
       fontSize: 11,
-      fontWeight: '700',
       textAlign: 'right',
     },
     availableStatus: {

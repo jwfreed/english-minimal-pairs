@@ -1,7 +1,7 @@
 // styles.ts
 import { StyleSheet, Dimensions } from 'react-native';
 import { withAlpha, type ThemeColors } from '@/src/constants/Colors';
-import { FontFamily } from '@/src/constants/typography';
+import { font } from '@/src/constants/typography';
 
 const { width } = Dimensions.get('window');
 const isTablet = width > 700;
@@ -17,6 +17,7 @@ const Z_INDEX = {
 
 function baseFont(color: string) {
   return {
+    ...font('400'),
     fontSize: 16,
     color,
   };
@@ -82,8 +83,8 @@ const createStyles = (colors: ThemeColors) =>
       paddingBottom: 20,
     },
     title: {
+      ...font('700'),
       fontSize: isTablet ? 42 : 28,
-      fontWeight: '700',
       marginBottom: 8,
       color: colors.text,
       textAlign: 'center',
@@ -105,9 +106,8 @@ const createStyles = (colors: ThemeColors) =>
       gap: 8,
     },
     practiceTitle: {
-      fontFamily: FontFamily.extraBold,
+      ...font('800'),
       fontSize: 22,
-      fontWeight: '800',
       letterSpacing: -0.4,
       color: colors.text,
       textAlign: 'left',
@@ -126,8 +126,8 @@ const createStyles = (colors: ThemeColors) =>
       lineHeight: 24, // Better line height
     },
     chartTitle: {
+      ...font('600'),
       fontSize: 16,
-      fontWeight: '600',
       marginTop: 20,
       marginBottom: 10,
       textAlign: 'center',
@@ -144,8 +144,8 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: 16,
     },
     infoTitle: {
+      ...font('800'),
       fontSize: isTablet ? 32 : 22,
-      fontWeight: '800',
       marginTop: 28,
       marginBottom: 10,
       color: colors.text,
@@ -171,9 +171,9 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: 10,
     },
     dropdownButtonText: {
+      ...font('700'),
       color: colors.buttonText,
       fontSize: 16,
-      fontWeight: 'bold',
     },
     dropdownList: {
       width: 250,
@@ -212,15 +212,16 @@ const createStyles = (colors: ThemeColors) =>
       maxWidth: isTablet ? 700 : 500,
     },
     buttonText: {
+      ...font('700'),
       color: colors.buttonText,
       fontSize: isTablet ? 32 : 18, // Larger text
-      fontWeight: '700',
       letterSpacing: 0.5,
     },
     buttonPressed: {
       backgroundColor: colors.primaryLight,
     },
     ipaText: {
+      ...font('400'),
       fontSize: isTablet ? 24 : 14,
       fontStyle: 'italic',
       color: colors.text,
@@ -242,8 +243,8 @@ const createStyles = (colors: ThemeColors) =>
       gap: 16, // Add gap between buttons
     },
     feedbackSymbol: {
+      ...font('700'),
       fontSize: isTablet ? 42 : 32,
-      fontWeight: 'bold',
       marginBottom: 2,
     },
     feedbackStatusCircle: {
@@ -267,9 +268,9 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.error,
     },
     feedbackText: {
+      ...font('700'),
       marginTop: 6,
       fontSize: 16,
-      fontWeight: 'bold',
       color: colors.text,
     },
     overlay: {
@@ -311,15 +312,13 @@ const createStyles = (colors: ThemeColors) =>
     },
     pairItemTitle: {
       flex: 1,
-      fontFamily: FontFamily.extraBold,
+      ...font('800'),
       fontSize: 17,
-      fontWeight: '800',
       color: colors.text,
     },
     pairItemAccuracy: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 15,
-      fontWeight: '700',
       textAlign: 'right',
       fontVariant: ['tabular-nums'],
     },
@@ -335,16 +334,15 @@ const createStyles = (colors: ThemeColors) =>
       maxWidth: '100%',
     },
     pairItemStatsText: {
-      fontFamily: FontFamily.regular,
+      ...font('400'),
       fontSize: 12,
       color: colors.textSecondary,
       marginTop: 6,
     },
     timePracticedText: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
       marginBottom: 0,
-      fontWeight: '600',
       color: colors.text,
       fontVariant: ['tabular-nums'],
     },
@@ -361,7 +359,7 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: 8,
     },
     unpracticedText: {
-      fontFamily: FontFamily.regular,
+      ...font('400'),
       fontSize: 12,
       color: colors.textSecondary,
     },
@@ -398,24 +396,21 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: 14,
     },
     eyebrow: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 11,
-      fontWeight: '700',
       letterSpacing: 1.5,
       color: colors.textSecondary,
       textTransform: 'uppercase',
     },
     contrastTitle: {
-      fontFamily: FontFamily.extraBold,
+      ...font('800'),
       fontSize: 30,
-      fontWeight: '800',
       color: colors.text,
       textAlign: 'center',
     },
     contrastInstruction: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600',
       color: colors.textSecondary,
       textAlign: 'center',
       marginTop: 10,
@@ -425,9 +420,8 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     contrastDetailsButtonText: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600',
       color: colors.textSecondary,
       textDecorationLine: 'underline',
     },
@@ -446,18 +440,16 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'flex-start',
     },
     practicePairLabel: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 11,
-      fontWeight: '700',
       color: colors.textSecondary,
       textAlign: 'left',
       textTransform: 'uppercase',
       letterSpacing: 0.8,
     },
     practicePairWords: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 15,
-      fontWeight: '700',
       color: colors.text,
       textAlign: 'left',
       marginTop: 4,
@@ -472,9 +464,8 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: 2,
     },
     pairPickerToggleText: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 13,
-      fontWeight: '700',
       color: colors.primaryText,
       textAlign: 'center',
     },
@@ -504,9 +495,9 @@ const createStyles = (colors: ThemeColors) =>
       paddingLeft: 12,
     },
     pairPickerModalTitle: {
+      ...font('700'),
       flex: 1,
       fontSize: isTablet ? 22 : 17,
-      fontWeight: '700',
       color: colors.text,
     },
     pairPickerModalClose: {
@@ -516,9 +507,8 @@ const createStyles = (colors: ThemeColors) =>
       justifyContent: 'center',
     },
     answerPrompt: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 14,
-      fontWeight: '700',
       color: colors.text,
       textAlign: 'center',
       marginTop: 26,
@@ -536,13 +526,12 @@ const createStyles = (colors: ThemeColors) =>
       borderColor: colors.answerTileBorder,
     },
     answerTileWord: {
-      fontFamily: FontFamily.extraBold,
+      ...font('800'),
       fontSize: 22,
-      fontWeight: '800',
       color: colors.text,
     },
     answerTileIpa: {
-      fontFamily: FontFamily.regular,
+      ...font('400'),
       fontSize: 13,
       color: colors.primaryText,
       marginTop: 4,
@@ -583,9 +572,8 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: withAlpha(colors.buttonText, 0.25),
     },
     playButtonLabel: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 17,
-      fontWeight: '700',
       color: colors.buttonText,
     },
     section: {
@@ -617,13 +605,12 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.surfaceTint,
     },
     sectionTitle: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 15,
-      fontWeight: '700',
       color: colors.text,
     },
     sectionSubtitle: {
-      fontFamily: FontFamily.regular,
+      ...font('400'),
       fontSize: 12,
       marginTop: 2,
       color: colors.text,
@@ -640,16 +627,15 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'flex-start',
     },
     headerTitle: {
-      fontFamily: FontFamily.extraBold,
+      ...font('800'),
       fontSize: 22,
-      fontWeight: '800',
       letterSpacing: -0.4,
       marginBottom: 4,
       color: colors.text,
       textAlign: 'left',
     },
     headerSubtitle: {
-      fontFamily: FontFamily.regular,
+      ...font('400'),
       fontSize: 13,
       color: colors.text,
       textAlign: 'left',
@@ -675,13 +661,13 @@ const createStyles = (colors: ThemeColors) =>
       marginRight: 12,
     },
     listItemName: {
-      fontFamily: FontFamily.bold,
+      ...font('700'),
       fontSize: 15,
-      fontWeight: '700',
       marginBottom: 4,
       color: colors.text,
     },
     listItemDetails: {
+      ...font('400'),
       fontSize: isTablet ? 18 : 14,
       color: colors.text,
     },
@@ -692,6 +678,7 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
     },
     loadingText: {
+      ...font('400'),
       marginTop: 12,
       fontSize: 14,
       color: colors.text,
@@ -701,6 +688,7 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
     },
     emptyText: {
+      ...font('400'),
       fontSize: 14,
       textAlign: 'center',
       marginBottom: 16,
@@ -718,9 +706,9 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 8,
     },
     refreshButtonText: {
+      ...font('600'),
       marginLeft: 8,
       fontSize: 14,
-      fontWeight: '600',
       color: colors.primary,
     },
 
@@ -738,12 +726,13 @@ const createStyles = (colors: ThemeColors) =>
       paddingVertical: 8,
     },
     infoLabel: {
+      ...font('400'),
       fontSize: isTablet ? 24 : 16,
       color: colors.text,
     },
     infoValue: {
+      ...font('600'),
       fontSize: isTablet ? 24 : 16,
-      fontWeight: '600',
       color: colors.text,
     },
 
@@ -759,13 +748,14 @@ const createStyles = (colors: ThemeColors) =>
       borderColor: colors.hairline,
     },
     feedbackWord: {
+      ...font('700'),
       fontSize: isTablet ? 22 : 17,
-      fontWeight: '700' as const,
       color: colors.text,
       marginBottom: 2,
       textAlign: 'center' as const,
     },
     feedbackDetail: {
+      ...font('400'),
       fontSize: isTablet ? 18 : 14,
       color: colors.textSecondary,
       textAlign: 'center' as const,
@@ -785,25 +775,26 @@ const createStyles = (colors: ThemeColors) =>
       gap: 16,
     },
     feedbackAttemptLabel: {
+      ...font('600'),
       fontSize: isTablet ? 17 : 13,
-      fontWeight: '600' as const,
       color: colors.textSecondary,
     },
     feedbackAttemptValue: {
+      ...font('700'),
       flexShrink: 1,
       fontSize: isTablet ? 19 : 15,
-      fontWeight: '700' as const,
       color: colors.text,
       textAlign: 'right' as const,
     },
     feedbackIPA: {
+      ...font('400'),
       fontSize: isTablet ? 20 : 15,
       color: colors.textSecondary,
       marginBottom: 8,
     },
     feedbackHighlight: {
+      ...font('700'),
       color: colors.primary,
-      fontWeight: '700' as const,
     },
     replayButton: {
       flexDirection: 'row' as const,
@@ -814,8 +805,8 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.primary + '22',
     },
     replayButtonText: {
+      ...font('600'),
       fontSize: isTablet ? 18 : 14,
-      fontWeight: '600' as const,
       color: colors.primary,
     },
     compareContainer: {
@@ -824,15 +815,15 @@ const createStyles = (colors: ThemeColors) =>
       marginTop: 2,
     },
     compareTitle: {
+      ...font('700'),
       fontSize: isTablet ? 18 : 14,
-      fontWeight: '700' as const,
       color: colors.text,
       marginBottom: 4,
       textAlign: 'center' as const,
     },
     contrastContext: {
+      ...font('800'),
       fontSize: isTablet ? 21 : 16,
-      fontWeight: '800' as const,
       color: colors.primary,
       marginBottom: 8,
       textAlign: 'center' as const,
@@ -859,12 +850,13 @@ const createStyles = (colors: ThemeColors) =>
       transform: [{ scale: 0.96 }],
     },
     compareButtonText: {
+      ...font('700'),
       fontSize: isTablet ? 18 : 14,
-      fontWeight: '700' as const,
       color: colors.primaryText,
       textAlign: 'center' as const,
     },
     compareButtonIpa: {
+      ...font('400'),
       fontSize: isTablet ? 16 : 12,
       color: colors.textSecondary,
       textAlign: 'center' as const,
@@ -891,16 +883,14 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.success,
     },
     sessionTimerText: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600' as const,
       fontVariant: ['tabular-nums'] as const,
       color: colors.text,
     },
     sessionTimerGoal: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600' as const,
       fontVariant: ['tabular-nums'] as const,
       color: colors.text,
       marginLeft: 3,
@@ -935,18 +925,17 @@ const createStyles = (colors: ThemeColors) =>
       borderWidth: 0,
     },
     levelLabel: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600' as const,
       color: colors.textSecondary,
     },
     levelLabelCompact: {
-      fontFamily: FontFamily.semibold,
+      ...font('600'),
       fontSize: 12,
-      fontWeight: '600' as const,
       color: colors.textSecondary,
     },
     levelCriteriaText: {
+      ...font('400'),
       fontSize: isTablet ? 13 : 11,
       color: colors.textSecondary,
       marginTop: 2,
@@ -963,8 +952,8 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center' as const,
     },
     levelUpText: {
+      ...font('700'),
       fontSize: isTablet ? 18 : 15,
-      fontWeight: '700' as const,
       color: colors.primary,
       marginBottom: 4,
     },
@@ -992,11 +981,12 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center' as const,
     },
     masterySummaryValue: {
+      ...font('700'),
       fontSize: isTablet ? 28 : 22,
-      fontWeight: '700' as const,
       color: colors.primary,
     },
     masterySummaryLabel: {
+      ...font('400'),
       fontSize: isTablet ? 14 : 12,
       color: colors.textSecondary,
       marginTop: 2,
@@ -1010,8 +1000,8 @@ const createStyles = (colors: ThemeColors) =>
       gap: 4,
     },
     placementStatusText: {
+      ...font('600'),
       fontSize: isTablet ? 13 : 11,
-      fontWeight: '600' as const,
     },
   });
 

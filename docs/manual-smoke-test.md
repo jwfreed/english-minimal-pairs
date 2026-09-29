@@ -264,8 +264,8 @@ A single success is not sufficient evidence.
 Record each production build's variant here **before** testing, verified
 against the EAS build record (`eas build:list --platform ios`), not inferred
 from the marketing version number — `appVersionSource` is `"remote"`
-([eas.json](../eas.json)), so `app.json`'s committed `buildNumber` does not
-reflect the actual submitted build number, and the same marketing version
+([eas.json](../eas.json)), so app configuration does not set a local iOS build
+number, and the same marketing version
 (e.g. `1.1.3`) can span multiple build numbers and multiple commits.
 
 | Build no. | Version | Commit | Profile | Build date | Selector value at that commit | Verified via |

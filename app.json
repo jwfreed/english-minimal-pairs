@@ -11,7 +11,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jfreed.englishminimalpairs",
-      "buildNumber": "96",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

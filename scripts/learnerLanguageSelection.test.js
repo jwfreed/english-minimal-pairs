@@ -248,9 +248,33 @@ module.exports = (async () => {
     view.unmount();
   });
 
-  await runTest('Use English UI forces English, turning it off returns to the device, and both persist', async () => {
+  await runTest('on an English phone the switch turns off to the native-language interface and persists', async () => {
+    const storage = createStorage({ '@userLanguage': 'ภาษาไทย' });
+    const view = await mountProviders({ tag: 'en-US', storage });
+    assert.strictEqual(view.uiLanguage(), 'English');
+    assert.strictEqual(view.latest.useEnglishUI, true);
+
+    // The reported defect: turning the switch off must actually take effect.
+    await TestRenderer.act(async () => {
+      view.latest.setUseEnglishUI(!view.latest.useEnglishUI);
+    });
+    assert.strictEqual(view.uiLanguage(), 'ภาษาไทย');
+    assert.strictEqual(view.latest.useEnglishUI, false);
+    view.unmount();
+
+    const restarted = await mountProviders({ tag: 'en-US', storage });
+    assert.strictEqual(restarted.uiLanguage(), 'ภาษาไทย');
+    await TestRenderer.act(async () => {
+      restarted.latest.setUseEnglishUI(!restarted.latest.useEnglishUI);
+    });
+    assert.strictEqual(restarted.uiLanguage(), 'English');
+    restarted.unmount();
+  });
+
+  await runTest('on a non-English phone the switch chooses English or the native language', async () => {
     const storage = createStorage({ '@userLanguage': 'ภาษาไทย' });
     const view = await mountProviders({ tag: 'ja-JP', storage });
+    // Until the switch is used, the interface follows the phone.
     assert.strictEqual(view.uiLanguage(), '日本語');
     assert.strictEqual(view.latest.useEnglishUI, false);
 
@@ -258,21 +282,44 @@ module.exports = (async () => {
       view.latest.setUseEnglishUI(true);
     });
     assert.strictEqual(view.uiLanguage(), 'English');
-    assert.strictEqual(view.latest.useEnglishUI, true);
+    await TestRenderer.act(async () => {
+      view.latest.setUseEnglishUI(false);
+    });
+    assert.strictEqual(view.uiLanguage(), 'ภาษาไทย');
     view.unmount();
 
-    const forced = await mountProviders({ tag: 'ja-JP', storage });
-    assert.strictEqual(forced.uiLanguage(), 'English');
-    await TestRenderer.act(async () => {
-      forced.latest.setUseEnglishUI(false);
-    });
-    assert.strictEqual(forced.uiLanguage(), '日本語');
-    forced.unmount();
+    const restarted = await mountProviders({ tag: 'ja-JP', storage });
+    assert.strictEqual(restarted.uiLanguage(), 'ภาษาไทย');
+    assert.strictEqual(restarted.inventory(), 'ภาษาไทย');
+    restarted.unmount();
+  });
 
-    const released = await mountProviders({ tag: 'ja-JP', storage });
-    assert.strictEqual(released.uiLanguage(), '日本語');
-    assert.strictEqual(released.inventory(), 'ภาษาไทย');
-    released.unmount();
+  await runTest('with a native-language interface, choosing another native language updates it', async () => {
+    const storage = createStorage({
+      '@userLanguage': 'ภาษาไทย',
+      '@useEnglishUI': 'false',
+      '@manualEnglishUIToggle': 'true',
+    });
+    const view = await mountProviders({ tag: 'en-US', storage });
+    assert.strictEqual(view.uiLanguage(), 'ภาษาไทย');
+    const korean = minimalPairs.findIndex((candidate) => candidate.category === '한국어');
+    await TestRenderer.act(async () => {
+      view.latest.selectLearnerCategory(korean);
+    });
+    await flush();
+    assert.strictEqual(view.uiLanguage(), '한국어');
+    view.unmount();
+  });
+
+  await runTest('switching English off before choosing a native language keeps the phone interface', async () => {
+    const storage = createStorage();
+    const view = await mountProviders({ tag: 'en-US', storage });
+    await TestRenderer.act(async () => {
+      view.latest.setUseEnglishUI(false);
+    });
+    assert.strictEqual(view.latest.learnerLanguageStatus, 'unresolved');
+    assert.strictEqual(view.uiLanguage(), 'English');
+    view.unmount();
   });
 
   await runTest('an automatic English flag saved by older builds does not override the device', async () => {

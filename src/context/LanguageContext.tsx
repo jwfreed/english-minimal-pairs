@@ -113,18 +113,22 @@ export type LearnerLanguageStatus = 'loading' | 'unresolved' | 'resolved';
 interface LanguageContextValue {
   /**
    * The chosen learner language once resolved; before that, a placeholder
-   * that must not be used to select an inventory. Never the UI language.
+   * that must not be used to select an inventory. It becomes the UI language
+   * only when the learner explicitly turns English UI off.
    */
   language: string;
   learnerLanguageStatus: LearnerLanguageStatus;
   /** Records an explicit learner-language (L1) choice. */
   setLanguage: (lang: string) => void;
-  /** Language the interface is shown in: the device's, or forced English. */
+  /**
+   * Language the interface is shown in: the device's until the learner uses
+   * the English UI switch; then English (on) or their native language (off).
+   */
   uiLanguage: string;
   translate: (key: TranslationKey) => string;
   /** Whether the interface is currently shown in English. */
   useEnglishUI: boolean;
-  /** Explicitly forces English (true) or returns to the device language. */
+  /** Explicitly chooses English (true) or the native language (false). */
   setUseEnglishUI: (value: boolean) => void;
 }
 
@@ -137,7 +141,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [deviceUILanguage, setDeviceUILanguage] = useState(() =>
     resolveDeviceUILanguage(getDeviceLocaleInfo())
   );
-  // Only an explicit toggle is a UI preference; null means "follow device".
+  // Only an explicit toggle is a UI preference: true = English, false = the
+  // learner's native language, null = follow the device.
   const [manualEnglishUI, setManualEnglishUI] = useState<boolean | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [learnerLanguageStatus, setLearnerLanguageStatus] =
@@ -203,8 +208,17 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     AsyncStorage.setItem(MANUAL_ENGLISH_UI_KEY, 'true');
   }, []);
 
-  const useEnglishUI = manualEnglishUI === true || deviceUILanguage === 'English';
-  const uiLanguage = useEnglishUI ? 'English' : deviceUILanguage;
+  // Choosing a native language changes the UI only after the learner has
+  // explicitly asked for a native-language interface.
+  const uiLanguage =
+    manualEnglishUI === true
+      ? 'English'
+      : manualEnglishUI === false &&
+          learnerLanguageStatus === 'resolved' &&
+          alternateLanguages[language]
+        ? language
+        : deviceUILanguage;
+  const useEnglishUI = uiLanguage === 'English';
 
   const translate = useCallback(
     (key: TranslationKey) =>

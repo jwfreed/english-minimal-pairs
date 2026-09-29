@@ -53,8 +53,8 @@ export default function SettingsScreen() {
     refreshVoices,
   } = useSettings();
 
-  // The UI language follows the device unless English is forced; it is
-  // independent of the learner's native language.
+  // On: English interface. Off: the native-language interface. Until the
+  // learner uses it, the interface follows the device.
   const effectiveUseEnglishUI = useEnglishUI;
   
   const [expandedSection, setExpandedSection] = useState<string | null>(null);

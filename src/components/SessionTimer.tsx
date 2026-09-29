@@ -19,6 +19,7 @@ import { useAllThemeColors } from '@/src/context/theme';
 import {
   SESSION_TIMER_CUMULATIVE_STORAGE_KEY,
   SESSION_TIMER_STORAGE_KEY,
+  localDayKey,
   parseStoredCumulativeTimerSeconds,
   parseStoredSessionTimerSeconds,
   serializeCumulativeTimerSeconds,
@@ -28,10 +29,14 @@ import {
 const DAILY_GOAL_MINUTES = 15;
 /** Pause the timer after this many seconds of inactivity */
 const IDLE_TIMEOUT_SEC = 120; // 2 minutes
+const IDLE_TIMEOUT_MS = IDLE_TIMEOUT_SEC * 1000;
 
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-}
+/**
+ * The most recent daily total this process wrote. A remount reads storage
+ * before a just-unmounted timer's write may have landed; taking the larger
+ * value keeps the day's total from moving backward.
+ */
+let latestPersistedDay: { day: string; seconds: number } | null = null;
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -75,106 +80,58 @@ export default function SessionTimer({
   const reduceMotion = useReducedMotion();
 
   const [elapsedToday, setElapsedToday] = useState(0);
-  const sessionStartRef = useRef(Date.now());
+  // Today's practice seconds: the persisted base for the current local day,
+  // plus completed counting windows this mount, plus the open window.
+  const dayRef = useRef(localDayKey(new Date()));
   const savedBaseRef = useRef(0);
+  const accumulatedRef = useRef(0);
+  const sessionStartRef = useRef(Date.now());
   const lastActivityRef = useRef(Date.now());
   const pausedRef = useRef(false);
-  /** Accumulated seconds before the timer was paused */
-  const accumulatedRef = useRef(0);
-
-  // Expose poke() so the parent can signal activity
-  const poke = useCallback(() => {
-    lastActivityRef.current = Date.now();
-    if (pausedRef.current) {
-      // Resume: start a new counting window from now
-      pausedRef.current = false;
-      sessionStartRef.current = Date.now();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (timerRef) timerRef.current = { poke };
-  }, [timerRef, poke]);
-
-  // Track cumulative total loaded at mount
   const cumulativeBaseRef = useRef(0);
   const lastPersistedTodayRef = useRef(0);
 
-  // Load persisted time for today on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        const todaySeconds = parseStoredSessionTimerSeconds(
-          await AsyncStorage.getItem(SESSION_TIMER_STORAGE_KEY),
-          todayKey()
-        );
-        savedBaseRef.current = todaySeconds;
-        lastPersistedTodayRef.current = todaySeconds;
-        accumulatedRef.current = 0;
-        setElapsedToday(todaySeconds);
-
-        // Load cumulative total
-        cumulativeBaseRef.current = parseStoredCumulativeTimerSeconds(
-          await AsyncStorage.getItem(SESSION_TIMER_CUMULATIVE_STORAGE_KEY)
-        );
-      } catch {
-        // ignore
-      }
-    })();
+  // A counting window stays active until IDLE_TIMEOUT after the last activity
+  // — exactly what the display counts — so pausing never takes time back.
+  const openWindowSec = useCallback((now: number) => {
+    if (pausedRef.current) return 0;
+    const activeUntil = Math.min(now, lastActivityRef.current + IDLE_TIMEOUT_MS);
+    return Math.max(0, Math.floor((activeUntil - sessionStartRef.current) / 1000));
   }, []);
 
-  // Tick every second, but respect idle timeout
-  useEffect(() => {
-    sessionStartRef.current = Date.now();
-    accumulatedRef.current = 0;
-    pausedRef.current = false;
+  const todayTotal = useCallback(
+    (now: number) =>
+      savedBaseRef.current + accumulatedRef.current + openWindowSec(now),
+    [openWindowSec]
+  );
 
-    const interval = setInterval(() => {
-      if (pausedRef.current) return; // already paused – skip tick
+  const pauseAt = useCallback(
+    (now: number) => {
+      accumulatedRef.current += openWindowSec(now);
+      pausedRef.current = true;
+    },
+    [openWindowSec]
+  );
 
-      const now = Date.now();
-      const idleSec = (now - lastActivityRef.current) / 1000;
-
-      if (idleSec >= IDLE_TIMEOUT_SEC) {
-        // Freeze: save the time accrued up to the last activity moment
-        const activeSec = Math.floor((lastActivityRef.current - sessionStartRef.current) / 1000);
-        accumulatedRef.current += Math.max(activeSec, 0);
-        pausedRef.current = true;
-        // Update display one last time with frozen total
-        setElapsedToday(savedBaseRef.current + accumulatedRef.current);
-        return;
-      }
-
-      const sessionSec = Math.floor((now - sessionStartRef.current) / 1000);
-      setElapsedToday(savedBaseRef.current + accumulatedRef.current + sessionSec);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Persist helper
-  const persist = useCallback(async () => {
-    let total: number;
-    if (pausedRef.current) {
-      total = savedBaseRef.current + accumulatedRef.current;
-    } else {
-      const sessionSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
-      total = savedBaseRef.current + accumulatedRef.current + sessionSec;
-    }
+  const persistDay = useCallback(async (day: string, total: number) => {
+    // Within one day the recorded total never decreases.
+    const seconds = Math.max(
+      total,
+      latestPersistedDay?.day === day ? latestPersistedDay.seconds : 0
+    );
+    latestPersistedDay = { day, seconds };
+    const delta = seconds - lastPersistedTodayRef.current;
+    lastPersistedTodayRef.current = seconds;
     try {
-      // Daily
       await AsyncStorage.setItem(
         SESSION_TIMER_STORAGE_KEY,
-        serializeSessionTimerSeconds(todayKey(), total)
+        serializeSessionTimerSeconds(day, seconds)
       );
-      // Cumulative: base + delta since last persist
-      const delta = total - lastPersistedTodayRef.current;
       if (delta > 0) {
-        const newCumulative = cumulativeBaseRef.current + delta;
-        cumulativeBaseRef.current = newCumulative;
-        lastPersistedTodayRef.current = total;
+        cumulativeBaseRef.current += delta;
         await AsyncStorage.setItem(
           SESSION_TIMER_CUMULATIVE_STORAGE_KEY,
-          serializeCumulativeTimerSeconds(newCumulative)
+          serializeCumulativeTimerSeconds(cumulativeBaseRef.current)
         );
       }
     } catch {
@@ -182,33 +139,109 @@ export default function SessionTimer({
     }
   }, []);
 
+  /** Applies idle pausing and local-midnight rollover as of `now`. */
+  const settle = useCallback(
+    (now: number) => {
+      if (!pausedRef.current && now - lastActivityRef.current >= IDLE_TIMEOUT_MS) {
+        pauseAt(now);
+      }
+      const day = localDayKey(new Date(now));
+      if (day !== dayRef.current) {
+        // Close out the previous day, then start the new day from zero.
+        void persistDay(dayRef.current, todayTotal(now));
+        dayRef.current = day;
+        savedBaseRef.current = 0;
+        accumulatedRef.current = 0;
+        lastPersistedTodayRef.current = 0;
+        sessionStartRef.current = now;
+      }
+    },
+    [pauseAt, persistDay, todayTotal]
+  );
+
+  // Expose poke() so the parent can signal activity
+  const poke = useCallback(() => {
+    const now = Date.now();
+    settle(now);
+    lastActivityRef.current = now;
+    if (pausedRef.current) {
+      // Resume: start a new counting window from now
+      pausedRef.current = false;
+      sessionStartRef.current = now;
+    }
+  }, [settle]);
+
+  useEffect(() => {
+    if (timerRef) timerRef.current = { poke };
+  }, [timerRef, poke]);
+
+  // Load persisted time for today on mount
+  useEffect(() => {
+    const day = dayRef.current;
+    (async () => {
+      try {
+        const stored = parseStoredSessionTimerSeconds(
+          await AsyncStorage.getItem(SESSION_TIMER_STORAGE_KEY),
+          day
+        );
+        // A write from a just-unmounted timer may not have landed yet.
+        const todaySeconds = Math.max(
+          stored,
+          latestPersistedDay?.day === day ? latestPersistedDay.seconds : 0
+        );
+        cumulativeBaseRef.current = parseStoredCumulativeTimerSeconds(
+          await AsyncStorage.getItem(SESSION_TIMER_CUMULATIVE_STORAGE_KEY)
+        );
+        if (dayRef.current !== day) return;
+        savedBaseRef.current = todaySeconds;
+        lastPersistedTodayRef.current = todaySeconds;
+        setElapsedToday(todayTotal(Date.now()));
+      } catch {
+        // ignore
+      }
+    })();
+  }, [todayTotal]);
+
+  // Tick every second, respecting the idle timeout and local midnight
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      settle(now);
+      setElapsedToday(todayTotal(now));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [settle, todayTotal]);
+
+  // Persist helper
+  const persist = useCallback(async () => {
+    const now = Date.now();
+    settle(now);
+    await persistDay(dayRef.current, todayTotal(now));
+  }, [persistDay, settle, todayTotal]);
+
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
+      const now = Date.now();
       if (state === 'background' || state === 'inactive') {
-        persist();
+        // In-memory time stays authoritative for the day; no reload on return.
+        settle(now);
+        if (!pausedRef.current) pauseAt(now);
+        void persist();
       } else if (state === 'active') {
-        // Reload in case date rolled over
-        (async () => {
-          try {
-            savedBaseRef.current = parseStoredSessionTimerSeconds(
-              await AsyncStorage.getItem(SESSION_TIMER_STORAGE_KEY),
-              todayKey()
-            );
-          } catch {
-            savedBaseRef.current = 0;
-          }
-          accumulatedRef.current = 0;
-          sessionStartRef.current = Date.now();
-          lastActivityRef.current = Date.now();
+        settle(now);
+        lastActivityRef.current = now;
+        if (pausedRef.current) {
           pausedRef.current = false;
-        })();
+          sessionStartRef.current = now;
+        }
+        setElapsedToday(todayTotal(now));
       }
     });
     return () => {
       persist();
       sub.remove();
     };
-  }, [persist]);
+  }, [pauseAt, persist, settle, todayTotal]);
 
   const goalSeconds = DAILY_GOAL_MINUTES * 60;
   const progress = Math.min(elapsedToday / goalSeconds, 1);

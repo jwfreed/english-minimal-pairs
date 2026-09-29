@@ -8,6 +8,7 @@ import React, {
   ReactNode,
 } from 'react';
 import {
+  appendAttempt,
   saveAttempt,
   getProgress,
   clearProgress,
@@ -56,12 +57,13 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
         return {
           ...prev,
           [pairId]: {
-            attempts: [...prevStats.attempts, newAttempt],
+            // Same retention as storage, so a restart changes nothing.
+            attempts: appendAttempt(prevStats.attempts, newAttempt),
           },
         };
       });
 
-      saveAttempt(pairId, isCorrect, durationMin).catch((err) => {
+      saveAttempt(pairId, isCorrect, durationMin, newAttempt.timestamp).catch((err) => {
         console.error('Failed to save attempt', err);
       });
     },

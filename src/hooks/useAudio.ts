@@ -207,6 +207,8 @@ export const useAudio = (
   const availableVoicesRef = useRef<Speech.Voice[] | null>(null);
   const audioModeConfiguredRef = useRef(false);
   const playbackObserversRef = useRef(new Map<string, AudioPlaybackObserver>());
+  // Requests this hook instance started and has not yet seen end.
+  const ownedRequestIdsRef = useRef(new Set<string>());
 
   // Lifecycle-managed player for the one-time iOS warmup; released
   // automatically on unmount. Non-iOS platforms — and no-warmup experiment
@@ -259,15 +261,29 @@ export const useAudio = (
       const observer = playbackObserversRef.current.get(outcome.requestId);
       if (terminal) {
         playbackObserversRef.current.delete(outcome.requestId);
+        ownedRequestIdsRef.current.delete(outcome.requestId);
       }
       notifyAudioPlaybackObserver(observer, outcome);
     },
     []
   );
 
+  // Playback ownership follows its owner's lifecycle: when this hook's screen
+  // unmounts, a playback it still owns is released in the coordinator (which
+  // also disarms its watchdog), so it cannot block or be attributed to a later
+  // screen, and its late native callbacks are ignored as stale. A newer
+  // owner's playback is never touched. Native speech is not stopped here: the
+  // app has never used the native speech stop API, which needs its own device
+  // validation, so an already-speaking word may still finish audibly.
   useEffect(
     () => () => {
       playbackObserversRef.current.clear();
+      const activeRequestId =
+        speechPlaybackCoordinator.getActivePlaybackOwnerRequestId();
+      if (activeRequestId && ownedRequestIdsRef.current.has(activeRequestId)) {
+        speechPlaybackCoordinator.cancel(activeRequestId);
+      }
+      ownedRequestIdsRef.current.clear();
     },
     []
   );
@@ -462,6 +478,7 @@ export const useAudio = (
       }
 
       const { requestId } = beginResult.attempt;
+      ownedRequestIdsRef.current.add(requestId);
       if (observer) {
         playbackObserversRef.current.set(requestId, observer);
       }

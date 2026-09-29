@@ -39,6 +39,18 @@ export function pruneAttemptHistory(attempts: unknown): PairAttempt[] {
   return (attempts as PairAttempt[]).slice(-MAX_ATTEMPTS_PER_PAIR);
 }
 
+/**
+ * The single retention rule for live and persisted history: append, then keep
+ * the most recent MAX_ATTEMPTS_PER_PAIR. A restart therefore cannot change
+ * anything derived from attempts.
+ */
+export function appendAttempt(
+  attempts: PairAttempt[],
+  attempt: PairAttempt
+): PairAttempt[] {
+  return pruneAttemptHistory([...attempts, attempt]);
+}
+
 export function parseStoredProgress(raw: string | null): Record<string, PairStats> {
   if (!raw) return getDefaultProgress();
   try {
@@ -78,11 +90,14 @@ export async function getProgress(): Promise<Record<string, PairStats>> {
 export async function saveAttempt(
   pairId: string,
   isCorrect: boolean,
-  durationMin = 0
+  durationMin = 0,
+  // Callers that also hold the attempt in memory pass its timestamp so both
+  // copies are identical.
+  timestamp = Date.now()
 ) {
   const attempt: PairAttempt = {
     isCorrect,
-    timestamp: Date.now(),
+    timestamp,
     durationMin,
   };
 
@@ -91,7 +106,7 @@ export async function saveAttempt(
     const stats = progress[pairId] ?? { attempts: [] };
 
     progress[pairId] = {
-      attempts: pruneAttemptHistory([...stats.attempts, attempt]),
+      attempts: appendAttempt(stats.attempts, attempt),
     };
 
     await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));

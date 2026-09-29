@@ -21,6 +21,8 @@ const light = {
   // white label keeps AA contrast.
   primaryActive: '#8D4C0B',
   primaryLight: '#FADCC6',
+  // Emphasized text on cards and tints: the contrasting phoneme, contrast label.
+  highlightText: '#A05512',
   // Brand warm accent for non-text marks: level fill, tap flash, button shadow.
   accent: '#E67E22',
   // Play button idle glow: inner ring and outer halo.
@@ -53,6 +55,7 @@ const dark: typeof light = {
   primary: '#D35400',
   primaryActive: '#8D4C0B',
   primaryLight: '#895230',
+  highlightText: '#F7B267',
   accent: '#E67E22',
   glowRing: '#F79E4A',
   glowHalo: '#F79E4A',

@@ -754,38 +754,6 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: 2,
       textAlign: 'center' as const,
     },
-    feedbackDetail: {
-      ...font('400'),
-      fontSize: isTablet ? 18 : 14,
-      color: colors.textSecondary,
-      textAlign: 'center' as const,
-      marginBottom: 6,
-    },
-    feedbackAttemptRows: {
-      width: '100%' as const,
-      marginTop: 4,
-      marginBottom: 10,
-      gap: 6,
-    },
-    feedbackAttemptRow: {
-      width: '100%' as const,
-      flexDirection: 'row' as const,
-      alignItems: 'baseline' as const,
-      justifyContent: 'space-between' as const,
-      gap: 16,
-    },
-    feedbackAttemptLabel: {
-      ...font('600'),
-      fontSize: isTablet ? 17 : 13,
-      color: colors.textSecondary,
-    },
-    feedbackAttemptValue: {
-      ...font('700'),
-      flexShrink: 1,
-      fontSize: isTablet ? 19 : 15,
-      color: colors.text,
-      textAlign: 'right' as const,
-    },
     feedbackIPA: {
       ...font('400'),
       fontSize: isTablet ? 20 : 15,
@@ -794,7 +762,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     feedbackHighlight: {
       ...font('700'),
-      color: colors.primary,
+      color: colors.highlightText,
     },
     replayButton: {
       flexDirection: 'row' as const,
@@ -809,8 +777,7 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: isTablet ? 18 : 14,
       color: colors.primary,
     },
-    compareContainer: {
-      width: '100%' as const,
+    compareHeading: {
       alignItems: 'center' as const,
       marginTop: 2,
     },
@@ -824,7 +791,7 @@ const createStyles = (colors: ThemeColors) =>
     contrastContext: {
       ...font('800'),
       fontSize: isTablet ? 21 : 16,
-      color: colors.primary,
+      color: colors.highlightText,
       marginBottom: 8,
       textAlign: 'center' as const,
     },
@@ -836,12 +803,23 @@ const createStyles = (colors: ThemeColors) =>
     compareButton: {
       flex: 1,
       minHeight: 48,
-      paddingVertical: 8,
+      paddingVertical: 10,
       paddingHorizontal: 10,
       borderRadius: 8,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
       backgroundColor: colors.surfaceTint,
+    },
+    compareTagRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 4,
+      marginBottom: 4,
+    },
+    compareTag: {
+      ...font('600'),
+      fontSize: isTablet ? 15 : 12,
+      color: colors.textSecondary,
     },
     compareButtonDisabled: {
       opacity: 0.55,
@@ -857,7 +835,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     compareButtonIpa: {
       ...font('400'),
-      fontSize: isTablet ? 16 : 12,
+      fontSize: isTablet ? 18 : 14,
       color: colors.textSecondary,
       textAlign: 'center' as const,
       marginTop: 2,

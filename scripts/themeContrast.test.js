@@ -99,6 +99,25 @@ runTest('dark theme tokens are unchanged by the light-theme fix', () => {
   assert.strictEqual(Colors.dark.success, '#2ECC71');
 });
 
+// Feedback-panel emphasis must hold in both themes: the highlighted phoneme
+// sits on the panel surface and on the tinted compare buttons.
+runTest('feedback highlights meet WCAG AA in both themes', () => {
+  const failures = [];
+  for (const [scheme, colors] of Object.entries(Colors)) {
+    const themed = createStyles(colors);
+    for (const [name, fg, bg] of [
+      ['phoneme highlight on panel', themed.feedbackHighlight.color, colors.surface],
+      ['phoneme highlight on compare button', themed.feedbackHighlight.color, themed.compareButton.backgroundColor],
+      ['contrast label on panel', themed.contrastContext.color, colors.surface],
+      ['compare tag on compare button', themed.compareTag.color, themed.compareButton.backgroundColor],
+    ]) {
+      const ratio = contrast(fg, bg);
+      if (ratio < AA_NORMAL_TEXT) failures.push(`${scheme} ${name}: ${ratio.toFixed(2)}:1`);
+    }
+  }
+  assert.deepStrictEqual(failures, []);
+});
+
 runTest('both palettes define the same tokens', () => {
   assert.deepStrictEqual(Object.keys(Colors.dark).sort(), Object.keys(Colors.light).sort());
 });

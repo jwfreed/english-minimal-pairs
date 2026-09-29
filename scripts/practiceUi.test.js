@@ -261,16 +261,15 @@ runTest('contrast details remain a supporting modal with mastery and availabilit
   );
 });
 
-runTest('incorrect feedback identifies the choice, correction, and contrast', () => {
+// Rendered behavior (tags, highlights, order) is covered by answerFeedbackPanel.test.js.
+runTest('incorrect feedback names the contrast before the tagged compare buttons', () => {
   assertInOrder(
     answerButtonsSource,
     [
-      'tKeys.youChose',
-      'feedbackCopy.contrastWord',
-      'tKeys.correct',
-      'feedbackCopy.correctWord',
+      'tKeys.incorrect',
       'tKeys.compareTheSounds',
       'contrastLabel',
+      'isCorrect ? tKeys.correct : tKeys.youChose',
     ],
     'incorrect compare context changed'
   );
@@ -555,8 +554,8 @@ runTest('feedback panel, badge, and rows animate in with the design cascade', ()
       answerButtonsSource.includes('badgePopAnimation'),
     'feedback panel entry and badge pop must use the shared motion tokens'
   );
-  // Correct: headline + IPA stagger. Incorrect: rows cascade through index 7.
-  for (const row of ['cascade(1)', 'cascade(2)', 'cascade(3)', 'cascade(4)', 'cascade(5)', 'cascade(6)', 'cascade(7)']) {
+  // Correct: headline + IPA stagger. Incorrect: headline, contrast, compare buttons.
+  for (const row of ['cascade(1)', 'cascade(2)', 'cascade(3)']) {
     assert.ok(
       answerButtonsSource.includes(row),
       `feedback cascade lost a row: ${row}`

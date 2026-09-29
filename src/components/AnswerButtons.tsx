@@ -1,5 +1,14 @@
-import React, { useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Pressable, Text, AccessibilityInfo, Animated } from 'react-native';
+import React, { useCallback, useMemo, useEffect, useRef, type ReactNode } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  Pressable,
+  Text,
+  AccessibilityInfo,
+  Animated,
+  type StyleProp,
+  type TextStyle,
+} from 'react-native';
 import Reanimated, { useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import createStyles from '@/src/constants/styles';
@@ -24,25 +33,27 @@ interface Props {
   /** Index of the word that was played (0 = word1, 1 = word2) */
   playedIdx?: 0 | 1 | null;
   /** Play a specific word from the rendered pair for post-answer compare. */
-  onCompareWord?: (idx: 0 | 1) => void;
+  onCompareWord: (idx: 0 | 1) => void;
   compareDisabled?: boolean;
   isPlaybackActive?: boolean;
 }
 
-/**
- * Highlight the contrasting phoneme inside an IPA string.
- * Returns an array of {text, highlight} segments.
- */
-function highlightPhoneme(ipa: string, phoneme: string): { text: string; highlight: boolean }[] {
-  const needle = phoneme.trim().replace(/^\/+|\/+$/g, '').trim();
-  if (!needle) return [{ text: ipa, highlight: false }];
-  const idx = ipa.indexOf(needle);
-  if (idx === -1) return [{ text: ipa, highlight: false }];
-  return [
-    { text: ipa.slice(0, idx), highlight: false },
-    { text: needle, highlight: true },
-    { text: ipa.slice(idx + needle.length), highlight: false },
-  ].filter((s) => s.text.length > 0);
+/** IPA text with its first occurrence of the contrasting phoneme highlighted. */
+function renderIpa(
+  ipa: string,
+  phoneme: string | null | undefined,
+  highlightStyle: StyleProp<TextStyle>
+): ReactNode {
+  const needle = (phoneme ?? '').trim().replace(/^\/+|\/+$/g, '').trim();
+  const idx = needle ? ipa.indexOf(needle) : -1;
+  if (idx === -1) return ipa;
+  return (
+    <>
+      {ipa.slice(0, idx)}
+      <Text style={highlightStyle}>{needle}</Text>
+      {ipa.slice(idx + needle.length)}
+    </>
+  );
 }
 
 export default function AnswerButtons({
@@ -85,9 +96,6 @@ export default function AnswerButtons({
     [feedback, pair, playedIdx, translate]
   );
   const contrastLabel = useMemo(() => buildContrastLabel(pair), [pair]);
-  const ipaSegments = feedbackCopy
-    ? highlightPhoneme(feedbackCopy.correctIpa, feedbackCopy.correctPhoneme ?? '')
-    : [];
 
   // Trigger haptic feedback and accessibility announcement when feedback changes
   useEffect(() => {
@@ -178,14 +186,10 @@ export default function AnswerButtons({
                 importantForAccessibility="no"
                 accessibilityElementsHidden={true}
               >
-                {ipaSegments.map((seg, i) =>
-                  seg.highlight ? (
-                    <Text key={i} style={styles.feedbackHighlight}>
-                      {seg.text}
-                    </Text>
-                  ) : (
-                    <Text key={i}>{seg.text}</Text>
-                  )
+                {renderIpa(
+                  feedbackCopy.correctIpa,
+                  feedbackCopy.correctPhoneme,
+                  styles.feedbackHighlight
                 )}
               </Reanimated.Text>
             </>
@@ -194,66 +198,59 @@ export default function AnswerButtons({
               <Reanimated.Text style={[styles.feedbackWord, cascade(1)]}>
                 {translate(tKeys.incorrect)}
               </Reanimated.Text>
-              <View style={styles.feedbackAttemptRows}>
-                <Reanimated.View style={[styles.feedbackAttemptRow, cascade(2)]}>
-                  <Text style={styles.feedbackAttemptLabel}>
-                    {translate(tKeys.youChose)}
-                  </Text>
-                  <Text style={styles.feedbackAttemptValue}>
-                    {feedbackCopy.contrastWord} {feedbackCopy.contrastIpa}
-                  </Text>
-                </Reanimated.View>
-                <Reanimated.View style={[styles.feedbackAttemptRow, cascade(3)]}>
-                  <Text style={styles.feedbackAttemptLabel}>
-                    {translate(tKeys.correct)}
-                  </Text>
-                  <Text style={styles.feedbackAttemptValue}>
-                    {feedbackCopy.correctWord} {feedbackCopy.correctIpa}
-                  </Text>
-                </Reanimated.View>
-              </View>
-              <Reanimated.Text style={[styles.compareTitle, cascade(4)]}>
-                {translate(tKeys.compareTheSounds)}
-              </Reanimated.Text>
-              <Reanimated.Text style={[styles.contrastContext, cascade(5)]}>
-                {contrastLabel}
-              </Reanimated.Text>
-            </>
-          )}
-          {feedback === 'incorrect' && onCompareWord && (
-            <View style={styles.compareContainer}>
-              <Reanimated.Text style={[styles.feedbackDetail, cascade(6)]}>
-                {translate(tKeys.listenForSoundDifference)}
-              </Reanimated.Text>
-              <Reanimated.View style={[styles.compareButtonRow, cascade(7)]}>
-                {[
-                  { idx: 0 as const, word: pair.word1, ipa: pair.ipa1 },
-                  { idx: 1 as const, word: pair.word2, ipa: pair.ipa2 },
-                ].map((item) => (
-                  <Pressable
-                    key={item.idx}
-                    style={({ pressed }) => [
-                      styles.compareButton,
-                      compareDisabled && styles.compareButtonDisabled,
-                      pressed && !compareDisabled && styles.compareButtonPressed,
-                    ]}
-                    onPress={() => onCompareWord(item.idx)}
-                    disabled={compareDisabled}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${translate(tKeys.play)} ${item.word} ${item.ipa}`}
-                    accessibilityHint={`${translate(tKeys.doubleTapToHear)} ${item.word}`}
-                    accessibilityState={{ disabled: compareDisabled }}
-                  >
-                    <Text style={styles.compareButtonText} importantForAccessibility="no">
-                      {translate(tKeys.play)} {item.word}
-                    </Text>
-                    <Text style={styles.compareButtonIpa} importantForAccessibility="no">
-                      {item.ipa}
-                    </Text>
-                  </Pressable>
-                ))}
+              <Reanimated.View style={[styles.compareHeading, cascade(2)]}>
+                <Text style={styles.compareTitle}>
+                  {translate(tKeys.compareTheSounds)}
+                </Text>
+                <Text style={styles.contrastContext}>{contrastLabel}</Text>
               </Reanimated.View>
-            </View>
+              {/* The compare buttons carry the correction: each word is tagged
+                  as the learner's choice or the correct answer, in the same
+                  positions as the answer tiles. */}
+              <Reanimated.View style={[styles.compareButtonRow, cascade(3)]}>
+                {([0, 1] as const).map((idx) => {
+                  const isCorrect = idx === playedIdx;
+                  const word = idx ? pair.word2 : pair.word1;
+                  const ipa = idx ? pair.ipa2 : pair.ipa1;
+                  const tag = translate(isCorrect ? tKeys.correct : tKeys.youChose);
+                  return (
+                    <Pressable
+                      key={idx}
+                      style={({ pressed }) => [
+                        styles.compareButton,
+                        compareDisabled && styles.compareButtonDisabled,
+                        pressed && !compareDisabled && styles.compareButtonPressed,
+                      ]}
+                      onPress={() => onCompareWord(idx)}
+                      disabled={compareDisabled}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${translate(tKeys.play)} ${word}, ${tag}`}
+                      accessibilityHint={`${translate(tKeys.doubleTapToHear)} ${word}`}
+                      accessibilityState={{ disabled: compareDisabled }}
+                    >
+                      <View style={styles.compareTagRow} importantForAccessibility="no">
+                        <Ionicons
+                          name={isCorrect ? 'checkmark-circle' : 'close-circle'}
+                          size={14}
+                          color={isCorrect ? theme.success : theme.error}
+                        />
+                        <Text style={styles.compareTag}>{tag}</Text>
+                      </View>
+                      <Text style={styles.compareButtonText} importantForAccessibility="no">
+                        {translate(tKeys.play)} {word}
+                      </Text>
+                      <Text style={styles.compareButtonIpa} importantForAccessibility="no">
+                        {renderIpa(
+                          ipa,
+                          idx ? pair.contrastPhoneme2 : pair.contrastPhoneme1,
+                          styles.feedbackHighlight
+                        )}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </Reanimated.View>
+            </>
           )}
         </Reanimated.View>
       )}

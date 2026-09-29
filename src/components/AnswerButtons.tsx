@@ -137,7 +137,13 @@ export default function AnswerButtons({
                   accessibilityHint={translate(tKeys.doubleTapToSelectWord)}
                   accessibilityState={{ disabled }}
                 >
-                  <Text style={styles.answerTileWord} importantForAccessibility="no">
+                  <Text
+                    style={styles.answerTileWord}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    importantForAccessibility="no"
+                  >
                     {word}
                   </Text>
                   <Text

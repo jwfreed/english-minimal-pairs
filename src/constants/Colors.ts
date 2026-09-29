@@ -43,7 +43,7 @@ const light = {
 const dark: typeof light = {
   background: '#2C3E50',
   text: '#FFFFFF',
-  textSecondary: '#AAB7B8',
+  textSecondary: '#B8C4C5',
   primaryText: '#F0913C',
   surface: '#364C62',
   surfaceTint: '#46362E',
@@ -55,7 +55,7 @@ const dark: typeof light = {
   primary: '#D35400',
   primaryActive: '#8D4C0B',
   primaryLight: '#895230',
-  highlightText: '#F7B267',
+  highlightText: '#FAC07F',
   accent: '#E67E22',
   glowRing: '#F79E4A',
   glowHalo: '#F79E4A',

@@ -99,13 +99,16 @@ runTest('dark theme tokens are unchanged by the light-theme fix', () => {
   assert.strictEqual(Colors.dark.success, '#2ECC71');
 });
 
-// Feedback-panel emphasis must hold in both themes: the highlighted phoneme
-// sits on the panel surface and on the tinted compare buttons.
-runTest('feedback highlights meet WCAG AA in both themes', () => {
+// Practice-card text must hold in both themes: the instruction on the card,
+// the IPA on the answer tiles, and the feedback panel's emphasis on the panel
+// surface and on the tinted compare buttons.
+runTest('practice and feedback text meet WCAG AA in both themes', () => {
   const failures = [];
   for (const [scheme, colors] of Object.entries(Colors)) {
     const themed = createStyles(colors);
     for (const [name, fg, bg] of [
+      ['listening instruction on card', themed.contrastInstruction.color, colors.surface],
+      ['answer tile IPA on tile', themed.answerTileIpa.color, themed.answerTile.backgroundColor],
       ['phoneme highlight on panel', themed.feedbackHighlight.color, colors.surface],
       ['phoneme highlight on compare button', themed.feedbackHighlight.color, themed.compareButton.backgroundColor],
       ['contrast label on panel', themed.contrastContext.color, colors.surface],

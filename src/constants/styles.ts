@@ -395,22 +395,17 @@ const createStyles = (colors: ThemeColors) =>
       gap: 10,
       marginBottom: 14,
     },
-    eyebrow: {
-      ...font('700'),
-      fontSize: 11,
-      letterSpacing: 1.5,
-      color: colors.textSecondary,
-      textTransform: 'uppercase',
-    },
+    // The contrast names what is trained; the answer words below it are the
+    // largest type on the screen.
     contrastTitle: {
       ...font('800'),
-      fontSize: 30,
+      fontSize: isTablet ? 28 : 22,
       color: colors.text,
       textAlign: 'center',
     },
     contrastInstruction: {
       ...font('600'),
-      fontSize: 12,
+      fontSize: isTablet ? 18 : 15,
       color: colors.textSecondary,
       textAlign: 'center',
       marginTop: 10,
@@ -425,12 +420,16 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       textDecorationLine: 'underline',
     },
+    // Example selector and next-contrast suggestion, below the drill card.
+    practiceSecondary: {
+      width: '100%',
+      maxWidth: isTablet ? 800 : 600,
+      marginTop: 16,
+      paddingHorizontal: 4,
+    },
     pickerOverrideContainer: {
       width: '100%',
-      marginTop: 20,
-      paddingTop: 16,
-      borderTopWidth: 1,
-      borderTopColor: colors.hairline,
+      paddingHorizontal: 16,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -527,13 +526,13 @@ const createStyles = (colors: ThemeColors) =>
     },
     answerTileWord: {
       ...font('800'),
-      fontSize: 22,
+      fontSize: isTablet ? 40 : 28,
       color: colors.text,
     },
     answerTileIpa: {
       ...font('400'),
-      fontSize: 13,
-      color: colors.primaryText,
+      fontSize: isTablet ? 18 : 15,
+      color: colors.highlightText,
       marginTop: 4,
     },
     playButton: {

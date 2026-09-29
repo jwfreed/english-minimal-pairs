@@ -95,6 +95,25 @@ runTest('contrast header renders contrast, mastery, then listening instruction',
   );
 });
 
+runTest('the drill card holds only the listen-and-choose loop', () => {
+  assertInOrder(
+    practiceScreenSource,
+    [
+      '<View style={styles.mainCard}>',
+      '<AnswerButtons',
+      '</View>',
+      '<View style={styles.practiceSecondary}>',
+      '<PracticePairSelector',
+      '<NextContrastSuggestion',
+    ],
+    'example selector and suggestion must sit below the drill card'
+  );
+  assert.ok(
+    !practiceScreenSource.includes('tKeys.trainContrast'),
+    'the uppercase eyebrow above the contrast title must stay removed'
+  );
+});
+
 runTest('pair selector toggle uses an accessible button role', () => {
   assert.ok(
     pairSelectorSource.includes('accessibilityRole="button"'),
@@ -394,7 +413,7 @@ runTest('practice suggestion is adjacent to the selector only without feedback',
     '{feedback === null && ('
   );
   const noFeedbackEnd = practiceScreenSource.indexOf(
-    '\n        )}',
+    '\n      )}',
     noFeedbackStart
   );
   const noFeedbackBlock = practiceScreenSource.slice(

@@ -180,7 +180,6 @@ export default function HomeScreen() {
 
       <View style={styles.mainCard}>
         <View style={styles.contrastHeader}>
-          <Text style={styles.eyebrow}>{translate(tKeys.trainContrast)}</Text>
           <Text accessibilityRole="header" style={styles.contrastTitle}>
             {contrastLabel}
           </Text>
@@ -194,6 +193,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               accessibilityRole="button"
               onPress={() => setIsContrastDetailsVisible(true)}
+              hitSlop={8}
               style={styles.contrastDetailsButton}
             >
               <Text style={styles.contrastDetailsButtonText}>
@@ -243,29 +243,31 @@ export default function HomeScreen() {
             compareDisabled={!audioModeReady || isSpeaking}
           />
         )}
-
-        {feedback === null && (
-          <>
-            <PracticePairSelector
-              isLoading={isLoading}
-              selectedPair={selectedPair}
-              pairs={stableVisible}
-              index={safePairIndex}
-              onIndexChange={handlePairChange}
-              color={theme.text}
-              accentColor={theme.primary}
-              loadingTextColor={theme.textSecondary}
-              styles={styles}
-              onScrollStart={handlePickerScrollStart}
-              onScrollEnd={handlePickerScrollEnd}
-            />
-            <NextContrastSuggestion
-              suggestion={suggestion}
-              onSelect={handleSuggestionSelect}
-            />
-          </>
-        )}
       </View>
+
+      {/* Secondary controls sit outside the drill card so the card holds only
+          the listen-and-choose loop. Hidden while feedback is showing. */}
+      {feedback === null && (
+        <View style={styles.practiceSecondary}>
+          <PracticePairSelector
+            isLoading={isLoading}
+            selectedPair={selectedPair}
+            pairs={stableVisible}
+            index={safePairIndex}
+            onIndexChange={handlePairChange}
+            color={theme.text}
+            accentColor={theme.primary}
+            loadingTextColor={theme.textSecondary}
+            styles={styles}
+            onScrollStart={handlePickerScrollStart}
+            onScrollEnd={handlePickerScrollEnd}
+          />
+          <NextContrastSuggestion
+            suggestion={suggestion}
+            onSelect={handleSuggestionSelect}
+          />
+        </View>
+      )}
 
       <HelpOverlay
         visible={isHelpVisible}

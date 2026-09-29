@@ -116,6 +116,17 @@ export function recommendPlacementTier(correctCount: number, totalQuestions: num
   return 1;
 }
 
+/**
+ * Smallest per-contrast practice pool (Decision 022). A tier with fewer
+ * examples is topped up from the contrast's nearest lower tiers.
+ */
+export const MIN_PRACTICE_POOL_SIZE = 3;
+
+/**
+ * Practice pool per contrast: every example at its practice tier first, then,
+ * while the pool is below MIN_PRACTICE_POOL_SIZE, examples from the nearest
+ * lower tiers. Never includes a higher tier.
+ */
 export function selectVisiblePairsByMastery(
   pairs: Pair[],
   mastery: Record<string, number>
@@ -125,8 +136,13 @@ export function selectVisiblePairsByMastery(
 
   return Object.values(byGroup).flatMap((groupPairs) => {
     const tier = mastery[groupPairs[0].group] ?? 1;
-    const tierPairs = groupPairs.filter((pair) => pair.difficulty === tier);
-    return tierPairs.length > 0 ? tierPairs : [groupPairs[0]];
+    const pool = groupPairs.filter((pair) => pair.difficulty === tier);
+    if (pool.length === 0) return [groupPairs[0]];
+    for (let lower = tier - 1; lower >= 1 && pool.length < MIN_PRACTICE_POOL_SIZE; lower--) {
+      const borrowed = groupPairs.filter((pair) => pair.difficulty === lower);
+      pool.push(...borrowed.slice(0, MIN_PRACTICE_POOL_SIZE - pool.length));
+    }
+    return pool;
   });
 }
 

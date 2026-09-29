@@ -147,6 +147,15 @@ function mountSession(initialMastery) {
   return view;
 }
 
+// Each fixture tier holds two examples, so a practice pool is its tier topped
+// up with one lower-tier example (Decision 022).
+const poolTiers = (session) =>
+  JSON.stringify(session.activeGroupPairs.map((pair) => pair.difficulty));
+const inActivePool = (session, pair) =>
+  session.activeGroupPairs.some(
+    (candidate) => candidate.word1 === pair.word1 && candidate.word2 === pair.word2
+  );
+
 async function runTest(name, fn) {
   try {
     await fn();
@@ -177,18 +186,14 @@ module.exports = (async () => {
     assert.strictEqual(session.selectedPair.group, 'bV');
     assert.strictEqual(session.selectedPair.difficulty, 2);
     assert.ok(session.contrastDetailPairs.every((pair) => pair.group === 'bV'));
-    assert.ok(session.activeGroupPairs.length > 0);
-    assert.ok(
-      session.activeGroupPairs.every(
-        (pair) => pair.group === 'bV' && pair.difficulty === 2
-      )
-    );
+    assert.ok(session.activeGroupPairs.every((pair) => pair.group === 'bV'));
+    assert.strictEqual(poolTiers(session), JSON.stringify([2, 2, 1]));
 
-    // The scheduler's next prompt comes from the same contrast and tier.
+    // The scheduler's next prompt comes from the same contrast's new pool.
     await view.act(() => view.latest.handlePlay());
     const next = view.plays.at(-1).pair;
     assert.strictEqual(next.group, 'bV');
-    assert.strictEqual(next.difficulty, 2);
+    assert.ok(inActivePool(view.latest, next), JSON.stringify(next));
     assert.strictEqual(view.latest.selectedPair.group, 'bV');
     view.unmount();
   });
@@ -219,12 +224,17 @@ module.exports = (async () => {
     assert.strictEqual(view.latest.selectedPair.group, 'bV');
     assert.strictEqual(view.latest.selectedPair.difficulty, 6);
 
+    assert.strictEqual(poolTiers(view.latest), JSON.stringify([6, 6, 2]));
+
     for (let answer = 1; answer <= ANSWERS_PER_PROMOTION * 2; answer++) {
       await view.answerCorrectly();
       assert.strictEqual(view.latest.promotedLevel, null, `after mastery ${answer}`);
-      assert.strictEqual(view.plays.at(-1).pair.difficulty, 6);
+      const played = view.plays.at(-1).pair;
+      assert.strictEqual(played.group, 'bV');
+      assert.ok(inActivePool(view.latest, played), JSON.stringify(played));
     }
     assert.strictEqual(view.latest.mastery.bV, 7);
+    assert.strictEqual(poolTiers(view.latest), JSON.stringify([6, 6, 2]));
     view.unmount();
   });
 
@@ -236,7 +246,9 @@ module.exports = (async () => {
       assert.strictEqual(view.latest.promotedLevel, null, `answer ${answer}`);
     }
     assert.strictEqual(view.latest.mastery.bV, 7);
-    assert.strictEqual(view.latest.selectedPair.difficulty, 6);
+    // A mastered contrast keeps its tier-6 pool.
+    assert.strictEqual(view.latest.selectedPair.group, 'bV');
+    assert.strictEqual(poolTiers(view.latest), JSON.stringify([6, 6, 2]));
     // Analytics reports the practice tier, never level 7.
     assert.ok(view.practiceStarted.length > 0);
     assert.ok(

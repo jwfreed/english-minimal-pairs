@@ -72,7 +72,7 @@ runTest('recommendPlacementTier preserves existing placement thresholds', () => 
   assert.strictEqual(recommendPlacementTier(0, 0), 1);
 });
 
-runTest('selectVisiblePairsByMastery makes mastered-tier group examples visible', () => {
+runTest('selectVisiblePairsByMastery makes mastered-tier group examples visible, then tops up from lower tiers', () => {
   const pairs = [
     makePair('rL', 1, 'right', 'light'),
     makePair('rL', 2, 'road', 'load'),
@@ -84,7 +84,7 @@ runTest('selectVisiblePairsByMastery makes mastered-tier group examples visible'
 
   assert.strictEqual(
     JSON.stringify(visible.map((pair) => `${pair.group}:${pair.difficulty}:${pair.word1}/${pair.word2}`)),
-    JSON.stringify(['rL:2:road/load', 'vW:1:vine/wine'])
+    JSON.stringify(['rL:2:road/load', 'rL:1:right/light', 'vW:1:vine/wine'])
   );
 });
 
@@ -100,7 +100,7 @@ runTest('selectVisiblePairsByMastery includes every same-tier example for a mast
 
   assert.strictEqual(
     JSON.stringify(visible.map((pair) => `${pair.group}:${pair.difficulty}:${pair.word1}/${pair.word2}`)),
-    JSON.stringify(['rL:2:road/load', 'rL:2:rice/lice', 'vW:1:vine/wine'])
+    JSON.stringify(['rL:2:road/load', 'rL:2:rice/lice', 'rL:1:right/light', 'vW:1:vine/wine'])
   );
 });
 
@@ -249,12 +249,20 @@ runTest('selectNextTrialPair leaves group-based mastery selection unchanged', ()
   const next = selectNextTrialPair({
     eligiblePairs: visible,
     activeGroup: 'rL',
-    random: () => 0.99,
+    random: () => 0.5,
   });
 
   assert.strictEqual(next.word1, 'road');
   assert.strictEqual(next.group, 'rL');
   assert.strictEqual(next.difficulty, 2);
+  // The topped-up lower-tier example is schedulable too (Decision 022).
+  const last = selectNextTrialPair({
+    eligiblePairs: visible,
+    activeGroup: 'rL',
+    random: () => 0.99,
+  });
+  assert.strictEqual(last.word1, 'right');
+  assert.strictEqual(last.difficulty, 1);
 });
 
 runTest('advanceTrialCycleSeenIds records selected pair without mutating existing seen ids', () => {
@@ -534,11 +542,12 @@ runTest('mastery tier is applied per contrast group — all pairs in the same gr
     makePair('rL', 2, 'rate', 'late'),
     makePair('rL', 3, 'rip', 'lip'),
   ];
-  // mastery['rL'] = 2 → all rL pairs resolve to difficulty-2 tier
+  // mastery['rL'] = 2 → all rL pairs resolve to the difficulty-2 tier,
+  // topped up from difficulty 1 and never from difficulty 3.
   const visible = selectVisiblePairsByMastery(pairs, { rL: 2 });
-  assert.strictEqual(visible.length, 1, 'only the one difficulty-2 pair is visible');
-  assert.strictEqual(visible[0].word1, 'rate', 'the difficulty-2 pair is the visible one');
-  assert.strictEqual(visible[0].group, 'rL', 'the visible pair belongs to the rL group');
+  assert.strictEqual(JSON.stringify(visible.map((pair) => pair.word1)), JSON.stringify(['rate', 'rake']));
+  assert.strictEqual(visible[0].word1, 'rate', 'the difficulty-2 pair leads the pool');
+  assert.ok(visible.every((pair) => pair.group === 'rL'), 'the visible pairs belong to the rL group');
 });
 
 runTest('mastery tier resolution is unaffected by the order pairs appear within a group', () => {
@@ -557,8 +566,8 @@ runTest('mastery tier resolution is unaffected by the order pairs appear within 
   const visibleNormal = selectVisiblePairsByMastery(pairs, mastery);
   const visibleReversed = selectVisiblePairsByMastery(pairsReversed, mastery);
 
-  assert.strictEqual(visibleNormal.length, 1);
-  assert.strictEqual(visibleReversed.length, 1);
+  assert.strictEqual(visibleNormal.length, 2);
+  assert.strictEqual(visibleReversed.length, 2);
   assert.strictEqual(
     visibleNormal[0].word1,
     visibleReversed[0].word1,
@@ -584,8 +593,11 @@ runTest('mastery for two different groups is tracked independently', () => {
   const rLVisible = visible.filter((p) => p.group === 'rL');
   const bVVisible = visible.filter((p) => p.group === 'bV');
 
-  assert.strictEqual(rLVisible.length, 1);
-  assert.strictEqual(rLVisible[0].word1, 'rate', 'rL shows difficulty-2 pair');
+  assert.strictEqual(
+    JSON.stringify(rLVisible.map((p) => p.word1)),
+    JSON.stringify(['rate', 'rake']),
+    'rL leads with its difficulty-2 pair'
+  );
   assert.strictEqual(bVVisible.length, 1);
   assert.strictEqual(bVVisible[0].word1, 'ban', 'bV shows difficulty-1 pair');
 });

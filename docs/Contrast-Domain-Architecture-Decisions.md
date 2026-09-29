@@ -1631,8 +1631,9 @@ frozen, and its remaining gaps are classified and accepted.
 * Every L1 must have exactly five contrasts and at least one pair per
   contrast and tier, so full coverage stays achievable.
 * Sparse pools (M6) are unchanged at runtime: no tier borrowing, no scheduler
-  or progression changes. Expanding reviewed content is a separate
-  product-owner-gated effort under the dataset v1 freeze policy. The accepted
+  or progression changes. (Tier borrowing superseded by Decision 022.)
+  Expanding reviewed content is a separate product-owner-gated effort under
+  the dataset v1 freeze policy. The accepted
   sparse-tier baseline (197 single-pair pools; eight at tiers 1–2) is pinned
   so any change must regenerate the dataset audit documents.
 
@@ -1656,6 +1657,74 @@ Tradeoffs:
 * Placement never produces level 7.
 * Score thresholds, scheduler behavior, progression thresholds and pair
   content are unchanged by this decision.
+
+---
+
+# **Decision 022**
+
+Date:
+2026-09-29
+
+Status:
+Accepted. Supersedes the "no tier borrowing" clause of Decision 021's sparse
+pool bullet; the rest of Decision 021 is unchanged.
+
+## **Title**
+
+Sparse Practice Tiers Borrow From The Contrast's Nearest Lower Tiers
+
+## **Context**
+
+Practice drew a contrast's examples from its current tier only. 197 of the 420
+contrast/tier pools hold one word pair, including tiers 4–6 of nearly every
+contrast. Advancing a level takes at least nine correct answers (three speed
+steps of three fast answers each), so a learner promoted into a single-pair
+tier heard the same word pair for every trial until the next promotion. Device
+testing reported exactly that after a level-up. Content expansion remains
+gated by the dataset v1 freeze.
+
+## **Decision**
+
+* A contrast's practice pool is every example at its practice tier, followed,
+  while the pool holds fewer than three examples, by examples from the same
+  contrast's nearest lower tiers (nearest tier first, dataset order within a
+  tier) until it holds three.
+* A pool never includes a higher tier or another contrast's examples.
+* Current-tier examples lead the pool, so the first example after a promotion
+  is new-tier material.
+* Only the pool changes. Stored mastery levels, progression thresholds,
+  placement, scheduler rules and pair content are unchanged. Answers on a
+  borrowed example count toward the contrast's current level, as every answer
+  already did.
+* A tier with no example keeps the existing single-example fallback; Decision
+  021 makes that unreachable for shipped content.
+
+## **Consequences**
+
+Positive:
+
+* no pool above tier 1 with lower examples available holds fewer than three
+  examples; the scheduler's coverage cycle then never repeats a pair back to
+  back and presents a current-tier example at least once every three trials
+* the rule turns itself off per tier once reviewed content gives it three
+  examples
+
+Tradeoffs:
+
+* up to two of every three trials in a sparse tier use easier, lower-tier
+  words, so the current tier's lexical difficulty is practiced less often
+* voice staging follows each example's own difficulty, so a borrowed example
+  can play from a smaller voice pool (e.g. a tier-4 example at level 5 uses
+  two voices rather than the full pool)
+* tiers 1–2 of the sparsest contrasts have nothing lower to borrow; four
+  tier-1 pools still hold one pair and remain a content matter
+
+## **Required statements**
+
+* Borrowing only ever adds lower-tier examples of the same contrast.
+* Stored mastery, progression and placement are unchanged by this decision.
+* Content expansion remains the long-term remedy and stays gated by the dataset
+  v1 freeze.
 
 ---
 

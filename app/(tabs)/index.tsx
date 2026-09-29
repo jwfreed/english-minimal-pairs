@@ -9,6 +9,7 @@ import HelpOverlay from '@/src/components/HelpOverlay';
 import LevelIndicator from '@/src/components/LevelIndicator';
 import OnboardingScreen from '@/src/components/OnboardingScreen';
 import PlacementTest from '@/src/components/PlacementTest';
+import PlaybackFailureNotice from '@/src/components/PlaybackFailureNotice';
 import ContrastDetailsModal from '@/src/components/practice/ContrastDetailsModal';
 import LevelUpCelebration from '@/src/components/practice/LevelUpCelebration';
 import ListenControls from '@/src/components/practice/ListenControls';
@@ -74,6 +75,7 @@ export default function HomeScreen() {
     isPromptPlaybackActive,
     isSpeaking,
     mastery,
+    playbackFailureReason,
     playedIdx,
     promotedTier,
     safePairIndex,
@@ -207,9 +209,13 @@ export default function HomeScreen() {
           styles={styles}
         />
 
-        <Text style={styles.contrastInstruction}>
-          {translate(tKeys.listenForSoundDifference)}
-        </Text>
+        {playbackFailureReason ? (
+          <PlaybackFailureNotice style={styles.contrastInstruction} />
+        ) : (
+          <Text style={styles.contrastInstruction}>
+            {translate(tKeys.listenForSoundDifference)}
+          </Text>
+        )}
 
         {selectedPair && (
           <AnswerButtons

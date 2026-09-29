@@ -13,6 +13,9 @@ export const FAST_THRESHOLD_MS = 5000;
 export const FAST_STREAK_NEEDED = 3;
 export const LONG_STREAK_NEEDED = 6;
 
+/** Highest mastery tier; practice state stays independent of persistence. */
+const FINAL_MASTERY_TIER = 6;
+
 interface AdaptiveProgressionInput {
   correct: boolean;
   responseTimeMs: number;
@@ -71,12 +74,15 @@ export function getNextAdaptiveProgression({
     };
   }
 
+  // At the final tier there is no next tier, so meeting the criteria is not a
+  // promotion. Speed restarts exactly as it would after one.
+  const atFinalTier = currentMasteryTier >= FINAL_MASTERY_TIER;
   return {
     nextSpeed: 0,
     nextFastStreak: 0,
     nextLongStreak: 0,
     promoteSpeed: false,
-    promoteMastery: true,
-    nextMasteryTier: Math.min(currentMasteryTier + 1, 6),
+    promoteMastery: !atFinalTier,
+    nextMasteryTier: atFinalTier ? currentMasteryTier : currentMasteryTier + 1,
   };
 }

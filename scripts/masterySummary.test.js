@@ -56,14 +56,25 @@ runTest('buildMasterySummary leaves the starting tier incomplete', () => {
   );
 });
 
-runTest('buildMasterySummary treats the final tier as mastered', () => {
+runTest('buildMasterySummary does not treat entering the final tier as mastery', () => {
   assert.deepStrictEqual(
     plain(buildMasterySummary({ pairs: [makePair('rL')], mastery: { rL: 6 } })),
-    { totalGroups: 1, masteredGroups: 1, totalLevels: 6, completedLevels: 5 }
+    { totalGroups: 1, masteredGroups: 0, totalLevels: 6, completedLevels: 5 }
   );
 });
 
-runTest('buildMasterySummary caps completed levels above the final tier', () => {
+runTest('buildMasterySummary keeps mastered contrasts consistent with completed levels', () => {
+  const groups = ['rL', 'bV', 'sTh', 'iI', 'uU'];
+  assert.deepStrictEqual(
+    plain(buildMasterySummary({
+      pairs: groups.map(makePair),
+      mastery: Object.fromEntries(groups.map((group) => [group, 6])),
+    })),
+    { totalGroups: 5, masteredGroups: 0, totalLevels: 30, completedLevels: 25 }
+  );
+});
+
+runTest('buildMasterySummary counts mastery only once every level is complete', () => {
   assert.deepStrictEqual(
     plain(buildMasterySummary({ pairs: [makePair('rL')], mastery: { rL: 7 } })),
     { totalGroups: 1, masteredGroups: 1, totalLevels: 6, completedLevels: 6 }

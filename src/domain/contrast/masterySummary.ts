@@ -28,8 +28,12 @@ export function buildMasterySummary({
 
   for (const group of groups) {
     const tier = mastery[group] ?? 1;
-    completedLevels += Math.min(tier - 1, MAX_MASTERY_TIER);
-    if (tier >= MAX_MASTERY_TIER) masteredGroups++;
+    // The current tier is still being practiced; only tiers below it are
+    // complete. A contrast is mastered once its final tier is complete, which
+    // the persisted tier (1–6) cannot yet record.
+    const completedTiers = Math.min(tier - 1, MAX_MASTERY_TIER);
+    completedLevels += completedTiers;
+    if (completedTiers >= MAX_MASTERY_TIER) masteredGroups++;
   }
 
   return {

@@ -50,6 +50,26 @@ export type PracticePlaybackEvent =
   | { kind: 'answer-accepted'; attemptId: number }
   | { kind: 'session-reset' };
 
+/**
+ * Maps a transport outcome for an attempt onto the lifecycle. Only a native
+ * completion can make a prompt answerable; submission is not playback.
+ */
+export function playbackEventFromOutcome(
+  attemptId: number,
+  outcome:
+    | { kind: 'started' }
+    | { kind: 'completed' }
+    | { kind: 'failed'; reason: PracticePlaybackFailureReason }
+): PracticePlaybackEvent {
+  if (outcome.kind === 'started') {
+    return { kind: 'playback-started', attemptId };
+  }
+  if (outcome.kind === 'completed') {
+    return { kind: 'playback-completed', attemptId };
+  }
+  return { kind: 'playback-failed', attemptId, reason: outcome.reason };
+}
+
 export function initialPracticePlaybackState(): PracticePlaybackState {
   return { status: 'idle' };
 }

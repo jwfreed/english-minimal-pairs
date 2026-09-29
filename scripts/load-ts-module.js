@@ -21,7 +21,7 @@ function loadTsModule(
   moduleMocks = {},
   contextGlobals = {}
 ) {
-  const resolvedEntry = entryPath.endsWith('.ts') ? entryPath : `${entryPath}.ts`;
+  const resolvedEntry = /\.tsx?$/.test(entryPath) ? entryPath : `${entryPath}.ts`;
   if (cache.has(resolvedEntry)) return cache.get(resolvedEntry).exports;
 
   const source = fs.readFileSync(resolvedEntry, 'utf8');
@@ -30,6 +30,7 @@ function loadTsModule(
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2020,
       esModuleInterop: true,
+      jsx: ts.JsxEmit.React,
     },
     fileName: resolvedEntry,
   }).outputText;
@@ -43,14 +44,12 @@ function loadTsModule(
     }
     const tsModulePath = resolveTsModule(request, resolvedEntry);
     if (tsModulePath) {
-      const withTsExtension = tsModulePath.endsWith('.ts') ? tsModulePath : `${tsModulePath}.ts`;
-      if (fs.existsSync(withTsExtension)) {
-        return loadTsModule(
-          withTsExtension,
-          cache,
-          moduleMocks,
-          contextGlobals
-        );
+      const candidates = /\.tsx?$/.test(tsModulePath)
+        ? [tsModulePath]
+        : [`${tsModulePath}.ts`, `${tsModulePath}.tsx`];
+      const existing = candidates.find((candidate) => fs.existsSync(candidate));
+      if (existing) {
+        return loadTsModule(existing, cache, moduleMocks, contextGlobals);
       }
     }
     return require(request);

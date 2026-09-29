@@ -12,6 +12,7 @@ import {
   applyPracticeAnswer,
   buildTrialPairId,
   choosePlaybackForRound,
+  selectPairIndexAfterPromotion,
 } from '@/src/domain/practiceSession';
 import {
   initialTrialSchedulingState,
@@ -24,6 +25,7 @@ import {
   classifyDeferredPromptRender,
   initialPracticePlaybackState,
   isPracticePlaybackActive,
+  playbackEventFromOutcome,
   reducePracticePlayback,
   type PracticePlaybackAttempt,
   type PracticePlaybackEvent,
@@ -201,17 +203,7 @@ export function usePracticeSession({
 
   const observePracticePlayback = useCallback(
     (attemptId: number, outcome: AudioPlaybackOutcome) => {
-      if (outcome.kind === 'started') {
-        dispatchPracticePlayback({ kind: 'playback-started', attemptId });
-      } else if (outcome.kind === 'completed') {
-        dispatchPracticePlayback({ kind: 'playback-completed', attemptId });
-      } else {
-        dispatchPracticePlayback({
-          kind: 'playback-failed',
-          attemptId,
-          reason: outcome.reason,
-        });
-      }
+      dispatchPracticePlayback(playbackEventFromOutcome(attemptId, outcome));
     },
     [dispatchPracticePlayback]
   );
@@ -525,8 +517,17 @@ export function usePracticeSession({
       } else {
         promote(group);
         setPromotedTier(result.promotedTier);
-        if (result.resetPairIndex) {
-          setPairIndex(0);
+        if (result.resetPairIndex && result.promotedTier !== null) {
+          // Stay on the promoted contrast: its example, heading, level,
+          // details and scheduler target must all describe the same contrast.
+          setPairIndex(
+            selectPairIndexAfterPromotion({
+              pairs: catObj.pairs,
+              mastery,
+              group,
+              promotedTier: result.promotedTier,
+            })
+          );
           setFeedback(null);
           dispatchPracticePlayback({ kind: 'session-reset' });
         }
@@ -547,6 +548,7 @@ export function usePracticeSession({
       mastery,
       recordAttempt,
       catObj.category,
+      catObj.pairs,
     ]
   );
 

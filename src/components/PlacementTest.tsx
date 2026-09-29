@@ -4,7 +4,14 @@
 // tier (1-6) across the active category's groups. Returns a recommended
 // starting tier based on the user's accuracy.
 // -----------------------------------------------------------------------------
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import createStyles from '@/src/constants/styles';
 import { useAllThemeColors } from '@/src/context/theme';
@@ -15,8 +22,16 @@ import {
   buildPlacementItems,
   recommendPlacementTier,
 } from '@/src/domain/practice/placementAssessment';
+import {
+  initialPracticePlaybackState,
+  isPracticePlaybackActive,
+  playbackEventFromOutcome,
+  reducePracticePlayback,
+  type PracticePlaybackAttempt,
+} from '@/src/domain/practice/practicePlaybackLifecycle';
 import type { Pair } from '@/src/constants/minimalPairs';
 import { useAudio } from '@/src/hooks/useAudio';
+import PlaybackFailureNotice from '@/src/components/PlaybackFailureNotice';
 
 interface Props {
   /** All pairs for the current category */
@@ -42,7 +57,20 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   const [correctCount, setCorrectCount] = useState(0);
   const [playedIdx, setPlayedIdx] = useState<0 | 1 | null>(null);
   const [answered, setAnswered] = useState(false);
-  const [hasPlayed, setHasPlayed] = useState(false);
+  // Same lifecycle as practice: only a native completion for this question's
+  // latest attempt makes it answerable; submission, failure, cancellation,
+  // timeout and stale callbacks never do.
+  const [playback, dispatchPlayback] = useReducer(
+    reducePracticePlayback,
+    undefined,
+    initialPracticePlaybackState
+  );
+  const nextAttemptIdRef = useRef(0);
+  const promptId = `placement-${qIndex}`;
+  const canAnswer =
+    !answered &&
+    playback.status === 'awaiting-answer' &&
+    playback.attempt.prompt.pairId === promptId;
 
   // Track the answer-advance timeout so it can be cleared on unmount or before
   // rescheduling. Without this, the callback can fire after the component
@@ -80,13 +108,17 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     const idx: 0 | 1 = Math.random() < 0.5 ? 0 : 1;
     setPlayedIdx(idx);
     setAnswered(false);
-    setHasPlayed(false);
+    dispatchPlayback({ kind: 'session-reset' });
   }, [qIndex, currentPair]);
 
   const handleAnswer = useCallback((idx: 0 | 1) => {
-    if (playedIdx === null || answered) return;
+    if (!canAnswer || playback.status !== 'awaiting-answer') return;
     setAnswered(true);
-    const correct = idx === playedIdx;
+    dispatchPlayback({
+      kind: 'answer-accepted',
+      attemptId: playback.attempt.attemptId,
+    });
+    const correct = idx === playback.attempt.prompt.playedIdx;
     const newCorrectCount = correctCount + (correct ? 1 : 0);
     setCorrectCount(newCorrectCount);
 
@@ -104,24 +136,40 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
         setQIndex((i) => i + 1);
       }
     }, 600);
-  }, [playedIdx, answered, correctCount, qIndex, testItems.length, onComplete]);
+  }, [canAnswer, playback, correctCount, qIndex, testItems.length, onComplete]);
 
   const canPlayAudio = playedIdx !== null && !answered;
-  const playDisabled = !canPlayAudio || !audioModeReady || isSpeaking;
+  const playDisabled =
+    !canPlayAudio ||
+    !audioModeReady ||
+    isSpeaking ||
+    isPracticePlaybackActive(playback);
 
   const handlePlay = useCallback(async () => {
     if (playDisabled || playedIdx === null) return;
+    const attempt: PracticePlaybackAttempt = {
+      attemptId: ++nextAttemptIdRef.current,
+      prompt: { pairId: promptId, playedIdx, startedAtMs: Date.now() },
+    };
+    dispatchPlayback({ kind: 'playback-requested', attempt, submission: 'submitted' });
     try {
-      await play(playedIdx);
-      setHasPlayed(true);
+      // Resolves on submission only; the observer carries the native outcome.
+      await play(playedIdx, (outcome) => {
+        dispatchPlayback(playbackEventFromOutcome(attempt.attemptId, outcome));
+      });
     } catch (error) {
+      dispatchPlayback({
+        kind: 'playback-failed',
+        attemptId: attempt.attemptId,
+        reason: 'playback-error',
+      });
       console.error('Placement audio playback error:', error);
       Alert.alert(
         translate(tKeys.audioError),
         translate(tKeys.audioPlaybackFailed)
       );
     }
-  }, [playDisabled, playedIdx, play, translate]);
+  }, [playDisabled, playedIdx, promptId, play, translate]);
 
   if (!currentPair) {
     return <ActivityIndicator />;
@@ -144,6 +192,12 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
         <Text style={styles.buttonText}>🔊 {translate(tKeys.playAudio)}</Text>
       </TouchableOpacity>
 
+      {playback.status === 'failed' && (
+        <PlaybackFailureNotice
+          style={[styles.ipaText, { marginBottom: 20, textAlign: 'center' }]}
+        />
+      )}
+
       <View style={styles.buttonRow}>
         {[0, 1].map((idx) => (
           <TouchableOpacity
@@ -151,10 +205,10 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
             style={[
               styles.button,
               { flex: 1, marginTop: 0 },
-              (!hasPlayed || answered) && { opacity: 0.5 },
+              !canAnswer && { opacity: 0.5 },
             ]}
             onPress={() => handleAnswer(idx as 0 | 1)}
-            disabled={!hasPlayed || answered}
+            disabled={!canAnswer}
           >
             <Text style={styles.buttonText}>
               {idx === 0 ? currentPair.word1 : currentPair.word2}

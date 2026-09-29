@@ -155,17 +155,38 @@ runTest('long path at max speed: promotes mastery tier', () => {
   assert.strictEqual(result.nextSpeed, 0, 'speed resets to 0 on mastery promotion');
 });
 
-runTest('mastery tier is clamped at 6 — does not exceed the maximum', () => {
+runTest('meeting promotion criteria at the final tier is not a promotion', () => {
+  for (const streaks of [
+    { responseTimeMs: FAST_MS, fastStreak: FAST_STREAK_NEEDED - 1, longStreak: 0 },
+    { responseTimeMs: 6000, fastStreak: 0, longStreak: LONG_STREAK_NEEDED - 1 },
+  ]) {
+    const result = getNextAdaptiveProgression({
+      correct: true,
+      currentSpeed: MAX_SPEED,
+      currentMasteryTier: 6,
+      ...streaks,
+    });
+    assert.strictEqual(result.promoteMastery, false, 'tier 6 has no next tier');
+    assert.strictEqual(result.promoteSpeed, false);
+    assert.strictEqual(result.nextMasteryTier, 6);
+    // Practice cadence is unchanged: speed and streaks restart as after a promotion.
+    assert.strictEqual(result.nextSpeed, 0);
+    assert.strictEqual(result.nextFastStreak, 0);
+    assert.strictEqual(result.nextLongStreak, 0);
+  }
+});
+
+runTest('promotion into the final tier is still reported', () => {
   const result = getNextAdaptiveProgression({
     correct: true,
     responseTimeMs: FAST_MS,
     currentSpeed: MAX_SPEED,
     fastStreak: FAST_STREAK_NEEDED - 1,
     longStreak: 0,
-    currentMasteryTier: 6,
+    currentMasteryTier: 5,
   });
-  assert.strictEqual(result.promoteMastery, true, 'promotion still triggers at tier 6');
-  assert.strictEqual(result.nextMasteryTier, 6, 'mastery tier does not exceed 6');
+  assert.strictEqual(result.promoteMastery, true);
+  assert.strictEqual(result.nextMasteryTier, 6);
 });
 
 // ─── Speed tier ordering ───────────────────────────────────────────────────

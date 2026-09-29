@@ -10,6 +10,7 @@ const {
   choosePlaybackForRound,
   recommendPlacementTier,
   selectNextTrialPair,
+  selectPairIndexAfterPromotion,
   selectVisiblePairsByMastery,
   updateRecentMissState,
   RECENT_MISS_DECAY_TRIALS,
@@ -35,6 +36,32 @@ const makePair = (group, difficulty, word1 = `${group}${difficulty}a`, word2 = `
   position: 'initial',
   contrastPhoneme1: 'a',
   contrastPhoneme2: 'b',
+});
+
+runTest('selectPairIndexAfterPromotion stays on the promoted contrast at its new tier', () => {
+  const pairs = [
+    makePair('rL', 1),
+    makePair('rL', 1, 'rL1c', 'rL1d'),
+    makePair('rL', 2),
+    makePair('bV', 1),
+    makePair('bV', 2),
+    makePair('bV', 2, 'bV2c', 'bV2d'),
+    makePair('sZ', 1),
+  ];
+  const mastery = { rL: 1, bV: 1, sZ: 1 };
+  for (const group of ['rL', 'bV', 'sZ']) {
+    const promotedTier = 2;
+    const index = selectPairIndexAfterPromotion({ pairs, mastery, group, promotedTier });
+    const nextVisible = selectVisiblePairsByMastery(pairs, { ...mastery, [group]: promotedTier });
+    assert.strictEqual(nextVisible[index].group, group, group);
+    // sZ has no tier-2 example, so its existing fallback example is kept.
+    if (group !== 'sZ') assert.strictEqual(nextVisible[index].difficulty, 2, group);
+  }
+  assert.strictEqual(
+    selectPairIndexAfterPromotion({ pairs, mastery, group: 'bV', promotedTier: 2 }),
+    2,
+    'bV follows the two remaining rL tier-1 examples'
+  );
 });
 
 runTest('recommendPlacementTier preserves existing placement thresholds', () => {

@@ -125,6 +125,31 @@ export function selectVisiblePairsByMastery(
   });
 }
 
+/**
+ * Index of the promoted contrast's first example once its new tier is
+ * eligible, so selection stays on the contrast that was just promoted.
+ */
+export function selectPairIndexAfterPromotion({
+  pairs,
+  mastery,
+  group,
+  promotedTier,
+}: {
+  pairs: Pair[];
+  mastery: Record<string, number>;
+  group: string;
+  promotedTier: number;
+}): number {
+  const nextVisible = selectVisiblePairsByMastery(pairs, {
+    ...mastery,
+    [group]: promotedTier,
+  });
+  return Math.max(
+    0,
+    nextVisible.findIndex((pair) => pair.group === group)
+  );
+}
+
 export function buildMasteryForAllGroups(
   pairs: Pair[],
   tier: number

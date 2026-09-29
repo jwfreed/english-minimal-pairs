@@ -379,3 +379,35 @@ runTest('reset returns every lifecycle state to idle', () => {
     );
   }
 });
+
+runTest('transport outcomes map to lifecycle events and only completion enables answers', () => {
+  assert.deepStrictEqual(
+    plain(lifecycle.playbackEventFromOutcome(3, { kind: 'started' })),
+    { kind: 'playback-started', attemptId: 3 }
+  );
+  assert.deepStrictEqual(
+    plain(lifecycle.playbackEventFromOutcome(3, { kind: 'completed' })),
+    { kind: 'playback-completed', attemptId: 3 }
+  );
+  for (const reason of [
+    'request-rejected',
+    'playback-error',
+    'playback-stopped',
+    'start-timeout',
+    'completion-timeout',
+  ]) {
+    const event = lifecycle.playbackEventFromOutcome(3, { kind: 'failed', reason });
+    assert.deepStrictEqual(plain(event), {
+      kind: 'playback-failed',
+      attemptId: 3,
+      reason,
+    });
+    let state = request(lifecycle.initialPracticePlaybackState(), 3);
+    state = lifecycle.reducePracticePlayback(
+      state,
+      lifecycle.playbackEventFromOutcome(3, { kind: 'started' })
+    );
+    state = lifecycle.reducePracticePlayback(state, event);
+    assert.strictEqual(lifecycle.canAnswerPracticePrompt(state), false, reason);
+  }
+});

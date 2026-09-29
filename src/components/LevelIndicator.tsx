@@ -41,15 +41,13 @@ export default function LevelIndicator({
   const { translate } = useLanguage();
   const reduceMotion = useReducedMotion();
 
-  const isMastered = currentTier >= TOTAL_TIERS;
-  const levelText = isMastered
-    ? translate(tKeys.mastered)
-    : compact
-      ? formatTranslation(translate(tKeys.levelCompact), { level: currentTier })
-      : formatTranslation(translate(tKeys.levelProgress), {
-          level: currentTier,
-          total: TOTAL_TIERS,
-        });
+  // Reaching the final tier means practicing it, not having mastered it.
+  const levelText = compact
+    ? formatTranslation(translate(tKeys.levelCompact), { level: currentTier })
+    : formatTranslation(translate(tKeys.levelProgress), {
+        level: currentTier,
+        total: TOTAL_TIERS,
+      });
 
   return (
     <View style={styles.levelIndicatorRow}>
@@ -78,16 +76,11 @@ export default function LevelIndicator({
       </View>
       <Text
         accessibilityLabel={levelText}
-        style={[
-          compact ? styles.levelLabelCompact : styles.levelLabel,
-          isMastered && { color: theme.success },
-        ]}
+        style={compact ? styles.levelLabelCompact : styles.levelLabel}
       >
-        {isMastered
-          ? `✔ ${levelText}`
-          : levelText}
+        {levelText}
       </Text>
-      {showCriteria && !isMastered && (
+      {showCriteria && (
         <Text style={styles.levelCriteriaText}>
           {translate(tKeys.levelCriteria)}
         </Text>

@@ -74,6 +74,24 @@ runTest('buildMasterySummary keeps mastered contrasts consistent with completed 
   );
 });
 
+runTest('buildMasterySummary reaches every level and every contrast once final tiers complete', () => {
+  const groups = ['rL', 'bV', 'sTh', 'iI', 'uU'];
+  assert.deepStrictEqual(
+    plain(buildMasterySummary({
+      pairs: groups.map(makePair),
+      mastery: Object.fromEntries(groups.map((group) => [group, 7])),
+    })),
+    { totalGroups: 5, masteredGroups: 5, totalLevels: 30, completedLevels: 30 }
+  );
+  assert.deepStrictEqual(
+    plain(buildMasterySummary({
+      pairs: groups.map(makePair),
+      mastery: { rL: 7, bV: 6, sTh: 3 },
+    })),
+    { totalGroups: 5, masteredGroups: 1, totalLevels: 30, completedLevels: 13 }
+  );
+});
+
 runTest('buildMasterySummary counts mastery only once every level is complete', () => {
   assert.deepStrictEqual(
     plain(buildMasterySummary({ pairs: [makePair('rL')], mastery: { rL: 7 } })),

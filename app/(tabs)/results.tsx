@@ -129,7 +129,7 @@ export default function ResultsScreen() {
                 {`/${item.phoneme1}/ – /${item.phoneme2}/`}
               </Text>
             </View>
-            <LevelIndicator currentTier={mastery[item.group] ?? 1} compact />
+            <LevelIndicator masteryLevel={mastery[item.group] ?? 1} compact />
           </View>
         );
       }

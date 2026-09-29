@@ -22,7 +22,10 @@ interface AdaptiveProgressionInput {
   currentSpeed: SpeedTier;
   fastStreak: number;
   longStreak: number;
+  /** Practice tier (1–6); never a stored mastery level. */
   currentMasteryTier: number;
+  /** Whether the final tier's criteria were already satisfied. */
+  finalTierCompleted?: boolean;
 }
 
 interface AdaptiveProgressionResult {
@@ -31,6 +34,8 @@ interface AdaptiveProgressionResult {
   nextLongStreak: number;
   promoteSpeed: boolean;
   promoteMastery: boolean;
+  /** The final tier's criteria were satisfied for the first time. */
+  completesFinalTier: boolean;
   nextMasteryTier: number;
 }
 
@@ -41,6 +46,7 @@ export function getNextAdaptiveProgression({
   fastStreak,
   longStreak,
   currentMasteryTier,
+  finalTierCompleted = false,
 }: AdaptiveProgressionInput): AdaptiveProgressionResult {
   const nextLongStreak = correct ? longStreak + 1 : 0;
   const nextFastStreak =
@@ -59,6 +65,7 @@ export function getNextAdaptiveProgression({
       nextLongStreak,
       promoteSpeed: false,
       promoteMastery: false,
+      completesFinalTier: false,
       nextMasteryTier: currentMasteryTier,
     };
   }
@@ -70,12 +77,13 @@ export function getNextAdaptiveProgression({
       nextLongStreak: 0,
       promoteSpeed: true,
       promoteMastery: false,
+      completesFinalTier: false,
       nextMasteryTier: currentMasteryTier,
     };
   }
 
-  // At the final tier there is no next tier, so meeting the criteria is not a
-  // promotion. Speed restarts exactly as it would after one.
+  // At the final tier there is no next tier: meeting the criteria completes
+  // it once, and afterwards changes nothing. Speed restarts either way.
   const atFinalTier = currentMasteryTier >= FINAL_MASTERY_TIER;
   return {
     nextSpeed: 0,
@@ -83,6 +91,7 @@ export function getNextAdaptiveProgression({
     nextLongStreak: 0,
     promoteSpeed: false,
     promoteMastery: !atFinalTier,
+    completesFinalTier: atFinalTier && !finalTierCompleted,
     nextMasteryTier: atFinalTier ? currentMasteryTier : currentMasteryTier + 1,
   };
 }

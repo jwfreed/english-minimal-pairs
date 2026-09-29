@@ -457,6 +457,46 @@ runTest('applyPracticeAnswer resets streaks after incorrect answers without demo
   assert.strictEqual(result.promoteMastery, false);
 });
 
+runTest('applyPracticeAnswer completes the final tier once and never again after mastery', () => {
+  const pair = makePair('rL', 6, 'crowd', 'cloud');
+  const answer = (finalTierCompleted) =>
+    applyPracticeAnswer({
+      selectedPair: pair,
+      category: 'Test',
+      answerIdx: 0,
+      playedIdx: 0,
+      startTime: 1000,
+      nowMs: 2500,
+      currentSpeed: 2,
+      fastStreak: 2,
+      longStreak: 0,
+      currentMasteryTier: 6,
+      finalTierCompleted,
+    });
+
+  const completion = answer(false);
+  assert.strictEqual(completion.completesFinalTier, true);
+  assert.strictEqual(completion.promoteMastery, false);
+  assert.strictEqual(completion.promotedTier, null);
+  assert.strictEqual(completion.resetPairIndex, true);
+  assert.strictEqual(completion.nextSpeed, 0);
+
+  const afterMastery = answer(true);
+  assert.strictEqual(afterMastery.completesFinalTier, false);
+  assert.strictEqual(afterMastery.promoteMastery, false);
+  assert.strictEqual(afterMastery.promotedTier, null);
+  assert.strictEqual(afterMastery.resetPairIndex, false);
+  assert.strictEqual(afterMastery.nextSpeed, 0);
+});
+
+runTest('placement never assigns final-tier completion', () => {
+  const pairs = [makePair('rL', 1), makePair('bV', 1)];
+  assert.strictEqual(
+    JSON.stringify(buildMasteryForAllGroups(pairs, 99)),
+    JSON.stringify({ rL: 6, bV: 6 })
+  );
+});
+
 runTest('applyPracticeAnswer promotes mastery and resets speed at max speed', () => {
   const pair = makePair('rL', 3, 'rip', 'lip');
 

@@ -473,4 +473,115 @@ module.exports = (async () => {
     assert.strictEqual(metrics.storageFailures, 1);
     assert.strictEqual(metrics.orphanAdoptionEvents, 1);
   });
+
+  await runTest('final-tier completion (level 7) round-trips through both stores', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 6 }),
+    });
+    const write = await compatibility.writeCompatibleMastery(
+      storage,
+      LANGUAGE_IDS.japanese,
+      '日本語',
+      { rL: 7 },
+      'practice',
+      'enabled'
+    );
+    assert.strictEqual(write.status, 'complete');
+    assert.strictEqual(
+      storage.values.get('@mastery_日本語'),
+      JSON.stringify({ rL: 7 })
+    );
+    const stable = domain.validateContrastMasteryDocument(
+      JSON.parse(storage.values.get('@masteryByContrast_lang.japanese'))
+    );
+    assert.strictEqual(stable.schemaVersion, 1);
+    assert.strictEqual(stable.records[0].tier, 7);
+
+    for (const [state, source] of [
+      ['enabled', 'new'],
+      ['disabled', 'legacy'],
+    ]) {
+      const read = await compatibility.readCompatibleMastery(
+        storage,
+        LANGUAGE_IDS.japanese,
+        '日本語',
+        state
+      );
+      assert.strictEqual(read.status, 'ready', state);
+      assert.strictEqual(read.source, source, state);
+      assert.deepStrictEqual(plain(read.mastery), { rL: 7 }, state);
+    }
+
+    const shadow = await compatibility.compareMasteryInShadow(
+      storage,
+      LANGUAGE_IDS.japanese,
+      '日本語'
+    );
+    assert.strictEqual(shadow.status, 'compared');
+    assert.strictEqual(shadow.divergenceCount, 0);
+    assert.strictEqual(shadow.malformedLegacyCount, 0);
+
+    const reset = await compatibility.writeCompatibleMastery(
+      storage,
+      LANGUAGE_IDS.japanese,
+      '日本語',
+      {},
+      'reset',
+      'enabled'
+    );
+    assert.strictEqual(reset.status, 'complete');
+    const afterReset = await compatibility.readCompatibleMastery(
+      storage,
+      LANGUAGE_IDS.japanese,
+      '日本語',
+      'enabled'
+    );
+    assert.deepStrictEqual(plain(afterReset.mastery), {});
+  });
+
+  await runTest('legacy level 7 migrates as completion while out-of-range levels stay malformed', () => {
+    const result = domain.reconcileInitialLegacyMastery(LANGUAGE_IDS.japanese, [
+      {
+        storageKey: '@mastery_日本語',
+        categoryLabel: '日本語',
+        raw: JSON.stringify({ rL: 7, bV: 8 }),
+      },
+    ]);
+    assert.deepStrictEqual(
+      plain(result.document.records.map((record) => [record.contrastId, record.tier])),
+      [['contrast.japanese.rL', 7]]
+    );
+    assert.deepStrictEqual(
+      plain(result.malformed.map((item) => [item.legacyGroup, item.reason])),
+      [['bV', 'invalid-tier']]
+    );
+
+    const document = JSON.parse(japaneseDocument({ tier: 7 }));
+    assert.strictEqual(domain.validateContrastMasteryDocument(document).records[0].tier, 7);
+    for (const tier of [0, 8, 6.5, '7']) {
+      assert.throws(
+        () => domain.validateContrastMasteryDocument({
+          ...document,
+          records: [{ ...document.records[0], tier }],
+        }),
+        /1 through 7/,
+        String(tier)
+      );
+    }
+  });
+
+  await runTest('same-revision reconciliation keeps completion over tier 6', () => {
+    const current = domain.validateContrastMasteryDocument(
+      JSON.parse(japaneseDocument({ tier: 6 }))
+    );
+    const reconciled = domain.reconcileSteadyStateMastery(current, [
+      {
+        contrastId: 'contrast.japanese.rL',
+        tier: 7,
+        revision: 2,
+        provenance: 'practice',
+      },
+    ]);
+    assert.strictEqual(reconciled.records[0].tier, 7);
+  });
 })();

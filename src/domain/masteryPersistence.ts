@@ -1,8 +1,9 @@
+import { isMasteryLevel } from '@/src/domain/masteryLevel';
+
+/** Contrast group → mastery level (1–7); see masteryLevel.ts. */
 export type MasteryMap = Record<string, number>;
 
 const MASTERY_STORAGE_KEY_PREFIX = '@mastery_';
-const MIN_MASTERY_TIER = 1;
-export const MAX_MASTERY_TIER = 6;
 
 /** Legacy global placement key — kept for one-time migration reads only. */
 export const PLACEMENT_DONE_KEY = '@placementDone';
@@ -45,14 +46,9 @@ export function normalizeStoredMastery(
   if (!isRecord(value)) return fallback;
 
   const normalized: MasteryMap = {};
-  for (const [group, tier] of Object.entries(value)) {
-    if (
-      typeof tier === 'number' &&
-      Number.isInteger(tier) &&
-      tier >= MIN_MASTERY_TIER &&
-      tier <= MAX_MASTERY_TIER
-    ) {
-      normalized[group] = tier;
+  for (const [group, level] of Object.entries(value)) {
+    if (isMasteryLevel(level)) {
+      normalized[group] = level;
     }
   }
   return normalized;

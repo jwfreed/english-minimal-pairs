@@ -1,5 +1,6 @@
 // Renders LevelIndicator through real React: reaching the final tier is
-// labelled as that level in progress, never as contrast mastery.
+// labelled as that level in progress; only completing it (level 7) is
+// labelled as contrast mastery.
 const assert = require('assert');
 const path = require('path');
 const React = require('react');
@@ -39,7 +40,9 @@ const { default: LevelIndicator } = loadTsModule(
       default: () => new Proxy({}, { get: () => ({}) }),
     },
     '@/src/constants/motion': { levelPopAnimation: {} },
-    '@/src/context/theme': { useAllThemeColors: () => ({ track: 'grey' }) },
+    '@/src/context/theme': {
+      useAllThemeColors: () => ({ track: 'grey', success: 'green' }),
+    },
     '@/src/context/LanguageContext': {
       useLanguage: () => ({ translate: (key) => copy[key] ?? key }),
     },
@@ -72,15 +75,26 @@ function runTest(name, fn) {
 
 try {
   runTest('the final tier is labelled as the level being practiced, not mastery', () => {
-    assert.deepStrictEqual(labels({ currentTier: 6, showCriteria: true }), {
+    assert.deepStrictEqual(labels({ masteryLevel: 6, showCriteria: true }), {
       texts: ['Level 6 of 6', 'criteria'],
       filled: 6,
     });
-    assert.deepStrictEqual(labels({ currentTier: 6, compact: true }).texts, ['Lv 6']);
+    assert.deepStrictEqual(labels({ masteryLevel: 6, compact: true }).texts, ['Lv 6']);
+  });
+
+  runTest('completing the final tier is labelled as contrast mastery', () => {
+    assert.deepStrictEqual(labels({ masteryLevel: 7, showCriteria: true }), {
+      texts: ['✔ Contrast mastered'],
+      filled: 6,
+    });
+    assert.deepStrictEqual(labels({ masteryLevel: 7, compact: true }), {
+      texts: ['✔ Contrast mastered'],
+      filled: 6,
+    });
   });
 
   runTest('non-final tiers keep their existing labels', () => {
-    assert.deepStrictEqual(labels({ currentTier: 3, showCriteria: true }), {
+    assert.deepStrictEqual(labels({ masteryLevel: 3, showCriteria: true }), {
       texts: ['Level 3 of 6', 'criteria'],
       filled: 3,
     });

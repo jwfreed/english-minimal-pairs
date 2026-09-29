@@ -246,7 +246,7 @@ runTest('contrast details remain a supporting modal with mastery and availabilit
     'practice must expose a contrast-details entry point'
   );
   assert.ok(
-    contrastDetailsSource.includes('<LevelIndicator currentTier={masteryLevel}') &&
+    contrastDetailsSource.includes('<LevelIndicator masteryLevel={masteryLevel}') &&
       contrastDetailsSource.includes('availablePairIds.has(pairId)') &&
       contrastDetailsSource.includes('tKeys.availableNow'),
     'contrast details must show group mastery and current pair availability'
@@ -644,17 +644,17 @@ runTest('correct feedback pops only the current tier and respects reduced motion
   );
 });
 
-runTest('real mastery promotion still renders the promoted tier celebration', () => {
+runTest('real mastery promotion still renders the promoted level celebration', () => {
   assert.ok(
     practiceScreenSource.includes('<LevelUpCelebration') &&
-      practiceScreenSource.includes('promotedTier={promotedTier}'),
+      practiceScreenSource.includes('promotedLevel={promotedLevel}'),
     'practice must continue passing actual promotion state to the celebration'
   );
   assert.ok(
     levelUpCelebrationSource.includes(
-      '<LevelIndicator currentTier={promotedTier} compact />'
+      '<LevelIndicator masteryLevel={promotedLevel} compact />'
     ),
-    'the promotion celebration must render mastery from promotedTier'
+    'the promotion celebration must render mastery from promotedLevel'
   );
 });
 

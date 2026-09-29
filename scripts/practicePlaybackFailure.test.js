@@ -54,7 +54,7 @@ function sessionState(overrides) {
     playbackFailureReason: null,
     playbackStatus: 'idle',
     playedIdx: null,
-    promotedTier: null,
+    promotedLevel: null,
     safePairIndex: 0,
     selectedPair: pair,
     setAllGroupsToTier: () => {},

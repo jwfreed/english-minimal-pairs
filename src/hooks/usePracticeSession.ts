@@ -38,6 +38,12 @@ import {
 } from '@/src/domain/practice/progressionState';
 import { useAudio, type AudioPlaybackOutcome } from '@/src/hooks/useAudio';
 import { useContrastPairs } from '@/src/hooks/useContrastPairs';
+import {
+  isMasteredLevel,
+  nextMasteryLevel,
+  practiceTierMap,
+  practiceTierOf,
+} from '@/src/domain/masteryLevel';
 import { useHaptics } from '@/src/hooks/useHaptics';
 import {
   FAST_STREAK_NEEDED,
@@ -97,8 +103,8 @@ export function usePracticeSession({
   const [pairIndex, setPairIndex] = useState(0);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
-  /** Tier the user just promoted to — drives inline celebration in AnswerButtons */
-  const [promotedTier, setPromotedTier] = useState<number | null>(null);
+  /** Mastery level just reached (7 = mastered) — drives the inline celebration */
+  const [promotedLevel, setPromotedLevel] = useState<number | null>(null);
   const trialSchedulingRef = useRef(initialTrialSchedulingState());
   const lastStartedContrastRef = useRef<string | null>(null);
   const dispatchTrialScheduling = useCallback(
@@ -164,7 +170,8 @@ export function usePracticeSession({
     lastStartedContrastRef.current = activeGroup;
     practiceAnalytics.practiceStarted({
       contrast: activeGroup,
-      masteryLevel: mastery[activeGroup] ?? 1,
+      // Analytics reports the practice tier, never level 7.
+      masteryLevel: practiceTierOf(mastery[activeGroup]),
     });
   }, [activeGroup, isLoading, isPracticeReady, mastery, selectedPair]);
 
@@ -343,7 +350,7 @@ export function usePracticeSession({
 
     if (playback.startsNewRound) {
       setFeedback(null);
-      setPromotedTier(null);
+      setPromotedLevel(null);
       promptStartedAtMs = Date.now();
 
       const group = activeGroup ?? selectedPair?.group ?? null;
@@ -456,7 +463,8 @@ export function usePracticeSession({
         currentSpeed: curSpeed,
         fastStreak,
         longStreak,
-        currentMasteryTier: mastery[group] ?? 1,
+        currentMasteryTier: practiceTierOf(mastery[group]),
+        finalTierCompleted: isMasteredLevel(mastery[group]),
       });
       if (!result) return;
 
@@ -502,7 +510,11 @@ export function usePracticeSession({
         );
       }
 
-      if (!result.promoteSpeed && !result.promoteMastery) {
+      if (
+        !result.promoteSpeed &&
+        !result.promoteMastery &&
+        !result.completesFinalTier
+      ) {
         // Wrong answers reset streaks (above) but do NOT demote speed.
         return;
       }
@@ -515,17 +527,20 @@ export function usePracticeSession({
           );
         }
       } else {
+        // A tier promotion or the first final-tier completion advances the
+        // stored level by one; completion (6 → 7) keeps practice tier 6.
         promote(group);
-        setPromotedTier(result.promotedTier);
-        if (result.resetPairIndex && result.promotedTier !== null) {
+        setPromotedLevel(nextMasteryLevel(mastery[group]));
+        if (result.resetPairIndex) {
           // Stay on the promoted contrast: its example, heading, level,
           // details and scheduler target must all describe the same contrast.
           setPairIndex(
             selectPairIndexAfterPromotion({
               pairs: catObj.pairs,
-              mastery,
+              mastery: practiceTierMap(mastery),
               group,
-              promotedTier: result.promotedTier,
+              promotedTier:
+                result.promotedTier ?? practiceTierOf(mastery[group]),
             })
           );
           setFeedback(null);
@@ -533,7 +548,7 @@ export function usePracticeSession({
         }
         if (__DEV__) {
           console.log(
-            `🎓 Mastery up for ${group}! Speed reset to 0 → tier ${result.promotedTier}`
+            `🎓 Mastery up for ${group}! Speed reset to 0 → level ${nextMasteryLevel(mastery[group])}`
           );
         }
       }
@@ -634,7 +649,7 @@ export function usePracticeSession({
     playbackFailureReason:
       playbackState.status === 'failed' ? playbackState.reason : null,
     playbackStatus: playbackState.status,
-    promotedTier,
+    promotedLevel,
     safePairIndex,
     selectedPair,
     setAllGroupsToTier,

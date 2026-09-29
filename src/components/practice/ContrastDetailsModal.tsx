@@ -98,7 +98,7 @@ export default function ContrastDetailsModal({
             </TouchableOpacity>
           </View>
 
-          <LevelIndicator currentTier={masteryLevel} />
+          <LevelIndicator masteryLevel={masteryLevel} />
 
           <Text style={styles.sectionTitle}>{translate(tKeys.practiceExamples)}</Text>
           <ScrollView

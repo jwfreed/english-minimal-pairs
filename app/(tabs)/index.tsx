@@ -23,6 +23,7 @@ import { useCategory } from '@/src/context/CategoryContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useAllThemeColors } from '@/src/context/theme';
 import { contrastRegistry } from '@/src/domain/contrast/contrastRegistry';
+import { isMasteredLevel } from '@/src/domain/masteryLevel';
 import type { ContrastId } from '@/src/domain/identity';
 import { useNextContrastSuggestion } from '@/src/hooks/useNextContrastSuggestion';
 import { buildContrastLabel } from '@/utils/contrastLabel';
@@ -77,7 +78,7 @@ export default function HomeScreen() {
     mastery,
     playbackFailureReason,
     playedIdx,
-    promotedTier,
+    promotedLevel,
     safePairIndex,
     selectedPair,
     setAllGroupsToTier,
@@ -174,7 +175,7 @@ export default function HomeScreen() {
           </Text>
           {selectedPair && (
             <LevelIndicator
-              currentTier={mastery[selectedPair.group] ?? 1}
+              masteryLevel={mastery[selectedPair.group] ?? 1}
               highlightCurrentTier={feedback === 'correct'}
             />
           )}
@@ -192,11 +193,13 @@ export default function HomeScreen() {
         </View>
 
         <LevelUpCelebration
-          promotedTier={promotedTier}
+          promotedLevel={promotedLevel}
           label={
-            promotedTier == null
+            promotedLevel == null
               ? translate(tKeys.levelUnlocked)
-              : `${translate(tKeys.contrastMovedToLevel)} ${promotedTier}`
+              : isMasteredLevel(promotedLevel)
+                ? translate(tKeys.mastered)
+                : `${translate(tKeys.contrastMovedToLevel)} ${promotedLevel}`
           }
           styles={styles}
         />

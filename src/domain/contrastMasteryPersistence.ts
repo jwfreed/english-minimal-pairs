@@ -10,6 +10,7 @@ import {
   type HistoricalIdentityMapping,
 } from '@/src/domain/compatibility/historicalIdentityMapping';
 import { contrastRegistry } from '@/src/domain/contrast/contrastRegistry';
+import { isMasteryLevel } from '@/src/domain/masteryLevel';
 
 declare const masteryTierBrand: unique symbol;
 
@@ -123,9 +124,13 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Schema v1 keeps the record field name `tier`, but it stores the mastery
+ * level (1–7) defined by Decision 020: 7 records final-tier completion.
+ */
 export function defineMasteryTier(value: number): MasteryTier {
-  if (!Number.isInteger(value) || value < 1 || value > 6) {
-    throw new Error(`Mastery tier must be an integer from 1 through 6: "${value}"`);
+  if (!isMasteryLevel(value)) {
+    throw new Error(`Mastery level must be an integer from 1 through 7: "${value}"`);
   }
   return value as MasteryTier;
 }

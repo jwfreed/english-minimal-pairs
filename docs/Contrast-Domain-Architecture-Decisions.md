@@ -1503,6 +1503,87 @@ Retiring the legacy recommender is the smallest coherent change:
 
 ---
 
+# **Decision 020**
+
+Date:
+2026-09-29
+
+Status:
+Accepted
+
+## **Title**
+
+Persist Terminal Contrast Mastery As Mastery Level 7
+
+## **Context**
+
+The persisted per-contrast value stored only tiers 1–6, so "the learner has
+completed the final practice tier" had no representation. Reaching tier 6
+was therefore shown as mastery, and a qualifying streak at tier 6 reported a
+promotion that changed nothing. After that was corrected, no contrast could
+become mastered and completed-level totals could not reach their maximum.
+
+A contrast has exactly seven progress states: practicing tiers 1 through 6,
+and having completed tier 6. Both the legacy map and the stable record
+already store one integer per contrast.
+
+## **Decision**
+
+The persisted per-contrast value is a **mastery level**: 1 + the number of
+completed practice tiers.
+
+* Levels 1–6 keep their existing meaning: the learner is practicing that
+  tier. Existing saved data is valid unchanged; there is no migration.
+* Level 7 means the final tier's promotion criteria have been satisfied. The
+  contrast is mastered, has completed 6 of 6 levels, and continues to practice
+  tier-6 material. Level 7 is not a practice tier.
+* Current practice tier = `min(level, 6)`; completed tiers =
+  `min(level - 1, 6)`; mastered = `level === 7`. `src/domain/masteryLevel.ts`
+  is the only interpretation of the stored value.
+* Satisfying tier 6's criteria at level 6 advances to level 7 once. At level 7
+  the criteria change nothing and emit nothing.
+* The legacy map and stable schema v1 accept levels 1–7. The stable record
+  field keeps its v1 name `tier`; its value is the mastery level.
+* Placement assigns at most tier 6 and never assigns level 7. Completing
+  placement keeps its existing behavior of rewriting every group's level.
+* Reset removes the level; a reset contrast is level 1.
+* Analytics reports the current practice tier, never level 7.
+* No mastery is granted retroactively: a contrast stored at level 6 must
+  complete tier 6 to reach level 7.
+
+## **Consequences**
+
+Positive:
+
+* terminal mastery is one persisted value, written atomically with the rest
+  of the contrast's progress under the existing hydration and write authority
+* no two persisted facts can contradict each other
+* completed-level totals and mastered counts are reachable and consistent
+
+Tradeoffs:
+
+* every consumer of the stored value must interpret it through the level
+  helper rather than use it as a tier
+* **older builds are not compatible with level 7.** A build that predates this
+  Decision drops a level-7 contrast when reading legacy mastery (treating it
+  as tier 1), and builds that predate the P0 persistence fix then write that
+  state back, permanently losing the contrast's progress. Older stable readers
+  reject a level-7 record as malformed and fail closed. App Store users cannot
+  downgrade; internal testers must not install an older build over one that
+  has recorded mastery.
+
+## **Required statements**
+
+* Levels 1–6 retain their practice-tier meaning; level 7 is not a practice
+  tier.
+* Terminal mastery is persisted only as level 7 in the existing per-contrast
+  value; no separate completion record is authorized.
+* Level 7 is written only through a learner mutation after the storage key has
+  hydrated successfully.
+* This Decision performs no migration and does not change rollout state.
+
+---
+
 # **Proposed Decisions — not accepted**
 
 Everything below this line is a **proposal**. Proposed entries are not binding,

@@ -635,4 +635,99 @@ module.exports = (async () => {
     assert.strictEqual(result.persistenceError.message, 'legacy write failed');
     assert.deepStrictEqual(storage.writes, []);
   });
+
+  await runTest('saved final-tier completion (level 7) is read, protected, and never rewritten by reads', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 7 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = harness.render(renderHook);
+    await harness.settle();
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.deepStrictEqual(plain(result.mastery), { rL: 7 });
+    assert.deepStrictEqual(storage.writes, []);
+
+    const failing = createStorage(
+      { '@mastery_日本語': JSON.stringify({ rL: 7 }) },
+      true
+    );
+    const failingHarness = createHookHarness();
+    const useFailing = loadHook(failing, failingHarness, calls);
+    const renderFailing = () => useFailing(japanesePairs(), '日本語');
+    let failed = failingHarness.render(renderFailing);
+    await failingHarness.settle();
+    failed = failingHarness.render(renderFailing);
+    failed.promote('rL');
+    failingHarness.render(renderFailing);
+    await failingHarness.settle();
+    failingHarness.render(renderFailing);
+    assert.deepStrictEqual(failing.writes, []);
+    assert.strictEqual(
+      failing.values.get('@mastery_日本語'),
+      JSON.stringify({ rL: 7 })
+    );
+  });
+
+  await runTest('completing the final tier persists level 7 and advancing stops there', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 6 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = harness.render(renderHook);
+    await harness.settle();
+    result = harness.render(renderHook);
+    result.promote('rL');
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.deepStrictEqual(plain(result.mastery), { rL: 7 });
+    assert.deepStrictEqual(storage.writes, [
+      ['@mastery_日本語', JSON.stringify({ rL: 7 })],
+    ]);
+
+    result.promote('rL');
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.deepStrictEqual(plain(result.mastery), { rL: 7 });
+    assert.ok(storage.writes.every(([, value]) => JSON.parse(value).rL <= 7));
+
+    await result.resetMastery();
+    result = harness.render(renderHook);
+    await harness.settle();
+    result = harness.render(renderHook);
+    assert.deepStrictEqual(plain(result.mastery), {});
+    assert.strictEqual(storage.values.has('@mastery_日本語'), false);
+  });
+
+  await runTest('rebinding never carries level 7 to another category key', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 7 }),
+      '@mastery_한국어': JSON.stringify({ rL: 2 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    let category = '日本語';
+    const renderHook = () => useContrastPairs(japanesePairs(), category);
+
+    let result = harness.render(renderHook);
+    await harness.settle();
+    harness.render(renderHook);
+    category = '한국어';
+    result = harness.render(renderHook);
+    await harness.settle();
+    result = harness.render(renderHook);
+    await harness.settle();
+    harness.render(renderHook);
+    assert.deepStrictEqual(plain(result.mastery), { rL: 2 });
+    assert.deepStrictEqual(storage.writes, []);
+  });
 })();

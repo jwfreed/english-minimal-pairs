@@ -119,7 +119,7 @@ async function runReplay(replayFixture) {
       selectedPairId: scenario.buildPairId(scenario.current.selectedPair),
       feedback: scenario.current.feedback,
       playedIdx: scenario.current.playedIdx,
-      promotedTier: scenario.current.promotedTier,
+      promotedLevel: scenario.current.promotedLevel,
       mastery: scenario.mastery,
       randomDrawCount: scenario.randomDrawCount,
       presentedPairIds: actionEvents
@@ -187,7 +187,7 @@ function buildGoldenReplay(replay) {
       step.selectedPairId,
       step.feedback,
       step.playedIdx,
-      step.promotedTier,
+      step.promotedLevel,
       step.randomDrawCount,
     ]),
     masteryChanges,

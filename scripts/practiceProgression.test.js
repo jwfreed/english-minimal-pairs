@@ -43,7 +43,7 @@ function buildGoldenReplay(replays) {
             step.label,
             step.playbackRate,
             step.feedbackAfterAnswer,
-            step.promotedTierAfterAnswer,
+            step.promotedLevelAfterAnswer,
             step.promotionCount,
           ]),
         observations: replay.steps
@@ -121,7 +121,7 @@ module.exports = (async () => {
       'slow-17'
     );
     assert.deepStrictEqual(beforePromotion.masteryAfter, { rL: 1, bV: 1 });
-    assert.strictEqual(beforePromotion.promotedTierAfterAnswer, null);
+    assert.strictEqual(beforePromotion.promotedLevelAfterAnswer, null);
     assert.strictEqual(beforePromotion.promotionCount, 0);
 
     const promotion = findStep(
@@ -130,7 +130,7 @@ module.exports = (async () => {
       'slow-18-mastery'
     );
     assert.deepStrictEqual(promotion.masteryAfter, { rL: 2, bV: 1 });
-    assert.strictEqual(promotion.promotedTierAfterAnswer, 2);
+    assert.strictEqual(promotion.promotedLevelAfterAnswer, 2);
     assert.strictEqual(promotion.promotionCount, 1);
     assert.strictEqual(promotion.feedbackAfterAnswer, null);
     assert.strictEqual(
@@ -210,7 +210,7 @@ module.exports = (async () => {
       null,
       'mastery promotion resets the completed round feedback state'
     );
-    assert.strictEqual(promotion.promotedTierAfterAnswer, 2);
+    assert.strictEqual(promotion.promotedLevelAfterAnswer, 2);
     assert.strictEqual(promotion.promotionCount, 1);
     assert.strictEqual(
       findStep(

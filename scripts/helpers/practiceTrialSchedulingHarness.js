@@ -28,6 +28,9 @@ const plain = (value) => JSON.parse(JSON.stringify(value));
 
 function createPracticeTrialSchedulingHarness(fixture) {
   const domain = loadTsModule(practiceSessionPath);
+  const masteryLevel = loadTsModule(
+    path.join(__dirname, '..', '..', 'src', 'domain', 'masteryLevel.ts')
+  );
   const events = [];
   const categories = new Map(
     fixture.categories.map((category) => [category.category, category])
@@ -167,13 +170,17 @@ function createPracticeTrialSchedulingHarness(fixture) {
     contrastRevisionSetter = setRevision;
     const mastery = masteryByCategory[categoryKey] ?? {};
     const visible = harness.react.useMemo(
-      () => domain.selectVisiblePairsByMastery(pairs, mastery),
+      () =>
+        domain.selectVisiblePairsByMastery(
+          pairs,
+          masteryLevel.practiceTierMap(mastery)
+        ),
       [pairs, mastery]
     );
     const promote = harness.react.useCallback(
       (group) => {
         const previousTier = masteryByCategory[categoryKey]?.[group] ?? 1;
-        const promotedTier = Math.min(previousTier + 1, 6);
+        const promotedTier = masteryLevel.nextMasteryLevel(previousTier);
         masteryByCategory[categoryKey] = {
           ...(masteryByCategory[categoryKey] ?? {}),
           [group]: promotedTier,

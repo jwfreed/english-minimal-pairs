@@ -23,7 +23,10 @@ export interface PracticeAnswerInput {
   currentSpeed: SpeedTier;
   fastStreak: number;
   longStreak: number;
+  /** Practice tier (1–6) of the answered contrast. */
   currentMasteryTier: number;
+  /** Whether that contrast's final tier is already complete (mastered). */
+  finalTierCompleted: boolean;
 }
 
 export interface PracticeAnswerResult {
@@ -38,6 +41,8 @@ export interface PracticeAnswerResult {
   nextLongStreak: number;
   promoteSpeed: boolean;
   promoteMastery: boolean;
+  /** First completion of the final tier: the contrast becomes mastered. */
+  completesFinalTier: boolean;
   promotedTier: number | null;
   resetPairIndex: boolean;
 }
@@ -259,6 +264,7 @@ export function applyPracticeAnswer({
   fastStreak,
   longStreak,
   currentMasteryTier,
+  finalTierCompleted,
 }: PracticeAnswerInput): PracticeAnswerResult | null {
   if (playedIdx === null || !selectedPair) return null;
 
@@ -271,6 +277,7 @@ export function applyPracticeAnswer({
     fastStreak,
     longStreak,
     currentMasteryTier,
+    finalTierCompleted,
   });
 
   return {
@@ -285,7 +292,9 @@ export function applyPracticeAnswer({
     nextLongStreak: progression.nextLongStreak,
     promoteSpeed: progression.promoteSpeed,
     promoteMastery: progression.promoteMastery,
+    completesFinalTier: progression.completesFinalTier,
     promotedTier: progression.promoteMastery ? progression.nextMasteryTier : null,
-    resetPairIndex: progression.promoteMastery,
+    resetPairIndex:
+      progression.promoteMastery || progression.completesFinalTier,
   };
 }

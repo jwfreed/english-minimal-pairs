@@ -155,25 +155,51 @@ runTest('long path at max speed: promotes mastery tier', () => {
   assert.strictEqual(result.nextSpeed, 0, 'speed resets to 0 on mastery promotion');
 });
 
-runTest('meeting promotion criteria at the final tier is not a promotion', () => {
+runTest('meeting the final tier criteria completes it once and is never a tier promotion', () => {
   for (const streaks of [
     { responseTimeMs: FAST_MS, fastStreak: FAST_STREAK_NEEDED - 1, longStreak: 0 },
     { responseTimeMs: 6000, fastStreak: 0, longStreak: LONG_STREAK_NEEDED - 1 },
   ]) {
-    const result = getNextAdaptiveProgression({
-      correct: true,
-      currentSpeed: MAX_SPEED,
-      currentMasteryTier: 6,
-      ...streaks,
-    });
-    assert.strictEqual(result.promoteMastery, false, 'tier 6 has no next tier');
-    assert.strictEqual(result.promoteSpeed, false);
-    assert.strictEqual(result.nextMasteryTier, 6);
-    // Practice cadence is unchanged: speed and streaks restart as after a promotion.
-    assert.strictEqual(result.nextSpeed, 0);
-    assert.strictEqual(result.nextFastStreak, 0);
-    assert.strictEqual(result.nextLongStreak, 0);
+    for (const finalTierCompleted of [false, true]) {
+      const result = getNextAdaptiveProgression({
+        correct: true,
+        currentSpeed: MAX_SPEED,
+        currentMasteryTier: 6,
+        finalTierCompleted,
+        ...streaks,
+      });
+      assert.strictEqual(result.promoteMastery, false, 'tier 6 has no next tier');
+      assert.strictEqual(result.completesFinalTier, !finalTierCompleted);
+      assert.strictEqual(result.promoteSpeed, false);
+      assert.strictEqual(result.nextMasteryTier, 6);
+      // Practice cadence is unchanged: speed and streaks restart either way.
+      assert.strictEqual(result.nextSpeed, 0);
+      assert.strictEqual(result.nextFastStreak, 0);
+      assert.strictEqual(result.nextLongStreak, 0);
+    }
   }
+});
+
+runTest('final-tier completion requires the promotion criteria and the final tier', () => {
+  const belowCriteria = getNextAdaptiveProgression({
+    correct: true,
+    responseTimeMs: FAST_MS,
+    currentSpeed: MAX_SPEED,
+    fastStreak: 0,
+    longStreak: 0,
+    currentMasteryTier: 6,
+  });
+  assert.strictEqual(belowCriteria.completesFinalTier, false);
+  const belowFinalTier = getNextAdaptiveProgression({
+    correct: true,
+    responseTimeMs: FAST_MS,
+    currentSpeed: MAX_SPEED,
+    fastStreak: FAST_STREAK_NEEDED - 1,
+    longStreak: 0,
+    currentMasteryTier: 5,
+  });
+  assert.strictEqual(belowFinalTier.completesFinalTier, false);
+  assert.strictEqual(belowFinalTier.promoteMastery, true);
 });
 
 runTest('promotion into the final tier is still reported', () => {

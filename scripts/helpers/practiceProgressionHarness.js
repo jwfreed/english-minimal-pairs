@@ -63,7 +63,7 @@ async function answerRound(scenario, action, category) {
     masteryBefore,
     masteryAfter: plain(scenario.mastery),
     feedbackAfterAnswer: scenario.current.feedback,
-    promotedTierAfterAnswer: scenario.current.promotedTier,
+    promotedLevelAfterAnswer: scenario.current.promotedLevel,
   };
 }
 

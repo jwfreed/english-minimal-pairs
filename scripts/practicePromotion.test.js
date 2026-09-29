@@ -1,8 +1,9 @@
 // Replays real promotion flows through usePracticeSession with real React.
 // Transport, contexts and analytics are mocked; useContrastPairs is replaced
 // by an in-memory equivalent that derives visibility with the production
-// selectVisiblePairsByMastery, so selection after promotion is exercised
-// exactly as the practice screen consumes it.
+// selectVisiblePairsByMastery over practice tiers and the production level
+// helper, so selection after promotion is exercised exactly as the practice
+// screen consumes it.
 const assert = require('assert');
 const path = require('path');
 const React = require('react');
@@ -14,6 +15,9 @@ const ROOT = path.join(__dirname, '..');
 const hookPath = path.join(ROOT, 'src', 'hooks', 'usePracticeSession.ts');
 const { selectVisiblePairsByMastery } = loadTsModule(
   path.join(ROOT, 'src', 'domain', 'practiceSession.ts')
+);
+const { nextMasteryLevel, practiceTierMap } = loadTsModule(
+  path.join(ROOT, 'src', 'domain', 'masteryLevel.ts')
 );
 
 // run-tests.js shares one process across suites; these are restored below.
@@ -54,10 +58,19 @@ const category = {
 function mountSession(initialMastery) {
   const plays = [];
   const noop = () => {};
+  const practiceStarted = [];
   const { usePracticeSession } = loadTsModule(hookPath, new Map(), {
     'react-native': { Alert: { alert: noop } },
     '@/src/analytics/practiceAnalytics': {
-      practiceAnalytics: new Proxy({}, { get: () => noop }),
+      practiceAnalytics: new Proxy(
+        {},
+        {
+          get: (_target, name) =>
+            name === 'practiceStarted'
+              ? (event) => practiceStarted.push(event)
+              : noop,
+        }
+      ),
     },
     '@/src/context/LanguageContext': {
       useLanguage: () => ({ translate: (key) => key }),
@@ -82,7 +95,7 @@ function mountSession(initialMastery) {
       useContrastPairs: (pairs) => {
         const [mastery, setMastery] = React.useState(initialMastery);
         const visible = React.useMemo(
-          () => selectVisiblePairsByMastery(pairs, mastery),
+          () => selectVisiblePairsByMastery(pairs, practiceTierMap(mastery)),
           [pairs, mastery]
         );
         return {
@@ -92,7 +105,7 @@ function mountSession(initialMastery) {
           promote: (group) =>
             setMastery((current) => ({
               ...current,
-              [group]: Math.min((current[group] ?? 1) + 1, 6),
+              [group]: nextMasteryLevel(current[group]),
             })),
           setAllGroupsToTier: noop,
         };
@@ -100,7 +113,7 @@ function mountSession(initialMastery) {
     },
   });
 
-  const view = { plays, latest: null };
+  const view = { plays, practiceStarted, latest: null };
   function Probe() {
     view.latest = usePracticeSession({
       categoryIndex: 0,
@@ -152,12 +165,12 @@ module.exports = (async () => {
 
     for (let answer = 1; answer < ANSWERS_PER_PROMOTION; answer++) {
       await view.answerCorrectly();
-      assert.strictEqual(view.latest.promotedTier, null, `answer ${answer}`);
+      assert.strictEqual(view.latest.promotedLevel, null, `answer ${answer}`);
     }
     await view.answerCorrectly();
 
     const session = view.latest;
-    assert.strictEqual(session.promotedTier, 2);
+    assert.strictEqual(session.promotedLevel, 2);
     assert.strictEqual(session.mastery.bV, 2);
     assert.strictEqual(session.mastery.rL, 1);
     // Heading, level and details are all derived from selectedPair.group.
@@ -186,21 +199,55 @@ module.exports = (async () => {
     for (let answer = 0; answer < ANSWERS_PER_PROMOTION; answer++) {
       await view.answerCorrectly();
     }
-    assert.strictEqual(view.latest.promotedTier, 2);
+    assert.strictEqual(view.latest.promotedLevel, 2);
     assert.strictEqual(view.latest.selectedPair.group, 'rL');
     assert.strictEqual(view.latest.selectedPair.difficulty, 2);
     view.unmount();
   });
 
-  await runTest('qualifying streaks at the final tier never report a promotion', async () => {
+  await runTest('completing the final tier masters the contrast exactly once', async () => {
     const view = mountSession({ rL: 1, bV: 6 });
+    await view.selectGroup('bV');
+    for (let answer = 1; answer < ANSWERS_PER_PROMOTION; answer++) {
+      await view.answerCorrectly();
+      assert.strictEqual(view.latest.promotedLevel, null, `answer ${answer}`);
+    }
+    await view.answerCorrectly();
+    assert.strictEqual(view.latest.promotedLevel, 7);
+    assert.strictEqual(view.latest.mastery.bV, 7);
+    // Mastery keeps practice on the same contrast's tier-6 material.
+    assert.strictEqual(view.latest.selectedPair.group, 'bV');
+    assert.strictEqual(view.latest.selectedPair.difficulty, 6);
+
+    for (let answer = 1; answer <= ANSWERS_PER_PROMOTION * 2; answer++) {
+      await view.answerCorrectly();
+      assert.strictEqual(view.latest.promotedLevel, null, `after mastery ${answer}`);
+      assert.strictEqual(view.plays.at(-1).pair.difficulty, 6);
+    }
+    assert.strictEqual(view.latest.mastery.bV, 7);
+    view.unmount();
+  });
+
+  await runTest('a mastered contrast stays mastered across remounts without new events', async () => {
+    const view = mountSession({ rL: 1, bV: 7 });
     await view.selectGroup('bV');
     for (let answer = 1; answer <= ANSWERS_PER_PROMOTION * 2; answer++) {
       await view.answerCorrectly();
-      assert.strictEqual(view.latest.promotedTier, null, `answer ${answer}`);
+      assert.strictEqual(view.latest.promotedLevel, null, `answer ${answer}`);
     }
-    assert.strictEqual(view.latest.mastery.bV, 6);
-    assert.strictEqual(view.latest.selectedPair.group, 'bV');
+    assert.strictEqual(view.latest.mastery.bV, 7);
+    assert.strictEqual(view.latest.selectedPair.difficulty, 6);
+    // Analytics reports the practice tier, never level 7.
+    assert.ok(view.practiceStarted.length > 0);
+    assert.ok(
+      view.practiceStarted.every((event) => event.masteryLevel <= 6),
+      JSON.stringify(view.practiceStarted)
+    );
+    assert.ok(
+      view.practiceStarted.some(
+        (event) => event.contrast === 'bV' && event.masteryLevel === 6
+      )
+    );
     view.unmount();
   });
 })().finally(() => {

@@ -1,8 +1,10 @@
 import type { Pair } from '@/src/constants/minimalPairs';
 import {
-  MAX_MASTERY_TIER,
-  type MasteryMap,
-} from '@/src/domain/masteryPersistence';
+  FINAL_PRACTICE_TIER,
+  completedTiersOf,
+  isMasteredLevel,
+} from '@/src/domain/masteryLevel';
+import type { MasteryMap } from '@/src/domain/masteryPersistence';
 
 export interface MasterySummary {
   totalGroups: number;
@@ -27,19 +29,14 @@ export function buildMasterySummary({
   let completedLevels = 0;
 
   for (const group of groups) {
-    const tier = mastery[group] ?? 1;
-    // The current tier is still being practiced; only tiers below it are
-    // complete. A contrast is mastered once its final tier is complete, which
-    // the persisted tier (1–6) cannot yet record.
-    const completedTiers = Math.min(tier - 1, MAX_MASTERY_TIER);
-    completedLevels += completedTiers;
-    if (completedTiers >= MAX_MASTERY_TIER) masteredGroups++;
+    completedLevels += completedTiersOf(mastery[group]);
+    if (isMasteredLevel(mastery[group])) masteredGroups++;
   }
 
   return {
     totalGroups,
     masteredGroups,
-    totalLevels: totalGroups * MAX_MASTERY_TIER,
+    totalLevels: totalGroups * FINAL_PRACTICE_TIER,
     completedLevels,
   };
 }

@@ -17,6 +17,7 @@ import {
   type MasteryMap,
 } from '@/src/domain/masteryPersistence';
 import { historicalIdentityMapping } from '@/src/domain/compatibility/historicalIdentityMapping';
+import { nextMasteryLevel, practiceTierMap } from '@/src/domain/masteryLevel';
 import {
   compareMasteryInShadow,
   readCompatibleMastery,
@@ -31,7 +32,7 @@ import {
 interface MasteryState {
   key: string;
   hydration: 'loading' | 'ready' | 'failed';
-  // map group → highest tier mastered (start at 1)
+  // map group → mastery level (1–7, start at 1); see masteryLevel.ts
   mastery: MasteryMap;
   mutation: 'practice' | 'placement' | null;
 }
@@ -165,7 +166,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   ]);
 
   const visible = useMemo(() => {
-    return selectVisiblePairsByMastery(pairs, mastery);
+    return selectVisiblePairsByMastery(pairs, practiceTierMap(mastery));
   }, [pairs, mastery]);
 
   const promote = useCallback(
@@ -174,7 +175,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
         ...current,
         mastery: {
           ...current.mastery,
-          [group]: Math.min((current.mastery[group] ?? 1) + 1, 6),
+          [group]: nextMasteryLevel(current.mastery[group]),
         },
         mutation: 'practice',
       }));

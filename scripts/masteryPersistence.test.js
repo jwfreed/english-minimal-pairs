@@ -58,11 +58,17 @@ runTest('parseStoredMastery preserves valid unknown group keys intentionally', (
   assert.deepStrictEqual(plain(parseStoredMastery(stored)), { rL: 2, legacyGroup: 4 });
 });
 
-runTest('parseStoredMastery rejects invalid tier values without dropping valid progress', () => {
+runTest('parseStoredMastery keeps final-tier completion (level 7)', () => {
+  const stored = serializeMastery({ rL: 7, bV: 6 });
+
+  assert.deepStrictEqual(plain(parseStoredMastery(stored)), { rL: 7, bV: 6 });
+});
+
+runTest('parseStoredMastery rejects invalid mastery levels without dropping valid progress', () => {
   const stored = JSON.stringify({
     rL: 2,
     tooLow: 0,
-    tooHigh: 7,
+    tooHigh: 8,
     decimal: 2.5,
     text: '3',
     missing: null,

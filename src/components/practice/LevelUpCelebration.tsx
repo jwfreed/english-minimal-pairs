@@ -9,28 +9,29 @@ type LevelUpCelebrationStyles = Pick<
 >;
 
 interface LevelUpCelebrationProps {
-  promotedTier: number | null;
+  /** Mastery level just reached (7 = mastered). */
+  promotedLevel: number | null;
   label: string;
   styles: LevelUpCelebrationStyles;
 }
 
 export default function LevelUpCelebration({
-  promotedTier,
+  promotedLevel,
   label,
   styles,
 }: LevelUpCelebrationProps) {
   useEffect(() => {
-    if (promotedTier != null) {
+    if (promotedLevel != null) {
       AccessibilityInfo.announceForAccessibility(label);
     }
-  }, [promotedTier, label]);
+  }, [promotedLevel, label]);
 
-  if (promotedTier == null) return null;
+  if (promotedLevel == null) return null;
 
   return (
     <View style={styles.levelUpContainer}>
       <Text style={styles.levelUpText}>🎉 {label}</Text>
-      <LevelIndicator currentTier={promotedTier} compact />
+      <LevelIndicator masteryLevel={promotedLevel} compact />
     </View>
   );
 }

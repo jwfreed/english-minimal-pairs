@@ -1,7 +1,7 @@
 // components/LevelIndicator.tsx
 // -----------------------------------------------------------------------------
-// Visual indicator showing the current mastery tier (1–6) as a row of dots
-// with a text label. Used on both the practice and results screens.
+// Visual indicator showing a contrast's mastery level as a row of six tier
+// dots with a text label. Used on both the practice and results screens.
 // Optionally shows leveling criteria text (practice screen only).
 // -----------------------------------------------------------------------------
 import React, { useMemo } from 'react';
@@ -13,12 +13,15 @@ import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
 import { formatTranslation } from '@/utils/formatTranslation';
-
-const TOTAL_TIERS = 6;
+import {
+  FINAL_PRACTICE_TIER,
+  isMasteredLevel,
+  practiceTierOf,
+} from '@/src/domain/masteryLevel';
 
 interface Props {
-  /** Current mastery tier (1–6) */
-  currentTier: number;
+  /** Mastery level (1–7); 7 means the final tier is complete. */
+  masteryLevel: number;
   /** Compact mode for results list items */
   compact?: boolean;
   /** Show leveling-criteria hint below the dots (practice screen only) */
@@ -31,7 +34,7 @@ interface Props {
 }
 
 export default function LevelIndicator({
-  currentTier,
+  masteryLevel,
   compact = false,
   showCriteria = false,
   highlightCurrentTier = false,
@@ -41,18 +44,22 @@ export default function LevelIndicator({
   const { translate } = useLanguage();
   const reduceMotion = useReducedMotion();
 
-  // Reaching the final tier means practicing it, not having mastered it.
-  const levelText = compact
-    ? formatTranslation(translate(tKeys.levelCompact), { level: currentTier })
-    : formatTranslation(translate(tKeys.levelProgress), {
-        level: currentTier,
-        total: TOTAL_TIERS,
-      });
+  // Reaching the final tier means practicing it; only completing it is mastery.
+  const currentTier = practiceTierOf(masteryLevel);
+  const isMastered = isMasteredLevel(masteryLevel);
+  const levelText = isMastered
+    ? translate(tKeys.mastered)
+    : compact
+      ? formatTranslation(translate(tKeys.levelCompact), { level: currentTier })
+      : formatTranslation(translate(tKeys.levelProgress), {
+          level: currentTier,
+          total: FINAL_PRACTICE_TIER,
+        });
 
   return (
     <View style={styles.levelIndicatorRow}>
       <View style={styles.levelDotsRow}>
-        {Array.from({ length: TOTAL_TIERS }, (_, i) => {
+        {Array.from({ length: FINAL_PRACTICE_TIER }, (_, i) => {
           const tier = i + 1;
           const isFilled = tier <= currentTier;
           const isHighlighted =
@@ -76,11 +83,14 @@ export default function LevelIndicator({
       </View>
       <Text
         accessibilityLabel={levelText}
-        style={compact ? styles.levelLabelCompact : styles.levelLabel}
+        style={[
+          compact ? styles.levelLabelCompact : styles.levelLabel,
+          isMastered && { color: theme.success },
+        ]}
       >
-        {levelText}
+        {isMastered ? `✔ ${levelText}` : levelText}
       </Text>
-      {showCriteria && (
+      {showCriteria && !isMastered && (
         <Text style={styles.levelCriteriaText}>
           {translate(tKeys.levelCriteria)}
         </Text>

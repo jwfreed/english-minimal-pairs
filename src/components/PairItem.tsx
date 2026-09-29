@@ -5,6 +5,7 @@ import {
   getWeightedAccuracy,
   getAccuracyAndTimeOverTime,
   estimateActivePracticeTime,
+  validPairAttempts,
   PairStats,
 } from '@/src/storage/progressStorage';
 import { tKeys, TranslationKey } from '@/src/constants/translationKeys';
@@ -31,7 +32,8 @@ interface Props {
 
 const PairItem: React.FC<Props> = React.memo(
   ({ item, stats, translate, themeColors, styles }) => {
-    const attempts = useMemo(() => stats.attempts ?? [], [stats.attempts]);
+    // Malformed stored entries are never counted (see validPairAttempts).
+    const attempts = useMemo(() => validPairAttempts(stats.attempts), [stats.attempts]);
 
     // Compute averages and trend data
     const {

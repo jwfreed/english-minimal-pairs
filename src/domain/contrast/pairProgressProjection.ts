@@ -132,7 +132,8 @@ function compareText(left: string, right: string): number {
   return 0;
 }
 
-function isValidAttempt(value: unknown): value is ProjectedAttempt {
+/** The one definition of a well-formed stored attempt. */
+export function isValidAttempt(value: unknown): value is ProjectedAttempt {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }

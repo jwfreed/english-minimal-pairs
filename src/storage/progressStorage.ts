@@ -1,5 +1,6 @@
 // -----------------------------------------------------------------------------
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isValidAttempt } from '@/src/domain/contrast/pairProgressProjection';
 
 export const PAIR_PROGRESS_STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
 let writeQueue: Promise<void> = Promise.resolve();
@@ -122,15 +123,25 @@ export async function clearProgress() {
 /* ─── analytics helpers used across the UI ────────────────────────────────── */
 
 /**
+ * The attempts Results may derive statistics from. Malformed stored entries
+ * stay in the history (the pair-progress projection reports them) but are
+ * never counted, so one bad entry cannot crash or distort Results.
+ */
+export function validPairAttempts(attempts: readonly unknown[] | undefined): PairAttempt[] {
+  return (attempts ?? []).filter(isValidAttempt);
+}
+
+/**
  * Weighted accuracy based on the most recent N attempts.
  * Shows user's recent performance (last 20 attempts or all if fewer).
  */
 export function getWeightedAccuracy(attempts: PairAttempt[]): number {
-  if (attempts.length === 0) return 0;
+  const valid = validPairAttempts(attempts);
+  if (valid.length === 0) return 0;
   
   // Use last 20 attempts, or all attempts if fewer than 20
   const RECENT_ATTEMPT_COUNT = 20;
-  const recentAttempts = attempts.slice(-RECENT_ATTEMPT_COUNT);
+  const recentAttempts = valid.slice(-RECENT_ATTEMPT_COUNT);
   
   const correctCount = recentAttempts.filter(a => a.isCorrect).length;
   return correctCount / recentAttempts.length;
@@ -143,9 +154,10 @@ export function getWeightedAccuracy(attempts: PairAttempt[]): number {
 export function getAccuracyAndTimeOverTime(
   attempts: PairAttempt[]
 ): { accuracy: number; timestamp: number }[] {
-  if (attempts.length === 0) return [];
+  const valid = validPairAttempts(attempts);
+  if (valid.length === 0) return [];
 
-  const sorted = [...attempts].sort((a, b) => a.timestamp - b.timestamp);
+  const sorted = [...valid].sort((a, b) => a.timestamp - b.timestamp);
   let correctSoFar = 0;
 
   return sorted.map((a, idx) => {
@@ -161,5 +173,5 @@ export function getAccuracyAndTimeOverTime(
  * Sum of all attempt durations in **milliseconds** (UI divides by 60 000).
  */
 export function estimateActivePracticeTime(attempts: PairAttempt[]): number {
-  return attempts.reduce((sum, a) => sum + a.durationMin * 60000, 0);
+  return validPairAttempts(attempts).reduce((sum, a) => sum + a.durationMin * 60000, 0);
 }

@@ -9,6 +9,10 @@ const {
   parseStoredProgress,
   serializeProgress,
   pruneAttemptHistory,
+  validPairAttempts,
+  getWeightedAccuracy,
+  getAccuracyAndTimeOverTime,
+  estimateActivePracticeTime,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'storage', 'progressStorage.ts'));
 
 function runTest(name, fn) {
@@ -158,4 +162,46 @@ runTest('multiple pairs are pruned independently', () => {
   assert.strictEqual(result['pair-small'].attempts.length, 5);
   assert.strictEqual(result['pair-exact'].attempts.length, MAX_ATTEMPTS_PER_PAIR);
   assert.strictEqual(result['pair-over'].attempts.length, MAX_ATTEMPTS_PER_PAIR);
+});
+
+// D1: one malformed stored entry must not crash or distort Results. Malformed
+// entries stay in parsed history so the pair-progress projection can still
+// report them; Results derivations count only well-formed attempts.
+const MALFORMED_ENTRIES = [
+  null,
+  7,
+  'attempt',
+  [],
+  { isCorrect: 'yes', timestamp: 3, durationMin: 1 },
+  { isCorrect: true, timestamp: 'x', durationMin: 1 },
+  { isCorrect: true, timestamp: 4, durationMin: -1 },
+  { isCorrect: true, timestamp: Number.NaN, durationMin: 1 },
+];
+const WELL_FORMED = [
+  { isCorrect: true, timestamp: 1000, durationMin: 0.5 },
+  { isCorrect: false, timestamp: 2000, durationMin: 0.25 },
+];
+
+runTest('malformed stored attempt entries are preserved by parsing for diagnostics', () => {
+  const parsed = parseStoredProgress(
+    JSON.stringify({ pair: { attempts: [...MALFORMED_ENTRIES, ...WELL_FORMED] } })
+  );
+  assert.strictEqual(parsed.pair.attempts.length, MALFORMED_ENTRIES.length + WELL_FORMED.length);
+});
+
+runTest('Results derivations never throw on malformed entries and count only valid attempts', () => {
+  const mixed = [MALFORMED_ENTRIES[0], WELL_FORMED[0], ...MALFORMED_ENTRIES.slice(1), WELL_FORMED[1]];
+  assert.deepStrictEqual(plain(validPairAttempts(mixed)), plain(WELL_FORMED));
+  assert.strictEqual(estimateActivePracticeTime(mixed), 0.75 * 60000);
+  assert.strictEqual(getWeightedAccuracy(mixed), 0.5);
+  assert.deepStrictEqual(plain(getAccuracyAndTimeOverTime(mixed)), [
+    { accuracy: 1, timestamp: 1000 },
+    { accuracy: 0.5, timestamp: 2000 },
+  ]);
+  for (const entry of MALFORMED_ENTRIES) {
+    assert.strictEqual(estimateActivePracticeTime([entry]), 0);
+    assert.strictEqual(getWeightedAccuracy([entry]), 0);
+    assert.deepStrictEqual(plain(getAccuracyAndTimeOverTime([entry])), []);
+  }
+  assert.deepStrictEqual(plain(validPairAttempts(undefined)), []);
 });

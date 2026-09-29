@@ -94,9 +94,25 @@ runTest('the playing state stays visibly darker than idle', () => {
   );
 });
 
-runTest('dark theme tokens are unchanged by the light-theme fix', () => {
-  assert.strictEqual(Colors.dark.primary, '#D35400');
-  assert.strictEqual(Colors.dark.success, '#2ECC71');
+// Labels and marks on filled controls, in both themes (the dark theme puts a
+// dark label on its bright fills).
+runTest('filled-control labels meet WCAG AA in both themes', () => {
+  const failures = [];
+  for (const [scheme, colors] of Object.entries(Colors)) {
+    const themed = createStyles(colors);
+    for (const [name, fg, bg, min] of [
+      ['Play label (idle)', themed.playButtonLabel.color, themed.playButton.backgroundColor, AA_NORMAL_TEXT],
+      ['Play label (listening)', themed.playButtonLabel.color, themed.playButtonPlaying.backgroundColor, AA_NORMAL_TEXT],
+      ['primary button label', themed.buttonText.color, themed.button.backgroundColor, AA_NORMAL_TEXT],
+      ['correct badge mark', colors.buttonText, colors.success, 3],
+      ['incorrect badge mark', colors.buttonText, colors.error, 3],
+      ['level marks on track', colors.accent, colors.track, 3],
+    ]) {
+      const ratio = contrast(fg, bg);
+      if (ratio < min) failures.push(`${scheme} ${name}: ${ratio.toFixed(2)}:1`);
+    }
+  }
+  assert.deepStrictEqual(failures, []);
 });
 
 // Practice-card text must hold in both themes: the instruction on the card,

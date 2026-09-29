@@ -229,22 +229,22 @@ runTest('play button ambient glow matches the design keyframes', () => {
       },
     }
   );
-  // Light mode: soft ring rgb(191,87,0) + faint glow rgb(230,126,34),
+  // Light mode: soft ring rgb(168,71,12) + faint glow rgb(232,118,42),
   // toned down (peak ring .4, tight 14px max spread) per user request.
   const light = getAmbientGlowKeyframes(Colors.light);
   assert.deepStrictEqual(
     ['12%', '38%', '46%'].map((stop) => light[stop].boxShadow),
     [
-      '0 0 0 3px rgba(191, 87, 0, 0.4), 0 0 12px 4px rgba(230, 126, 34, 0.3)',
-      '0 0 0 9px rgba(191, 87, 0, 0.15), 0 0 22px 9px rgba(230, 126, 34, 0.14)',
-      '0 0 0 14px rgba(191, 87, 0, 0), 0 0 26px 12px rgba(230, 126, 34, 0)',
+      '0 0 0 3px rgba(168, 71, 12, 0.4), 0 0 12px 4px rgba(232, 118, 42, 0.3)',
+      '0 0 0 9px rgba(168, 71, 12, 0.15), 0 0 22px 9px rgba(232, 118, 42, 0.14)',
+      '0 0 0 14px rgba(168, 71, 12, 0), 0 0 26px 12px rgba(232, 118, 42, 0)',
     ],
     'ambient glow light keyframes changed'
   );
-  // Dark mode: same stops, both layers rgb(247,158,74).
+  // Dark mode: same stops, ring rgb(246,168,102) + glow rgb(240,138,60).
   assert.strictEqual(
     getAmbientGlowKeyframes(Colors.dark)['38%'].boxShadow,
-    '0 0 0 9px rgba(247, 158, 74, 0.15), 0 0 22px 9px rgba(247, 158, 74, 0.14)',
+    '0 0 0 9px rgba(246, 168, 102, 0.15), 0 0 22px 9px rgba(240, 138, 60, 0.14)',
     'ambient glow dark keyframe changed'
   );
 });

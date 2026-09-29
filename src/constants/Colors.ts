@@ -1,73 +1,75 @@
-// Colors.ts — the single source of every app color. Styles and components
-// read these tokens; nothing else may hardcode a palette hex or detect the
-// scheme by comparing color values.
+// Colors.ts — the single source of every app color (Ember palette: graphite
+// neutrals, orange as the only warm hue). Styles and components read these
+// tokens; nothing else may hardcode a palette hex or detect the scheme by
+// comparing color values.
 
 const light = {
-  background: '#ECF0F1',
-  text: '#1C2833',
-  textSecondary: '#5D6D7E',
-  primaryText: '#B9640F',
-  surface: '#FDFDFC',
-  surfaceTint: '#FDF1E6',
-  hairline: '#EDF1F2',
-  track: '#DDE3E5',
-  trackStrong: '#DDE3E5',
-  // Same hues, darkened to meet WCAG AA 4.5:1 for the text they carry or
-  // sit under (white button/Play labels, feedback and highlight text).
-  success: '#1E864A',
-  error: '#C0392B',
-  primary: '#A05512',
-  // Pressed/playing state of a primary fill; darker than `primary` so the
-  // white label keeps AA contrast.
-  primaryActive: '#8D4C0B',
-  primaryLight: '#FADCC6',
+  background: '#ECEEF1',
+  text: '#1F2329',
+  textSecondary: '#565D67',
+  primaryText: '#9C420B',
+  surface: '#FFFFFF',
+  surfaceTint: '#FBEDE2',
+  hairline: '#E6E9ED',
+  track: '#DCDFE4',
+  trackStrong: '#CFD4DA',
+  // Semantic and primary hues are dark enough for WCAG AA 4.5:1 with the
+  // text they carry or sit under (button/Play labels, feedback, highlights).
+  success: '#1B7F45',
+  error: '#B93226',
+  primary: '#A8470C',
+  // Pressed/playing state of a primary fill; darker than `primary` while the
+  // label keeps AA contrast.
+  primaryActive: '#8A3A08',
+  primaryLight: '#F8D9C2',
   // Emphasized text on cards and tints: the contrasting phoneme, contrast label.
-  highlightText: '#A05512',
+  highlightText: '#9C420B',
   // Brand warm accent for non-text marks: level fill, tap flash, button shadow.
-  accent: '#E67E22',
+  accent: '#C4580F',
   // Play button idle glow: inner ring and outer halo.
-  glowRing: '#BF5700',
-  glowHalo: '#E67E22',
+  glowRing: '#A8470C',
+  glowHalo: '#E8762A',
   buttonText: '#FFFFFF',
-  cardBackground: '#FDFDFC',
+  cardBackground: '#FFFFFF',
   // Card shadow color with its opacity baked into the alpha channel.
-  cardShadow: '#1C28332E',
-  shadow: '#1C2833',
-  answerTile: '#FDF1E6',
-  answerTileBorder: '#FDF1E6',
-  icon: '#2C3E50',
-  tabInactive: '#888888',
-  border: '#CCD1D1',
+  cardShadow: '#1F23292E',
+  shadow: '#1F2329',
+  answerTile: '#FBEDE2',
+  answerTileBorder: '#FBEDE2',
+  icon: '#3A414B',
+  tabInactive: '#636A74',
+  border: '#CDD2D8',
 };
 
 const dark: typeof light = {
-  background: '#2C3E50',
-  text: '#FFFFFF',
-  textSecondary: '#B8C4C5',
-  primaryText: '#F0913C',
-  surface: '#364C62',
-  surfaceTint: '#46362E',
-  hairline: '#42596F',
-  track: '#3D556D',
-  trackStrong: '#4A6076',
-  success: '#2ECC71',
-  error: '#E74C3C',
-  primary: '#D35400',
-  primaryActive: '#8D4C0B',
-  primaryLight: '#895230',
-  highlightText: '#FAC07F',
-  accent: '#E67E22',
-  glowRing: '#F79E4A',
-  glowHalo: '#F79E4A',
-  buttonText: '#FFFFFF',
-  cardBackground: '#364C62',
-  cardShadow: '#00000059',
+  background: '#16181C',
+  text: '#F3F4F6',
+  textSecondary: '#A9AFB8',
+  primaryText: '#F6A866',
+  surface: '#22252B',
+  surfaceTint: '#2E2A27',
+  hairline: '#30343B',
+  track: '#33373F',
+  trackStrong: '#3E434C',
+  success: '#3FC67F',
+  error: '#FF6F61',
+  primary: '#F08A3C',
+  primaryActive: '#D0702A',
+  primaryLight: '#5A3A22',
+  highlightText: '#F6A866',
+  accent: '#F08A3C',
+  glowRing: '#F6A866',
+  glowHalo: '#F08A3C',
+  // The dark theme's bright orange fills carry a dark label.
+  buttonText: '#1A0E05',
+  cardBackground: '#22252B',
+  cardShadow: '#00000066',
   shadow: '#000000',
-  answerTile: '#41566D',
-  answerTileBorder: '#57708A',
-  icon: '#D5D8DC',
-  tabInactive: '#888888',
-  border: '#5D6D7E',
+  answerTile: '#2E2A27',
+  answerTileBorder: '#453C35',
+  icon: '#D1D5DB',
+  tabInactive: '#9AA1AB',
+  border: '#3A3F47',
 };
 
 export const Colors = { light, dark };

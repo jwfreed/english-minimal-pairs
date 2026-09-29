@@ -21,7 +21,7 @@ import { useSettings } from '@/src/context/SettingsContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useCategory } from '@/src/context/CategoryContext';
 import { useAllThemeColors, useTheme } from '@/src/context/theme';
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { tKeys } from '@/src/constants/translationKeys';
 import { minimalPairs } from '@/src/constants/minimalPairs';
 import { useHaptics } from '@/src/hooks/useHaptics';
@@ -40,7 +40,7 @@ export default function SettingsScreen() {
   const { themeMode, setThemeMode } = useTheme();
   const { width } = useWindowDimensions();
   const isTablet = width > 700;
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useAppStyles();
   const localStyles = useMemo(() => createLocalStyles(theme, isTablet), [theme, isTablet]);
   const { triggerHaptic } = useHaptics();
 

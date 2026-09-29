@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { tKeys } from '@/src/constants/translationKeys';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
@@ -24,7 +24,7 @@ interface HelpOverlayProps {
 export default function HelpOverlay({ visible, onClose }: HelpOverlayProps) {
   const theme = useAllThemeColors();
   const { translate: t } = useLanguage();
-  const sharedStyles = useMemo(() => createStyles(theme), [theme]);
+  const sharedStyles = useAppStyles();
   const styles = useMemo(() => createHelpOverlayStyles(theme), [theme]);
 
   const TIPS = [

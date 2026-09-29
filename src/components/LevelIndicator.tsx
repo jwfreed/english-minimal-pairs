@@ -5,10 +5,10 @@
 // On the practice screen a slim bar under the dots shows progress toward the
 // next level; it can also show leveling criteria text.
 // -----------------------------------------------------------------------------
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text } from 'react-native';
 import Reanimated, { useReducedMotion } from 'react-native-reanimated';
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { barFillTransition, levelPopAnimation } from '@/src/constants/motion';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
@@ -47,7 +47,7 @@ export default function LevelIndicator({
   nextLevelProgress,
 }: Props) {
   const theme = useAllThemeColors();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useAppStyles();
   const { translate } = useLanguage();
   const reduceMotion = useReducedMotion();
 

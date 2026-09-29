@@ -30,6 +30,7 @@ const sharedMocks = {
   },
   '@/src/context/theme': { useAllThemeColors: () => new Proxy({}, { get: () => '#000000' }) },
   '@/src/context/LanguageContext': { useLanguage: () => ({ translate: (key) => key }) },
+  '@/src/hooks/useAppStyles': { useAppStyles: () => new Proxy({}, { get: (_target, name) => ({ name }) }) },
   '@/src/constants/styles': {
     __esModule: true,
     default: () => new Proxy({}, { get: (_target, name) => ({ name }) }),

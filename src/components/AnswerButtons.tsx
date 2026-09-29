@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Reanimated, { useReducedMotion } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import {
   badgePopAnimation,
   feedbackRowAnimation,
@@ -67,7 +67,7 @@ export default function AnswerButtons({
   isPlaybackActive = false,
 }: Props) {
   const theme = useAllThemeColors();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useAppStyles();
   const { triggerHaptic } = useHaptics();
   const { translate } = useLanguage();
   const reduceMotion = useReducedMotion();

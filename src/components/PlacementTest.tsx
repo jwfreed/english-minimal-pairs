@@ -20,8 +20,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import createStyles from '@/src/constants/styles';
-import { useAllThemeColors } from '@/src/context/theme';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { useSettings } from '@/src/context/SettingsContext';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
@@ -51,8 +50,7 @@ interface Props {
 }
 
 export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
-  const theme = useAllThemeColors();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useAppStyles();
   const { getNextVoice } = useSettings();
   const { translate } = useLanguage();
 

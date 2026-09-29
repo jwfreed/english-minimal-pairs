@@ -4,7 +4,7 @@ import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
 import { ThemedText } from '@/src/components/ThemedText';
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { font } from '@/src/constants/typography';
 
 interface OnboardingScreenProps {
@@ -22,7 +22,7 @@ const BULLET_KEYS = [
 export default function OnboardingScreen({ onDismiss }: OnboardingScreenProps) {
   const theme = useAllThemeColors();
   const { translate } = useLanguage();
-  const sharedStyles = useMemo(() => createStyles(theme), [theme]);
+  const sharedStyles = useAppStyles();
   const localStyles = useMemo(() => createOnboardingStyles(theme), [theme]);
 
   return (

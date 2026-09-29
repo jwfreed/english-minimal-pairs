@@ -88,6 +88,7 @@ function mountSettings({ isCategoryResolved, categoryIndex = 2, themeMode = 'dar
           setThemeMode: (mode) => calls.themes.push(mode),
         }),
       },
+      '@/src/hooks/useAppStyles': { useAppStyles: () => new Proxy({}, { get: () => ({}) }) },
       '@/src/constants/styles': {
         __esModule: true,
         default: () => new Proxy({}, { get: () => ({}) }),

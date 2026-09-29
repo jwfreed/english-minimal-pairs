@@ -1,10 +1,10 @@
 // styles.ts
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { withAlpha, type ThemeColors } from '@/src/constants/Colors';
 import { font } from '@/src/constants/typography';
 
-const { width } = Dimensions.get('window');
-const isTablet = width > 700;
+/** Windows wider than this get tablet sizing (see `useAppStyles`). */
+export const TABLET_MIN_WIDTH = 700;
 
 export type { ThemeColors };
 
@@ -59,7 +59,7 @@ export function getAmbientGlowKeyframes(colors: ThemeColors) {
   };
 }
 
-const createStyles = (colors: ThemeColors) =>
+const createStyles = (colors: ThemeColors, isTablet = false) =>
   StyleSheet.create({
     container: {
       flex: 1,

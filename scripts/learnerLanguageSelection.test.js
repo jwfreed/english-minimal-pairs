@@ -431,6 +431,7 @@ module.exports = (async () => {
         '@/src/components/practice/NextContrastSuggestion': hostComponent('NextContrastSuggestion'),
         '@/src/components/practice/PracticeHeader': hostComponent('PracticeHeader'),
         '@/src/components/practice/PracticePairSelector': hostComponent('PracticePairSelector'),
+        '@/src/hooks/useAppStyles': { useAppStyles: () => new Proxy({}, { get: () => ({}) }) },
         '@/src/constants/styles': {
           __esModule: true,
           default: () => new Proxy({}, { get: () => ({}) }),
@@ -494,6 +495,7 @@ module.exports = (async () => {
         'expo-router': { useNavigation: () => ({ addListener: () => () => {} }) },
         '@/src/context/PairProgressContext': { usePairProgress: () => ({ progress: {} }) },
         '@/src/context/theme': { useAllThemeColors: () => new Proxy({}, { get: () => '#000000' }) },
+        '@/src/hooks/useAppStyles': { useAppStyles: () => new Proxy({}, { get: () => ({}) }) },
         '@/src/constants/styles': {
           __esModule: true,
           default: () => new Proxy({}, { get: () => ({}) }),

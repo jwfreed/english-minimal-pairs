@@ -1,12 +1,10 @@
 import React, { useCallback } from 'react';
 import { Picker } from '@react-native-picker/picker';
-import { Dimensions, Platform } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useHaptics } from '@/src/hooks/useHaptics';
+import { TABLET_MIN_WIDTH } from '@/src/constants/styles';
 import { font } from '@/src/constants/typography';
 
-const screenWidth = Dimensions.get('window').width;
-const isTablet = screenWidth > 700;
-const IOS_PICKER_HEIGHT = isTablet ? 280 : 180;
 
 interface Props {
   pairs: { word1: string; word2: string; ipa1: string; ipa2: string }[];
@@ -20,6 +18,7 @@ interface Props {
 
 function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrollEnd, accessibilityLabel }: Props) {
   const { triggerHaptic } = useHaptics();
+  const isTablet = useWindowDimensions().width > TABLET_MIN_WIDTH;
 
   const handleValueChange = useCallback(
     (v: string) => {
@@ -54,7 +53,7 @@ function PairPickerInner({ pairs, index, setIndex, color, onScrollStart, onScrol
         width: '100%',
         color,
         marginBottom: 10,
-        height: Platform.OS === 'ios' ? IOS_PICKER_HEIGHT : undefined,
+        height: Platform.OS === 'ios' ? (isTablet ? 280 : 180) : undefined,
       }}
       itemStyle={{ ...font('600'), fontSize: isTablet ? 36 : 20, color }}
       accessibilityLabel={accessibilityLabel}

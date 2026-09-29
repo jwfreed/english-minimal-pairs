@@ -90,6 +90,7 @@ function createEnvironment(startMs, storage = createStorage()) {
           useReducedMotion: () => true,
         },
         '@react-native-async-storage/async-storage': storage,
+        '@/src/hooks/useAppStyles': { useAppStyles: () => new Proxy({}, { get: () => ({}) }) },
         '@/src/constants/styles': {
           __esModule: true,
           default: () => new Proxy({}, { get: () => ({}) }),

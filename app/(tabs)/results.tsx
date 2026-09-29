@@ -6,7 +6,8 @@ import { useNavigation } from 'expo-router';
 import { minimalPairs } from '@/src/constants/minimalPairs';
 import { usePairProgress } from '@/src/context/PairProgressContext';
 import { useAllThemeColors } from '@/src/context/theme';
-import createStyles, { getCardShadowStyles, type ThemeColors } from '@/src/constants/styles';
+import { getCardShadowStyles, type ThemeColors } from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { font } from '@/src/constants/typography';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useCategory } from '@/src/context/CategoryContext';
@@ -41,7 +42,7 @@ export default function ResultsScreen() {
   const { translate, learnerLanguageStatus } = useLanguage();
   const { categoryIndex, isCategoryResolved } = useCategory();
   const themeColors = useAllThemeColors();
-  const styles = useMemo(() => createStyles(themeColors), [themeColors]);
+  const styles = useAppStyles();
   const resultsStyles = useMemo(() => createResultsStyles(themeColors), [themeColors]);
   const { width } = useWindowDimensions();
   const isTablet = width > 700;

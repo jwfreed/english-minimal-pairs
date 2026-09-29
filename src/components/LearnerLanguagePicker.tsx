@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { minimalPairs } from '@/src/constants/minimalPairs';
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { tKeys } from '@/src/constants/translationKeys';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { useAllThemeColors } from '@/src/context/theme';
@@ -18,7 +18,7 @@ export default function LearnerLanguagePicker({
   onSelect,
 }: LearnerLanguagePickerProps) {
   const theme = useAllThemeColors();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useAppStyles();
   const { translate } = useLanguage();
 
   return (

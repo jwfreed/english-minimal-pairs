@@ -5,17 +5,16 @@
 // seconds of no user interaction and resumes on the next touch / play / answer.
 // Persists today's total to AsyncStorage.
 // -----------------------------------------------------------------------------
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, AppState, AppStateStatus } from 'react-native';
 import Reanimated, { useReducedMotion } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import {
   barFillTransition,
   goalBarPulseAnimation,
   liveDotAnimation,
 } from '@/src/constants/motion';
-import { useAllThemeColors } from '@/src/context/theme';
 import {
   SESSION_TIMER_CUMULATIVE_STORAGE_KEY,
   SESSION_TIMER_STORAGE_KEY,
@@ -75,8 +74,7 @@ export default function SessionTimer({
   trailing,
   highlightProgress = false,
 }: Props) {
-  const theme = useAllThemeColors();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useAppStyles();
   const reduceMotion = useReducedMotion();
 
   const [elapsedToday, setElapsedToday] = useState(0);

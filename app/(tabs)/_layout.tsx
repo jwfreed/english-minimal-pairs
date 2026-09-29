@@ -24,7 +24,7 @@ function TabLayout() {
       case 'index':
         return (
           <Ionicons
-            name={focused ? 'home' : 'home-outline'}
+            name={focused ? 'ear' : 'ear-outline'}
             size={size}
             color={iconColor}
           />
@@ -59,7 +59,7 @@ function TabLayout() {
         tabBarInactiveTintColor: inactiveTintColor,
       })}
     >
-      <Tabs.Screen name="index" options={{ title: translate(tKeys.home) }} />
+      <Tabs.Screen name="index" options={{ title: translate(tKeys.practicePairs) }} />
       <Tabs.Screen
         name="results"
         options={{

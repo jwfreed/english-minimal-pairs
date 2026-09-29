@@ -67,8 +67,8 @@ export const useTheme = (): ThemeContextData => {
 
 /**
  * The active palette. Returns the shared palette object itself, so the
- * reference is stable per scheme and `useMemo(() => createStyles(theme), [theme])`
- * only rebuilds styles when the scheme actually changes.
+ * reference is stable per scheme and `useAppStyles` only rebuilds styles when
+ * the scheme (or the tablet breakpoint) actually changes.
  */
 export const useAllThemeColors = (): ThemeColors =>
   useTheme().isDark ? Colors.dark : Colors.light;

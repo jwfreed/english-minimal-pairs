@@ -35,6 +35,7 @@ const { default: LevelIndicator } = loadTsModule(
       default: { View: 'ReanimatedView' },
       useReducedMotion: () => true,
     },
+    '@/src/hooks/useAppStyles': { useAppStyles: () => new Proxy({}, { get: () => ({}) }) },
     '@/src/constants/styles': {
       __esModule: true,
       default: () => new Proxy({}, { get: () => ({}) }),

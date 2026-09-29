@@ -18,7 +18,7 @@ import NextContrastSuggestion from '@/src/components/practice/NextContrastSugges
 import PracticeHeader from '@/src/components/practice/PracticeHeader';
 import PracticePairSelector from '@/src/components/practice/PracticePairSelector';
 import { minimalPairs, type Pair } from '@/src/constants/minimalPairs';
-import createStyles from '@/src/constants/styles';
+import { useAppStyles } from '@/src/hooks/useAppStyles';
 import { tKeys } from '@/src/constants/translationKeys';
 import { useCategory } from '@/src/context/CategoryContext';
 import { useLanguage } from '@/src/context/LanguageContext';
@@ -34,7 +34,7 @@ export default function HomeScreen() {
   const { categoryIndex, isCategoryResolved, selectLearnerCategory } =
     useCategory();
   const theme = useAllThemeColors();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useAppStyles();
   const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
 
   const [isHelpVisible, setIsHelpVisible] = useState(false);

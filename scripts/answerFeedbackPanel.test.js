@@ -54,9 +54,8 @@ const { default: AnswerButtons } = loadTsModule(
       useReducedMotion: () => true,
     },
     '@expo/vector-icons': { Ionicons: 'Ionicons' },
-    '@/src/constants/styles': {
-      __esModule: true,
-      default: () =>
+    '@/src/hooks/useAppStyles': {
+      useAppStyles: () =>
         new Proxy({}, { get: (_, key) => (key === 'feedbackHighlight' ? HIGHLIGHT : {}) }),
     },
     '@/src/constants/motion': {},

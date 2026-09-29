@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
@@ -25,7 +25,10 @@ export default function OnboardingScreen({ onDismiss }: OnboardingScreenProps) {
   const localStyles = useMemo(() => createOnboardingStyles(theme), [theme]);
 
   return (
-    <View style={sharedStyles.container}>
+    <ScrollView
+      style={sharedStyles.scrollScreen}
+      contentContainerStyle={sharedStyles.scrollContent}
+    >
       <View style={sharedStyles.mainCard}>
         <ThemedText style={localStyles.title} type="subtitle">
           {translate(tKeys.onboardingTitle)}
@@ -50,7 +53,7 @@ export default function OnboardingScreen({ onDismiss }: OnboardingScreenProps) {
           <Text style={sharedStyles.buttonText}>{translate(tKeys.onboardingCTA)}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 

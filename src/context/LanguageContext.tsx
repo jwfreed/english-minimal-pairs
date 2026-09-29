@@ -17,6 +17,7 @@ import {
   regionLanguageMap,
 } from '@/src/constants/languageSelection';
 import { TranslationKey } from '@/src/constants/translationKeys';
+import { minimalPairs } from '@/src/constants/minimalPairs';
 import { resolveTranslation } from '@/utils/resolveTranslation';
 
 const STORAGE_KEY = '@userLanguage';
@@ -101,8 +102,25 @@ const isEnglishSpeakingRegion = (regionCode?: string): boolean => {
   return englishSpeakingRegions.has(regionCode);
 };
 
+/** A learner language (L1 background) is one of the training inventories. */
+export const isLearnerLanguage = (label: string | null | undefined): boolean =>
+  !!label && minimalPairs.some((category) => category.category === label);
+
+/**
+ * The learner's L1 background selects the training inventory and is distinct
+ * from the UI language. It is resolved only by an explicit, persisted choice;
+ * device-locale detection may pick a UI language but never an inventory.
+ */
+export type LearnerLanguageStatus = 'loading' | 'unresolved' | 'resolved';
+
 interface LanguageContextValue {
+  /**
+   * The chosen learner language once resolved; before that, a UI-language
+   * placeholder that must not be used to select an inventory.
+   */
   language: string;
+  learnerLanguageStatus: LearnerLanguageStatus;
+  /** Records an explicit learner-language (L1) choice. */
   setLanguage: (lang: string) => void;
   translate: (key: TranslationKey) => string;
   useEnglishUI: boolean;
@@ -117,6 +135,8 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState(DEFAULT_LANGUAGE);
   const [useEnglishUI, setUseEnglishUIState] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [learnerLanguageStatus, setLearnerLanguageStatus] =
+    useState<LearnerLanguageStatus>('loading');
 
   useEffect(() => {
     // Prevent double initialization
@@ -143,6 +163,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         setUseEnglishUIState(englishUIOverride === 'true');
       }
       
+      setLearnerLanguageStatus(
+        isLearnerLanguage(stored) ? 'resolved' : 'unresolved'
+      );
+
       if (stored && alternateLanguages[stored]) {
         // Use previously saved language
         setLanguageState(stored);
@@ -165,19 +189,18 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } else {
-        // Auto-detect from device locale
+        // Auto-detect a UI language from the device locale. This never chooses
+        // the learner's training inventory; the learner confirms that
+        // explicitly before placement or practice.
         const { languageCode, regionCode } = getDeviceLocaleInfo();
         const detectedLanguage = getLanguageFromLocale(languageCode);
         const regionLanguage = getLanguageFromRegion(regionCode);
         const isEnglishRegion = isEnglishSpeakingRegion(regionCode);
         
         // Scenario 1: Locale English, System English
-        // Example: en-US -> App: Japanese (top language), UI: English (Enabled)
+        // Example: en-US -> UI: English; the learner language stays unresolved
         if (isEnglishRegion && languageCode === 'en') {
-          // Default to Japanese (first non-English language) if system is English
-          // This encourages learning a new language for native English speakers
-          const topLanguage = '日本語'; 
-          setLanguageState(topLanguage);
+          setLanguageState(DEFAULT_LANGUAGE);
           if (!hasManualEnglishUIOverride) {
             setUseEnglishUIState(true);
             await AsyncStorage.setItem(ENGLISH_UI_OVERRIDE_KEY, 'true');
@@ -224,11 +247,21 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       setIsInitialized(true);
     };
     
-    initializeLanguage();
+    initializeLanguage().catch(() => {
+      // Unknown preferences must not leave practice blocked on loading; the
+      // learner can still choose their language explicitly.
+      setLearnerLanguageStatus((status) =>
+        status === 'loading' ? 'unresolved' : status
+      );
+      setIsInitialized(true);
+    });
   }, [isInitialized]);
 
   const setLanguage = useCallback((lang: string) => {
     setLanguageState(lang);
+    setLearnerLanguageStatus(
+      isLearnerLanguage(lang) ? 'resolved' : 'unresolved'
+    );
     AsyncStorage.setItem(STORAGE_KEY, lang);
   }, []);
 
@@ -253,8 +286,22 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const value = useMemo(
-    () => ({ language, setLanguage, translate, useEnglishUI, setUseEnglishUI }),
-    [language, setLanguage, translate, useEnglishUI, setUseEnglishUI]
+    () => ({
+      language,
+      learnerLanguageStatus,
+      setLanguage,
+      translate,
+      useEnglishUI,
+      setUseEnglishUI,
+    }),
+    [
+      language,
+      learnerLanguageStatus,
+      setLanguage,
+      translate,
+      useEnglishUI,
+      setUseEnglishUI,
+    ]
   );
 
   return (

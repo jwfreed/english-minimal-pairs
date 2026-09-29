@@ -34,6 +34,9 @@ export const englishTranslations = {
     systemMode: 'System Settings',
     useEnglishUI: 'Use English UI',
     englishUIDescription: 'Display interface in English',
+    learnerLanguage: 'Native language',
+    chooseLearnerLanguage: 'What is your native language?',
+    learnerLanguageHint: 'This chooses which English sound contrasts you practice.',
     titleOne: 'Train Your Ears, Transform Your Listening!',
     infoOne:
       'Many English learners struggle to distinguish between "ship" and "sheep" or "light" and "right". This app helps you train your ears to hear these subtle differences.',
@@ -158,6 +161,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'システム設定',
     useEnglishUI: '英語表示を使用',
     englishUIDescription: 'インターフェースを英語で表示',
+    learnerLanguage: '母語',
+    chooseLearnerLanguage: 'あなたの母語は何ですか？',
+    learnerLanguageHint: '練習する英語の音の対比がこれで決まります。',
     titleOne: '耳を鍛えて、リスニング力を変えよう！',
     infoOne:
       '多くの英語学習者は "ship" と "sheep"、"light" と "right" の違いを聞き取れません。このアプリは、そうした違いを聞き取れる耳を作るためのトレーニングを提供します。',
@@ -278,6 +284,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: '系统设置',
     useEnglishUI: '使用英文界面',
     englishUIDescription: '以英文显示界面',
+    learnerLanguage: '母语',
+    chooseLearnerLanguage: '你的母语是什么？',
+    learnerLanguageHint: '这将决定你练习哪些英语发音对比。',
     titleOne: '训练你的耳朵，改善听力理解！',
     infoOne:
       '许多英语学习者分不清 "ship" 和 "sheep" 或 "light" 和 "right"。本应用帮助你训练听觉，分辨这些细微差别。',
@@ -396,6 +405,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'ตามระบบ',
     useEnglishUI: 'ใช้หน้าจอภาษาอังกฤษ',
     englishUIDescription: 'แสดงหน้าจอเป็นภาษาอังกฤษ',
+    learnerLanguage: 'ภาษาแม่',
+    chooseLearnerLanguage: 'ภาษาแม่ของคุณคือภาษาอะไร',
+    learnerLanguageHint: 'ตัวเลือกนี้กำหนดคู่เสียงภาษาอังกฤษที่คุณจะฝึก',
     titleOne: 'ฝึกหูฟัง พัฒนาทักษะการฟัง!',
     infoOne:
       'ผู้เรียนภาษาอังกฤษหลายคนแยกไม่ออกระหว่างคำว่า "ship" กับ "sheep" หรือ "light" กับ "right" แอปนี้ช่วยฝึกให้คุณได้ยินความแตกต่างนั้น',
@@ -514,6 +526,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'Configuración del sistema',
     useEnglishUI: 'Usar interfaz en inglés',
     englishUIDescription: 'Mostrar interfaz en inglés',
+    learnerLanguage: 'Lengua materna',
+    chooseLearnerLanguage: '¿Cuál es tu lengua materna?',
+    learnerLanguageHint: 'Determina qué contrastes de sonidos del inglés practicas.',
     titleOne: '¡Entrena tus oídos y mejora tu comprensión auditiva!',
     infoOne:
       'Muchos estudiantes no distinguen "ship" de "sheep" o "light" de "right". Esta app te entrena para reconocer esas diferencias.',
@@ -633,6 +648,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'إعداد النظام',
     useEnglishUI: 'استخدام الواجهة الإنجليزية',
     englishUIDescription: 'عرض الواجهة باللغة الإنجليزية',
+    learnerLanguage: 'اللغة الأم',
+    chooseLearnerLanguage: 'ما هي لغتك الأم؟',
+    learnerLanguageHint: 'يحدد هذا تباينات أصوات اللغة الإنجليزية التي تتدرب عليها.',
     titleOne: 'درّب أذنيك وغيّر مهارات الاستماع!',
     infoOne:
       'الكثير من متعلمي اللغة الإنجليزية لا يميزون بين "ship" و "sheep" أو "light" و "right". هذا التطبيق يساعدك على تحسين تمييز هذه الأصوات.',
@@ -752,6 +770,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'Настройки системы',
     useEnglishUI: 'Использовать английский интерфейс',
     englishUIDescription: 'Отображать интерфейс на английском',
+    learnerLanguage: 'Родной язык',
+    chooseLearnerLanguage: 'Какой у вас родной язык?',
+    learnerLanguageHint: 'От этого зависит, какие контрасты английских звуков вы тренируете.',
     titleOne: 'Тренируй слух — улучшай понимание!',
     infoOne:
       'Многие изучающие английский не различают "ship" и "sheep" или "light" и "right". Это приложение поможет научиться их слышать.',
@@ -871,6 +892,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: '시스템 설정',
     useEnglishUI: '영어 UI 사용',
     englishUIDescription: '인터페이스를 영어로 표시',
+    learnerLanguage: '모국어',
+    chooseLearnerLanguage: '모국어가 무엇인가요?',
+    learnerLanguageHint: '연습할 영어 소리 대비가 이 선택으로 정해집니다.',
     titleOne: '귀를 훈련하여 듣기 능력을 향상시키세요!',
     infoOne:
       '많은 영어 학습자들이 "ship"과 "sheep", "light"과 "right"의 차이를 구별하지 못합니다. 이 앱은 그런 구별을 가능하게 도와줍니다.',
@@ -990,6 +1014,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'सिस्टम सेटिंग/سسٹم کی ترتیب',
     useEnglishUI: 'अंग्रेज़ी UI उपयोग करें/انگریزی UI استعمال کریں',
     englishUIDescription: 'इंटरफ़ेस अंग्रेज़ी में दिखाएं/انٹرفیس انگریزی میں دکھائیں',
+    learnerLanguage: 'मातृभाषा/مادری زبان',
+    chooseLearnerLanguage: 'आपकी मातृभाषा क्या है?/آپ کی مادری زبان کیا ہے؟',
+    learnerLanguageHint: 'इससे तय होता है कि आप अंग्रेज़ी की किन ध्वनियों का अभ्यास करेंगे/اس سے طے ہوتا ہے کہ آپ انگریزی کی کن آوازوں کی مشق کریں گے',
     titleOne: 'अपने कानों को प्रशिक्षित करें, सुनने की क्षमता सुधारें!/!اپنے کانوں کو تربیت دیں، سننے کی صلاحیت بہتر بنائیں',
     infoOne:
       '"ship" और "sheep" या "light" और "right" जैसे शब्दों में फर्क करना कठिन हो सकता है। यह ऐप आपको वह फर्क सुनने में मदद करता है।/"ship" اور "sheep" یا "light" اور "right" جیسے الفاظ میں فرق کرنا مشکل ہو سکتا ہے۔ یہ ایپ آپ کو یہ فرق سننے میں مدد کرتی ہے۔',
@@ -1109,6 +1136,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'Configuração do sistema',
     useEnglishUI: 'Usar interface em inglês',
     englishUIDescription: 'Exibir interface em inglês',
+    learnerLanguage: 'Língua materna',
+    chooseLearnerLanguage: 'Qual é a sua língua materna?',
+    learnerLanguageHint: 'Define quais contrastes de sons do inglês você pratica.',
     titleOne: 'Treine seus ouvidos, melhore sua escuta!',
     infoOne:
       'Muitos alunos de inglês não distinguem "ship" de "sheep" ou "light" de "right". Este app ajuda a treinar sua audição para perceber essas diferenças.',
@@ -1228,6 +1258,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'Cài đặt hệ thống',
     useEnglishUI: 'Sử dụng giao diện tiếng Anh',
     englishUIDescription: 'Hiển thị giao diện bằng tiếng Anh',
+    learnerLanguage: 'Tiếng mẹ đẻ',
+    chooseLearnerLanguage: 'Tiếng mẹ đẻ của bạn là gì?',
+    learnerLanguageHint: 'Lựa chọn này quyết định những cặp âm tiếng Anh bạn luyện tập.',
     titleOne: 'Luyện tai, cải thiện kỹ năng nghe!',
     infoOne:
       'Nhiều người học tiếng Anh không phân biệt được "ship" và "sheep", hoặc "light" và "right". Ứng dụng này giúp bạn luyện nghe các âm thanh khó phân biệt.',
@@ -1347,6 +1380,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'Sistem ayarı',
     useEnglishUI: 'İngilizce arayüz kullan',
     englishUIDescription: 'Arayüzü İngilizce göster',
+    learnerLanguage: 'Ana dil',
+    chooseLearnerLanguage: 'Ana diliniz nedir?',
+    learnerLanguageHint: 'Hangi İngilizce ses karşıtlıklarını çalışacağınızı belirler.',
     titleOne: 'Kulaklarınızı eğitin, dinleme becerinizi geliştirin!',
     infoOne:
       'Birçok İngilizce öğrenen kişi "ship" ve "sheep" ya da "light" ve "right" arasındaki farkı duyamaz. Bu uygulama size bu farkları duymayı öğretir.',
@@ -1466,6 +1502,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'تنظیمات سیستم',
     useEnglishUI: 'استفاده از رابط کاربری انگلیسی',
     englishUIDescription: 'نمایش رابط به زبان انگلیسی',
+    learnerLanguage: 'زبان مادری',
+    chooseLearnerLanguage: 'زبان مادری شما چیست؟',
+    learnerLanguageHint: 'این انتخاب تعیین می‌کند کدام تقابل‌های صوتی انگلیسی را تمرین کنید.',
     titleOne: 'گوش‌های خود را آموزش دهید و مهارت شنیداری را بهبود دهید!',
     infoOne:
       'بسیاری از زبان‌آموزان تفاوت "ship" و "sheep" یا "light" و "right" را تشخیص نمی‌دهند. این اپ به شما کمک می‌کند تا این تفاوت‌ها را بشنوید.',
@@ -1585,6 +1624,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: '系統設定',
     useEnglishUI: '使用英文介面',
     englishUIDescription: '以英文顯示介面',
+    learnerLanguage: '母語',
+    chooseLearnerLanguage: '你嘅母語係咩？',
+    learnerLanguageHint: '呢個選擇決定你練習邊啲英文發音對比。',
     titleOne: '訓練耳朵，改善聽力！',
     infoOne:
       '好多學英文嘅人都分唔清 "ship" 同 "sheep" 或 "light" 同 "right"。呢個應用程式幫你聽得出呢啲分別。',
@@ -1702,6 +1744,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
     systemMode: 'Pengaturan sistem',
     useEnglishUI: 'Gunakan antarmuka Bahasa Inggris',
     englishUIDescription: 'Tampilkan antarmuka dalam Bahasa Inggris',
+    learnerLanguage: 'Bahasa ibu',
+    chooseLearnerLanguage: 'Apa bahasa ibu Anda?',
+    learnerLanguageHint: 'Ini menentukan kontras bunyi bahasa Inggris yang Anda latih.',
     titleOne: 'Latih pendengaranmu, tingkatkan kemampuan mendengar!',
     infoOne:
       'Banyak pelajar bingung membedakan "ship" dan "sheep" atau "light" dan "right". Aplikasi ini membantu kamu melatih pendengaran untuk membedakan bunyi tersebut.',

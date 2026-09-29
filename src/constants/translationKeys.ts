@@ -30,6 +30,10 @@ export const tKeys = {
   systemMode: 'systemMode',
   useEnglishUI: 'useEnglishUI',
   englishUIDescription: 'englishUIDescription',
+  // Learner L1 background (distinct from the UI language)
+  learnerLanguage: 'learnerLanguage',
+  chooseLearnerLanguage: 'chooseLearnerLanguage',
+  learnerLanguageHint: 'learnerLanguageHint',
   // New keys for HVPT overhaul
   voicesAvailable: 'voicesAvailable',
   theWordWas: 'theWordWas',

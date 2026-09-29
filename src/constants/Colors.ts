@@ -11,9 +11,11 @@ export const Colors = {
     hairline: '#EDF1F2',
     track: '#DDE3E5',
     trackStrong: '#DDE3E5',
-    success: '#27AE60',
+    // Same hues, darkened to meet WCAG AA 4.5:1 for the text they carry or
+    // sit under (white button/Play labels, feedback and highlight text).
+    success: '#1E864A',
     error: '#C0392B',
-    primary: '#E67E22',
+    primary: '#A05512',
     primaryLight: '#FADCC6',
     buttonText: '#FFFFFF',
     cardBackground: '#FDFDFC',

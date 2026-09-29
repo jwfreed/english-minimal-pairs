@@ -264,8 +264,10 @@ module.exports = (async () => {
 
   await runTest('the screen composes entry flow without owning its persistence', () => {
     assert.ok(
-      practiceScreenSource.includes('usePracticeEntryState(catKey)'),
-      'practice screen must compose the entry-state hook'
+      practiceScreenSource.includes(
+        'usePracticeEntryState(isCategoryResolved ? catKey : null)'
+      ),
+      'practice screen must compose the entry-state hook only for a resolved learner language'
     );
     for (const dependency of [
       'AsyncStorage',

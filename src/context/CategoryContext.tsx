@@ -1,6 +1,8 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
+  useMemo,
   useState,
   useEffect,
   ReactNode,
@@ -11,6 +13,14 @@ import { minimalPairs } from '@/src/constants/minimalPairs';
 interface CategoryContextValue {
   categoryIndex: number;
   setCategoryIndex: (index: number) => void;
+  /**
+   * True only when the learner language is explicitly resolved and the
+   * active category is that language's inventory. Category-dependent
+   * placement and practice must not start before this.
+   */
+  isCategoryResolved: boolean;
+  /** Records an explicit learner-language choice and activates its inventory. */
+  selectLearnerCategory: (index: number) => void;
 }
 
 const CategoryContext = createContext<CategoryContextValue | undefined>(
@@ -19,7 +29,7 @@ const CategoryContext = createContext<CategoryContextValue | undefined>(
 
 export const CategoryProvider = ({ children }: { children: ReactNode }) => {
   const [categoryIndex, setCategoryIndex] = useState(0);
-  const { language } = useLanguage();
+  const { language, learnerLanguageStatus, setLanguage } = useLanguage();
 
   useEffect(() => {
     const nextIndex = minimalPairs.findIndex(
@@ -30,8 +40,32 @@ export const CategoryProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [language, categoryIndex]);
 
+  const selectLearnerCategory = useCallback(
+    (index: number) => {
+      const category = minimalPairs[index];
+      if (!category) return;
+      setCategoryIndex(index);
+      setLanguage(category.category);
+    },
+    [setLanguage]
+  );
+
+  const isCategoryResolved =
+    learnerLanguageStatus === 'resolved' &&
+    minimalPairs[categoryIndex]?.category === language;
+
+  const value = useMemo(
+    () => ({
+      categoryIndex,
+      setCategoryIndex,
+      isCategoryResolved,
+      selectLearnerCategory,
+    }),
+    [categoryIndex, isCategoryResolved, selectLearnerCategory]
+  );
+
   return (
-    <CategoryContext.Provider value={{ categoryIndex, setCategoryIndex }}>
+    <CategoryContext.Provider value={value}>
       {children}
     </CategoryContext.Provider>
   );

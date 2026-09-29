@@ -221,11 +221,10 @@ runTest('play button ambient glow matches the design keyframes', () => {
   );
 });
 
-runTest('ambient glow pulses only while the play button is idle', () => {
+runTest('ambient glow pulses only while the play button is idle and motion is allowed', () => {
   assert.ok(
-    listenControlsSource.includes('{!isPlaying && (') ||
-      listenControlsSource.includes('{!isPlaying ? ('),
-    'glow overlay must be suppressed during playback'
+    listenControlsSource.includes('{!isPlaying && !reduceMotion && ('),
+    'glow overlay must be suppressed during playback and under Reduce Motion'
   );
   assert.ok(
     listenControlsSource.includes("animationDuration: '4.5s'") &&

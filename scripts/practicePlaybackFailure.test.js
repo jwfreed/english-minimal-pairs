@@ -71,6 +71,7 @@ function mountScreen() {
     'react-native': {
       View: 'View',
       Text: 'Text',
+      ScrollView: 'ScrollView',
       TouchableOpacity: 'TouchableOpacity',
       AccessibilityInfo: {
         announceForAccessibility: (message) => announcements.push(message),
@@ -113,9 +114,18 @@ function mountScreen() {
       __esModule: true,
       default: () => new Proxy({}, { get: () => ({}) }),
     },
-    '@/src/context/CategoryContext': { useCategory: () => ({ categoryIndex: 0 }) },
+    '@/src/context/CategoryContext': {
+      useCategory: () => ({
+        categoryIndex: 0,
+        isCategoryResolved: true,
+        selectLearnerCategory: () => {},
+      }),
+    },
     '@/src/context/LanguageContext': {
-      useLanguage: () => ({ translate: (key) => key }),
+      useLanguage: () => ({
+        translate: (key) => key,
+        learnerLanguageStatus: 'resolved',
+      }),
     },
     '@/src/context/theme': { useAllThemeColors: () => ({ error: 'red' }) },
     '@/src/domain/contrast/contrastRegistry': {
@@ -146,6 +156,7 @@ function mountScreen() {
       root.root
         .findAllByType('Text')
         .find((node) => node.props.children === 'audioPlaybackFailed'),
+    one,
     listenControls: () => one('ListenControls'),
     answerButtons: () => one('AnswerButtons'),
     unmount: () => TestRenderer.act(() => root.unmount()),
@@ -215,6 +226,20 @@ try {
     screen.render({ playbackStatus: 'awaiting-answer', canAnswer: true, playedIdx: 0 });
     assert.strictEqual(screen.notice(), undefined);
     assert.strictEqual(screen.answerButtons().props.disabled, false);
+    screen.unmount();
+  });
+
+  runTest('practice content scrolls so enlarged text cannot clip its controls', () => {
+    const screen = mountScreen();
+    screen.render({});
+    const scroll = screen.one('ScrollView');
+    const content = Object.assign({}, ...[scroll.props.contentContainerStyle].flat(Infinity));
+    assert.notStrictEqual(content.flex, 1, 'flex: 1 would cap content at the viewport');
+    for (const type of ['ListenControls', 'AnswerButtons', 'LevelIndicator', 'PracticePairSelector']) {
+      let node = screen.one(type);
+      while (node && node !== scroll) node = node.parent;
+      assert.strictEqual(node, scroll, `${type} must be inside the scroll view`);
+    }
     screen.unmount();
   });
 

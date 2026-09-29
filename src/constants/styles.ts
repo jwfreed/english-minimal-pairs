@@ -94,6 +94,20 @@ const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: 20,
       backgroundColor: colors.background,
     },
+    // Scrollable equivalent of `container` for flows whose content can outgrow
+    // the screen at large text sizes or on short screens. `flexGrow` keeps
+    // normal-size layouts identical while letting taller content scroll.
+    scrollScreen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      alignItems: 'center',
+      paddingTop: 20,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+    },
     title: {
       fontSize: isTablet ? 42 : 28,
       fontWeight: '700',
@@ -573,7 +587,9 @@ const createStyles = (colors: ThemeColors) =>
       ...getButtonShadowStyles(),
     },
     playButtonPlaying: {
-      backgroundColor: '#B9640F',
+      // Darker than idle so the playing state stays distinct; keeps the white
+      // "Listening…" label at WCAG AA contrast.
+      backgroundColor: '#8D4C0B',
     },
     playButtonGlow: {
       position: 'absolute',

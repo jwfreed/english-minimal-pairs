@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from 'expo-router';
 
 import { usePracticeEntryState } from '@/src/hooks/usePracticeEntryState';
 import { usePracticeSession } from '@/src/hooks/usePracticeSession';
 import AnswerButtons from '@/src/components/AnswerButtons';
 import HelpOverlay from '@/src/components/HelpOverlay';
+import LearnerLanguagePicker from '@/src/components/LearnerLanguagePicker';
 import LevelIndicator from '@/src/components/LevelIndicator';
 import OnboardingScreen from '@/src/components/OnboardingScreen';
 import PlacementTest from '@/src/components/PlacementTest';
@@ -29,8 +30,9 @@ import { useNextContrastSuggestion } from '@/src/hooks/useNextContrastSuggestion
 import { buildContrastLabel } from '@/utils/contrastLabel';
 
 export default function HomeScreen() {
-  const { translate } = useLanguage();
-  const { categoryIndex } = useCategory();
+  const { translate, learnerLanguageStatus } = useLanguage();
+  const { categoryIndex, isCategoryResolved, selectLearnerCategory } =
+    useCategory();
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const playAudioText = useMemo(() => translate(tKeys.playAudio), [translate]);
@@ -50,7 +52,7 @@ export default function HomeScreen() {
     refreshEntryState,
     isLoading: isEntryLoading,
     isPracticeReady,
-  } = usePracticeEntryState(catKey);
+  } = usePracticeEntryState(isCategoryResolved ? catKey : null);
   const navigation = useNavigation();
 
   // The Practice tab remains mounted while Settings clears placement state.
@@ -130,8 +132,14 @@ export default function HomeScreen() {
     [selectContrastDetailPair]
   );
 
+  // The learner's L1 background must be an explicit choice before any
+  // category-dependent onboarding, placement or practice state is read.
+  if (learnerLanguageStatus === 'unresolved') {
+    return <LearnerLanguagePicker onSelect={selectLearnerCategory} />;
+  }
+
   // Show PlacementTest if the user hasn't completed it yet.
-  if (isEntryLoading) {
+  if (!isCategoryResolved || isEntryLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
         <Text style={{ color: theme.textSecondary }}>
@@ -156,7 +164,10 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.scrollScreen}
+      contentContainerStyle={styles.scrollContent}
+    >
       <PracticeHeader
         title={translate(tKeys.practicePairs)}
         helpAccessibilityLabel={translate(tKeys.helpLabel)}
@@ -269,6 +280,6 @@ export default function HomeScreen() {
         onSelectPair={handleContrastDetailPairSelect}
         onClose={() => setIsContrastDetailsVisible(false)}
       />
-    </View>
+    </ScrollView>
   );
 }

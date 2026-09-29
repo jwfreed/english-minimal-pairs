@@ -68,6 +68,7 @@ function mountPlacement() {
       'react-native': {
         View: 'View',
         Text: 'Text',
+        ScrollView: 'ScrollView',
         TouchableOpacity: 'TouchableOpacity',
         ActivityIndicator: 'ActivityIndicator',
         Alert: { alert: (...args) => alerts.push(args) },
@@ -120,6 +121,7 @@ function mountPlacement() {
       .flat()
       .join('');
   const view = {
+    root,
     audio,
     plays,
     alerts,
@@ -267,6 +269,21 @@ module.exports = (async () => {
 
     await view.deliver(view.plays[1], { kind: 'completed' });
     assert.strictEqual(view.answersEnabled(), true);
+    view.unmount();
+  });
+
+  await runTest('placement content scrolls so enlarged text cannot clip its controls', async () => {
+    const view = mountPlacement();
+    const [scroll] = view.root.root.findAllByType('ScrollView');
+    assert.ok(scroll, 'placement must render inside a ScrollView');
+    const content = Object.assign({}, ...[scroll.props.contentContainerStyle].flat(Infinity));
+    assert.notStrictEqual(content.flex, 1, 'flex: 1 would cap content at the viewport');
+    const controls = [view.playButton(), ...view.answerButtons()];
+    for (const control of controls) {
+      let node = control;
+      while (node && node !== scroll) node = node.parent;
+      assert.strictEqual(node, scroll, 'critical control must be inside the scroll view');
+    }
     view.unmount();
   });
 

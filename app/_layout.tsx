@@ -18,8 +18,9 @@ import {
 import { useEffect } from 'react';
 
 import { recordMasteryRolloutColdStart } from '@/src/analytics/masteryRolloutDiagnostics';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { Colors } from '@/src/constants/Colors';
+import { isDarkTheme } from '@/src/constants/themeTokens';
+import { ThemeProvider as AppThemeProvider, useTheme } from '@/src/context/theme';
 
 const CustomDarkTheme = {
   ...NavigationDarkTheme,
@@ -39,6 +40,23 @@ const CustomLightTheme = {
   },
 };
 
+/**
+ * Navigation and status-bar chrome follow the saved app theme (which itself
+ * follows the device only in "system" mode), not the raw device scheme.
+ */
+function ThemedNavigation() {
+  const isDark = isDarkTheme(useTheme().theme);
+  return (
+    <ThemeProvider value={isDark ? CustomDarkTheme : CustomLightTheme}>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+    </ThemeProvider>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     PublicSans_400Regular,
@@ -46,9 +64,6 @@ export default function RootLayout() {
     PublicSans_700Bold,
     PublicSans_800ExtraBold,
   });
-  const colorScheme = useColorScheme();
-  const selectedTheme =
-    colorScheme === 'dark' ? CustomDarkTheme : CustomLightTheme;
 
   useEffect(() => {
     recordMasteryRolloutColdStart();
@@ -58,13 +73,9 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={selectedTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      </ThemeProvider>
+      <AppThemeProvider>
+        <ThemedNavigation />
+      </AppThemeProvider>
     </GestureHandlerRootView>
   );
 }

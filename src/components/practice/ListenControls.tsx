@@ -76,6 +76,12 @@ export default function ListenControls({
       barScales.forEach((scale) => scale.setValue(0.4));
       return;
     }
+    // Reduce Motion: show the playing state with static raised bars (plus the
+    // "Listening…" label and playing color) instead of a repeating pulse.
+    if (reduceMotion) {
+      barScales.forEach((scale) => scale.setValue(0.8));
+      return;
+    }
     // Build the loops fresh on each playback. A stopped Animated.loop keeps its
     // internal "finished" flag set, and on the JS driver (which a sequence-backed
     // loop always uses) start() returns immediately once finished — so a reused
@@ -106,7 +112,7 @@ export default function ListenControls({
       animations.forEach((animation) => animation.stop());
       barScales.forEach((scale) => scale.setValue(0.4));
     };
-  }, [barScales, isPlaying]);
+  }, [barScales, isPlaying, reduceMotion]);
 
   return (
     <TouchableOpacity
@@ -118,7 +124,8 @@ export default function ListenControls({
       accessibilityHint={translate(tKeys.doubleTapToHearAWord)}
       accessibilityState={{ disabled }}
     >
-      {!isPlaying && (
+      {/* The idle glow repeats forever, so it is omitted under Reduce Motion. */}
+      {!isPlaying && !reduceMotion && (
         <Reanimated.View
           pointerEvents="none"
           importantForAccessibility="no"

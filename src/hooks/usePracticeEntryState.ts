@@ -66,7 +66,11 @@ async function markPlacementDone(categoryKey: string): Promise<void> {
   );
 }
 
-export function usePracticeEntryState(categoryKey: string) {
+/**
+ * `categoryKey` is null until the learner language is resolved; nothing
+ * category-dependent (including legacy placement seeding) runs before then.
+ */
+export function usePracticeEntryState(categoryKey: string | null) {
   const [showPlacement, setShowPlacement] = useState<boolean | null>(null);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -74,6 +78,7 @@ export function usePracticeEntryState(categoryKey: string) {
   // Re-check placement each time the category changes. Legacy placement is
   // allowed to seed only the first category opened after migration.
   useEffect(() => {
+    if (categoryKey === null) return;
     let cancelled = false;
 
     initializePracticeEntryState(categoryKey)
@@ -115,11 +120,13 @@ export function usePracticeEntryState(categoryKey: string) {
   }, []);
 
   const completePlacement = useCallback(async () => {
+    if (categoryKey === null) return;
     await markPlacementDone(categoryKey);
     setShowPlacement(false);
   }, [categoryKey]);
 
   const skipPlacement = useCallback(async () => {
+    if (categoryKey === null) return;
     await markPlacementDone(categoryKey);
     setShowPlacement(false);
   }, [categoryKey]);

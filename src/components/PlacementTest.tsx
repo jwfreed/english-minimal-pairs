@@ -12,7 +12,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+} from 'react-native';
 import createStyles from '@/src/constants/styles';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useSettings } from '@/src/context/SettingsContext';
@@ -176,7 +183,10 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   }
 
   return (
-    <View style={[styles.container, { justifyContent: 'center' }]}>
+    <ScrollView
+      style={styles.scrollScreen}
+      contentContainerStyle={[styles.scrollContent, { justifyContent: 'center' }]}
+    >
       <Text style={[styles.title, { marginBottom: 8 }]}>
         {translate(tKeys.placementTest)}
       </Text>
@@ -226,6 +236,6 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
           {translate(tKeys.skip)}
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }

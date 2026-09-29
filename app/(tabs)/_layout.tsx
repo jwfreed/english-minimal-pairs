@@ -6,20 +6,21 @@ import { PairProgressProvider } from '@/src/context/PairProgressContext';
 import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
 import { CategoryProvider } from '@/src/context/CategoryContext';
 import { SettingsProvider } from '@/src/context/SettingsContext';
-import { ThemeProvider } from '@/src/context/theme';
+import { useTheme } from '@/src/context/theme';
 
-import { useColorScheme } from 'react-native';
 import { Colors } from '@/src/constants/Colors';
+import { isDarkTheme } from '@/src/constants/themeTokens';
 import { tKeys } from '@/src/constants/translationKeys';
 
 function TabLayout() {
   const { translate, language } = useLanguage();
-  const deviceColorScheme = useColorScheme();
+  // The saved app theme (provided at the root), not the device scheme.
+  const isDark = isDarkTheme(useTheme().theme);
 
   const { activeTintColor, inactiveTintColor } = useMemo(() => ({
-    activeTintColor: deviceColorScheme === 'dark' ? Colors.dark.primary : Colors.light.primary,
+    activeTintColor: isDark ? Colors.dark.primary : Colors.light.primary,
     inactiveTintColor: '#888',
-  }), [deviceColorScheme]);
+  }), [isDark]);
 
   const getTabBarIcon = useCallback((route: any, focused: boolean, size: number) => {
     const iconColor = focused ? activeTintColor : inactiveTintColor;
@@ -86,13 +87,11 @@ export default function Layout() {
   return (
     <PairProgressProvider>
       <LanguageProvider>
-        <ThemeProvider>
-          <SettingsProvider>
-            <CategoryProvider>
-              <TabLayout />
-            </CategoryProvider>
-          </SettingsProvider>
-        </ThemeProvider>
+        <SettingsProvider>
+          <CategoryProvider>
+            <TabLayout />
+          </CategoryProvider>
+        </SettingsProvider>
       </LanguageProvider>
     </PairProgressProvider>
   );

@@ -30,7 +30,8 @@ function loadTsModule(
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2020,
       esModuleInterop: true,
-      jsx: ts.JsxEmit.React,
+      // Automatic runtime, as the app's Babel/Metro build compiles JSX.
+      jsx: ts.JsxEmit.ReactJSX,
     },
     fileName: resolvedEntry,
   }).outputText;

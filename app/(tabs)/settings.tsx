@@ -34,8 +34,8 @@ import {
 } from '@/src/domain/masteryPersistence';
 
 export default function SettingsScreen() {
-  const { translate, setLanguage, useEnglishUI, setUseEnglishUI, language } = useLanguage();
-  const { categoryIndex, setCategoryIndex } = useCategory();
+  const { translate, useEnglishUI, setUseEnglishUI, language } = useLanguage();
+  const { categoryIndex, isCategoryResolved, selectLearnerCategory } = useCategory();
   const theme = useAllThemeColors();
   const { themeMode, setThemeMode } = useTheme();
   const { width } = useWindowDimensions();
@@ -78,9 +78,8 @@ export default function SettingsScreen() {
 
   const handleLanguageSelect = useCallback(async (idx: number) => {
     triggerHaptic('selection');
-    setCategoryIndex(idx);
-    setLanguage(minimalPairs[idx].category);
-  }, [setCategoryIndex, setLanguage, triggerHaptic]);
+    selectLearnerCategory(idx);
+  }, [selectLearnerCategory, triggerHaptic]);
 
   const handleThemeChange = useCallback((mode: 'system' | 'light' | 'dark') => {
     triggerHaptic('selection');
@@ -127,6 +126,8 @@ export default function SettingsScreen() {
           <FlashPressable
             style={styles.sectionHeader}
             onPress={() => toggleSection('language')}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedSection === 'language' }}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -137,10 +138,12 @@ export default function SettingsScreen() {
               />
               <View style={localStyles.languageTextContainer}>
                 <Text style={styles.sectionTitle}>
-                  {translate(tKeys.language)}
+                  {translate(tKeys.learnerLanguage)}
                 </Text>
                 <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
-                  {minimalPairs[categoryIndex].category}
+                  {isCategoryResolved
+                    ? minimalPairs[categoryIndex].category
+                    : translate(tKeys.chooseLearnerLanguage)}
                 </Text>
               </View>
             </View>
@@ -152,9 +155,12 @@ export default function SettingsScreen() {
           </FlashPressable>
 
           {expandedSection === 'language' && (
-            <View style={styles.sectionContent}>
+            <View style={styles.sectionContent} accessibilityRole="radiogroup">
+              <Text style={[styles.sectionSubtitle, localStyles.learnerLanguageHint]}>
+                {translate(tKeys.learnerLanguageHint)}
+              </Text>
               {minimalPairs.map((cat, index) => {
-                const isSelected = categoryIndex === index;
+                const isSelected = isCategoryResolved && categoryIndex === index;
 
                 return (
                   <FlashPressable
@@ -165,6 +171,8 @@ export default function SettingsScreen() {
                       index === minimalPairs.length - 1 && styles.lastListOption,
                     ]}
                     onPress={() => handleLanguageSelect(index)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: isSelected }}
                   >
                     <View style={styles.listItemInfo}>
                       <Text style={styles.listItemName}>
@@ -185,6 +193,8 @@ export default function SettingsScreen() {
           <FlashPressable
             style={styles.sectionHeader}
             onPress={handleEnglishUIToggle}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: effectiveUseEnglishUI }}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -218,6 +228,8 @@ export default function SettingsScreen() {
           <FlashPressable
             style={styles.sectionHeader}
             onPress={() => toggleSection('theme')}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedSection === 'theme' }}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -247,7 +259,10 @@ export default function SettingsScreen() {
           </FlashPressable>
 
           {expandedSection === 'theme' && (
-            <View style={[styles.sectionContent, localStyles.appearanceContent]}>
+            <View
+              style={[styles.sectionContent, localStyles.appearanceContent]}
+              accessibilityRole="radiogroup"
+            >
               {(['system', 'light', 'dark'] as const).map((mode, index) => {
                 const isSelected = themeMode === mode;
                 const modeLabels = {
@@ -272,6 +287,8 @@ export default function SettingsScreen() {
                     ]}
                     highlightRadius={12}
                     onPress={() => handleThemeChange(mode)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: isSelected }}
                   >
                     <View style={styles.listItemInfo}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -298,9 +315,12 @@ export default function SettingsScreen() {
 
         {/* Voice Management Section */}
         <View style={styles.section}>
+          <View style={localStyles.sectionHeaderRow}>
           <FlashPressable
-            style={styles.sectionHeader}
+            style={[styles.sectionHeader, localStyles.sectionHeaderMain]}
             onPress={() => toggleSection('voice')}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedSection === 'voice' }}
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -320,17 +340,22 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TouchableOpacity onPress={refreshVoices} style={{ padding: 8 }}>
-                <Ionicons name="refresh" size={18} color={theme.primaryText} />
-              </TouchableOpacity>
-              <Ionicons
-                name={expandedSection === 'voice' ? 'chevron-up' : 'chevron-down'}
-                size={isTablet ? 28 : 20}
-                color={theme.textSecondary}
-              />
-            </View>
+            <Ionicons
+              name={expandedSection === 'voice' ? 'chevron-up' : 'chevron-down'}
+              size={isTablet ? 28 : 20}
+              color={theme.textSecondary}
+            />
           </FlashPressable>
+          {/* A sibling, not a child, so assistive tech can reach it separately. */}
+          <TouchableOpacity
+            onPress={refreshVoices}
+            style={localStyles.voiceRefreshButton}
+            accessibilityRole="button"
+            accessibilityLabel={translate(tKeys.refresh)}
+          >
+            <Ionicons name="refresh" size={18} color={theme.primaryText} />
+          </TouchableOpacity>
+          </View>
 
           {expandedSection === 'voice' && (
             <View style={styles.sectionContent}>
@@ -359,6 +384,8 @@ export default function SettingsScreen() {
                       triggerHaptic('selection');
                       toggleVoice(voice.identifier);
                     }}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: !excluded }}
                   >
                     <View style={styles.listItemInfo}>
                       <Text
@@ -390,6 +417,7 @@ export default function SettingsScreen() {
           <FlashPressable
             style={styles.sectionHeader}
             onPress={handleRetakePlacement}
+            accessibilityRole="button"
           >
             <View style={styles.sectionHeaderLeft}>
               <Ionicons
@@ -448,6 +476,22 @@ const createLocalStyles = (theme: any, isTablet: boolean) =>
     languageTextContainer: {
       flex: 1,
       justifyContent: 'center',
+    },
+    learnerLanguageHint: {
+      color: theme.textSecondary,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+    },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    sectionHeaderMain: {
+      flex: 1,
+    },
+    voiceRefreshButton: {
+      padding: 8,
+      marginRight: isTablet ? 16 : 8,
     },
     insetSeparator: {
       height: StyleSheet.hairlineWidth,

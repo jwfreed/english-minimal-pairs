@@ -39,7 +39,7 @@ const { default: LevelIndicator } = loadTsModule(
       __esModule: true,
       default: () => new Proxy({}, { get: () => ({}) }),
     },
-    '@/src/constants/motion': { levelPopAnimation: {} },
+    '@/src/constants/motion': { levelPopAnimation: {}, barFillTransition: {} },
     '@/src/context/theme': {
       useAllThemeColors: () => ({ accent: 'accent', track: 'grey', success: 'green' }),
     },
@@ -91,6 +91,36 @@ try {
       texts: ['✔ Contrast mastered'],
       filled: 6,
     });
+  });
+
+  runTest('the next-level bar reports progress on the practice indicator only', () => {
+    const bar = (props) => {
+      let root;
+      TestRenderer.act(() => {
+        root = TestRenderer.create(React.createElement(LevelIndicator, props));
+      });
+      const [node] = root.root.findAll((n) => n.props.accessibilityRole === 'progressbar');
+      const result = node && {
+        label: node.props.accessibilityLabel,
+        hint: node.props.accessibilityHint,
+        now: node.props.accessibilityValue.now,
+      };
+      TestRenderer.act(() => root.unmount());
+      return result;
+    };
+    assert.deepStrictEqual(bar({ masteryLevel: 2, nextLevelProgress: 0.5 }), {
+      label: 'Level 2 of 6',
+      hint: 'criteria',
+      now: 50,
+    });
+    assert.strictEqual(bar({ masteryLevel: 6, nextLevelProgress: 1.4 }).now, 100);
+    assert.strictEqual(bar({ masteryLevel: 2 }), undefined, 'hidden without progress');
+    assert.strictEqual(bar({ masteryLevel: 7, nextLevelProgress: 0.5 }), undefined, 'hidden once mastered');
+    assert.strictEqual(
+      bar({ masteryLevel: 2, compact: true, nextLevelProgress: 0.5 }),
+      undefined,
+      'hidden in the compact results indicator'
+    );
   });
 
   runTest('non-final tiers keep their existing labels', () => {

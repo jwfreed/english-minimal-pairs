@@ -50,6 +50,7 @@ import {
   FAST_THRESHOLD_MS,
   LONG_STREAK_NEEDED,
   SPEED_TABLE,
+  progressTowardNextTier,
 } from '@/src/learning/adaptiveProgression';
 
 interface UsePracticeSessionOptions {
@@ -196,12 +197,15 @@ export function usePracticeSession({
     }
   }, [visible, isLoading]);
 
-  const speedTier = selectedPair
+  // Read at render: every answer updates the ref and then re-renders via
+  // feedback state, so these reflect the latest answer.
+  const selectedProgression = selectedPair
     ? getContrastProgression(
         practiceStateRef.current,
         resolveProgressionKey(catObj.category, selectedPair.group)
-      ).speedTier
-    : 0;
+      )
+    : null;
+  const speedTier = selectedProgression?.speedTier ?? 0;
   const { play, audioModeReady, isSpeaking } = useAudio(
     selectedPair,
     SPEED_TABLE[speedTier],
@@ -645,6 +649,9 @@ export function usePracticeSession({
     isPromptPlaybackActive,
     isSpeaking,
     mastery,
+    nextLevelProgress: selectedProgression
+      ? progressTowardNextTier(selectedProgression)
+      : 0,
     playedIdx,
     playbackFailureReason:
       playbackState.status === 'failed' ? playbackState.reason : null,

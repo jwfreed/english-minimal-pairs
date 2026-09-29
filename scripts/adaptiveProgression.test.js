@@ -23,6 +23,7 @@ const {
   FAST_THRESHOLD_MS,
   LONG_STREAK_NEEDED,
   MAX_SPEED,
+  progressTowardNextTier,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'learning', 'adaptiveProgression.ts'));
 
 function runTest(name, fn) {
@@ -360,6 +361,49 @@ runTest('long path sequence: a single wrong answer resets streak and defers mast
   assert.strictEqual(speed, speed, 'speed unchanged after miss');
   assert.strictEqual(miss.promoteSpeed, false);
   assert.strictEqual(miss.promoteMastery, false);
+});
+
+// The next-level bar must agree with the promotion rule it describes: it
+// rises with every counted answer, stays below 1 until the answer that
+// promotes mastery, and restarts from 0 on the new tier.
+function progressAlong(answers) {
+  let state = { speedTier: 0, fastStreak: 0, longStreak: 0 };
+  const trace = [];
+  for (const [correct, responseTimeMs] of answers) {
+    const r = getNextAdaptiveProgression({
+      correct, responseTimeMs, currentSpeed: state.speedTier,
+      fastStreak: state.fastStreak, longStreak: state.longStreak, currentMasteryTier: 2,
+    });
+    const before = progressTowardNextTier(state);
+    state = { speedTier: r.nextSpeed, fastStreak: r.nextFastStreak, longStreak: r.nextLongStreak };
+    trace.push({ before, after: progressTowardNextTier(state), promoteMastery: r.promoteMastery });
+  }
+  return trace;
+}
+
+runTest('next-level progress rises to promotion on the long and fast paths', () => {
+  for (const [ms, needed] of [[SLOW_MS, LONG_STREAK_NEEDED], [FAST_MS, FAST_STREAK_NEEDED]]) {
+    const total = needed * (MAX_SPEED + 1);
+    const trace = progressAlong(Array.from({ length: total }, () => [true, ms]));
+    trace.slice(0, -1).forEach((step, index) => {
+      assert.ok(step.after > step.before, `answer ${index + 1} must advance the bar`);
+      assert.ok(step.after < 1, 'the bar stays below full until promotion');
+      assert.strictEqual(step.promoteMastery, false);
+    });
+    const last = trace[trace.length - 1];
+    assert.strictEqual(last.promoteMastery, true, `promotes after ${total} answers`);
+    assert.strictEqual(last.after, 0, 'the new tier starts empty');
+  }
+});
+
+runTest('a miss drops next-level progress back to the last completed speed step', () => {
+  const steps = LONG_STREAK_NEEDED + 2; // one speed step plus a partial streak
+  const trace = progressAlong([
+    ...Array.from({ length: steps }, () => [true, SLOW_MS]),
+    [false, SLOW_MS],
+  ]);
+  assert.ok(trace[steps - 1].after > 1 / (MAX_SPEED + 1));
+  assert.strictEqual(trace[steps].after, 1 / (MAX_SPEED + 1));
 });
 
 console.log('\nAll adaptiveProgression tests passed.');

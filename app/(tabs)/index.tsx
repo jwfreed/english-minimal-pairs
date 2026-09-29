@@ -78,6 +78,7 @@ export default function HomeScreen() {
     isPromptPlaybackActive,
     isSpeaking,
     mastery,
+    nextLevelProgress,
     playbackFailureReason,
     playedIdx,
     promotedLevel,
@@ -187,6 +188,7 @@ export default function HomeScreen() {
             <LevelIndicator
               masteryLevel={mastery[selectedPair.group] ?? 1}
               highlightCurrentTier={feedback === 'correct'}
+              nextLevelProgress={nextLevelProgress}
             />
           )}
           {selectedPair && (

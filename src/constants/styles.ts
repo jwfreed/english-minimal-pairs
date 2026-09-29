@@ -901,6 +901,19 @@ const createStyles = (colors: ThemeColors) =>
     levelDot: {
       borderWidth: 0,
     },
+    // Progress toward the next level, spanning the width of the tier dots.
+    levelProgressTrack: {
+      height: 3,
+      marginTop: 5,
+      borderRadius: 2,
+      backgroundColor: colors.track,
+      overflow: 'hidden' as const,
+    },
+    levelProgressFill: {
+      height: '100%' as const,
+      borderRadius: 2,
+      backgroundColor: colors.accent,
+    },
     levelLabel: {
       ...font('600'),
       fontSize: 12,

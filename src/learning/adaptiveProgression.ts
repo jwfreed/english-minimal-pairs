@@ -39,6 +39,29 @@ interface AdaptiveProgressionResult {
   nextMasteryTier: number;
 }
 
+/**
+ * Fraction (0–1) of the way to the next mastery promotion under the rule
+ * below: the speed steps completed, plus the current step advanced by
+ * whichever streak (fast or long) is closer to promoting it. A wrong answer
+ * resets the streaks but not the speed, so the fraction falls back to the
+ * last completed step.
+ */
+export function progressTowardNextTier({
+  speedTier,
+  fastStreak,
+  longStreak,
+}: {
+  speedTier: SpeedTier;
+  fastStreak: number;
+  longStreak: number;
+}): number {
+  const step = Math.min(
+    1,
+    Math.max(fastStreak / FAST_STREAK_NEEDED, longStreak / LONG_STREAK_NEEDED)
+  );
+  return (speedTier + step) / (MAX_SPEED + 1);
+}
+
 export function getNextAdaptiveProgression({
   correct,
   responseTimeMs,

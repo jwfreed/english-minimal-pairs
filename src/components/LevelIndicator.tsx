@@ -2,13 +2,14 @@
 // -----------------------------------------------------------------------------
 // Visual indicator showing a contrast's mastery level as a row of six tier
 // dots with a text label. Used on both the practice and results screens.
-// Optionally shows leveling criteria text (practice screen only).
+// On the practice screen a slim bar under the dots shows progress toward the
+// next level; it can also show leveling criteria text.
 // -----------------------------------------------------------------------------
 import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import Reanimated, { useReducedMotion } from 'react-native-reanimated';
 import createStyles from '@/src/constants/styles';
-import { levelPopAnimation } from '@/src/constants/motion';
+import { barFillTransition, levelPopAnimation } from '@/src/constants/motion';
 import { useAllThemeColors } from '@/src/context/theme';
 import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
@@ -31,6 +32,11 @@ interface Props {
    * Does not change the durable mastery state represented by the indicator.
    */
   highlightCurrentTier?: boolean;
+  /**
+   * Fraction (0–1) of the way to the next level, from the session's promotion
+   * state. Omit to hide the bar (results list, mastered contrasts).
+   */
+  nextLevelProgress?: number;
 }
 
 export default function LevelIndicator({
@@ -38,6 +44,7 @@ export default function LevelIndicator({
   compact = false,
   showCriteria = false,
   highlightCurrentTier = false,
+  nextLevelProgress,
 }: Props) {
   const theme = useAllThemeColors();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -56,30 +63,55 @@ export default function LevelIndicator({
           total: FINAL_PRACTICE_TIER,
         });
 
+  const progressPercent =
+    nextLevelProgress === undefined || isMastered || compact
+      ? null
+      : Math.round(Math.min(Math.max(nextLevelProgress, 0), 1) * 100);
+
   return (
     <View style={styles.levelIndicatorRow}>
-      <View style={styles.levelDotsRow}>
-        {Array.from({ length: FINAL_PRACTICE_TIER }, (_, i) => {
-          const tier = i + 1;
-          const isFilled = tier <= currentTier;
-          const isHighlighted =
-            highlightCurrentTier && tier === currentTier;
-          return (
+      <View>
+        <View style={styles.levelDotsRow}>
+          {Array.from({ length: FINAL_PRACTICE_TIER }, (_, i) => {
+            const tier = i + 1;
+            const isFilled = tier <= currentTier;
+            const isHighlighted =
+              highlightCurrentTier && tier === currentTier;
+            return (
+              <Reanimated.View
+                key={tier}
+                style={[
+                  styles.levelDot,
+                  {
+                    width: compact ? 16 : 26,
+                    height: compact ? 4 : 5,
+                    borderRadius: 3,
+                    backgroundColor: isFilled ? theme.accent : theme.track,
+                  },
+                  isHighlighted && !reduceMotion && levelPopAnimation,
+                ]}
+              />
+            );
+          })}
+        </View>
+        {progressPercent !== null && (
+          <View
+            accessible
+            accessibilityRole="progressbar"
+            accessibilityLabel={levelText}
+            accessibilityHint={translate(tKeys.levelCriteria)}
+            accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
+            style={styles.levelProgressTrack}
+          >
             <Reanimated.View
-              key={tier}
               style={[
-                styles.levelDot,
-                {
-                  width: compact ? 16 : 26,
-                  height: compact ? 4 : 5,
-                  borderRadius: 3,
-                  backgroundColor: isFilled ? theme.accent : theme.track,
-                },
-                isHighlighted && !reduceMotion && levelPopAnimation,
+                styles.levelProgressFill,
+                { width: `${progressPercent}%` },
+                !reduceMotion && barFillTransition,
               ]}
             />
-          );
-        })}
+          </View>
+        )}
       </View>
       <Text
         accessibilityLabel={levelText}

@@ -1584,6 +1584,81 @@ Tradeoffs:
 
 ---
 
+# **Decision 021**
+
+Date:
+2026-09-29
+
+Status:
+Accepted
+
+## **Title**
+
+Placement Observes Every Contrast And Never Infers Proficiency Without Evidence
+
+## **Context**
+
+Placement asked 10 questions sampled one per tier plus four pair-weighted
+extras, with no guarantee of contrast coverage. Exact analysis of the live
+inventory showed 42–50% of placements (depending on L1) left at least one of
+the five contrasts unobserved, and up to three could be missed. The single
+global score was then written to every contrast, so an untested contrast could
+start at level 4 and immediately count three completed tiers.
+
+Placement estimates a starting difficulty. It is not evidence that a contrast
+it never tested is perceived, and it is not mastery.
+
+Separately, 197 of 420 contrast/tier pools contain one word pair. The
+scheduler handles them correctly; the limitation is content. Dataset v1 is
+frozen, and its remaining gaps are classified and accepted.
+
+## **Decision**
+
+* Placement remains 10 questions. Each of an L1's five contrasts receives
+  exactly two questions, on distinct tiers, and every tier 1–6 appears at
+  least once. Beyond one question per tier, extra tiers keep the previous
+  pair-weighted mix so the score keeps its meaning.
+* The global score maps to a placement level through the existing thresholds,
+  which are unchanged.
+* A contrast with at least one correct placement answer starts at the global
+  placement level. A contrast answered 0-for-2 starts at level 1.
+* Defensively, a contrast placement did not observe starts at level 1, although
+  the sampler makes that state unreachable.
+* Placement establishes an initial practice level under the existing mastery
+  model: levels below the placement level count as completed, as before.
+  Placement writes practice tiers only (at most level 4 under the current
+  thresholds, and never above 6) and can never grant level 7 (Decision 020).
+* Every L1 must have exactly five contrasts and at least one pair per
+  contrast and tier, so full coverage stays achievable.
+* Sparse pools (M6) are unchanged at runtime: no tier borrowing, no scheduler
+  or progression changes. Expanding reviewed content is a separate
+  product-owner-gated effort under the dataset v1 freeze policy. The accepted
+  sparse-tier baseline (197 single-pair pools; eight at tiers 1–2) is pinned
+  so any change must regenerate the dataset audit documents.
+
+## **Consequences**
+
+Positive:
+
+* no contrast's starting level is inferred without direct evidence
+* direct counter-evidence (0-for-2) is not overridden by the global score
+* placement length and the meaning of its score thresholds are unchanged
+
+Tradeoffs:
+
+* two two-alternative questions per contrast are weak evidence; a proficient
+  learner occasionally answers a contrast 0-for-2 and starts it at level 1
+* the score thresholds remain uncalibrated against learner outcomes
+
+## **Required statements**
+
+* Placement is a starting-level estimate, not evidence of mastery.
+* Placement never produces level 7.
+* Score thresholds, scheduler behavior, progression thresholds and pair
+  content are unchanged by this decision.
+
+---
+
 # **Proposed Decisions — not accepted**
 
 Everything below this line is a **proposal**. Proposed entries are not binding,

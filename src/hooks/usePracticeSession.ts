@@ -96,7 +96,7 @@ export function usePracticeSession({
     []
   );
 
-  const { visible, promote, mastery, setAllGroupsToTier, isLoading } =
+  const { visible, promote, mastery, setPlacementLevels, isLoading } =
     useContrastPairs(catObj.pairs, catObj.category);
 
   const timerRef = useRef<SessionTimerHandle | null>(null);
@@ -652,7 +652,7 @@ export function usePracticeSession({
     promotedLevel,
     safePairIndex,
     selectedPair,
-    setAllGroupsToTier,
+    setPlacementLevels,
     stableVisible,
     timerRef,
   };

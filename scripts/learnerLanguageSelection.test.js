@@ -366,7 +366,7 @@ module.exports = (async () => {
             mastery: {},
             stableVisible: [],
             timerRef: { current: null },
-            setAllGroupsToTier: () => {},
+            setPlacementLevels: () => {},
             handlePairChange: () => {},
           }),
         },

@@ -107,7 +107,7 @@ function mountSession(initialMastery) {
               ...current,
               [group]: nextMasteryLevel(current[group]),
             })),
-          setAllGroupsToTier: noop,
+          setPlacementLevels: noop,
         };
       },
     },

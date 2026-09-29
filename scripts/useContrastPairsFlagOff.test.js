@@ -730,4 +730,25 @@ module.exports = (async () => {
     assert.deepStrictEqual(plain(result.mastery), { rL: 2 });
     assert.deepStrictEqual(storage.writes, []);
   });
+
+  await runTest('placement writes per-contrast practice tiers and can never record level 7', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 7, bV: 5 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = harness.render(renderHook);
+    await harness.settle();
+    result = harness.render(renderHook);
+    result.setPlacementLevels({ rL: 7, bV: 3, sTheta: 0 });
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.deepStrictEqual(plain(result.mastery), { rL: 6, bV: 3, sTheta: 1 });
+    assert.deepStrictEqual(storage.writes, [
+      ['@mastery_日本語', JSON.stringify({ rL: 6, bV: 3, sTheta: 1 })],
+    ]);
+  });
 })();

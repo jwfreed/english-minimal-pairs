@@ -28,20 +28,24 @@ const FAILURE_REASONS = [
   'request-rejected',
 ];
 
+const PLACEMENT_GROUPS = ['g1', 'g2', 'g3', 'g4', 'g5'];
+
 function placementPairs() {
   const pairs = [];
-  for (let difficulty = 1; difficulty <= 6; difficulty++) {
-    for (const suffix of ['a', 'b']) {
-      pairs.push({
-        word1: `right${difficulty}${suffix}`,
-        word2: `light${difficulty}${suffix}`,
-        ipa1: '/raɪt/',
-        ipa2: '/laɪt/',
-        difficulty,
-        group: 'rL',
-        contrastPhoneme1: 'r',
-        contrastPhoneme2: 'l',
-      });
+  for (const group of PLACEMENT_GROUPS) {
+    for (let difficulty = 1; difficulty <= 6; difficulty++) {
+      for (const suffix of ['a', 'b']) {
+        pairs.push({
+          word1: `${group}-right${difficulty}${suffix}`,
+          word2: `${group}-light${difficulty}${suffix}`,
+          ipa1: '/raɪt/',
+          ipa2: '/laɪt/',
+          difficulty,
+          group,
+          contrastPhoneme1: 'r',
+          contrastPhoneme2: 'l',
+        });
+      }
     }
   }
   return pairs;
@@ -107,7 +111,7 @@ function mountPlacement() {
     root = TestRenderer.create(
       React.createElement(PlacementTest, {
         pairs: placementPairs(),
-        onComplete: (tier) => completions.push(tier),
+        onComplete: (levels) => completions.push(JSON.parse(JSON.stringify(levels))),
         onSkip: () => {},
       })
     );
@@ -298,7 +302,30 @@ module.exports = (async () => {
       await view.advance();
     }
     // recommendPlacementTier caps a perfect placement at tier 4.
-    assert.deepStrictEqual(view.completions, [4]);
+    assert.deepStrictEqual(view.completions, [
+      { g1: 4, g2: 4, g3: 4, g4: 4, g5: 4 },
+    ]);
+    view.unmount();
+  });
+
+  await runTest('every contrast is asked twice and a 0/2 contrast starts at level 1', async () => {
+    const view = mountPlacement();
+    const askedPerGroup = Object.fromEntries(PLACEMENT_GROUPS.map((group) => [group, 0]));
+    for (let question = 1; question <= 10; question++) {
+      await view.press(view.playButton());
+      await view.deliver(view.plays.at(-1), { kind: 'completed' });
+      const [first] = view.answerButtons();
+      const group = first.findByType('Text').props.children.split('-')[0];
+      askedPerGroup[group] += 1;
+      // Word 0 is always played; miss both g5 questions on purpose.
+      await view.press(view.answerButtons()[group === 'g5' ? 1 : 0]);
+      await view.advance();
+    }
+    assert.deepStrictEqual(askedPerGroup, { g1: 2, g2: 2, g3: 2, g4: 2, g5: 2 });
+    // 8/10 → level 3 for evidenced contrasts; g5 was answered 0/2.
+    assert.deepStrictEqual(view.completions, [
+      { g1: 3, g2: 3, g3: 3, g4: 3, g5: 1 },
+    ]);
     view.unmount();
   });
 })().finally(() => {

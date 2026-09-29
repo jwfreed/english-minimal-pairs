@@ -285,7 +285,7 @@ module.exports = (async () => {
       );
     }
     assert.ok(
-      practiceScreenSource.indexOf('setAllGroupsToTier(startTier)') <
+      practiceScreenSource.indexOf('setPlacementLevels(levels)') <
         practiceScreenSource.indexOf('await completePlacement()'),
       'placement completion must apply the recommended tier before opening practice'
     );

@@ -57,7 +57,7 @@ function sessionState(overrides) {
     promotedLevel: null,
     safePairIndex: 0,
     selectedPair: pair,
-    setAllGroupsToTier: () => {},
+    setPlacementLevels: () => {},
     stableVisible: [pair],
     timerRef: { current: null },
     ...overrides,

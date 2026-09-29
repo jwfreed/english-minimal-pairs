@@ -41,90 +41,151 @@ const makePair = (id, difficulty) => ({
   contrastPhoneme2: 'b',
 });
 
-const ids = (pairs) => pairs.map((pair) => pair.group);
+const { minimalPairs } = loadTsModule(
+  path.join(__dirname, '..', 'src', 'constants', 'minimalPairs.ts'),
+  moduleCache
+);
+const { PLACEMENT_QUESTIONS_PER_CONTRAST, initializePlacementLevels } =
+  placementAssessment;
 
-runTest('injected randomness consumes the expected sequence in construction order', () => {
-  const pairs = [
-    makePair('a', 1),
-    makePair('b', 1),
-    makePair('c', 1),
-    makePair('d', 1),
-  ];
-  const values = [0.51, 0.01, 0.99, 0.25, 0.5, 0.75];
-  const draws = [];
-  let nextValue = 0;
+function seeded(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
-  const items = buildPlacementItems({
-    pairs,
-    random: () => {
-      const value = values[nextValue++];
-      draws.push(value);
-      return value;
-    },
-  });
+function assertCoverage(items, category, label) {
+  const groups = [...new Set(category.pairs.map((pair) => pair.group))];
+  assert.strictEqual(items.length, PLACEMENT_TOTAL_QUESTIONS, label);
+  assert.strictEqual(new Set(items).size, items.length, `${label}: duplicate pair`);
+  for (const item of items) {
+    assert.ok(category.pairs.includes(item), `${label}: item outside inventory`);
+  }
+  for (const group of groups) {
+    const asked = items.filter((item) => item.group === group);
+    assert.strictEqual(asked.length, PLACEMENT_QUESTIONS_PER_CONTRAST, `${label}: ${group}`);
+    assert.strictEqual(
+      new Set(asked.map((item) => item.difficulty)).size,
+      asked.length,
+      `${label}: ${group} asked twice at one tier`
+    );
+  }
+  for (let tier = 1; tier <= 6; tier++) {
+    assert.ok(items.some((item) => item.difficulty === tier), `${label}: tier ${tier} missing`);
+  }
+}
 
-  assert.strictEqual(draws.length, 6);
-  assert.deepStrictEqual(draws, values);
-  assert.strictEqual(JSON.stringify(ids(items)), JSON.stringify(['c', 'b', 'a', 'd']));
-});
-
-runTest('normal construction samples each available difficulty then fills to ten', () => {
-  const pairs = [
-    makePair('tier3-first', 3),
-    makePair('tier3-last', 3),
-    makePair('tier1-first', 1),
-    makePair('tier1-last', 1),
-    makePair('tier2-first', 2),
-    makePair('tier2-last', 2),
-    makePair('tier4-first', 4),
-    makePair('tier4-last', 4),
-    makePair('tier5-first', 5),
-    makePair('tier5-last', 5),
-    makePair('tier6-first', 6),
-    makePair('tier6-last', 6),
-  ];
-
-  const items = buildPlacementItems({ pairs, random: () => 0.999999999999 });
-
+runTest('every L1 placement asks each contrast exactly twice on distinct tiers and covers tiers 1-6', () => {
   assert.strictEqual(PLACEMENT_TOTAL_QUESTIONS, 10);
-  assert.strictEqual(
-    JSON.stringify(ids(items)),
-    JSON.stringify([
-      'tier3-last',
-      'tier1-last',
-      'tier2-last',
-      'tier4-last',
-      'tier5-last',
-      'tier6-last',
-      'tier3-first',
-      'tier1-first',
-      'tier2-first',
-      'tier4-first',
-    ])
-  );
+  assert.strictEqual(PLACEMENT_QUESTIONS_PER_CONTRAST, 2);
+  for (const category of minimalPairs) {
+    for (let seed = 1; seed <= 300; seed++) {
+      assertCoverage(
+        buildPlacementItems({ pairs: category.pairs, random: seeded(seed) }),
+        category,
+        `${category.category} seed ${seed}`
+      );
+    }
+  }
 });
 
-runTest('small pools return every available pair without padding', () => {
-  const pairs = [makePair('tier1-first', 1), makePair('tier1-last', 1), makePair('tier2', 2)];
+runTest('coverage holds for degenerate random sources', () => {
+  for (const category of minimalPairs) {
+    for (const value of [0, 0.1, 0.5, 0.999999999999]) {
+      assertCoverage(
+        buildPlacementItems({ pairs: category.pairs, random: () => value }),
+        category,
+        `${category.category} constant ${value}`
+      );
+    }
+  }
+});
 
-  const items = buildPlacementItems({ pairs, random: () => 0.999999999999 });
-
-  assert.strictEqual(JSON.stringify(ids(items)), JSON.stringify(['tier1-last', 'tier2', 'tier1-first']));
+runTest('placement construction is reproducible for a given random sequence', () => {
+  const [category] = minimalPairs;
+  const first = buildPlacementItems({ pairs: category.pairs, random: seeded(42) });
+  const second = buildPlacementItems({ pairs: category.pairs, random: seeded(42) });
+  assert.deepStrictEqual(first, second);
 });
 
 runTest('deduplication uses Pair object identity', () => {
-  const shared = makePair('same-value', 1);
-  const equalButDistinct = makePair('same-value', 1);
-  const tier2 = makePair('tier2', 2);
+  const [category] = minimalPairs;
+  const doubled = [...category.pairs, ...category.pairs];
+  assertCoverage(
+    buildPlacementItems({ pairs: doubled, random: seeded(7) }),
+    category,
+    'duplicated input'
+  );
+});
 
-  const items = buildPlacementItems({
-    pairs: [shared, shared, equalButDistinct, tier2],
-    random: () => 0,
+const answersFor = (entries) =>
+  entries.flatMap(([group, results]) =>
+    results.map((correct) => ({ group, correct }))
+  );
+const contrastPairs = ['a', 'b', 'c', 'd', 'e'].map((group) => makePair(group, 1));
+const plainLevels = (levels) => JSON.parse(JSON.stringify(levels));
+
+runTest('a contrast with at least one correct answer starts at the global placement level', () => {
+  const levels = initializePlacementLevels({
+    pairs: contrastPairs,
+    answers: answersFor([
+      ['a', [true, true]],
+      ['b', [true, true]],
+      ['c', [true, true]],
+      ['d', [true, true]],
+      ['e', [true, false]],
+    ]),
   });
+  // 9/10 → level 4 through the unchanged thresholds.
+  assert.deepStrictEqual(plainLevels(levels), { a: 4, b: 4, c: 4, d: 4, e: 4 });
+});
 
-  assert.strictEqual(items.filter((pair) => pair === shared).length, 1);
-  assert.strictEqual(items.filter((pair) => pair === equalButDistinct).length, 1);
-  assert.strictEqual(items.filter((pair) => pair === tier2).length, 1);
+runTest('a contrast answered 0/2 starts at level 1 while others take the global level', () => {
+  const levels = initializePlacementLevels({
+    pairs: contrastPairs,
+    answers: answersFor([
+      ['a', [true, true]],
+      ['b', [true, true]],
+      ['c', [true, true]],
+      ['d', [true, true]],
+      ['e', [false, false]],
+    ]),
+  });
+  // 8/10 → level 3; e has direct counter-evidence.
+  assert.deepStrictEqual(plainLevels(levels), { a: 3, b: 3, c: 3, d: 3, e: 1 });
+});
+
+runTest('an unobserved contrast defensively starts at level 1', () => {
+  const levels = initializePlacementLevels({
+    pairs: contrastPairs,
+    answers: answersFor([
+      ['a', [true, true, true]],
+      ['b', [true, true, true]],
+      ['c', [true, true, true]],
+      ['d', [true]],
+    ]),
+  });
+  assert.deepStrictEqual(plainLevels(levels), { a: 4, b: 4, c: 4, d: 4, e: 1 });
+});
+
+runTest('placement levels follow the existing thresholds and never reach level 7', () => {
+  for (let correct = 0; correct <= 10; correct++) {
+    const answers = Array.from({ length: 10 }, (_, index) => ({
+      group: ['a', 'b', 'c', 'd', 'e'][index % 5],
+      correct: index < correct,
+    }));
+    const levels = initializePlacementLevels({ pairs: contrastPairs, answers });
+    const expected = recommendPlacementTier(correct, 10);
+    for (const [group, level] of Object.entries(levels)) {
+      const evidenced = answers.some((answer) => answer.group === group && answer.correct);
+      assert.strictEqual(level, evidenced ? expected : 1, `${correct}/10 ${group}`);
+      assert.ok(level >= 1 && level <= 4, `${correct}/10 ${group}`);
+    }
+  }
 });
 
 runTest('recommendPlacementTier is directly re-exported from practiceSession', () => {

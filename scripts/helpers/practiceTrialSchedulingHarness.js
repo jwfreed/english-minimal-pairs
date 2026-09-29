@@ -196,22 +196,24 @@ function createPracticeTrialSchedulingHarness(fixture) {
       },
       [categoryKey]
     );
-    const setAllGroupsToTier = harness.react.useCallback(
-      (tier) => {
-        masteryByCategory[categoryKey] = domain.buildMasteryForAllGroups(
-          pairs,
-          tier
+    const setPlacementLevels = harness.react.useCallback(
+      (levels) => {
+        masteryByCategory[categoryKey] = Object.fromEntries(
+          Object.entries(levels).map(([group, level]) => [
+            group,
+            Math.max(1, masteryLevel.practiceTierOf(level)),
+          ])
         );
         setRevision((revision) => revision + 1);
       },
-      [categoryKey, pairs]
+      [categoryKey]
     );
 
     return {
       visible,
       promote,
       mastery,
-      setAllGroupsToTier,
+      setPlacementLevels,
       isLoading: false,
     };
   }

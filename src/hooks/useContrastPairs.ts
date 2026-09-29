@@ -6,10 +6,7 @@ import {
   isContrastMasteryAuthoritative,
   isContrastMasteryShadowEnabled,
 } from '@/src/config/featureFlags';
-import {
-  buildMasteryForAllGroups,
-  selectVisiblePairsByMastery,
-} from '@/src/domain/practiceSession';
+import { selectVisiblePairsByMastery } from '@/src/domain/practiceSession';
 import {
   buildMasteryStorageKey,
   parseStoredMastery,
@@ -17,7 +14,11 @@ import {
   type MasteryMap,
 } from '@/src/domain/masteryPersistence';
 import { historicalIdentityMapping } from '@/src/domain/compatibility/historicalIdentityMapping';
-import { nextMasteryLevel, practiceTierMap } from '@/src/domain/masteryLevel';
+import {
+  nextMasteryLevel,
+  practiceTierMap,
+  practiceTierOf,
+} from '@/src/domain/masteryLevel';
 import {
   compareMasteryInShadow,
   readCompatibleMastery,
@@ -183,17 +184,22 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     []
   );
 
-  /** Set every group to the given tier (clamped 1-6). Used by the placement test. */
-  const setAllGroupsToTier = useCallback(
-    (tier: number) => {
-      setState((current) => ({
-        ...current,
-        mastery: buildMasteryForAllGroups(pairs, tier),
-        mutation: 'placement',
-      }));
-    },
-    [pairs]
-  );
+  /**
+   * Applies per-contrast placement levels (Decision 021), replacing the
+   * category's levels. Placement sets practice tiers only: every level is
+   * clamped to 1–6 so placement can never record final-tier completion.
+   */
+  const setPlacementLevels = useCallback((levels: MasteryMap) => {
+    const placed: MasteryMap = {};
+    for (const [group, level] of Object.entries(levels)) {
+      placed[group] = Math.max(1, practiceTierOf(level));
+    }
+    setState((current) => ({
+      ...current,
+      mastery: placed,
+      mutation: 'placement',
+    }));
+  }, []);
 
   const resetMastery = useCallback(async () => {
     readGeneration.current += 1;
@@ -297,7 +303,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     promote,
     mastery,
     resetMastery,
-    setAllGroupsToTier,
+    setPlacementLevels,
     refresh,
     isLoading,
     persistenceError,

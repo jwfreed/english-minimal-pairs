@@ -1,8 +1,8 @@
 // components/PlacementTest.tsx
 // -----------------------------------------------------------------------------
-// Quick 10-question placement test that samples one pair from each difficulty
-// tier (1-6) across the active category's groups. Returns a recommended
-// starting tier based on the user's accuracy.
+// Quick 10-question placement test (Decision 021): every contrast is asked
+// twice and every difficulty tier (1-6) appears at least once. Returns
+// per-contrast starting levels from the global score and per-contrast evidence.
 // -----------------------------------------------------------------------------
 import React, {
   useCallback,
@@ -27,7 +27,8 @@ import { useLanguage } from '@/src/context/LanguageContext';
 import { tKeys } from '@/src/constants/translationKeys';
 import {
   buildPlacementItems,
-  recommendPlacementTier,
+  initializePlacementLevels,
+  type PlacementAnswer,
 } from '@/src/domain/practice/placementAssessment';
 import {
   initialPracticePlaybackState,
@@ -43,8 +44,8 @@ import PlaybackFailureNotice from '@/src/components/PlaybackFailureNotice';
 interface Props {
   /** All pairs for the current category */
   pairs: Pair[];
-  /** Called with the recommended starting tier (1-6) when the test finishes */
-  onComplete: (startTier: number) => void;
+  /** Called with per-contrast starting levels (1-6, never 7) when the test finishes */
+  onComplete: (levels: Record<string, number>) => void;
   /** Called if the user skips the test */
   onSkip: () => void;
 }
@@ -61,7 +62,7 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
   );
 
   const [qIndex, setQIndex] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [answers, setAnswers] = useState<PlacementAnswer[]>([]);
   const [playedIdx, setPlayedIdx] = useState<0 | 1 | null>(null);
   const [answered, setAnswered] = useState(false);
   // Same lifecycle as practice: only a native completion for this question's
@@ -126,8 +127,8 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
       attemptId: playback.attempt.attemptId,
     });
     const correct = idx === playback.attempt.prompt.playedIdx;
-    const newCorrectCount = correctCount + (correct ? 1 : 0);
-    setCorrectCount(newCorrectCount);
+    const newAnswers = [...answers, { group: testItems[qIndex].group, correct }];
+    setAnswers(newAnswers);
 
     // Clear any previously scheduled advance before setting a new one (defensive).
     if (advanceTimerRef.current !== null) {
@@ -138,12 +139,12 @@ export default function PlacementTest({ pairs, onComplete, onSkip }: Props) {
     advanceTimerRef.current = setTimeout(() => {
       advanceTimerRef.current = null;
       if (qIndex + 1 >= testItems.length) {
-        onComplete(recommendPlacementTier(newCorrectCount, testItems.length));
+        onComplete(initializePlacementLevels({ pairs, answers: newAnswers }));
       } else {
         setQIndex((i) => i + 1);
       }
     }, 600);
-  }, [canAnswer, playback, correctCount, qIndex, testItems.length, onComplete]);
+  }, [canAnswer, playback, answers, qIndex, testItems, pairs, onComplete]);
 
   const canPlayAudio = playedIdx !== null && !answered;
   const playDisabled =

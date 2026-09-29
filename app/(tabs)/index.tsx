@@ -83,7 +83,7 @@ export default function HomeScreen() {
     promotedLevel,
     safePairIndex,
     selectedPair,
-    setAllGroupsToTier,
+    setPlacementLevels,
     stableVisible,
     timerRef,
   } = usePracticeSession({
@@ -116,11 +116,11 @@ export default function HomeScreen() {
   }, [categoryIndex]);
 
   const handlePlacementComplete = useCallback(
-    async (startTier: number) => {
-      setAllGroupsToTier(startTier);
+    async (levels: Record<string, number>) => {
+      setPlacementLevels(levels);
       await completePlacement();
     },
-    [completePlacement, setAllGroupsToTier]
+    [completePlacement, setPlacementLevels]
   );
 
   const handleContrastDetailPairSelect = useCallback(

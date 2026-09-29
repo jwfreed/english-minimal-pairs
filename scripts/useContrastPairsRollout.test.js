@@ -31,12 +31,21 @@ function createStorage(initial = {}) {
 function createHookHarness() {
   const states = [];
   const refs = [];
+  const callbacks = [];
   const effectDependencies = [];
   const effectCleanups = [];
   let stateIndex = 0;
   let refIndex = 0;
+  let callbackIndex = 0;
   let effectIndex = 0;
   let pendingEffects = [];
+
+  const sameDependencies = (previous, dependencies) =>
+    previous &&
+    dependencies.length === previous.length &&
+    dependencies.every((dependency, dependencyIndex) =>
+      Object.is(dependency, previous[dependencyIndex])
+    );
 
   const react = {
     useState(initialValue) {
@@ -60,8 +69,12 @@ function createHookHarness() {
     useMemo(factory) {
       return factory();
     },
-    useCallback(callback) {
-      return callback;
+    useCallback(callback, dependencies) {
+      const index = callbackIndex++;
+      if (!sameDependencies(callbacks[index]?.dependencies, dependencies)) {
+        callbacks[index] = { callback, dependencies };
+      }
+      return callbacks[index].callback;
     },
     useEffect(effect, dependencies) {
       const index = effectIndex++;
@@ -83,6 +96,7 @@ function createHookHarness() {
   function render(renderHook) {
     stateIndex = 0;
     refIndex = 0;
+    callbackIndex = 0;
     effectIndex = 0;
     pendingEffects = [];
     const result = renderHook();
@@ -186,11 +200,16 @@ module.exports = (async () => {
     assert.strictEqual(result.isLoading, false);
     assert.deepStrictEqual(plain(result.mastery), { rL: 3 });
     await harness.settle();
+    result = harness.render(renderHook);
+    assert.deepStrictEqual(storage.writes, []);
+
+    result.promote('rL');
     harness.render(renderHook);
+    await harness.settle();
 
     assert.deepStrictEqual(calls, { comparisons: 1, reads: 0, writes: 0 });
     assert.deepStrictEqual(storage.writes, [
-      ['@mastery_日本語', JSON.stringify({ rL: 3 })],
+      ['@mastery_日本語', JSON.stringify({ rL: 4 })],
     ]);
     assert(
       storage.writes.every(
@@ -292,5 +311,155 @@ module.exports = (async () => {
     assert.deepStrictEqual(plain(result.mastery), {});
     assert.deepStrictEqual(calls, { reads: 1, writes: 0 });
     assert.strictEqual(storage.writes.length, 0);
+  });
+
+  await runTest('stable rebinding never writes the previous category under the new key', async () => {
+    const storage = createStorage();
+    const stored = { 日本語: { rL: 4 }, 한국어: { rL: 2 } };
+    const writes = [];
+    const compatibilityMock = {
+      async compareMasteryInShadow() {
+        throw new Error('authoritative mode must not invoke shadow integration');
+      },
+      async readCompatibleMastery(_storage, _languageId, categoryKey) {
+        return {
+          status: 'ready',
+          source: 'new',
+          mastery: stored[categoryKey],
+          diagnostics: { malformed: [], unresolved: [] },
+        };
+      },
+      async writeCompatibleMastery(...args) {
+        writes.push(args);
+        return {
+          status: 'complete',
+          writeOrder: 'legacy-first',
+          legacy: { status: 'written' },
+          stable: { status: 'written' },
+        };
+      },
+    };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(
+      storage,
+      harness,
+      'internal-test',
+      compatibilityMock
+    );
+    let category = '日本語';
+    const renderHook = () => useContrastPairs(japanesePairs(), category);
+
+    let result = harness.render(renderHook);
+    await harness.settle();
+    result = harness.render(renderHook);
+    assert.deepStrictEqual(plain(result.mastery), { rL: 4 });
+
+    category = '한국어';
+    result = harness.render(renderHook);
+    assert.strictEqual(result.isLoading, true);
+    await harness.settle();
+    result = harness.render(renderHook);
+    await harness.settle();
+    harness.render(renderHook);
+    assert.deepStrictEqual(plain(result.mastery), { rL: 2 });
+    assert.strictEqual(writes.length, 0);
+
+    result.promote('rL');
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.strictEqual(writes.length, 1);
+    assert.strictEqual(writes[0][2], '한국어');
+    assert.deepStrictEqual(plain(writes[0][3]), { rL: 3 });
+    assert.strictEqual(storage.writes.length, 0);
+  });
+
+  await runTest('a thrown stable read surfaces the error and suppresses later writes', async () => {
+    const storage = createStorage();
+    const calls = { reads: 0, writes: 0 };
+    const compatibilityMock = {
+      async compareMasteryInShadow() {},
+      async readCompatibleMastery() {
+        calls.reads += 1;
+        throw new Error('stable read failed');
+      },
+      async writeCompatibleMastery() {
+        calls.writes += 1;
+        throw new Error('failed read must suppress persistence');
+      },
+    };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(
+      storage,
+      harness,
+      'enabled',
+      compatibilityMock
+    );
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    harness.render(renderHook);
+    await harness.settle();
+    let result = harness.render(renderHook);
+    assert.strictEqual(result.isLoading, false);
+    assert.strictEqual(result.persistenceError.message, 'stable read failed');
+
+    result.promote('rL');
+    result = harness.render(renderHook);
+    await harness.settle();
+    harness.render(renderHook);
+    // The mutation retried the read, which failed again.
+    assert.deepStrictEqual(calls, { reads: 2, writes: 0 });
+    assert.strictEqual(storage.writes.length, 0);
+  });
+
+  await runTest('stable reset is ordered after an in-flight mutation write', async () => {
+    const storage = createStorage();
+    let stored = { rL: 4 };
+    const heldWrites = [];
+    const compatibilityMock = {
+      async compareMasteryInShadow() {},
+      async readCompatibleMastery() {
+        return {
+          status: 'ready',
+          source: 'new',
+          mastery: stored,
+          diagnostics: { malformed: [], unresolved: [] },
+        };
+      },
+      async writeCompatibleMastery(_storage, _languageId, _category, mastery, provenance) {
+        if (provenance === 'practice') {
+          await new Promise((resolve) => heldWrites.push(resolve));
+        }
+        stored = mastery;
+        return {
+          status: 'complete',
+          writeOrder: 'legacy-first',
+          legacy: { status: 'written' },
+          stable: { status: 'written' },
+        };
+      },
+    };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(
+      storage,
+      harness,
+      'internal-test',
+      compatibilityMock
+    );
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = harness.render(renderHook);
+    await harness.settle();
+    result = harness.render(renderHook);
+    result.promote('rL');
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.strictEqual(heldWrites.length, 1);
+
+    const reset = result.resetMastery();
+    await harness.settle();
+    heldWrites.forEach((release) => release());
+    await reset;
+    await harness.settle();
+    assert.deepStrictEqual(plain(stored), {});
   });
 })();

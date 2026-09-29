@@ -1,7 +1,7 @@
 // FlashPressable.tsx
 // -----------------------------------------------------------------------------
 // Pressable row with the Soundwise warm tap highlight: the row flashes
-// rgba(230,126,34,.16) on press-in and fades back over 400ms after release.
+// the accent at 16% on press-in and fades back over 400ms after release.
 // Used across settings rows in place of TouchableOpacity's opacity dim.
 // -----------------------------------------------------------------------------
 import React, { ReactNode, useCallback, useRef } from 'react';
@@ -14,9 +14,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { withAlpha } from '@/src/constants/Colors';
+import { useAllThemeColors } from '@/src/context/theme';
 
-const FLASH_ON = 'rgba(230, 126, 34, 0.16)';
-const FLASH_OFF = 'rgba(230, 126, 34, 0)';
 const FADE_MS = 400;
 
 interface Props extends Omit<PressableProps, 'style' | 'children'> {
@@ -34,6 +34,7 @@ export default function FlashPressable({
   onPressOut,
   ...rest
 }: Props) {
+  const { accent } = useAllThemeColors();
   const flash = useRef(new Animated.Value(0)).current;
 
   const handlePressIn = useCallback(
@@ -59,7 +60,7 @@ export default function FlashPressable({
 
   const backgroundColor = flash.interpolate({
     inputRange: [0, 1],
-    outputRange: [FLASH_OFF, FLASH_ON],
+    outputRange: [withAlpha(accent, 0), withAlpha(accent, 0.16)],
   });
 
   return (

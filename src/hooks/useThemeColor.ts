@@ -1,6 +1,5 @@
 // useThemeColor.ts
 import { Colors } from '@/src/constants/Colors';
-import { isDarkTheme } from '@/src/constants/themeTokens';
 import { useTheme } from '@/src/context/theme';
 
 // The keys in Colors.light & Colors.dark
@@ -22,8 +21,7 @@ export function useThemeColor(
   props: ThemeOverrideProps,
   colorName: ColorName
 ): string {
-  const { theme } = useTheme();
-  const isDark = isDarkTheme(theme);
+  const { isDark } = useTheme();
 
   // If user provided overrides, use them
   const override = isDark ? props.dark : props.light;

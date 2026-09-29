@@ -19,7 +19,6 @@ import { useEffect } from 'react';
 
 import { recordMasteryRolloutColdStart } from '@/src/analytics/masteryRolloutDiagnostics';
 import { Colors } from '@/src/constants/Colors';
-import { isDarkTheme } from '@/src/constants/themeTokens';
 import { ThemeProvider as AppThemeProvider, useTheme } from '@/src/context/theme';
 
 const CustomDarkTheme = {
@@ -45,7 +44,7 @@ const CustomLightTheme = {
  * follows the device only in "system" mode), not the raw device scheme.
  */
 function ThemedNavigation() {
-  const isDark = isDarkTheme(useTheme().theme);
+  const { isDark } = useTheme();
   return (
     <ThemeProvider value={isDark ? CustomDarkTheme : CustomLightTheme}>
       <Stack>

@@ -41,7 +41,7 @@ const { default: LevelIndicator } = loadTsModule(
     },
     '@/src/constants/motion': { levelPopAnimation: {} },
     '@/src/context/theme': {
-      useAllThemeColors: () => ({ track: 'grey', success: 'green' }),
+      useAllThemeColors: () => ({ accent: 'accent', track: 'grey', success: 'green' }),
     },
     '@/src/context/LanguageContext': {
       useLanguage: () => ({ translate: (key) => copy[key] ?? key }),
@@ -57,7 +57,7 @@ function labels(props) {
   const texts = root.root.findAllByType('Text').map((node) => node.props.children);
   const filled = root.root
     .findAllByType('ReanimatedView')
-    .filter((node) => node.props.style.some((style) => style?.backgroundColor === '#E67E22'))
+    .filter((node) => node.props.style.some((style) => style?.backgroundColor === 'accent'))
     .length;
   TestRenderer.act(() => root.unmount());
   return { texts, filled };

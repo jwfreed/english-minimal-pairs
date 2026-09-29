@@ -99,6 +99,34 @@ runTest('dark theme tokens are unchanged by the light-theme fix', () => {
   assert.strictEqual(Colors.dark.success, '#2ECC71');
 });
 
+runTest('both palettes define the same tokens', () => {
+  assert.deepStrictEqual(Object.keys(Colors.dark).sort(), Object.keys(Colors.light).sort());
+});
+
+// A palette change must be a Colors.ts edit: no hex literals elsewhere, and no
+// scheme detection by comparing a color value (which silently breaks when the
+// compared color changes). The TTS debug screen is a developer tool.
+runTest('palette colors live only in Colors.ts', () => {
+  const fs = require('fs');
+  const allowed = new Set([
+    path.join('src', 'constants', 'Colors.ts'),
+    path.join('src', 'components', 'TTSDebugScreen.tsx'),
+  ]);
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+      const relative = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(relative);
+      else if (/\.tsx?$/.test(entry.name) && !allowed.has(relative)) files.push(relative);
+    }
+  };
+  ['src', 'app', 'utils'].forEach(walk);
+  const offenders = files.filter((file) =>
+    /#[0-9A-Fa-f]{6}\b|===\s*['"]#/.test(fs.readFileSync(path.join(ROOT, file), 'utf8'))
+  );
+  assert.deepStrictEqual(offenders, []);
+});
+
 if (require.main === module) {
   for (const [name, fg, bg] of pairs) {
     console.log(`  ${contrast(fg, bg).toFixed(2)}:1  ${name}`);

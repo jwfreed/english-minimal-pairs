@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -6,21 +6,16 @@ import { PairProgressProvider } from '@/src/context/PairProgressContext';
 import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
 import { CategoryProvider } from '@/src/context/CategoryContext';
 import { SettingsProvider } from '@/src/context/SettingsContext';
-import { useTheme } from '@/src/context/theme';
+import { useAllThemeColors } from '@/src/context/theme';
 
-import { Colors } from '@/src/constants/Colors';
-import { isDarkTheme } from '@/src/constants/themeTokens';
 import { tKeys } from '@/src/constants/translationKeys';
 
 function TabLayout() {
   const { translate, language } = useLanguage();
   // The saved app theme (provided at the root), not the device scheme.
-  const isDark = isDarkTheme(useTheme().theme);
-
-  const { activeTintColor, inactiveTintColor } = useMemo(() => ({
-    activeTintColor: isDark ? Colors.dark.primary : Colors.light.primary,
-    inactiveTintColor: '#888',
-  }), [isDark]);
+  const colors = useAllThemeColors();
+  const activeTintColor = colors.primary;
+  const inactiveTintColor = colors.tabInactive;
 
   const getTabBarIcon = useCallback((route: any, focused: boolean, size: number) => {
     const iconColor = focused ? activeTintColor : inactiveTintColor;

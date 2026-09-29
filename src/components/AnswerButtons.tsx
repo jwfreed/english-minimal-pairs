@@ -165,7 +165,7 @@ export default function AnswerButtons({
             <Ionicons
               name={feedback === 'correct' ? 'checkmark' : 'close'}
               size={20}
-              color="#FFFFFF"
+              color={theme.buttonText}
             />
           </Reanimated.View>
           {feedback === 'correct' ? (

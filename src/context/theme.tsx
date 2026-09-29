@@ -6,27 +6,18 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors } from '@/src/constants/Colors';
-import {
-  darkTheme,
-  isDarkTheme,
-  lightTheme,
-  type Theme,
-  type ThemeMode,
-} from '@/src/constants/themeTokens';
+import { Colors, type ThemeColors } from '@/src/constants/Colors';
 import { useColorScheme } from '../hooks/useColorScheme'; // Patched hook
 
 const THEME_STORAGE_KEY = '@userThemePreference';
 
-export type { Theme, ThemeMode };
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 interface ThemeContextData {
-  theme: Theme;
+  /** Resolved scheme: the saved mode, or the device scheme in "system" mode. */
+  isDark: boolean;
   themeMode: ThemeMode;
-  setTheme: (theme: Theme) => void;
   setThemeMode: (mode: ThemeMode) => void;
-  toggleTheme: () => void;
-  getColor: (key: keyof Theme) => string;
 }
 
 const ThemeContext = createContext<ThemeContextData | undefined>(undefined);
@@ -34,9 +25,8 @@ const ThemeContext = createContext<ThemeContextData | undefined>(undefined);
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const deviceScheme = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
-  const [theme, setTheme] = useState<Theme>(
-    deviceScheme === 'dark' ? darkTheme : lightTheme
-  );
+  const isDark =
+    themeMode === 'system' ? deviceScheme === 'dark' : themeMode === 'dark';
 
   // Load saved theme preference on mount
   useEffect(() => {
@@ -53,17 +43,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     loadThemePreference();
   }, []);
 
-  // Update theme based on mode and device scheme
-  useEffect(() => {
-    if (themeMode === 'system') {
-      setTheme(deviceScheme === 'dark' ? darkTheme : lightTheme);
-    } else if (themeMode === 'dark') {
-      setTheme(darkTheme);
-    } else {
-      setTheme(lightTheme);
-    }
-  }, [themeMode, deviceScheme]);
-
   const setThemeMode = async (mode: ThemeMode) => {
     try {
       setThemeModeState(mode);
@@ -73,14 +52,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === lightTheme ? darkTheme : lightTheme));
-  };
-
-  const getColor = (key: keyof Theme) => theme[key];
-
   return (
-    <ThemeContext.Provider value={{ theme, themeMode, setTheme, setThemeMode, toggleTheme, getColor }}>
+    <ThemeContext.Provider value={{ isDark, themeMode, setThemeMode }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -92,28 +65,10 @@ export const useTheme = (): ThemeContextData => {
   return context;
 };
 
-export const useAllThemeColors = () => {
-  const { theme } = useTheme();
-  const colors = isDarkTheme(theme) ? Colors.dark : Colors.light;
-
-  return {
-    background: colors.background,
-    text: colors.text,
-    textSecondary: colors.textSecondary,
-    primaryText: colors.primaryText,
-    surface: colors.surface,
-    surfaceTint: colors.surfaceTint,
-    hairline: colors.hairline,
-    track: colors.track,
-    trackStrong: colors.trackStrong,
-    success: colors.success,
-    error: colors.error,
-    primary: colors.primary,
-    primaryLight: colors.primaryLight,
-    buttonText: colors.buttonText,
-    cardBackground: colors.cardBackground,
-    shadow: colors.shadow,
-    icon: colors.icon,
-    border: colors.border,
-  };
-};
+/**
+ * The active palette. Returns the shared palette object itself, so the
+ * reference is stable per scheme and `useMemo(() => createStyles(theme), [theme])`
+ * only rebuilds styles when the scheme actually changes.
+ */
+export const useAllThemeColors = (): ThemeColors =>
+  useTheme().isDark ? Colors.dark : Colors.light;

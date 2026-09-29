@@ -1,30 +1,12 @@
 // styles.ts
 import { StyleSheet, Dimensions } from 'react-native';
+import { withAlpha, type ThemeColors } from '@/src/constants/Colors';
 import { FontFamily } from '@/src/constants/typography';
 
 const { width } = Dimensions.get('window');
 const isTablet = width > 700;
 
-export type ThemeColors = {
-  background: string;
-  text: string;
-  textSecondary: string;
-  primaryText: string;
-  surface: string;
-  surfaceTint: string;
-  hairline: string;
-  track: string;
-  trackStrong: string;
-  success: string;
-  error: string;
-  primary: string;
-  primaryLight: string;
-  buttonText: string;
-  cardBackground: string;
-  shadow: string;
-  icon: string;
-  border: string;
-};
+export type { ThemeColors };
 
 // We define constants for repeated values
 const Z_INDEX = {
@@ -42,17 +24,17 @@ function baseFont(color: string) {
 
 export function getCardShadowStyles(colors: ThemeColors) {
   return {
-    shadowColor: colors.shadow,
+    shadowColor: colors.cardShadow,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: colors.background === '#2C3E50' ? 0.35 : 0.18,
+    shadowOpacity: 1,
     shadowRadius: 14,
     elevation: 4,
   };
 }
 
-export function getButtonShadowStyles() {
+export function getButtonShadowStyles(colors: ThemeColors) {
   return {
-    shadowColor: '#E67E22',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.45,
     shadowRadius: 10,
@@ -63,26 +45,17 @@ export function getButtonShadowStyles() {
 // Idle "breathing" pulse on the Play button: a soft ring plus a faint outer
 // glow expanding together, one beat per 4.5s cycle (quiet from 64% onward).
 // Deliberately subtle — an invitation, not an alarm.
-const ambientGlowLight = {
-  '0%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
-  '12%': { boxShadow: '0 0 0 3px rgba(191, 87, 0, 0.4), 0 0 12px 4px rgba(230, 126, 34, 0.3)' },
-  '38%': { boxShadow: '0 0 0 9px rgba(191, 87, 0, 0.15), 0 0 22px 9px rgba(230, 126, 34, 0.14)' },
-  '46%': { boxShadow: '0 0 0 14px rgba(191, 87, 0, 0), 0 0 26px 12px rgba(230, 126, 34, 0)' },
-  '64%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
-  '100%': { boxShadow: '0 0 0 0 rgba(191, 87, 0, 0), 0 0 0 0 rgba(230, 126, 34, 0)' },
-};
-
-const ambientGlowDark = {
-  '0%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
-  '12%': { boxShadow: '0 0 0 3px rgba(247, 158, 74, 0.4), 0 0 12px 4px rgba(247, 158, 74, 0.3)' },
-  '38%': { boxShadow: '0 0 0 9px rgba(247, 158, 74, 0.16), 0 0 22px 9px rgba(247, 158, 74, 0.15)' },
-  '46%': { boxShadow: '0 0 0 14px rgba(247, 158, 74, 0), 0 0 26px 12px rgba(247, 158, 74, 0)' },
-  '64%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
-  '100%': { boxShadow: '0 0 0 0 rgba(247, 158, 74, 0), 0 0 0 0 rgba(247, 158, 74, 0)' },
-};
-
 export function getAmbientGlowKeyframes(colors: ThemeColors) {
-  return colors.background === '#2C3E50' ? ambientGlowDark : ambientGlowLight;
+  const ring = (alpha: number) => withAlpha(colors.glowRing, alpha);
+  const halo = (alpha: number) => withAlpha(colors.glowHalo, alpha);
+  return {
+    '0%': { boxShadow: `0 0 0 0 ${ring(0)}, 0 0 0 0 ${halo(0)}` },
+    '12%': { boxShadow: `0 0 0 3px ${ring(0.4)}, 0 0 12px 4px ${halo(0.3)}` },
+    '38%': { boxShadow: `0 0 0 9px ${ring(0.15)}, 0 0 22px 9px ${halo(0.14)}` },
+    '46%': { boxShadow: `0 0 0 14px ${ring(0)}, 0 0 26px 12px ${halo(0)}` },
+    '64%': { boxShadow: `0 0 0 0 ${ring(0)}, 0 0 0 0 ${halo(0)}` },
+    '100%': { boxShadow: `0 0 0 0 ${ring(0)}, 0 0 0 0 ${halo(0)}` },
+  };
 }
 
 const createStyles = (colors: ThemeColors) =>
@@ -558,9 +531,9 @@ const createStyles = (colors: ThemeColors) =>
       borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.background === '#2C3E50' ? '#41566D' : colors.surfaceTint,
-      borderWidth: colors.background === '#2C3E50' ? 1 : 0,
-      borderColor: colors.background === '#2C3E50' ? '#57708A' : 'transparent',
+      backgroundColor: colors.answerTile,
+      borderWidth: 1,
+      borderColor: colors.answerTileBorder,
     },
     answerTileWord: {
       fontFamily: FontFamily.extraBold,
@@ -584,12 +557,12 @@ const createStyles = (colors: ThemeColors) =>
       padding: 16,
       borderRadius: 16,
       backgroundColor: colors.primary,
-      ...getButtonShadowStyles(),
+      ...getButtonShadowStyles(colors),
     },
     playButtonPlaying: {
       // Darker than idle so the playing state stays distinct; keeps the white
       // "Listening…" label at WCAG AA contrast.
-      backgroundColor: '#8D4C0B',
+      backgroundColor: colors.primaryActive,
     },
     playButtonGlow: {
       position: 'absolute',
@@ -607,7 +580,7 @@ const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: 2,
-      backgroundColor: 'rgba(255,255,255,0.25)',
+      backgroundColor: withAlpha(colors.buttonText, 0.25),
     },
     playButtonLabel: {
       fontFamily: FontFamily.bold,

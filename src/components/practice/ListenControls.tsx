@@ -149,14 +149,14 @@ export default function ListenControls({
                 width: 3,
                 height: 14,
                 borderRadius: 2,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: theme.buttonText,
                 transform: [{ scaleY: scale }],
               }}
             />
           ))
         ) : (
           <Animated.View style={{ transform: [{ translateX: nudgeX }] }}>
-            <Ionicons name="play" size={16} color="#FFFFFF" />
+            <Ionicons name="play" size={16} color={theme.buttonText} />
           </Animated.View>
         )}
       </View>

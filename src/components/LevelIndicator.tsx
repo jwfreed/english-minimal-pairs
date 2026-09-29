@@ -73,7 +73,7 @@ export default function LevelIndicator({
                   width: compact ? 16 : 26,
                   height: compact ? 4 : 5,
                   borderRadius: 3,
-                  backgroundColor: isFilled ? '#E67E22' : theme.track,
+                  backgroundColor: isFilled ? theme.accent : theme.track,
                 },
                 isHighlighted && !reduceMotion && levelPopAnimation,
               ]}

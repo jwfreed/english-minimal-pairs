@@ -34,7 +34,11 @@ export default function PracticeHeader({
       <SessionTimer
         timerRef={timerRef}
         highlightProgress={highlightProgress}
-        leading={<Text style={styles.practiceTitle}>{title}</Text>}
+        leading={
+          <Text accessibilityRole="header" style={styles.practiceTitle}>
+            {title}
+          </Text>
+        }
         trailing={
           <TouchableOpacity
             accessibilityLabel={helpAccessibilityLabel}

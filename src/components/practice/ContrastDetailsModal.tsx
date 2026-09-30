@@ -215,9 +215,7 @@ const createStyles = (theme: ReturnType<typeof useAllThemeColors>) =>
     eyebrow: {
       ...font('700'),
       color: theme.textSecondary,
-      fontSize: 12,
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
+      fontSize: 13,
     },
     title: {
       ...font('800'),

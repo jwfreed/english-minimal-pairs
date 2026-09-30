@@ -59,6 +59,9 @@ async function mountApp({ device, saved }) {
     },
     '@/src/analytics/masteryRolloutDiagnostics': { recordMasteryRolloutColdStart: () => {} },
     '@expo/vector-icons': { Ionicons: 'Ionicons' },
+    'react-native-safe-area-context': {
+      useSafeAreaInsets: () => ({ top: 59, bottom: 34, left: 0, right: 0 }),
+    },
     '@/src/context/PairProgressContext': { PairProgressProvider: ({ children }) => children },
     '@/src/context/SettingsContext': { SettingsProvider: ({ children }) => children },
     '@/src/context/CategoryContext': { CategoryProvider: ({ children }) => children },
@@ -167,6 +170,15 @@ module.exports = (async () => {
     app.env.device = 'dark';
     await app.rerender();
     assert.deepStrictEqual(app.chrome(), DARK);
+    app.unmount();
+  });
+
+  await runTest('tabs show no duplicate navigation header and keep content below the status bar', async () => {
+    const app = await mountApp({ device: 'dark', saved: 'light' });
+    const options = app.env.captured.tabOptions;
+    assert.strictEqual(options.headerShown, false);
+    assert.strictEqual(options.sceneStyle.paddingTop, 59);
+    assert.strictEqual(options.sceneStyle.backgroundColor, Colors.light.background);
     app.unmount();
   });
 

@@ -113,7 +113,7 @@ export default function SettingsScreen() {
       <View style={{ width: '100%', maxWidth: isTablet ? 800 : 600, alignSelf: 'center' }}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>
+          <Text accessibilityRole="header" style={styles.headerTitle}>
             {translate(tKeys.settings)}
           </Text>
           <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>

@@ -439,12 +439,10 @@ const createStyles = (colors: ThemeColors, isTablet = false) =>
       alignItems: 'flex-start',
     },
     practicePairLabel: {
-      ...font('700'),
-      fontSize: 11,
+      ...font('600'),
+      fontSize: 13,
       color: colors.textSecondary,
       textAlign: 'left',
-      textTransform: 'uppercase',
-      letterSpacing: 0.8,
     },
     practicePairWords: {
       ...font('700'),

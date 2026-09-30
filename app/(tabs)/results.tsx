@@ -198,7 +198,9 @@ export default function ResultsScreen() {
     <View style={{ flex: 1, backgroundColor: themeColors.background }}>
       <View style={{ width: '100%', maxWidth: isTablet ? 800 : 600, alignSelf: 'center', flex: 1 }}>
         <View style={resultsStyles.header}>
-          <Text style={resultsStyles.screenTitle}>{translate(tKeys.results)}</Text>
+          <Text accessibilityRole="header" style={resultsStyles.screenTitle}>
+            {translate(tKeys.results)}
+          </Text>
           <Text style={resultsStyles.practicedLabel}>
             {formatTranslation(translate(tKeys.practicedTime), {
               minutes: totalPracticeMin.toFixed(1),

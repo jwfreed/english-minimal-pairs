@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PairProgressProvider } from '@/src/context/PairProgressContext';
 import { LanguageProvider, useLanguage } from '@/src/context/LanguageContext';
@@ -14,6 +15,7 @@ function TabLayout() {
   const { translate, language } = useLanguage();
   // The saved app theme (provided at the root), not the device scheme.
   const colors = useAllThemeColors();
+  const insets = useSafeAreaInsets();
   const activeTintColor = colors.primary;
   const inactiveTintColor = colors.tabInactive;
 
@@ -54,6 +56,11 @@ function TabLayout() {
     <Tabs
       key={language}
       screenOptions={({ route }) => ({
+        // Each screen renders its own title as a heading, so the navigation
+        // header would repeat it. The scene keeps content clear of the status
+        // bar instead.
+        headerShown: false,
+        sceneStyle: { paddingTop: insets.top, backgroundColor: colors.background },
         tabBarIcon: ({ focused, size }) => getTabBarIcon(route, focused, size),
         tabBarActiveTintColor: activeTintColor,
         tabBarInactiveTintColor: inactiveTintColor,

@@ -62,6 +62,7 @@ export default function AccuracyTimeChart({ practiceData }: Props) {
         style={{
           ...font('600'),
           fontSize: 14,
+          marginTop: 14,
           marginBottom: 4,
           color: themeColors.text,
         }}

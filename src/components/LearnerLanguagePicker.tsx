@@ -24,7 +24,7 @@ export default function LearnerLanguagePicker({
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.background }}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={styles.scrollContent}
     >
       <View style={styles.mainCard}>
         <Text accessibilityRole="header" style={styles.title}>

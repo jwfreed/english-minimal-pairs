@@ -1,5 +1,8 @@
 export const englishTranslations = {
     home: 'Home',
+    notFoundTitle: 'Screen not found',
+    notFoundMessage: "This screen doesn't exist.",
+    goToPractice: 'Go to Practice',
     results: 'Results',
     info: 'Info',
     settings: 'Settings',
@@ -127,6 +130,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   English: englishTranslations,
   日本語: {
     home: 'ホーム',
+    notFoundTitle: '画面が見つかりません',
+    notFoundMessage: 'この画面は存在しません。',
+    goToPractice: '練習へ移動',
     results: '結果',
     info: '情報',
     settings: '設定',
@@ -250,6 +256,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
 
   中文: {
     home: '首页',
+    notFoundTitle: '找不到页面',
+    notFoundMessage: '此页面不存在。',
+    goToPractice: '前往练习',
     results: '结果',
     info: '信息',
     settings: '设置',
@@ -371,6 +380,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   ภาษาไทย: {
     home: 'หน้าแรก',
+    notFoundTitle: 'ไม่พบหน้าจอ',
+    notFoundMessage: 'หน้าจอนี้ไม่มีอยู่',
+    goToPractice: 'ไปที่หน้าฝึก',
     results: 'ผลลัพธ์',
     info: 'ข้อมูล',
     settings: 'การตั้งค่า',
@@ -492,6 +504,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   Español: {
     home: 'Inicio',
+    notFoundTitle: 'Pantalla no encontrada',
+    notFoundMessage: 'Esta pantalla no existe.',
+    goToPractice: 'Ir a Practicar',
     results: 'Resultados',
     info: 'Información',
     settings: 'Configuración',
@@ -614,6 +629,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   العربية: {
     home: 'الرئيسية',
+    notFoundTitle: 'لم يتم العثور على الشاشة',
+    notFoundMessage: 'هذه الشاشة غير موجودة.',
+    goToPractice: 'الانتقال إلى التدريب',
     results: 'النتائج',
     info: 'المعلومات',
     settings: 'الإعدادات',
@@ -736,6 +754,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   Русский: {
     home: 'Главная',
+    notFoundTitle: 'Экран не найден',
+    notFoundMessage: 'Этот экран не существует.',
+    goToPractice: 'Перейти к практике',
     results: 'Результаты',
     info: 'Информация',
     settings: 'Настройки',
@@ -858,6 +879,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   한국어: {
     home: '홈',
+    notFoundTitle: '화면을 찾을 수 없습니다',
+    notFoundMessage: '이 화면은 존재하지 않습니다.',
+    goToPractice: '연습으로 이동',
     results: '결과',
     info: '정보',
     settings: '설정',
@@ -980,6 +1004,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   'हिन्दी / اردو': {
     home: 'होम/ہوم',
+    notFoundTitle: 'स्क्रीन नहीं मिली/اسکرین نہیں ملی',
+    notFoundMessage: 'यह स्क्रीन मौजूद नहीं है।/یہ اسکرین موجود نہیں ہے۔',
+    goToPractice: 'अभ्यास पर जाएँ/مشق پر جائیں',
     results: 'परिणाम/نتائج',
     info: 'जानकारी/معلومات',
     settings: 'सेटिंग्स/ترتیبات',
@@ -1102,6 +1129,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   Português: {
     home: 'Início',
+    notFoundTitle: 'Tela não encontrada',
+    notFoundMessage: 'Esta tela não existe.',
+    goToPractice: 'Ir para Praticar',
     results: 'Resultados',
     info: 'Informações',
     settings: 'Configurações',
@@ -1224,6 +1254,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   'Tiếng Việt': {
     home: 'Trang chủ',
+    notFoundTitle: 'Không tìm thấy màn hình',
+    notFoundMessage: 'Màn hình này không tồn tại.',
+    goToPractice: 'Đi tới Luyện tập',
     results: 'Kết quả',
     info: 'Thông tin',
     settings: 'Cài đặt',
@@ -1346,6 +1379,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   Türkçe: {
     home: 'Ana Sayfa',
+    notFoundTitle: 'Ekran bulunamadı',
+    notFoundMessage: 'Bu ekran mevcut değil.',
+    goToPractice: 'Çalışmaya git',
     results: 'Sonuçlar',
     info: 'Bilgiler',
     settings: 'Ayarlar',
@@ -1468,6 +1504,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   فارسی: {
     home: 'خانه',
+    notFoundTitle: 'صفحه پیدا نشد',
+    notFoundMessage: 'این صفحه وجود ندارد.',
+    goToPractice: 'رفتن به تمرین',
     results: 'نتایج',
     info: 'اطلاعات',
     settings: 'تنظیمات',
@@ -1590,6 +1629,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   廣東話: {
     home: '首頁',
+    notFoundTitle: '搵唔到呢個畫面',
+    notFoundMessage: '呢個畫面唔存在。',
+    goToPractice: '去練習',
     results: '結果',
     info: '資訊',
     settings: '設定',
@@ -1710,6 +1752,9 @@ export const alternateLanguages: Record<string, TranslationSchema> = {
   },
   'Bahasa Indonesia': {
     home: 'Beranda',
+    notFoundTitle: 'Layar tidak ditemukan',
+    notFoundMessage: 'Layar ini tidak ada.',
+    goToPractice: 'Buka Latihan',
     results: 'Hasil',
     info: 'Informasi',
     settings: 'Pengaturan',

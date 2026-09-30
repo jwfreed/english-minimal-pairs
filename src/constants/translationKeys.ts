@@ -1,5 +1,8 @@
 export const tKeys = {
   home: 'home',
+  notFoundTitle: 'notFoundTitle',
+  notFoundMessage: 'notFoundMessage',
+  goToPractice: 'goToPractice',
   results: 'results',
   settings: 'settings',
   practicePairs: 'practicePairs',

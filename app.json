@@ -19,7 +19,7 @@
       "versionCode": 58,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#1F2329"
       },
       "package": "com.jfreed.englishminimalpairs",
       "permissions": [
@@ -44,7 +44,11 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#ECEEF1",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#16181C"
+          }
         }
       ],
       "expo-font",

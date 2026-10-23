@@ -18,6 +18,15 @@ Soundwise English is an Expo React Native app for English learners practicing mi
 - **Support for Multiple L1s**: The app includes tailored pair sets for supported learner language backgrounds.
 - **TTS Audio**: Expo Speech plays English words, with voice rotation and an iOS silent-mode audio-session workaround.
 
+## Promotional video ownership
+
+The Soundwise website [repository](https://github.com/jwfreed/english-minimal-pairs-landing)
+owns the promotional film's source, localized copy, media, rendering and validation
+under `video/`. See that repository's `video/README.md` for the workflow.
+The former untracked `brag-output/` pipeline was migrated after isolated rendering
+and asset comparison. The app retains its runtime icons, fonts, learning data and
+UI translations; video production does not read this repository.
+
 ## Get Started
 
 1. Install dependencies:

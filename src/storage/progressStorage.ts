@@ -1,9 +1,20 @@
 // -----------------------------------------------------------------------------
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isValidAttempt } from '@/src/domain/contrast/pairProgressProjection';
+import { writeWithRetry } from '@/src/storage/writeRetry';
 
 export const PAIR_PROGRESS_STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
 let writeQueue: Promise<void> = Promise.resolve();
+// Attempts not yet durably written. Every write carries all of them, so an
+// attempt whose write failed is saved by the next successful one.
+let unsavedAttempts: { pairId: string; attempt: PairAttempt }[] = [];
+
+const MALFORMED_PROGRESS_ERROR = 'MalformedProgressError';
+
+/** Stored history that is not a JSON object; it is never written over. */
+export function isMalformedProgressError(error: unknown): boolean {
+  return error instanceof Error && error.name === MALFORMED_PROGRESS_ERROR;
+}
 
 // Raw attempt history is capped per pair to prevent unbounded AsyncStorage growth.
 export const MAX_ATTEMPTS_PER_PAIR = 100;
@@ -52,17 +63,37 @@ export function appendAttempt(
   return pruneAttemptHistory([...attempts, attempt]);
 }
 
-export function parseStoredProgress(raw: string | null): Record<string, PairStats> {
+/**
+ * Strict read used by storage: a missing value is an empty history, but a
+ * value that is not a JSON object throws instead of reading as empty, so a
+ * later save cannot replace it.
+ */
+export function readStoredProgress(raw: string | null): Record<string, PairStats> {
   if (!raw) return getDefaultProgress();
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const result: Record<string, PairStats> = {};
-    for (const [pairId, stats] of Object.entries(parsed)) {
-      const rawAttempts =
-        stats !== null && typeof stats === 'object' ? (stats as Record<string, unknown>).attempts : undefined;
-      result[pairId] = { attempts: pruneAttemptHistory(rawAttempts) };
-    }
-    return result;
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = undefined;
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    const error = new Error('Stored pair progress is malformed');
+    error.name = MALFORMED_PROGRESS_ERROR;
+    throw error;
+  }
+  const result: Record<string, PairStats> = {};
+  for (const [pairId, stats] of Object.entries(parsed)) {
+    const rawAttempts =
+      stats !== null && typeof stats === 'object' ? (stats as Record<string, unknown>).attempts : undefined;
+    result[pairId] = { attempts: pruneAttemptHistory(rawAttempts) };
+  }
+  return result;
+}
+
+/** Tolerant parse for read-only analysis: malformed input reads as empty. */
+export function parseStoredProgress(raw: string | null): Record<string, PairStats> {
+  try {
+    return readStoredProgress(raw);
   } catch {
     return getDefaultProgress();
   }
@@ -74,7 +105,7 @@ export function serializeProgress(progress: Record<string, PairStats>): string {
 
 const readProgress = async (): Promise<Record<string, PairStats>> => {
   const raw = await AsyncStorage.getItem(PAIR_PROGRESS_STORAGE_KEY);
-  return parseStoredProgress(raw);
+  return readStoredProgress(raw);
 };
 
 const enqueueWrite = (write: () => Promise<void>): Promise<void> => {
@@ -102,19 +133,29 @@ export async function saveAttempt(
     durationMin,
   };
 
-  await enqueueWrite(async () => {
-    const progress = await readProgress();
-    const stats = progress[pairId] ?? { attempts: [] };
-
-    progress[pairId] = {
-      attempts: appendAttempt(stats.attempts, attempt),
-    };
-
-    await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));
-  });
+  unsavedAttempts.push({ pairId, attempt });
+  await enqueueWrite(() =>
+    writeWithRetry(async () => {
+      const batch = unsavedAttempts.slice();
+      if (batch.length === 0) return;
+      const progress = await readProgress();
+      for (const unsaved of batch) {
+        progress[unsaved.pairId] = {
+          attempts: appendAttempt(
+            progress[unsaved.pairId]?.attempts ?? [],
+            unsaved.attempt
+          ),
+        };
+      }
+      await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));
+      // Attempts recorded during the write were appended after this batch.
+      unsavedAttempts = unsavedAttempts.slice(batch.length);
+    }, (error) => !isMalformedProgressError(error))
+  );
 }
 
 export async function clearProgress() {
+  unsavedAttempts = [];
   await enqueueWrite(async () => {
     await AsyncStorage.removeItem(PAIR_PROGRESS_STORAGE_KEY);
   });

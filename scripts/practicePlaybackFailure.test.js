@@ -244,6 +244,27 @@ try {
     screen.unmount();
   });
 
+  runTest('unsaved progress is announced as an alert and clears once saved', () => {
+    const screen = mountScreen();
+    screen.render({});
+    assert.ok(!screen.texts().includes('progressNotSaved'));
+
+    screen.render({ progressNotSaved: true });
+    const notice = screen
+      .one('ScrollView')
+      .findAllByType('Text')
+      .find((node) => node.props.children === 'progressNotSaved');
+    assert.ok(notice);
+    assert.strictEqual(notice.props.accessibilityRole, 'alert');
+    assert.deepStrictEqual(screen.announcements, ['progressNotSaved']);
+    // Practice stays usable while progress is unsaved.
+    assert.strictEqual(screen.listenControls().props.disabled, false);
+
+    screen.render({ progressNotSaved: false });
+    assert.ok(!screen.texts().includes('progressNotSaved'));
+    screen.unmount();
+  });
+
   runTest('normal listening shows the instruction and no failure notice', () => {
     const screen = mountScreen();
     screen.render({});

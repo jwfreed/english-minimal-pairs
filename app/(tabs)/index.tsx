@@ -11,6 +11,7 @@ import LevelIndicator from '@/src/components/LevelIndicator';
 import OnboardingScreen from '@/src/components/OnboardingScreen';
 import PlacementTest from '@/src/components/PlacementTest';
 import PlaybackFailureNotice from '@/src/components/PlaybackFailureNotice';
+import ProgressNotSavedNotice from '@/src/components/ProgressNotSavedNotice';
 import ContrastDetailsModal from '@/src/components/practice/ContrastDetailsModal';
 import LevelUpCelebration from '@/src/components/practice/LevelUpCelebration';
 import ListenControls from '@/src/components/practice/ListenControls';
@@ -81,6 +82,7 @@ export default function HomeScreen() {
     nextLevelProgress,
     playbackFailureReason,
     playedIdx,
+    progressNotSaved,
     promotedLevel,
     safePairIndex,
     selectedPair,
@@ -178,6 +180,10 @@ export default function HomeScreen() {
         timerRef={timerRef}
         highlightProgress={feedback === 'correct'}
       />
+
+      {progressNotSaved && (
+        <ProgressNotSavedNotice style={styles.contrastInstruction} />
+      )}
 
       <View style={styles.mainCard}>
         <View style={styles.contrastHeader}>

@@ -64,6 +64,7 @@ export const tKeys = {
   // Audio & time
   audioError: 'audioError',
   audioPlaybackFailed: 'audioPlaybackFailed',
+  progressNotSaved: 'progressNotSaved',
   audioInitializing: 'audioInitializing',
   hr: 'hr',
   // Voice selection

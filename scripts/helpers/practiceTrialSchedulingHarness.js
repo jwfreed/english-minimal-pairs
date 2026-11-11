@@ -215,6 +215,8 @@ function createPracticeTrialSchedulingHarness(fixture) {
       mastery,
       setPlacementLevels,
       isLoading: false,
+      persistence: 'saved',
+      retryPendingSave: async () => {},
     };
   }
 
@@ -310,7 +312,7 @@ function createPracticeTrialSchedulingHarness(fixture) {
       useLanguage: () => ({ translate: (key) => key }),
     },
     '@/src/context/PairProgressContext': {
-      usePairProgress: () => ({ recordAttempt }),
+      usePairProgress: () => ({ recordAttempt, persistence: 'saved' }),
     },
     '@/src/context/SettingsContext': {
       useSettings: () => ({ getNextVoice }),

@@ -9,7 +9,7 @@ import {
 import { selectVisiblePairsByMastery } from '@/src/domain/practiceSession';
 import {
   buildMasteryStorageKey,
-  parseStoredMastery,
+  readStoredMastery,
   serializeMastery,
   type MasteryMap,
 } from '@/src/domain/masteryPersistence';
@@ -24,6 +24,17 @@ import {
   readCompatibleMastery,
   writeCompatibleMastery,
 } from '@/src/storage/masteryCompatibility';
+import { writeWithRetry } from '@/src/storage/writeRetry';
+
+/**
+ * Whether learner progress is durable: `saved`; `pending` — the latest mastery
+ * is held in memory because a write failed, and is retried; `blocked` — the
+ * stored mastery could not be read (or is malformed), so nothing may be
+ * written over it.
+ */
+export type MasteryPersistence = 'saved' | 'pending' | 'blocked';
+
+const MALFORMED_MASTERY_ERROR = 'Stored mastery is malformed';
 
 /**
  * Mastery is always attributed to the storage key it was hydrated from. It may
@@ -50,9 +61,44 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     hydrated(storageKey, 'loading')
   );
   const [persistenceError, setPersistenceError] = useState<unknown>(null);
+  const [saveState, setSaveState] = useState<'saved' | 'pending'>('saved');
   const stableWriteQueue = useRef<Promise<void>>(Promise.resolve());
+  // The latest mastery not yet durably written, with the key it belongs to.
+  const pendingWrite = useRef<{ key: string; mastery: MasteryMap } | null>(
+    null
+  );
+  const isWriting = useRef(false);
   // Bumped by reset so reads issued before it cannot resurrect cleared mastery.
   const readGeneration = useRef(0);
+
+  // One write at a time, always of the latest intent: an older snapshot can
+  // never land after a newer one, and a failed write keeps its intent so the
+  // next flush (a later mutation, or the learner's next round) retries it.
+  const flushPendingWrite = useCallback(async () => {
+    if (isWriting.current) return;
+    isWriting.current = true;
+    try {
+      while (pendingWrite.current) {
+        let written = pendingWrite.current;
+        await writeWithRetry(() => {
+          written = pendingWrite.current ?? written;
+          return AsyncStorage.setItem(
+            written.key,
+            serializeMastery(written.mastery)
+          ).catch((error) => {
+            setSaveState('pending');
+            throw error;
+          });
+        });
+        if (pendingWrite.current === written) pendingWrite.current = null;
+      }
+      setSaveState('saved');
+    } catch (error) {
+      setPersistenceError(error);
+    } finally {
+      isWriting.current = false;
+    }
+  }, []);
 
   const { mastery } = state;
   const isLoading = state.key !== storageKey || state.hydration === 'loading';
@@ -101,7 +147,24 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
         } else {
           const raw = await AsyncStorage.getItem(storageKey);
           if (!cancelled) {
-            settle(hydrated(storageKey, 'ready', parseStoredMastery(raw)));
+            const stored = readStoredMastery(raw);
+            if (stored.status === 'malformed') {
+              // Not "no saved mastery": hydrating it as empty would let the
+              // next save overwrite it.
+              settle(hydrated(storageKey, 'failed'));
+              setPersistenceError(new Error(MALFORMED_MASTERY_ERROR));
+              return;
+            }
+            // Mastery still waiting to be written to this key is newer than
+            // what storage holds.
+            const unsaved = pendingWrite.current;
+            settle(
+              hydrated(
+                storageKey,
+                'ready',
+                unsaved?.key === storageKey ? unsaved.mastery : stored.mastery
+              )
+            );
             if (shadowPathEnabled && languageId) {
               void compareMasteryInShadow(
                 AsyncStorage,
@@ -149,16 +212,17 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
             provenance,
             rolloutState
           );
+          setSaveState(result.status === 'complete' ? 'saved' : 'pending');
           if (result.status !== 'complete') setPersistenceError(result);
         })
         .catch(setPersistenceError);
       return;
     }
-    AsyncStorage.setItem(storageKey, serializeMastery(nextMastery)).catch(
-      setPersistenceError
-    );
+    pendingWrite.current = { key: storageKey, mastery: nextMastery };
+    void flushPendingWrite();
   }, [
     categoryKey,
+    flushPendingWrite,
     languageId,
     rolloutState,
     stablePathEnabled,
@@ -225,6 +289,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
       await stableWriteQueue.current;
       return;
     }
+    if (pendingWrite.current?.key === storageKey) pendingWrite.current = null;
     await AsyncStorage.removeItem(storageKey).catch(setPersistenceError);
   }, [
     categoryKey,
@@ -265,7 +330,20 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
         return;
       }
       const raw = await AsyncStorage.getItem(storageKey);
-      applyRead((current) => parseStoredMastery(raw, current));
+      const stored = readStoredMastery(raw);
+      if (stored.status === 'malformed') {
+        setPersistenceError(new Error(MALFORMED_MASTERY_ERROR));
+        return;
+      }
+      const unsaved = pendingWrite.current;
+      // As before, a missing key keeps the in-memory mastery.
+      applyRead((current) =>
+        unsaved?.key === storageKey
+          ? unsaved.mastery
+          : raw
+            ? stored.mastery
+            : current
+      );
       if (shadowPathEnabled && languageId) {
         void compareMasteryInShadow(
           AsyncStorage,
@@ -307,5 +385,9 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     refresh,
     isLoading,
     persistenceError,
+    persistence: (state.key === storageKey && state.hydration === 'failed'
+      ? 'blocked'
+      : saveState) as MasteryPersistence,
+    retryPendingSave: flushPendingWrite,
   };
 };

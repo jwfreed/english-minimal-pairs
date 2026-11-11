@@ -8,6 +8,7 @@ const {
   getDefaultMastery,
   parsePlacementDone,
   parseStoredMastery,
+  readStoredMastery,
   serializeMastery,
   serializePlacementDone,
   shouldShowPlacementTest,
@@ -36,6 +37,18 @@ runTest('parseStoredMastery returns defaults for missing stored mastery', () => 
 
   assert.deepStrictEqual(plain(parseStoredMastery(null)), plain(getDefaultMastery()));
   assert.deepStrictEqual(plain(parseStoredMastery('', fallback)), fallback);
+});
+
+runTest('readStoredMastery separates missing from malformed stored mastery', () => {
+  assert.deepStrictEqual(plain(readStoredMastery(null)), { status: 'ok', mastery: {} });
+  assert.deepStrictEqual(plain(readStoredMastery('')), { status: 'ok', mastery: {} });
+  assert.deepStrictEqual(plain(readStoredMastery('{"rL":7,"x":99}')), {
+    status: 'ok',
+    mastery: { rL: 7 },
+  });
+  for (const raw of ['{not json', '"not a mastery map"', '[["rL",2]]', 'null', '3']) {
+    assert.deepStrictEqual(plain(readStoredMastery(raw)), { status: 'malformed' });
+  }
 });
 
 runTest('parseStoredMastery returns fallback for malformed stored mastery', () => {

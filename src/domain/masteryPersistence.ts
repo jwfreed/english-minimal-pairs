@@ -54,6 +54,28 @@ export function normalizeStoredMastery(
   return normalized;
 }
 
+export type StoredMasteryRead =
+  | { status: 'ok'; mastery: MasteryMap }
+  | { status: 'malformed' };
+
+/**
+ * A missing value is an empty record. A value that is not a JSON object is
+ * malformed: it must not be read as "no saved mastery", because the next save
+ * would then replace it.
+ */
+export function readStoredMastery(raw: string | null): StoredMasteryRead {
+  if (!raw) return { status: 'ok', mastery: getDefaultMastery() };
+
+  try {
+    const value: unknown = JSON.parse(raw);
+    return isRecord(value)
+      ? { status: 'ok', mastery: normalizeStoredMastery(value) }
+      : { status: 'malformed' };
+  } catch {
+    return { status: 'malformed' };
+  }
+}
+
 export function parseStoredMastery(
   raw: string | null,
   fallback: MasteryMap = getDefaultMastery()

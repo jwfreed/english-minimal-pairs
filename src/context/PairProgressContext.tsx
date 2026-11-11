@@ -5,6 +5,7 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useRef,
   ReactNode,
 } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   saveAttempt,
   getProgress,
   clearProgress,
+  isMalformedProgressError,
   PairStats,
   PairAttempt,
 } from '@/src/storage/progressStorage';
@@ -21,6 +23,12 @@ interface PairProgressContextType {
   recordAttempt: (pairId: string, isCorrect: boolean, durationMin?: number) => void;
   resetProgress: () => Promise<void>;
   isLoading: boolean;
+  /**
+   * Whether attempt history is durable: `saved`; `pending` — a write failed
+   * and the attempts are kept for the next one; `blocked` — the stored
+   * history could not be read (or is malformed) and is not written over.
+   */
+  persistence: 'saved' | 'pending' | 'blocked';
 }
 
 const PairProgressContext = createContext<PairProgressContextType | undefined>(undefined);
@@ -28,12 +36,18 @@ const PairProgressContext = createContext<PairProgressContextType | undefined>(u
 export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [persistence, setPersistence] =
+    useState<PairProgressContextType['persistence']>('saved');
+  const loadFailed = useRef(false);
 
   const loadProgress = useCallback(async () => {
     try {
       const storedProgress = await getProgress();
+      loadFailed.current = false;
       setProgress(storedProgress);
     } catch (err) {
+      loadFailed.current = true;
+      setPersistence('blocked');
       console.error('Failed to load progress', err);
     } finally {
       setIsLoading(false);
@@ -63,11 +77,19 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
         };
       });
 
-      saveAttempt(pairId, isCorrect, durationMin, newAttempt.timestamp).catch((err) => {
-        console.error('Failed to save attempt', err);
-      });
+      saveAttempt(pairId, isCorrect, durationMin, newAttempt.timestamp).then(
+        () => {
+          setPersistence('saved');
+          // Storage is readable again: show the history a failed load missed.
+          if (loadFailed.current) void loadProgress();
+        },
+        (err) => {
+          setPersistence(isMalformedProgressError(err) ? 'blocked' : 'pending');
+          console.error('Failed to save attempt', err);
+        }
+      );
     },
-    []
+    [loadProgress]
   );
 
   const resetProgress = useCallback(async () => {
@@ -85,8 +107,9 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
       recordAttempt,
       resetProgress,
       isLoading,
+      persistence,
     }),
-    [progress, recordAttempt, resetProgress, isLoading]
+    [progress, recordAttempt, resetProgress, isLoading, persistence]
   );
 
   return (

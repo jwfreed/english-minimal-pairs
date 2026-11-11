@@ -65,7 +65,7 @@ export function usePracticeSession({
   isPracticeReady,
 }: UsePracticeSessionOptions) {
   const { translate } = useLanguage();
-  const { recordAttempt } = usePairProgress();
+  const { recordAttempt, persistence: historyPersistence } = usePairProgress();
   const { getNextVoice } = useSettings();
   const { triggerHaptic } = useHaptics();
   const debugLog = useCallback(
@@ -97,8 +97,15 @@ export function usePracticeSession({
     []
   );
 
-  const { visible, promote, mastery, setPlacementLevels, isLoading } =
-    useContrastPairs(catObj.pairs, catObj.category);
+  const {
+    visible,
+    promote,
+    mastery,
+    setPlacementLevels,
+    isLoading,
+    persistence: masteryPersistence,
+    retryPendingSave,
+  } = useContrastPairs(catObj.pairs, catObj.category);
 
   const timerRef = useRef<SessionTimerHandle | null>(null);
   const [pairIndex, setPairIndex] = useState(0);
@@ -325,6 +332,8 @@ export function usePracticeSession({
     if (isPracticePlaybackActive(currentPlayback) || isSpeaking) return;
 
     timerRef.current?.poke();
+    // Each round is another chance to save mastery a failed write left pending.
+    void retryPendingSave();
     debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
     if (!audioModeReady) {
       debugLog('❌ Audio not ready - showing error alert');
@@ -411,6 +420,7 @@ export function usePracticeSession({
     findVisiblePairIndex,
     markScheduledPair,
     isSpeaking,
+    retryPendingSave,
     safePairIndex,
     selectedPair,
     submitPracticePlayback,
@@ -656,6 +666,8 @@ export function usePracticeSession({
     playbackFailureReason:
       playbackState.status === 'failed' ? playbackState.reason : null,
     playbackStatus: playbackState.status,
+    progressNotSaved:
+      masteryPersistence !== 'saved' || historyPersistence !== 'saved',
     promotedLevel,
     safePairIndex,
     selectedPair,

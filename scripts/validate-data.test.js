@@ -1,5 +1,7 @@
 const assert = require('assert');
 const {
+  singlePhonemeDifference,
+  tokenizeIpa,
   validateDatasetContract,
   formatValidationError,
 } = require('./validate-data');
@@ -166,4 +168,88 @@ runTest('allows multiple examples at the same difficulty when all tiers are cove
   });
 
   assert.deepStrictEqual(result.errors, []);
+});
+
+// ── single-phoneme contrast ─────────────────────────────────────────────────
+
+const contrastErrors = (pairOverrides, contrastExceptions) =>
+  validateDatasetContract({
+    minimalPairs: [
+      makeCategory('Test', [
+        makePair(1, pairOverrides),
+        ...[2, 3, 4, 5, 6].map((tier) => makePair(tier)),
+      ]),
+    ],
+    translationLanguageKeys: ['Test'],
+    localeLanguageKeys: ['Test'],
+    expectedCategoryCount: 1,
+    expectedGroupsPerCategory: 1,
+    ...(contrastExceptions ? { contrastExceptions } : {}),
+  }).errors.filter((error) => error.rule.startsWith('PAIR_SINGLE_PHONEME') || error.rule.startsWith('PAIR_CONTRAST_EXCEPTION'));
+
+const pairFields = (word1, word2, ipa1, ipa2, contrastPhoneme1, contrastPhoneme2) => ({
+  word1,
+  word2,
+  ipa1,
+  ipa2,
+  contrastPhoneme1,
+  contrastPhoneme2,
+});
+
+runTest('IPA is compared as phonemes, not characters', () => {
+  assert.deepStrictEqual(tokenizeIpa('/ʃiːp/'), ['ʃ', 'iː', 'p']);
+  assert.deepStrictEqual(tokenizeIpa('/kəˈrɛkt/'), ['k', 'ə', 'r', 'ɛ', 'k', 't']);
+  assert.deepStrictEqual(tokenizeIpa('/piːtʃ/'), ['p', 'iː', 'tʃ']);
+  assert.deepStrictEqual(tokenizeIpa('/dʒoʊk/'), ['dʒ', 'oʊ', 'k']);
+  // A long vowel against a short one is a single phoneme difference even
+  // though two characters change.
+  assert.deepStrictEqual(singlePhonemeDifference('/ʃiːp/', '/ʃɪp/'), ['iː', 'ɪ']);
+  assert.deepStrictEqual(singlePhonemeDifference('/kʌt/', '/kɑːt/'), ['ʌ', 'ɑː']);
+  // Stress marks are not phonemes.
+  assert.deepStrictEqual(singlePhonemeDifference('/kəˈrɛkt/', '/kəˈlɛkt/'), ['r', 'l']);
+  // Presence against absence of one phoneme.
+  assert.deepStrictEqual(singlePhonemeDifference('/hæt/', '/æt/'), ['h', '∅']);
+  assert.deepStrictEqual(singlePhonemeDifference('/æt/', '/hæt/'), ['∅', 'h']);
+  assert.strictEqual(singlePhonemeDifference('/boʊθ/', '/bɒs/'), null);
+  assert.strictEqual(singlePhonemeDifference('/reɪk/', '/reɪk/'), null);
+  assert.strictEqual(singlePhonemeDifference('/hæts/', '/æt/'), null);
+});
+
+runTest('a pair that differs in more than its contrast phoneme is rejected', () => {
+  // The defect this rule was written for: vowel and consonant both differ.
+  const errors = contrastErrors(pairFields('both', 'boss', '/boʊθ/', '/bɒs/', 'θ', 's'));
+  assert.strictEqual(errors.length, 1);
+  assert.strictEqual(errors[0].rule, 'PAIR_SINGLE_PHONEME_CONTRAST');
+  assert.deepStrictEqual(errors[0].words, ['both', 'boss']);
+
+  assert.deepStrictEqual(contrastErrors(pairFields('moth', 'moss', '/mɒθ/', '/mɒs/', 'θ', 's')), []);
+  assert.deepStrictEqual(contrastErrors(pairFields('sheep', 'ship', '/ʃiːp/', '/ʃɪp/', 'iː', 'ɪ')), []);
+  assert.deepStrictEqual(contrastErrors(pairFields('hat', 'at', '/hæt/', '/æt/', 'h', '∅')), []);
+});
+
+runTest('the one differing phoneme must be the declared contrast', () => {
+  // A clean minimal pair, but for b/v rather than the declared θ/s.
+  const errors = contrastErrors(pairFields('ban', 'van', '/bæn/', '/væn/', 'θ', 's'));
+  assert.ok(errors.some((error) => error.rule === 'PAIR_SINGLE_PHONEME_CONTRAST'));
+  // Declared the wrong way round.
+  assert.strictEqual(
+    contrastErrors(pairFields('sin', 'thin', '/sɪn/', '/θɪn/', 'θ', 's'))[0].rule,
+    'PAIR_SINGLE_PHONEME_CONTRAST'
+  );
+});
+
+runTest('an exception needs a reason and must still be needed', () => {
+  const nearMinimal = pairFields('both', 'boss', '/boʊθ/', '/bɒs/', 'θ', 's');
+  const id = 'Test__testGroup__both_boss';
+  assert.deepStrictEqual(contrastErrors(nearMinimal, { [id]: 'Reviewed: accepted near-minimal item.' }), []);
+  assert.strictEqual(
+    contrastErrors(nearMinimal, { [id]: '  ' })[0].rule,
+    'PAIR_CONTRAST_EXCEPTION_JUSTIFIED'
+  );
+  assert.strictEqual(
+    contrastErrors(pairFields('moth', 'moss', '/mɒθ/', '/mɒs/', 'θ', 's'), {
+      'Test__testGroup__moth_moss': 'stale',
+    })[0].rule,
+    'PAIR_CONTRAST_EXCEPTION_JUSTIFIED'
+  );
 });

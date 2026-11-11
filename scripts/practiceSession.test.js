@@ -14,6 +14,7 @@ const {
   selectVisiblePairsByMastery,
   updateRecentMissState,
   RECENT_MISS_DECAY_TRIALS,
+  MAX_RECORDED_ATTEMPT_MS,
 } = loadTsModule(path.join(__dirname, '..', 'src', 'domain', 'practiceSession.ts'));
 
 function runTest(name, fn) {
@@ -385,6 +386,38 @@ runTest('applyPracticeAnswer treats zero startTime as a real timestamp', () => {
 
   assert.strictEqual(result.responseTimeMs, 2500);
   assert.strictEqual(result.durationMin, 2500 / 60000);
+});
+
+runTest('applyPracticeAnswer caps recorded practice time at the idle limit without changing response time', () => {
+  const pair = makePair('rL', 1, 'right', 'light');
+  const answer = (nowMs) =>
+    applyPracticeAnswer({
+      selectedPair: pair,
+      category: 'Test',
+      answerIdx: 0,
+      playedIdx: 0,
+      startTime: 0,
+      nowMs,
+      currentSpeed: 0,
+      fastStreak: 2,
+      longStreak: 0,
+      currentMasteryTier: 1,
+    });
+
+  assert.strictEqual(MAX_RECORDED_ATTEMPT_MS, 120000);
+  // Away for two hours: two minutes are recorded, not 120.
+  const idle = answer(2 * 60 * 60 * 1000);
+  assert.strictEqual(idle.durationMin, 2);
+  // Progression and analytics still see the real response time.
+  assert.strictEqual(idle.responseTimeMs, 2 * 60 * 60 * 1000);
+  assert.strictEqual(idle.promoteSpeed, false);
+  assert.strictEqual(idle.nextFastStreak, 0);
+  // At or under the limit nothing changes.
+  assert.strictEqual(answer(120000).durationMin, 2);
+  assert.strictEqual(answer(4000).durationMin, 4000 / 60000);
+  assert.strictEqual(answer(4000).promoteSpeed, true);
+  // A clock that moved backwards never records negative time.
+  assert.strictEqual(answer(-500).durationMin, 0);
 });
 
 runTest('applyPracticeAnswer does not mutate its input pair or input object', () => {

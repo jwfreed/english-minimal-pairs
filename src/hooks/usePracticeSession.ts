@@ -65,7 +65,8 @@ export function usePracticeSession({
   isPracticeReady,
 }: UsePracticeSessionOptions) {
   const { translate } = useLanguage();
-  const { recordAttempt, persistence: historyPersistence } = usePairProgress();
+  const { recordAttempt, saveNeedsAttention: historyNeedsAttention } =
+    usePairProgress();
   const { getNextVoice } = useSettings();
   const { triggerHaptic } = useHaptics();
   const debugLog = useCallback(
@@ -103,7 +104,7 @@ export function usePracticeSession({
     mastery,
     setPlacementLevels,
     isLoading,
-    persistence: masteryPersistence,
+    saveNeedsAttention: masteryNeedsAttention,
     retryPendingSave,
   } = useContrastPairs(catObj.pairs, catObj.category);
 
@@ -666,8 +667,9 @@ export function usePracticeSession({
     playbackFailureReason:
       playbackState.status === 'failed' ? playbackState.reason : null,
     playbackStatus: playbackState.status,
-    progressNotSaved:
-      masteryPersistence !== 'saved' || historyPersistence !== 'saved',
+    // Shown when progress is blocked or a save has failed — not for the
+    // moment an ordinary write is in flight.
+    progressNotSaved: Boolean(masteryNeedsAttention || historyNeedsAttention),
     promotedLevel,
     safePairIndex,
     selectedPair,

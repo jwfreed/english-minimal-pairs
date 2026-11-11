@@ -46,7 +46,11 @@ function createStorage(initial = {}, failRead = false) {
       writes.push([key, value]);
       values.set(key, value);
     },
+    failRemoves: false,
+    removes: [],
     async removeItem(key) {
+      if (this.failRemoves) throw new Error('legacy remove failed');
+      this.removes.push(key);
       values.delete(key);
     },
   };
@@ -897,6 +901,307 @@ module.exports = (async () => {
     harness.render(renderHook);
     assert.deepStrictEqual(plain(result.mastery), { rL: 2 });
     assert.deepStrictEqual(storage.writes, []);
+  });
+
+  // ── PR #25 review: persistence safety ────────────────────────────────────
+
+  await runTest('unsaved mastery is kept per category: a failed write for one is not discarded by a change to another', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 3 }),
+      '@mastery_中文': JSON.stringify({ rL: 1 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    let category = '日本語';
+    const renderHook = () => useContrastPairs(japanesePairs(), category);
+
+    let result = await settleAll(harness, renderHook);
+    storage.failWrite = true;
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+
+    category = '中文';
+    result = await settleAll(harness, renderHook);
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'pending');
+    assert.deepStrictEqual(storage.writes, []);
+
+    storage.failWrite = false;
+    await result.retryPendingSave();
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 4 }));
+    assert.strictEqual(storage.values.get('@mastery_中文'), JSON.stringify({ rL: 2 }));
+
+    for (const [label, expected] of [['日本語', { rL: 4 }], ['中文', { rL: 2 }]]) {
+      const restartHarness = createHookHarness();
+      const useRestarted = loadHook(storage, restartHarness, calls);
+      const restarted = await settleAll(restartHarness, () => useRestarted(japanesePairs(), label));
+      assert.deepStrictEqual(plain(restarted.mastery), expected, label);
+    }
+  });
+
+  await runTest('a success for one category does not report saved while another is still unsaved', async () => {
+    const storage = createStorage();
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    let category = '日本語';
+    const renderHook = () => useContrastPairs(japanesePairs(), category);
+
+    let result = await settleAll(harness, renderHook);
+    const realSetItem = storage.setItem.bind(storage);
+    storage.setItem = async (key, value) => {
+      if (key === '@mastery_日本語') throw new Error('legacy write failed');
+      return realSetItem(key, value);
+    };
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+
+    category = '中文';
+    result = await settleAll(harness, renderHook);
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(storage.values.get('@mastery_中文'), JSON.stringify({ rL: 2 }));
+    assert.strictEqual(result.persistence, 'pending', '日本語 is still unsaved');
+    assert.strictEqual(result.saveNeedsAttention, true);
+
+    storage.setItem = realSetItem;
+    await result.retryPendingSave();
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
+    assert.strictEqual(result.saveNeedsAttention, false);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 2 }));
+  });
+
+  await runTest('a write in flight when mastery is reset cannot recreate the cleared progress', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 3 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    storage.holdWrites = true;
+    result.promote('rL');
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.strictEqual(storage.heldWrites.length, 1);
+
+    const reset = result.resetMastery();
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.deepStrictEqual(plain(harness.render(renderHook).mastery), {});
+
+    storage.holdWrites = false;
+    storage.heldWrites.shift()();
+    await reset;
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(storage.values.has('@mastery_日本語'), false, 'storage stays reset');
+    assert.strictEqual(result.persistence, 'saved');
+    assert.deepStrictEqual(plain(result.mastery), {});
+
+    const restartHarness = createHookHarness();
+    const useRestarted = loadHook(storage, restartHarness, calls);
+    const restarted = await settleAll(restartHarness, () => useRestarted(japanesePairs(), '日本語'));
+    assert.deepStrictEqual(plain(restarted.mastery), {});
+  });
+
+  await runTest('a failed write retried after a reset does not resurrect progress, and a failed reset is itself retried', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 3 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    storage.failWrite = true;
+    storage.failRemoves = true;
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'pending');
+
+    await result.resetMastery();
+    result = await settleAll(harness, renderHook);
+    // The reset could not be written either: it is the pending intent now.
+    assert.strictEqual(result.persistence, 'pending');
+    assert.deepStrictEqual(plain(result.mastery), {});
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 3 }));
+
+    storage.failWrite = false;
+    storage.failRemoves = false;
+    await result.retryPendingSave();
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(storage.values.has('@mastery_日本語'), false);
+    assert.deepStrictEqual(storage.writes, [], 'the pre-reset promotion was never written');
+    assert.strictEqual(result.persistence, 'saved');
+  });
+
+  await runTest('a stored map with an invalid entry keeps its valid levels readable and is never rewritten', async () => {
+    for (const raw of [
+      '{"rL":3,"bV":9}',
+      '{"rL":3,"bV":"4"}',
+      '{"rL":3,"bV":0,"wV":2.5}',
+      '{"rL":3,"bV":null}',
+    ]) {
+      const storage = createStorage({ '@mastery_日本語': raw });
+      const calls = { reads: 0, writes: 0, migrations: 0 };
+      const harness = createHookHarness();
+      const useContrastPairs = loadHook(storage, harness, calls);
+      const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+      let result = await settleAll(harness, renderHook);
+      assert.strictEqual(result.persistence, 'blocked', raw);
+      assert.strictEqual(result.saveNeedsAttention, true);
+      assert.deepStrictEqual(plain(result.mastery), { rL: 3 }, 'valid levels stay readable');
+
+      result.promote('rL');
+      result = await settleAll(harness, renderHook);
+      await result.refresh();
+      result = await settleAll(harness, renderHook);
+      assert.strictEqual(storage.writeAttempts, 0, raw);
+      assert.strictEqual(storage.values.get('@mastery_日本語'), raw);
+      assert.strictEqual(result.persistence, 'blocked');
+    }
+  });
+
+  await runTest('persistence is pending while a write is in flight and saved only once the latest mutation lands', async () => {
+    const storage = createStorage();
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
+
+    storage.holdWrites = true;
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'pending', 'not saved before the write is acknowledged');
+    // An ordinary write in flight is not a problem to show the learner.
+    assert.strictEqual(result.saveNeedsAttention, false);
+
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    storage.heldWrites.shift()();
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'pending', 'the first write landing does not cover the second mutation');
+
+    storage.holdWrites = false;
+    storage.heldWrites.shift()();
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 3 }));
+  });
+
+  await runTest('a read issued before a write was acknowledged cannot rehydrate the older value and write it back', async () => {
+    const storage = createStorage({
+      '@mastery_日本語': JSON.stringify({ rL: 3 }),
+    });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    let category = '日本語';
+    const renderHook = () => useContrastPairs(japanesePairs(), category);
+
+    let result = await settleAll(harness, renderHook);
+    storage.holdWrites = true;
+    result.promote('rL');
+    result = harness.render(renderHook);
+    await harness.settle();
+    assert.strictEqual(storage.heldWrites.length, 1);
+
+    // Leave and reopen the category; its read observes storage before the write.
+    category = '中文';
+    result = await settleAll(harness, renderHook);
+    storage.holdReads = true;
+    category = '日本語';
+    harness.render(renderHook);
+    await harness.settle();
+    assert.strictEqual(storage.heldReads.length, 1);
+
+    // The write is acknowledged, then the older read is delivered.
+    storage.holdWrites = false;
+    storage.heldWrites.shift()();
+    await harness.settle();
+    storage.holdReads = false;
+    storage.heldReads.splice(0).forEach((release) => release());
+    result = await settleAll(harness, renderHook);
+    assert.deepStrictEqual(plain(result.mastery), { rL: 4 });
+
+    result.promote('bV');
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(
+      storage.values.get('@mastery_日本語'),
+      JSON.stringify({ rL: 4, bV: 2 })
+    );
+  });
+
+  await runTest('one category mutated continuously cannot starve another category\'s pending write', async () => {
+    const storage = createStorage();
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    let category = '日本語';
+    const renderHook = () => useContrastPairs(japanesePairs(), category);
+
+    let result = await settleAll(harness, renderHook);
+    storage.holdWrites = true;
+    result.promote('rL'); // 日本語 write is held in flight
+    result = harness.render(renderHook);
+    await harness.settle();
+    category = '中文';
+    result = await settleAll(harness, renderHook);
+    result.promote('rL'); // 中文 waits its turn
+    result = await settleAll(harness, renderHook);
+    category = '日本語';
+    result = await settleAll(harness, renderHook);
+
+    // Mutate 日本語 again before each of its writes is acknowledged.
+    for (let i = 0; i < 3; i += 1) {
+      result.promote('bV');
+      result = harness.render(renderHook);
+      await harness.settle();
+      storage.heldWrites.shift()();
+      await harness.settle();
+      await harness.settle();
+      if (storage.values.has('@mastery_中文')) break;
+    }
+    const keysWritten = storage.writes.map(([key]) => key);
+    assert.ok(
+      keysWritten.indexOf('@mastery_中文') !== -1 && keysWritten.indexOf('@mastery_中文') <= 1,
+      `中文 is written on its turn, got ${keysWritten.join(',')}`
+    );
+    storage.holdWrites = false;
+    storage.heldWrites.splice(0).forEach((release) => release());
+    await settleAll(harness, renderHook);
+  });
+
+  await runTest('the first render after a mutation is already pending', async () => {
+    const storage = createStorage();
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    storage.holdWrites = true;
+    result.promote('rL');
+    result = harness.render(renderHook);
+    assert.deepStrictEqual(plain(result.mastery), { rL: 2 });
+    assert.strictEqual(result.persistence, 'pending');
+    storage.holdWrites = false;
+    await harness.settle();
+    storage.heldWrites.splice(0).forEach((release) => release());
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
   });
 
   await runTest('placement writes per-contrast practice tiers and can never record level 7', async () => {

@@ -4,10 +4,47 @@ import { isValidAttempt } from '@/src/domain/contrast/pairProgressProjection';
 import { writeWithRetry } from '@/src/storage/writeRetry';
 
 export const PAIR_PROGRESS_STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
-let writeQueue: Promise<void> = Promise.resolve();
+// Every storage operation — reads included — runs through this one queue, so
+// results arrive in the order the operations were issued.
+let storageQueue: Promise<unknown> = Promise.resolve();
 // Attempts not yet durably written. Every write carries all of them, so an
 // attempt whose write failed is saved by the next successful one.
+//
+// They are held in memory only: retried while the app runs, but lost if the
+// app is terminated before a write succeeds.
 let unsavedAttempts: { pairId: string; attempt: PairAttempt }[] = [];
+// Bumped by a reset, so a write that was in flight across it does not treat
+// attempts recorded after the reset as its own.
+let resetEpoch = 0;
+// A reset storage has not acknowledged. It is applied before any later write,
+// so history from before the reset is never merged back in.
+let resetPending = false;
+// The last write was rejected by storage and is awaiting retry.
+let writeFailing = false;
+// The stored history could not be read, or holds data that is not understood.
+let unreadable = false;
+
+/**
+ * Whether attempt history is durable, derived from this module's state rather
+ * than from any single write's outcome. `saved`: storage has acknowledged
+ * every attempt. `pending`: some attempt is unacknowledged (in flight, or
+ * failed and awaiting retry). `blocked`: stored history is unreadable or
+ * malformed and is not written over. `needsAttention` is true when blocked or
+ * when a write has failed; an ordinary write in flight needs none.
+ */
+export function getProgressPersistence(): {
+  persistence: 'saved' | 'pending' | 'blocked';
+  needsAttention: boolean;
+} {
+  return {
+    persistence: unreadable
+      ? 'blocked'
+      : unsavedAttempts.length > 0 || resetPending
+        ? 'pending'
+        : 'saved',
+    needsAttention: unreadable || writeFailing,
+  };
+}
 
 const MALFORMED_PROGRESS_ERROR = 'MalformedProgressError';
 
@@ -63,60 +100,170 @@ export function appendAttempt(
   return pruneAttemptHistory([...attempts, attempt]);
 }
 
+function malformedProgressError(): Error {
+  const error = new Error('Stored pair progress is malformed');
+  error.name = MALFORMED_PROGRESS_ERROR;
+  return error;
+}
+
 /**
- * Strict read used by storage: a missing value is an empty history, but a
- * value that is not a JSON object throws instead of reading as empty, so a
- * later save cannot replace it.
+ * Sets an entry as an own property whatever its key. Plain assignment would
+ * drop a stored pair ID such as `__proto__` instead of keeping it.
  */
-export function readStoredProgress(raw: string | null): Record<string, PairStats> {
-  if (!raw) return getDefaultProgress();
+function setEntry(
+  progress: Record<string, PairStats>,
+  pairId: string,
+  stats: PairStats
+): void {
+  Object.defineProperty(progress, pairId, {
+    value: stats,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
+const sameAttempt = (a: unknown, b: PairAttempt): boolean =>
+  isRecord(a) &&
+  a.timestamp === b.timestamp &&
+  a.isCorrect === b.isCorrect &&
+  a.durationMin === b.durationMin;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/**
+ * Parses stored history under the integrity policy shared with mastery
+ * (`readStoredMastery`): a missing value is an empty history; an entry is
+ * valid when it is an object with an `attempts` array. `intact` is false when
+ * the value is not a JSON object or any entry is not valid — such a value
+ * must not be normalized and saved back. Valid entries are returned either
+ * way so they stay readable; individual attempts and unknown fields inside a
+ * valid entry are carried verbatim, never repaired or dropped.
+ */
+export function inspectStoredProgress(raw: string | null): {
+  progress: Record<string, PairStats>;
+  intact: boolean;
+} {
+  if (!raw) return { progress: getDefaultProgress(), intact: true };
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
     parsed = undefined;
   }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    const error = new Error('Stored pair progress is malformed');
-    error.name = MALFORMED_PROGRESS_ERROR;
-    throw error;
-  }
-  const result: Record<string, PairStats> = {};
+  if (!isRecord(parsed)) return { progress: getDefaultProgress(), intact: false };
+
+  let intact = true;
+  const progress: Record<string, PairStats> = {};
   for (const [pairId, stats] of Object.entries(parsed)) {
-    const rawAttempts =
-      stats !== null && typeof stats === 'object' ? (stats as Record<string, unknown>).attempts : undefined;
-    result[pairId] = { attempts: pruneAttemptHistory(rawAttempts) };
+    if (isRecord(stats) && Array.isArray(stats.attempts)) {
+      setEntry(progress, pairId, {
+        ...stats,
+        attempts: pruneAttemptHistory(stats.attempts),
+      });
+    } else {
+      intact = false;
+      setEntry(progress, pairId, { attempts: [] });
+    }
   }
-  return result;
+  return { progress, intact };
 }
 
-/** Tolerant parse for read-only analysis: malformed input reads as empty. */
+/** Strict read used before a write: throws unless the stored history is intact. */
+export function readStoredProgress(raw: string | null): Record<string, PairStats> {
+  const { progress, intact } = inspectStoredProgress(raw);
+  if (!intact) throw malformedProgressError();
+  return progress;
+}
+
+/** Tolerant parse for read-only use: whatever is valid, empty otherwise. */
 export function parseStoredProgress(raw: string | null): Record<string, PairStats> {
-  try {
-    return readStoredProgress(raw);
-  } catch {
-    return getDefaultProgress();
-  }
+  return inspectStoredProgress(raw).progress;
 }
 
 export function serializeProgress(progress: Record<string, PairStats>): string {
   return JSON.stringify(progress);
 }
 
-const readProgress = async (): Promise<Record<string, PairStats>> => {
-  const raw = await AsyncStorage.getItem(PAIR_PROGRESS_STORAGE_KEY);
-  return readStoredProgress(raw);
+const inspectStorage = async () => {
+  let raw: string | null;
+  try {
+    raw = await AsyncStorage.getItem(PAIR_PROGRESS_STORAGE_KEY);
+  } catch (error) {
+    unreadable = true;
+    throw error;
+  }
+  const inspected = inspectStoredProgress(raw);
+  unreadable = !inspected.intact;
+  return inspected;
 };
 
-const enqueueWrite = (write: () => Promise<void>): Promise<void> => {
-  writeQueue = writeQueue.catch(() => undefined).then(write);
-  return writeQueue;
+const enqueue = <T>(operation: () => Promise<T>): Promise<T> => {
+  const result = storageQueue.catch(() => undefined).then(operation);
+  storageQueue = result;
+  return result;
 };
+
+/**
+ * One write pass, retried as a whole: apply a pending reset, then save every
+ * unsaved attempt in one write. `isRetry` is true from the second attempt on.
+ */
+async function writePending(isRetry: boolean): Promise<void> {
+  const epoch = resetEpoch;
+  try {
+    if (resetPending) {
+      await AsyncStorage.removeItem(PAIR_PROGRESS_STORAGE_KEY);
+      if (epoch === resetEpoch) resetPending = false;
+      unreadable = false;
+    }
+    const batch = unsavedAttempts.slice();
+    if (batch.length > 0) {
+      const { progress, intact } = await inspectStorage();
+      // Malformed history is never normalized and replaced.
+      if (!intact) throw malformedProgressError();
+      for (const { pairId, attempt } of batch) {
+        const stored = progress[pairId]?.attempts ?? [];
+        // A write can commit and still be reported as failed. On a retry, an
+        // attempt storage already holds is not appended a second time.
+        if (isRetry && stored.some((existing) => sameAttempt(existing, attempt))) {
+          continue;
+        }
+        setEntry(progress, pairId, {
+          ...progress[pairId],
+          attempts: appendAttempt(stored, attempt),
+        });
+      }
+      await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));
+      // A reset during the write discarded this batch already; attempts
+      // recorded during the write were appended after it.
+      if (epoch === resetEpoch) {
+        unsavedAttempts = unsavedAttempts.slice(batch.length);
+      }
+    }
+    writeFailing = false;
+  } catch (error) {
+    if (!isMalformedProgressError(error)) writeFailing = true;
+    throw error;
+  }
+}
+
+const enqueueWritePending = (): Promise<void> =>
+  enqueue(() => {
+    let attempts = 0;
+    return writeWithRetry(
+      () => writePending(attempts++ > 0),
+      (error) => !isMalformedProgressError(error)
+    );
+  });
 
 /* ─── public API ──────────────────────────────────────────────────────────── */
+/**
+ * Everything readable in stored history. Malformed parts read as empty here
+ * (and mark the history blocked for writing); only a storage error rejects.
+ */
 export async function getProgress(): Promise<Record<string, PairStats>> {
-  await writeQueue.catch(() => undefined);
-  return readProgress();
+  return (await enqueue(inspectStorage)).progress;
 }
 
 export async function saveAttempt(
@@ -134,31 +281,20 @@ export async function saveAttempt(
   };
 
   unsavedAttempts.push({ pairId, attempt });
-  await enqueueWrite(() =>
-    writeWithRetry(async () => {
-      const batch = unsavedAttempts.slice();
-      if (batch.length === 0) return;
-      const progress = await readProgress();
-      for (const unsaved of batch) {
-        progress[unsaved.pairId] = {
-          attempts: appendAttempt(
-            progress[unsaved.pairId]?.attempts ?? [],
-            unsaved.attempt
-          ),
-        };
-      }
-      await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));
-      // Attempts recorded during the write were appended after this batch.
-      unsavedAttempts = unsavedAttempts.slice(batch.length);
-    }, (error) => !isMalformedProgressError(error))
-  );
+  await enqueueWritePending();
 }
 
+/**
+ * Clears stored history. Unsaved attempts from before the call are discarded.
+ * The removal is queued behind any write already in flight, so that write
+ * cannot restore what was cleared; if storage rejects the removal it stays
+ * pending and is applied before the next write.
+ */
 export async function clearProgress() {
+  resetEpoch += 1;
   unsavedAttempts = [];
-  await enqueueWrite(async () => {
-    await AsyncStorage.removeItem(PAIR_PROGRESS_STORAGE_KEY);
-  });
+  resetPending = true;
+  await enqueueWritePending();
 }
 
 /* ─── analytics helpers used across the UI ────────────────────────────────── */

@@ -54,25 +54,41 @@ export function normalizeStoredMastery(
   return normalized;
 }
 
-export type StoredMasteryRead =
-  | { status: 'ok'; mastery: MasteryMap }
-  | { status: 'malformed' };
+/**
+ * `mastery` holds every valid level found, so valid progress stays readable.
+ * `malformed` means the stored value holds something else as well (or is not
+ * a JSON object at all) and must not be written over.
+ */
+export interface StoredMasteryRead {
+  status: 'ok' | 'malformed';
+  mastery: MasteryMap;
+}
 
 /**
- * A missing value is an empty record. A value that is not a JSON object is
- * malformed: it must not be read as "no saved mastery", because the next save
- * would then replace it.
+ * Integrity policy for stored mastery, shared with attempt history
+ * (`readStoredProgress`): a missing value is an empty record; a value made
+ * only of valid entries is read and may be rewritten; anything else is
+ * malformed. Malformed data is never normalized and saved back, because that
+ * would silently destroy whatever the invalid part was.
  */
 export function readStoredMastery(raw: string | null): StoredMasteryRead {
   if (!raw) return { status: 'ok', mastery: getDefaultMastery() };
 
   try {
     const value: unknown = JSON.parse(raw);
-    return isRecord(value)
-      ? { status: 'ok', mastery: normalizeStoredMastery(value) }
-      : { status: 'malformed' };
+    if (!isRecord(value)) {
+      return { status: 'malformed', mastery: getDefaultMastery() };
+    }
+    const mastery = normalizeStoredMastery(value);
+    return {
+      status:
+        Object.keys(mastery).length === Object.keys(value).length
+          ? 'ok'
+          : 'malformed',
+      mastery,
+    };
   } catch {
-    return { status: 'malformed' };
+    return { status: 'malformed', mastery: getDefaultMastery() };
   }
 }
 

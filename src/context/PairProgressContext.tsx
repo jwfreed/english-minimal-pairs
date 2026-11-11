@@ -13,7 +13,7 @@ import {
   saveAttempt,
   getProgress,
   clearProgress,
-  isMalformedProgressError,
+  getProgressPersistence,
   PairStats,
   PairAttempt,
 } from '@/src/storage/progressStorage';
@@ -23,12 +23,10 @@ interface PairProgressContextType {
   recordAttempt: (pairId: string, isCorrect: boolean, durationMin?: number) => void;
   resetProgress: () => Promise<void>;
   isLoading: boolean;
-  /**
-   * Whether attempt history is durable: `saved`; `pending` — a write failed
-   * and the attempts are kept for the next one; `blocked` — the stored
-   * history could not be read (or is malformed) and is not written over.
-   */
+  /** Whether attempt history is durable; see `getProgressPersistence`. */
   persistence: 'saved' | 'pending' | 'blocked';
+  /** True when blocked or a write has failed and awaits retry. */
+  saveNeedsAttention: boolean;
 }
 
 const PairProgressContext = createContext<PairProgressContextType | undefined>(undefined);
@@ -36,23 +34,36 @@ const PairProgressContext = createContext<PairProgressContextType | undefined>(u
 export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
   const [progress, setProgress] = useState<Record<string, PairStats>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [persistence, setPersistence] =
-    useState<PairProgressContextType['persistence']>('saved');
+  // Mirrors the storage module's own state after every event; no single
+  // write's outcome sets it, so an older success cannot hide newer unsaved work.
+  const [saveState, setSaveState] = useState(getProgressPersistence);
+  const syncSaveState = useCallback(() => {
+    const next = getProgressPersistence();
+    setSaveState((current) =>
+      current.persistence === next.persistence &&
+      current.needsAttention === next.needsAttention
+        ? current
+        : next
+    );
+  }, []);
   const loadFailed = useRef(false);
+  // Bumped by a reset: a load issued before it must not put history back.
+  const resetGeneration = useRef(0);
 
   const loadProgress = useCallback(async () => {
+    const generation = resetGeneration.current;
     try {
       const storedProgress = await getProgress();
       loadFailed.current = false;
-      setProgress(storedProgress);
+      if (generation === resetGeneration.current) setProgress(storedProgress);
     } catch (err) {
       loadFailed.current = true;
-      setPersistence('blocked');
       console.error('Failed to load progress', err);
     } finally {
+      syncSaveState();
       setIsLoading(false);
     }
-  }, []);
+  }, [syncSaveState]);
 
   useEffect(() => {
     loadProgress();
@@ -79,27 +90,36 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
 
       saveAttempt(pairId, isCorrect, durationMin, newAttempt.timestamp).then(
         () => {
-          setPersistence('saved');
+          syncSaveState();
           // Storage is readable again: show the history a failed load missed.
           if (loadFailed.current) void loadProgress();
         },
         (err) => {
-          setPersistence(isMalformedProgressError(err) ? 'blocked' : 'pending');
+          syncSaveState();
           console.error('Failed to save attempt', err);
         }
       );
+      // The attempt is unsaved from this moment, not only once a write fails.
+      syncSaveState();
     },
-    [loadProgress]
+    [loadProgress, syncSaveState]
   );
 
   const resetProgress = useCallback(async () => {
+    // Memory is cleared at the call, like storage's unsaved attempts, so an
+    // attempt recorded while the removal is still queued is kept.
+    resetGeneration.current += 1;
+    setProgress({});
+    const cleared = clearProgress();
+    syncSaveState();
     try {
-      await clearProgress();
-      setProgress({});
+      await cleared;
     } catch (error) {
+      // The reset stays pending in storage and is retried with the next write.
       console.error('Failed to reset progress:', error);
     }
-  }, []);
+    syncSaveState();
+  }, [syncSaveState]);
 
   const value = useMemo(
     () => ({
@@ -107,9 +127,10 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
       recordAttempt,
       resetProgress,
       isLoading,
-      persistence,
+      persistence: saveState.persistence,
+      saveNeedsAttention: saveState.needsAttention,
     }),
-    [progress, recordAttempt, resetProgress, isLoading, persistence]
+    [progress, recordAttempt, resetProgress, isLoading, saveState]
   );
 
   return (

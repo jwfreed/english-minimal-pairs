@@ -85,6 +85,36 @@ export function deriveSpeechTimeoutBudgets({
   };
 }
 
+/**
+ * Ceiling for one audio setup step (session configuration, voice lookup).
+ * The ownership watchdog is armed only once speech is submitted, so setup
+ * needs its own bound: without it a native call that never settles would hold
+ * playback ownership, or keep the audio system "initializing", forever.
+ */
+export const AUDIO_SETUP_TIMEOUT_MS = 5000;
+
+export function withSetupTimeout<T>(
+  step: Promise<T>,
+  timeoutMs = AUDIO_SETUP_TIMEOUT_MS
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('Audio setup timed out')),
+      timeoutMs
+    );
+    step.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
 export function getPlaybackWord(
   selectedPair: Pair | undefined,
   idx: PlaybackWordIndex

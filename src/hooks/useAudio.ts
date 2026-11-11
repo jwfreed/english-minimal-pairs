@@ -10,6 +10,7 @@ import {
   deriveSpeechTimeoutBudgets,
   getPlaybackWord,
   requireIosVoicesForPlayback,
+  withSetupTimeout,
 } from '@/src/domain/audioPlayback';
 import {
   speechPlaybackCoordinator,
@@ -364,7 +365,7 @@ export const useAudio = (
           // Configure audio session to play even when device is in silent mode
           // This is critical for TTS to work when the phone is in silent mode
           debugLog('🔧 Configuring audio mode…');
-          await setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE);
+          await withSetupTimeout(setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE));
           audioModeConfiguredRef.current = true;
           debugLog('✅ Audio mode configured for silent mode playback');
 
@@ -388,18 +389,21 @@ export const useAudio = (
           // iOS Simulator doesn't support TTS - check if voices are available
           if (!availableVoicesRef.current) {
             debugLog('🔧 Fetching available voices…');
-            const voices = await Speech.getAvailableVoicesAsync();
-            availableVoicesRef.current = voices;
+            const voices = await withSetupTimeout(
+              Speech.getAvailableVoicesAsync()
+            );
 
+            // An empty inventory is never cached: playback asks again.
             if (voices.length === 0) {
               debugWarn('⚠️ No TTS voices available - likely running on iOS Simulator');
             } else {
+              availableVoicesRef.current = voices;
               debugLog(`✅ Found ${voices.length} TTS voices available`);
             }
           }
         } else {
           // On Android, just configure audio mode
-          await setAudioModeAsync(ANDROID_PLAYBACK_AUDIO_MODE);
+          await withSetupTimeout(setAudioModeAsync(ANDROID_PLAYBACK_AUDIO_MODE));
           audioModeConfiguredRef.current = true;
           debugLog('✅ Audio mode configured for Android');
         }
@@ -494,22 +498,34 @@ export const useAudio = (
       try {
         // Check if running on iOS Simulator
         if (Platform.OS === 'ios') {
-          const voices =
-            availableVoicesRef.current ??
-            (availableVoicesRef.current = await Speech.getAvailableVoicesAsync());
+          let voices = availableVoicesRef.current;
+          if (!voices) {
+            voices = await withSetupTimeout(Speech.getAvailableVoicesAsync());
+            if (voices.length > 0) availableVoicesRef.current = voices;
+          }
           requireIosVoicesForPlayback(Platform.OS, voices);
 
           // Re-ensure audio mode is set before each playback to handle cases
           // where the audio session might have been interrupted or reset
           if (!audioModeConfiguredRef.current) {
             try {
-              await setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE);
+              await withSetupTimeout(setAudioModeAsync(IOS_PLAYBACK_AUDIO_MODE));
               audioModeConfiguredRef.current = true;
               debugLog('🔧 Audio mode re-confirmed before playback');
             } catch (error) {
               debugWarn('⚠️ Error re-setting audio mode (continuing anyway):', error);
             }
           }
+        }
+
+        // Setup awaited above. If this request no longer owns playback — its
+        // screen unmounted meanwhile — it must not speak over, or be
+        // attributed to, whoever owns playback now.
+        if (
+          speechPlaybackCoordinator.getActivePlaybackOwnerRequestId() !==
+          requestId
+        ) {
+          return;
         }
 
         // Pick the next voice from the rotation pool for this utterance; the

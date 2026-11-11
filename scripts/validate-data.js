@@ -19,12 +19,20 @@ const NOT_PHONEMES = /[\/ˈˌ.\s]/g; // slashes, stress, syllable breaks
 
 /**
  * Pairs allowed to differ by more than their one contrast phoneme, keyed
- * `category__group__word1_word2` (the pair ID), each with the reason it is
- * still a valid training item. Empty today: every pair is a strict minimal
- * pair. An entry without a reason, or one that no longer matches a pair that
- * needs it, is itself an error.
+ * `category__group__word1_word2` (the pair ID), each with its reason. An
+ * entry without a reason, or one that no longer matches a pair that needs
+ * it, is itself an error.
  */
-const SINGLE_PHONEME_CONTRAST_EXCEPTIONS = {};
+const BOTH_BOSS_KNOWN_DEFECT =
+  'Known defect, not an accepted item: the vowels differ (/oʊ/ vs /ɒ/) as ' +
+  'well as θ/s. Replacing it removes a released pair-progress key, which ' +
+  'needs a compatibility decision (identity.test.js baseline).';
+const SINGLE_PHONEME_CONTRAST_EXCEPTIONS = {
+  '中文__thetaS__both_boss': BOTH_BOSS_KNOWN_DEFECT,
+  'العربية__thetaS__both_boss': BOTH_BOSS_KNOWN_DEFECT,
+  'Русский__thetaS__both_boss': BOTH_BOSS_KNOWN_DEFECT,
+  '한국어__thetaS__both_boss': BOTH_BOSS_KNOWN_DEFECT,
+};
 
 function tokenizeIpa(ipa) {
   const letters = [...String(ipa).replace(NOT_PHONEMES, '')];

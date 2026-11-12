@@ -35,7 +35,10 @@ const PAIR = {
 };
 const VOICE = { identifier: 'voice.a', name: 'Ava', language: 'en-US', quality: 'Default' };
 
-function createScenario() {
+function createScenario({
+  getAvailableVoicesAsync = async () => [VOICE],
+  setAudioModeAsync = async () => {},
+} = {}) {
   const speakCalls = [];
   const timers = new Map();
   let nextTimerId = 1;
@@ -48,11 +51,9 @@ function createScenario() {
         speak(word, options) {
           speakCalls.push({ word, options });
         },
-        async getAvailableVoicesAsync() {
-          return [VOICE];
-        },
+        getAvailableVoicesAsync,
       },
-      'expo-audio': { setAudioModeAsync: async () => {} },
+      'expo-audio': { setAudioModeAsync },
       '@/src/hooks/useSilentWarmupPlayer': { useSilentWarmupPlayer: () => ({ play() {} }) },
       '../../assets/audio/silent.mp3': 1,
     },
@@ -100,7 +101,34 @@ function createScenario() {
       fn();
     });
   };
+  // Starts playback without waiting for it, for requests held in setup.
+  const startPlay = async (name) => {
+    const outcomes = [];
+    let settled;
+    await TestRenderer.act(async () => {
+      settled = hooks[name]
+        .play(0, (outcome) => outcomes.push(outcome.kind === 'failed' ? outcome.reason : outcome.kind))
+        .then(() => 'resolved', (error) => error.message);
+    });
+    return { outcomes, settled };
+  };
+  const fireTimers = async () => {
+    await TestRenderer.act(async () => {
+      for (const [id, timer] of [...timers]) {
+        timers.delete(id);
+        timer();
+      }
+      await new Promise((resolve) => setImmediate(resolve));
+    });
+  };
+  const flush = () =>
+    TestRenderer.act(async () => {
+      await new Promise((resolve) => setImmediate(resolve));
+    });
   return {
+    startPlay,
+    fireTimers,
+    flush,
     hooks,
     speakCalls,
     timers,
@@ -188,6 +216,100 @@ module.exports = (async () => {
     const practice = await scenario.play('practice');
     assert.deepStrictEqual(practice.outcomes, []);
     assert.strictEqual(scenario.speakCalls.length, 2);
+    scenario.unmountAll();
+  });
+
+  // A screen whose audio initialization failed has no cached voices, so its
+  // first playback awaits voice lookup while already owning playback.
+  function setupScenario() {
+    const control = { heldVoiceLookups: [], holdVoices: false };
+    const scenario = createScenario({
+      getAvailableVoicesAsync: () =>
+        control.holdVoices
+          ? new Promise((resolve) => control.heldVoiceLookups.push(resolve))
+          : Promise.resolve([VOICE]),
+      setAudioModeAsync: async () => {
+        throw new Error('audio session unavailable');
+      },
+    });
+    return { scenario, control };
+  }
+
+  await runTest('a request still in setup when its screen unmounts never speaks over the next owner', async () => {
+    const { scenario, control } = setupScenario();
+    await scenario.render(['placement']);
+    await scenario.render(['placement', 'practice']);
+    assert.strictEqual(scenario.hooks.placement.audioModeReady, true);
+
+    control.holdVoices = true;
+    const placement = await scenario.startPlay('placement');
+    control.holdVoices = false;
+    assert.strictEqual(scenario.speakCalls.length, 0, 'placement is waiting on voice lookup');
+
+    await scenario.render(['practice']);
+    const practice = await scenario.play('practice');
+    assert.strictEqual(scenario.speakCalls.length, 1, 'the next screen plays at once');
+
+    // The disposed request's setup now finishes.
+    control.heldVoiceLookups.forEach((resolve) => resolve([VOICE]));
+    assert.strictEqual(await placement.settled, 'resolved');
+    await scenario.flush();
+    assert.strictEqual(scenario.speakCalls.length, 1, 'the disposed request submitted nothing');
+    assert.deepStrictEqual(placement.outcomes, []);
+
+    await scenario.callback(() => practice.options.onDone());
+    assert.deepStrictEqual(practice.outcomes, ['completed'], 'the owner is untouched');
+    scenario.unmountAll();
+  });
+
+  await runTest('setup that never settles times out, releases ownership, and stays retryable', async () => {
+    const { scenario, control } = setupScenario();
+    await scenario.render(['practice']);
+
+    control.holdVoices = true;
+    const hung = await scenario.startPlay('practice');
+    assert.strictEqual(scenario.timers.size, 1, 'setup is bounded by a timer');
+
+    await scenario.fireTimers();
+    assert.strictEqual(await hung.settled, 'Audio setup timed out');
+    assert.deepStrictEqual(hung.outcomes, ['playback-error']);
+    assert.strictEqual(scenario.hooks.practice.isSpeaking, false);
+    assert.strictEqual(scenario.speakCalls.length, 0);
+
+    // The late lookup result must not start speech for the abandoned request.
+    control.heldVoiceLookups.forEach((resolve) => resolve([VOICE]));
+    await scenario.flush();
+    assert.strictEqual(scenario.speakCalls.length, 0);
+
+    control.holdVoices = false;
+    const retry = await scenario.play('practice');
+    assert.strictEqual(scenario.speakCalls.length, 1, 'the retry reaches native speech');
+    assert.deepStrictEqual(retry.outcomes, []);
+    scenario.unmountAll();
+  });
+
+  await runTest('an initially empty voice inventory is asked for again on the next playback', async () => {
+    let voices = [];
+    const scenario = createScenario({ getAvailableVoicesAsync: async () => voices });
+    await scenario.render(['practice']);
+
+    const unavailable = await scenario.startPlay('practice');
+    assert.match(await unavailable.settled, /TTS not available/);
+    await scenario.flush();
+
+    voices = [VOICE];
+    await scenario.play('practice');
+    assert.strictEqual(scenario.speakCalls.length, 1);
+    scenario.unmountAll();
+  });
+
+  await runTest('audio initialization that never settles still becomes ready', async () => {
+    const scenario = createScenario({ setAudioModeAsync: () => new Promise(() => {}) });
+    await scenario.render(['practice']);
+    assert.strictEqual(scenario.hooks.practice.audioModeReady, false);
+    await scenario.fireTimers();
+    await scenario.render(['practice']);
+    assert.strictEqual(scenario.hooks.practice.audioModeReady, true);
     scenario.unmountAll();
   });
 })().finally(() => {

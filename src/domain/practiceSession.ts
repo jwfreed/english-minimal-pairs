@@ -117,6 +117,14 @@ export function recommendPlacementTier(correctCount: number, totalQuestions: num
 }
 
 /**
+ * Ceiling on the practice time one attempt records. It matches the session
+ * timer's idle timeout: time beyond it is the learner being away, not
+ * practising. It limits recorded time only, never the response time that
+ * progression and analytics use.
+ */
+export const MAX_RECORDED_ATTEMPT_MS = 120_000;
+
+/**
  * Smallest per-contrast practice pool (Decision 022). A tier with fewer
  * examples is topped up from the contrast's nearest lower tiers.
  */
@@ -300,7 +308,8 @@ export function applyPracticeAnswer({
     correct,
     feedback: correct ? 'correct' : 'incorrect',
     responseTimeMs,
-    durationMin: responseTimeMs / 60000,
+    durationMin:
+      Math.min(Math.max(responseTimeMs, 0), MAX_RECORDED_ATTEMPT_MS) / 60000,
     pairId: buildPairId(selectedPair, category),
     group: selectedPair.group,
     nextSpeed: progression.nextSpeed,

@@ -45,6 +45,7 @@ import {
   practiceTierOf,
 } from '@/src/domain/masteryLevel';
 import { useHaptics } from '@/src/hooks/useHaptics';
+import { useProgressRecovery } from '@/src/hooks/useProgressRecovery';
 import {
   FAST_STREAK_NEEDED,
   FAST_THRESHOLD_MS,
@@ -65,7 +66,13 @@ export function usePracticeSession({
   isPracticeReady,
 }: UsePracticeSessionOptions) {
   const { translate } = useLanguage();
-  const { recordAttempt } = usePairProgress();
+  const {
+    recordAttempt,
+    persistence: historyPersistence,
+    saveNeedsAttention: historyNeedsAttention,
+    prepareRecovery: prepareHistoryRecovery,
+    applyRecovery: applyHistoryRecovery,
+  } = usePairProgress();
   const { getNextVoice } = useSettings();
   const { triggerHaptic } = useHaptics();
   const debugLog = useCallback(
@@ -97,8 +104,45 @@ export function usePracticeSession({
     []
   );
 
-  const { visible, promote, mastery, setPlacementLevels, isLoading } =
-    useContrastPairs(catObj.pairs, catObj.category);
+  const {
+    visible,
+    promote,
+    mastery,
+    setPlacementLevels,
+    isLoading,
+    persistence: masteryPersistence,
+    saveNeedsAttention: masteryNeedsAttention,
+    retryPendingSave,
+    prepareRecovery: prepareMasteryRecovery,
+    applyRecovery: applyMasteryRecovery,
+  } = useContrastPairs(catObj.pairs, catObj.category);
+
+  const masteryBlocked = masteryPersistence === 'blocked';
+  const historyBlocked = historyPersistence === 'blocked';
+  const recoverProgress = useProgressRecovery(
+    useMemo(
+      () => [
+        {
+          blocked: masteryBlocked,
+          prepare: prepareMasteryRecovery,
+          apply: applyMasteryRecovery,
+        },
+        {
+          blocked: historyBlocked,
+          prepare: prepareHistoryRecovery,
+          apply: applyHistoryRecovery,
+        },
+      ],
+      [
+        applyHistoryRecovery,
+        applyMasteryRecovery,
+        historyBlocked,
+        masteryBlocked,
+        prepareHistoryRecovery,
+        prepareMasteryRecovery,
+      ]
+    )
+  );
 
   const timerRef = useRef<SessionTimerHandle | null>(null);
   const [pairIndex, setPairIndex] = useState(0);
@@ -325,6 +369,8 @@ export function usePracticeSession({
     if (isPracticePlaybackActive(currentPlayback) || isSpeaking) return;
 
     timerRef.current?.poke();
+    // Each round is another chance to save mastery a failed write left pending.
+    void retryPendingSave();
     debugLog('🎯 handlePlay called, audioModeReady:', audioModeReady);
     if (!audioModeReady) {
       debugLog('❌ Audio not ready - showing error alert');
@@ -411,6 +457,7 @@ export function usePracticeSession({
     findVisiblePairIndex,
     markScheduledPair,
     isSpeaking,
+    retryPendingSave,
     safePairIndex,
     selectedPair,
     submitPracticePlayback,
@@ -656,6 +703,15 @@ export function usePracticeSession({
     playbackFailureReason:
       playbackState.status === 'failed' ? playbackState.reason : null,
     playbackStatus: playbackState.status,
+    // 'blocked': saved progress cannot be read and needs the recovery flow.
+    // 'failing': a save was rejected and is being retried. null otherwise —
+    // including the moment an ordinary write is in flight.
+    progressSaveProblem: (masteryBlocked || historyBlocked
+      ? 'blocked'
+      : masteryNeedsAttention || historyNeedsAttention
+        ? 'failing'
+        : null) as 'blocked' | 'failing' | null,
+    recoverProgress,
     promotedLevel,
     safePairIndex,
     selectedPair,

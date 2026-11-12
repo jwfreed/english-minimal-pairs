@@ -76,7 +76,7 @@ function mountSession(initialMastery) {
       useLanguage: () => ({ translate: (key) => key }),
     },
     '@/src/context/PairProgressContext': {
-      usePairProgress: () => ({ recordAttempt: noop }),
+      usePairProgress: () => ({ recordAttempt: noop, persistence: 'saved' }),
     },
     '@/src/context/SettingsContext': {
       useSettings: () => ({ getNextVoice: () => null }),
@@ -102,6 +102,8 @@ function mountSession(initialMastery) {
           visible,
           mastery,
           isLoading: false,
+      persistence: 'saved',
+      retryPendingSave: async () => {},
           promote: (group) =>
             setMastery((current) => ({
               ...current,

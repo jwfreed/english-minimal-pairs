@@ -9,7 +9,7 @@ import {
 import { selectVisiblePairsByMastery } from '@/src/domain/practiceSession';
 import {
   buildMasteryStorageKey,
-  parseStoredMastery,
+  readStoredMastery,
   serializeMastery,
   type MasteryMap,
 } from '@/src/domain/masteryPersistence';
@@ -24,6 +24,26 @@ import {
   readCompatibleMastery,
   writeCompatibleMastery,
 } from '@/src/storage/masteryCompatibility';
+import {
+  assertPlanStillValid,
+  writeVerifiedBackup,
+  type RecoveryPlan,
+} from '@/src/storage/recoveryBackup';
+import { writeWithRetry } from '@/src/storage/writeRetry';
+
+/**
+ * Whether learner mastery is durable. `saved`: every mutation has been
+ * acknowledged by storage. `pending`: at least one category has a mutation
+ * (or reset) that storage has not acknowledged — in flight, or failed and
+ * awaiting retry. `blocked`: this category's stored mastery could not be read
+ * or is malformed, so nothing is written over it.
+ *
+ * Pending mutations are held in memory only. They are retried while the app
+ * runs, but are lost if the app is terminated before a retry succeeds.
+ */
+export type MasteryPersistence = 'saved' | 'pending' | 'blocked';
+
+const MALFORMED_MASTERY_ERROR = 'Stored mastery is malformed';
 
 /**
  * Mastery is always attributed to the storage key it was hydrated from. It may
@@ -50,9 +70,110 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     hydrated(storageKey, 'loading')
   );
   const [persistenceError, setPersistenceError] = useState<unknown>(null);
+  // Derived only from `pendingWrites`, never set by an individual write's
+  // outcome, so an older success cannot report "saved" over newer unsaved work.
+  const [unsaved, setUnsaved] = useState({ any: false, failing: false });
+  const [stableSaveFailed, setStableSaveFailed] = useState(false);
   const stableWriteQueue = useRef<Promise<void>>(Promise.resolve());
+  // Storage key → the latest intent storage has not acknowledged: a mastery
+  // map to write, or null for a reset (remove the key). One entry per key, so
+  // one category's unsaved progress is never replaced by another's.
+  const pendingWrites = useRef(new Map<string, MasteryMap | null>());
+  // Bumped whenever a key's intent is registered or acknowledged. A read whose
+  // key changed revision while it was in flight observed storage from before
+  // that write and must not be adopted.
+  const keyRevisions = useRef(new Map<string, number>());
+  const flushing = useRef<Promise<void> | null>(null);
+  const flushAgain = useRef(false);
+  const writeFailing = useRef(false);
   // Bumped by reset so reads issued before it cannot resurrect cleared mastery.
   const readGeneration = useRef(0);
+  // The latest render's state and key, for callbacks that outlive a render.
+  const latest = useRef({ state, storageKey });
+  latest.current = { state, storageKey };
+  // The malformed bytes this key was hydrated from, when that is why it is
+  // blocked. While it matches storage, the in-memory mastery is exactly those
+  // bytes' valid levels plus what the learner did since.
+  const blockedRaw = useRef<{ key: string; raw: string } | null>(null);
+
+  const bumpRevision = useCallback((key: string) => {
+    keyRevisions.current.set(key, (keyRevisions.current.get(key) ?? 0) + 1);
+  }, []);
+
+  /** Reads a key, re-reading if a write to it was registered or landed meanwhile. */
+  const readCurrent = useCallback(async (key: string) => {
+    for (;;) {
+      const revision = keyRevisions.current.get(key);
+      const raw = await AsyncStorage.getItem(key);
+      if (keyRevisions.current.get(key) === revision) return raw;
+    }
+  }, []);
+
+  const syncUnsaved = useCallback(() => {
+    const any = pendingWrites.current.size > 0;
+    if (!any) writeFailing.current = false;
+    const failing = writeFailing.current;
+    setUnsaved((current) =>
+      current.any === any && current.failing === failing
+        ? current
+        : { any, failing }
+    );
+  }, []);
+
+  // The single writer for legacy mastery. One storage operation at a time, and
+  // each attempt (including a retry) takes the key's latest intent, so:
+  // an older snapshot never lands after a newer one; a reset issued while a
+  // write is in flight or retrying is applied after it and wins; and a key
+  // whose write keeps failing keeps its intent without holding up other keys.
+  const flushPendingWrites = useCallback((): Promise<void> => {
+    if (flushing.current) {
+      // New intents may have arrived for keys this pass already gave up on.
+      flushAgain.current = true;
+      return flushing.current;
+    }
+    const pending = pendingWrites.current;
+    flushing.current = (async () => {
+      do {
+        flushAgain.current = false;
+        const attempted = new Set<string>();
+        for (;;) {
+          const key = [...pending.keys()].find((k) => !attempted.has(k));
+          if (key === undefined) break;
+          attempted.add(key);
+          let written: MasteryMap | null | undefined;
+          try {
+            await writeWithRetry(() => {
+              written = pending.get(key);
+              if (written === undefined) return Promise.resolve();
+              return (
+                written === null
+                  ? AsyncStorage.removeItem(key)
+                  : AsyncStorage.setItem(key, serializeMastery(written))
+              ).catch((error) => {
+                writeFailing.current = true;
+                syncUnsaved();
+                throw error;
+              });
+            });
+            if (pending.get(key) === written) {
+              pending.delete(key);
+              bumpRevision(key);
+            } else {
+              // A newer intent arrived during the write. It waits for the
+              // next pass, so every other key gets its turn first.
+              flushAgain.current = true;
+            }
+          } catch (error) {
+            setPersistenceError(error);
+          }
+          syncUnsaved();
+        }
+      } while (flushAgain.current);
+    })().finally(() => {
+      flushing.current = null;
+    });
+    return flushing.current;
+  }, [bumpRevision, syncUnsaved]);
 
   const { mastery } = state;
   const isLoading = state.key !== storageKey || state.hydration === 'loading';
@@ -99,9 +220,25 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
             }
           }
         } else {
-          const raw = await AsyncStorage.getItem(storageKey);
+          const raw = await readCurrent(storageKey);
           if (!cancelled) {
-            settle(hydrated(storageKey, 'ready', parseStoredMastery(raw)));
+            // An intent still waiting to be written to this key (a mastery
+            // map, or a reset) is newer than whatever storage holds.
+            const unsavedIntent = pendingWrites.current.get(storageKey);
+            if (unsavedIntent !== undefined) {
+              settle(hydrated(storageKey, 'ready', unsavedIntent ?? {}));
+              return;
+            }
+            const stored = readStoredMastery(raw);
+            if (stored.status === 'malformed') {
+              // Not "no saved mastery": hydrating it as writable would let
+              // the next save destroy it. Its valid levels stay readable.
+              blockedRaw.current = raw === null ? null : { key: storageKey, raw };
+              settle(hydrated(storageKey, 'failed', stored.mastery));
+              setPersistenceError(new Error(MALFORMED_MASTERY_ERROR));
+              return;
+            }
+            settle(hydrated(storageKey, 'ready', stored.mastery));
             if (shadowPathEnabled && languageId) {
               void compareMasteryInShadow(
                 AsyncStorage,
@@ -122,6 +259,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   }, [
     categoryKey,
     languageId,
+    readCurrent,
     rolloutState,
     shadowPathEnabled,
     stablePathEnabled,
@@ -135,6 +273,9 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
       state.hydration !== 'ready' ||
       !state.mutation
     ) {
+      // Nothing to register (e.g. a mutation over a blocked read): make the
+      // optimistic "unsaved" mark from the mutation match what is pending.
+      syncUnsaved();
       return;
     }
     const { mastery: nextMastery, mutation: provenance } = state;
@@ -149,16 +290,21 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
             provenance,
             rolloutState
           );
+          setStableSaveFailed(result.status !== 'complete');
           if (result.status !== 'complete') setPersistenceError(result);
         })
         .catch(setPersistenceError);
       return;
     }
-    AsyncStorage.setItem(storageKey, serializeMastery(nextMastery)).catch(
-      setPersistenceError
-    );
+    pendingWrites.current.set(storageKey, nextMastery);
+    bumpRevision(storageKey);
+    syncUnsaved();
+    void flushPendingWrites();
   }, [
+    bumpRevision,
     categoryKey,
+    flushPendingWrites,
+    syncUnsaved,
     languageId,
     rolloutState,
     stablePathEnabled,
@@ -170,8 +316,15 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     return selectVisiblePairsByMastery(pairs, practiceTierMap(mastery));
   }, [pairs, mastery]);
 
+  // Batched with the mutation itself, so the render that first shows new
+  // mastery already reports it unsaved; the persist effect then registers it.
+  const markUnsaved = useCallback(() => {
+    setUnsaved((current) => (current.any ? current : { ...current, any: true }));
+  }, []);
+
   const promote = useCallback(
     (group: string) => {
+      markUnsaved();
       setState((current) => ({
         ...current,
         mastery: {
@@ -181,7 +334,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
         mutation: 'practice',
       }));
     },
-    []
+    [markUnsaved]
   );
 
   /**
@@ -194,12 +347,13 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     for (const [group, level] of Object.entries(levels)) {
       placed[group] = Math.max(1, practiceTierOf(level));
     }
+    markUnsaved();
     setState((current) => ({
       ...current,
       mastery: placed,
       mutation: 'placement',
     }));
-  }, []);
+  }, [markUnsaved]);
 
   const resetMastery = useCallback(async () => {
     readGeneration.current += 1;
@@ -225,9 +379,18 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
       await stableWriteQueue.current;
       return;
     }
-    await AsyncStorage.removeItem(storageKey).catch(setPersistenceError);
+    // The reset replaces any unsaved mastery for this key and goes through
+    // the same writer, so it is ordered after a write already in flight and
+    // is itself retried if storage rejects it.
+    pendingWrites.current.set(storageKey, null);
+    bumpRevision(storageKey);
+    syncUnsaved();
+    await flushPendingWrites();
   }, [
+    bumpRevision,
     categoryKey,
+    flushPendingWrites,
+    syncUnsaved,
     languageId,
     rolloutState,
     stablePathEnabled,
@@ -264,8 +427,21 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
         }
         return;
       }
-      const raw = await AsyncStorage.getItem(storageKey);
-      applyRead((current) => parseStoredMastery(raw, current));
+      const raw = await readCurrent(storageKey);
+      const unsavedIntent = pendingWrites.current.get(storageKey);
+      const stored = readStoredMastery(raw);
+      if (unsavedIntent === undefined && stored.status === 'malformed') {
+        setPersistenceError(new Error(MALFORMED_MASTERY_ERROR));
+        return;
+      }
+      // As before, a missing key keeps the in-memory mastery.
+      applyRead((current) =>
+        unsavedIntent !== undefined
+          ? unsavedIntent ?? {}
+          : raw
+            ? stored.mastery
+            : current
+      );
       if (shadowPathEnabled && languageId) {
         void compareMasteryInShadow(
           AsyncStorage,
@@ -279,11 +455,100 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   }, [
     categoryKey,
     languageId,
+    readCurrent,
     rolloutState,
     shadowPathEnabled,
     stablePathEnabled,
     storageKey,
   ]);
+
+  /**
+   * Recovery step 1 for this category's blocked mastery (see
+   * recoveryBackup.ts): backs up the malformed stored value and reports what
+   * would be kept. Legacy scheme only; it never touches another category.
+   *
+   * Resolves null when the stored value turns out to be valid (the key was
+   * blocked by a failed read, or an earlier recovery's write did land): the
+   * hook simply resumes from it. Rejects while storage cannot be read.
+   */
+  const prepareRecovery = useCallback(async (): Promise<RecoveryPlan | null> => {
+    if (stablePathEnabled) return null;
+    const raw = await readCurrent(storageKey);
+    const stored = readStoredMastery(raw);
+    if (raw === null || stored.status === 'ok') {
+      blockedRaw.current = null;
+      setPersistenceError(null);
+      setState((current) =>
+        current.key === storageKey && current.hydration === 'failed'
+          ? hydrated(storageKey, 'ready', stored.mastery)
+          : current
+      );
+      return null;
+    }
+    const backupKey = await writeVerifiedBackup(AsyncStorage, storageKey, raw);
+    return {
+      raw,
+      backupKey,
+      keptCount: Object.keys(stored.mastery).length,
+    };
+  }, [readCurrent, stablePathEnabled, storageKey]);
+
+  /**
+   * Recovery step 2, after the learner confirmed. Runs as the writer's only
+   * operation, so no write or reset for any key can interleave with it, and
+   * replaces the value only if storage still holds exactly what was backed
+   * up. Rejects, changing nothing, if this hook has moved to another category
+   * or a write or reset for this key was issued meanwhile.
+   *
+   * What is written is the learner's current mastery for this category — the
+   * recovered levels plus whatever they did while saving was blocked,
+   * including a placement that replaced those levels. If the session did not
+   * start from this stored value, only the recovered levels are written.
+   */
+  const applyRecovery = useCallback(
+    async (plan: RecoveryPlan): Promise<void> => {
+      // Wait for the writer, then hold it for the duration.
+      while (flushing.current) await flushing.current.catch(() => undefined);
+      const replacing = (async () => {
+        const { state: now, storageKey: currentKey } = latest.current;
+        if (currentKey !== storageKey || now.key !== storageKey) {
+          throw new Error('Recovery was prepared for another category');
+        }
+        if (pendingWrites.current.has(storageKey)) {
+          throw new Error('Mastery has changed since recovery was prepared');
+        }
+        await assertPlanStillValid(AsyncStorage, storageKey, plan);
+        const sessionStartedFromPlan =
+          now.hydration === 'failed' &&
+          blockedRaw.current?.key === storageKey &&
+          blockedRaw.current.raw === plan.raw;
+        const target = sessionStartedFromPlan
+          ? now.mastery
+          : readStoredMastery(plan.raw).mastery;
+        await AsyncStorage.setItem(storageKey, serializeMastery(target));
+        bumpRevision(storageKey);
+        blockedRaw.current = null;
+        setPersistenceError(null);
+        // A reset or placement issued during the write is newer and stands.
+        if (!pendingWrites.current.has(storageKey)) {
+          setState((current) =>
+            current.key === storageKey && current.hydration === 'failed'
+              ? hydrated(storageKey, 'ready', target)
+              : current
+          );
+        }
+      })();
+      flushing.current = replacing
+        .catch(() => undefined)
+        .finally(() => {
+          flushing.current = null;
+          // Anything queued behind the recovery is written now.
+          if (pendingWrites.current.size > 0) void flushPendingWrites();
+        });
+      await replacing;
+    },
+    [bumpRevision, flushPendingWrites, storageKey]
+  );
 
   // Learner progress over a failed read cannot be saved; retry the read. On
   // success stored mastery replaces the in-session state, whose baseline was
@@ -298,6 +563,13 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     }
   }, [refresh, state, storageKey]);
 
+  const persistence: MasteryPersistence =
+    state.key === storageKey && state.hydration === 'failed'
+      ? 'blocked'
+      : unsaved.any || stableSaveFailed
+        ? 'pending'
+        : 'saved';
+
   return {
     visible,
     promote,
@@ -307,5 +579,16 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     refresh,
     isLoading,
     persistenceError,
+    persistence,
+    /**
+     * True when the learner should be told: progress is blocked, or a write
+     * has failed and is awaiting retry. An ordinary write in flight is
+     * `pending` but needs no attention.
+     */
+    saveNeedsAttention:
+      persistence === 'blocked' || unsaved.failing || stableSaveFailed,
+    retryPendingSave: flushPendingWrites,
+    prepareRecovery,
+    applyRecovery,
   };
 };

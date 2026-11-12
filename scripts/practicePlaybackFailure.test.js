@@ -244,6 +244,50 @@ try {
     screen.unmount();
   });
 
+  runTest('a failed save and blocked storage show different notices; only blocked offers recovery', () => {
+    const screen = mountScreen();
+    const noticeTexts = () =>
+      screen.texts().filter((text) => /^progress|^recover/.test(text));
+    let recoveries = 0;
+    const recoverProgress = () => {
+      recoveries += 1;
+    };
+
+    // Nothing for a healthy session, including while a write is in flight
+    // (the session reports no problem in that case).
+    screen.render({ progressSaveProblem: null, recoverProgress });
+    assert.deepStrictEqual(noticeTexts(), []);
+
+    screen.render({ progressSaveProblem: 'failing', recoverProgress });
+    assert.deepStrictEqual(noticeTexts(), ['progressNotSaved']);
+    screen.render({ progressSaveProblem: 'failing', recoverProgress });
+
+    screen.render({ progressSaveProblem: 'blocked', recoverProgress });
+    assert.deepStrictEqual(noticeTexts(), ['progressBlocked', 'recoverProgress']);
+    const alert = screen
+      .one('ScrollView')
+      .findAllByType('Text')
+      .find((node) => node.props.children === 'progressBlocked');
+    assert.strictEqual(alert.props.accessibilityRole, 'alert');
+    const button = screen
+      .one('ScrollView')
+      .findAllByType('TouchableOpacity')
+      .find((node) => node.props.accessibilityRole === 'button' && node.props.onPress === recoverProgress);
+    assert.ok(button, 'the recovery action is a button');
+    button.props.onPress();
+    assert.strictEqual(recoveries, 1);
+    // Practice stays usable while progress is blocked.
+    assert.strictEqual(screen.listenControls().props.disabled, false);
+    screen.render({ progressSaveProblem: 'blocked', recoverProgress });
+
+    // Each message is announced once, not on every render.
+    assert.deepStrictEqual(screen.announcements, ['progressNotSaved', 'progressBlocked']);
+
+    screen.render({ progressSaveProblem: null, recoverProgress });
+    assert.deepStrictEqual(noticeTexts(), []);
+    screen.unmount();
+  });
+
   runTest('normal listening shows the instruction and no failure notice', () => {
     const screen = mountScreen();
     screen.render({});

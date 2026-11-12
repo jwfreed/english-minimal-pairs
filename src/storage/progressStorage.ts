@@ -1,6 +1,11 @@
 // -----------------------------------------------------------------------------
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isValidAttempt } from '@/src/domain/contrast/pairProgressProjection';
+import {
+  assertPlanStillValid,
+  writeVerifiedBackup,
+  type RecoveryPlan,
+} from '@/src/storage/recoveryBackup';
 import { writeWithRetry } from '@/src/storage/writeRetry';
 
 export const PAIR_PROGRESS_STORAGE_KEY = '@pairProgress_v2'; // bump key to avoid legacy format clashes
@@ -142,15 +147,20 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 export function inspectStoredProgress(raw: string | null): {
   progress: Record<string, PairStats>;
   intact: boolean;
+  /** Pair IDs whose stored entry is not valid (read as empty in `progress`). */
+  invalidPairIds: string[];
 } {
-  if (!raw) return { progress: getDefaultProgress(), intact: true };
+  const invalidPairIds: string[] = [];
+  if (!raw) return { progress: getDefaultProgress(), intact: true, invalidPairIds };
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
     parsed = undefined;
   }
-  if (!isRecord(parsed)) return { progress: getDefaultProgress(), intact: false };
+  if (!isRecord(parsed)) {
+    return { progress: getDefaultProgress(), intact: false, invalidPairIds };
+  }
 
   let intact = true;
   const progress: Record<string, PairStats> = {};
@@ -162,10 +172,11 @@ export function inspectStoredProgress(raw: string | null): {
       });
     } else {
       intact = false;
+      invalidPairIds.push(pairId);
       setEntry(progress, pairId, { attempts: [] });
     }
   }
-  return { progress, intact };
+  return { progress, intact, invalidPairIds };
 }
 
 /** Strict read used before a write: throws unless the stored history is intact. */
@@ -302,6 +313,68 @@ export async function clearProgress() {
   uncertainWrite = null;
   resetPending = true;
   await enqueueWritePending();
+}
+
+/* ─── recovery of blocked history (see recoveryBackup.ts) ────────────────── */
+
+/** The stored history without its invalid entries. */
+function recoverableProgress(raw: string): Record<string, PairStats> {
+  const { progress, invalidPairIds } = inspectStoredProgress(raw);
+  for (const pairId of invalidPairIds) delete progress[pairId];
+  return progress;
+}
+
+/**
+ * Step 1: backs up malformed stored history and reports what recovery would
+ * keep. Resolves null when the stored history is not malformed. Changes
+ * nothing but the backup key. Runs in the storage queue, after any write
+ * already issued.
+ */
+export function prepareProgressRecovery(): Promise<RecoveryPlan | null> {
+  return enqueue(async () => {
+    const { raw, intact } = await inspectStorage();
+    if (raw === null || intact) return null;
+    const backupKey = await writeVerifiedBackup(
+      AsyncStorage,
+      PAIR_PROGRESS_STORAGE_KEY,
+      raw
+    );
+    return {
+      raw,
+      backupKey,
+      keptCount: Object.keys(recoverableProgress(raw)).length,
+    };
+  });
+}
+
+/**
+ * Step 2, after the learner confirmed: replaces the malformed history with
+ * its valid entries. Rejects, changing nothing, unless storage still holds
+ * exactly what was backed up. Attempts recorded while history was blocked are
+ * then saved by the normal writer, once each.
+ */
+export async function applyProgressRecovery(plan: RecoveryPlan): Promise<void> {
+  try {
+    await enqueue(async () => {
+      await assertPlanStillValid(AsyncStorage, PAIR_PROGRESS_STORAGE_KEY, plan);
+      const replacement = recoverableProgress(plan.raw);
+      if (Object.keys(replacement).length === 0) {
+        await AsyncStorage.removeItem(PAIR_PROGRESS_STORAGE_KEY);
+      } else {
+        await AsyncStorage.setItem(
+          PAIR_PROGRESS_STORAGE_KEY,
+          serializeProgress(replacement)
+        );
+      }
+    });
+  } finally {
+    // Whatever happened — including a replacement that landed but was
+    // reported as failed — learn what storage holds now, then let the normal
+    // writer save pending attempts if it is valid. A failure here leaves the
+    // attempts pending and the state accurate.
+    await enqueue(inspectStorage).catch(() => undefined);
+    await enqueueWritePending().catch(() => undefined);
+  }
 }
 
 /* ─── analytics helpers used across the UI ────────────────────────────────── */

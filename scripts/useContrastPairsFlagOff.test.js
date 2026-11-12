@@ -1204,6 +1204,225 @@ module.exports = (async () => {
     assert.strictEqual(result.persistence, 'saved');
   });
 
+  // ── explicit recovery of blocked mastery ─────────────────────────────────
+
+  await runTest('mastery recovery backs up the exact bytes, keeps valid levels and session progress, and touches no other category', async () => {
+    const raw = '{"rL":3,"bV":9,"wV":"x"}';
+    const other = JSON.stringify({ rL: 5 });
+    const storage = createStorage({ '@mastery_日本語': raw, '@mastery_中文': other });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'blocked');
+    result.promote('rL'); // progress made while saving is blocked
+    result = await settleAll(harness, renderHook);
+    assert.deepStrictEqual(plain(result.mastery), { rL: 4 });
+
+    const plan = await result.prepareRecovery();
+    assert.deepStrictEqual(plain(plan), {
+      raw,
+      backupKey: '@recoveryBackup_1_@mastery_日本語',
+      keptCount: 1,
+    });
+    assert.strictEqual(storage.values.get(plan.backupKey), raw);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), raw, 'preparing changes nothing else');
+    assert.strictEqual(storage.writeAttempts, 1, 'only the backup was written');
+
+    await result.applyRecovery(plan);
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
+    assert.deepStrictEqual(plain(result.mastery), { rL: 4 });
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 4 }));
+    assert.strictEqual(storage.values.get(plan.backupKey), raw, 'backup preserved');
+    assert.strictEqual(storage.values.get('@mastery_中文'), other);
+
+    const restartHarness = createHookHarness();
+    const useRestarted = loadHook(storage, restartHarness, calls);
+    const restarted = await settleAll(restartHarness, () => useRestarted(japanesePairs(), '日本語'));
+    assert.deepStrictEqual(plain(restarted.mastery), { rL: 4 });
+    assert.strictEqual(restarted.persistence, 'saved');
+    assert.strictEqual(await restarted.prepareRecovery(), null, 'nothing left to recover');
+  });
+
+  await runTest('unreadable mastery recovers to an empty record; failures change nothing and stay blocked', async () => {
+    const raw = '{"rL":7,"bV":5';
+    const storage = createStorage({ '@mastery_日本語': raw });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+    let result = await settleAll(harness, renderHook);
+
+    // Backup write rejected.
+    storage.failWrite = true;
+    let error;
+    await result.prepareRecovery().catch((caught) => (error = caught));
+    assert.ok(error);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), raw);
+    storage.failWrite = false;
+
+    const plan = await result.prepareRecovery();
+    assert.strictEqual(plan.keptCount, 0);
+
+    // Replacement rejected.
+    storage.failWrite = true;
+    error = undefined;
+    await result.applyRecovery(plan).catch((caught) => (error = caught));
+    assert.ok(error);
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), raw);
+    assert.strictEqual(result.persistence, 'blocked');
+    storage.failWrite = false;
+
+    // The stored value changed after the plan was made: refused.
+    storage.values.set('@mastery_日本語', '{"rL":2}');
+    error = undefined;
+    await result.applyRecovery(plan).catch((caught) => (error = caught));
+    assert.match(error.message, /changed since recovery was prepared/);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), '{"rL":2}');
+    storage.values.set('@mastery_日本語', raw);
+
+    await result.applyRecovery(plan);
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), '{}');
+    assert.strictEqual(storage.values.get(plan.backupKey), raw);
+    assert.strictEqual(result.persistence, 'saved');
+    assert.deepStrictEqual(plain(result.mastery), {});
+
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 2 }));
+  });
+
+  await runTest('recovery never restores levels a placement taken while blocked replaced', async () => {
+    const raw = '{"rL":7,"bV":6,"bad":0}';
+    const storage = createStorage({ '@mastery_日本語': raw });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    result.setPlacementLevels({ rL: 2 });
+    result = await settleAll(harness, renderHook);
+    await result.applyRecovery(await result.prepareRecovery());
+    result = await settleAll(harness, renderHook);
+    assert.deepStrictEqual(plain(result.mastery), { rL: 2 });
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 2 }));
+    assert.strictEqual(result.persistence, 'saved');
+  });
+
+  await runTest('a reset or placement issued while recovery is applying is not overwritten by it', async () => {
+    const raw = '{"rL":3,"bad":0}';
+    const storage = createStorage({ '@mastery_日本語': raw });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    const plan = await result.prepareRecovery();
+    // Pause recovery's validation reads, then reset and place through the writer.
+    storage.holdReads = true;
+    const applying = result.applyRecovery(plan).catch((error) => error);
+    await harness.settle();
+    const reset = result.resetMastery();
+    result = harness.render(renderHook);
+    result.setPlacementLevels({ rL: 2 });
+    result = harness.render(renderHook);
+    await harness.settle();
+
+    storage.holdReads = false;
+    for (let i = 0; i < 6; i += 1) {
+      storage.heldReads.splice(0).forEach((release) => release());
+      await harness.settle();
+    }
+    await applying;
+    await reset;
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 2 }));
+    assert.deepStrictEqual(plain(result.mastery), { rL: 2 });
+    assert.strictEqual(result.persistence, 'saved');
+  });
+
+  await runTest('a recovery prepared for one category is refused after switching to another', async () => {
+    const raw = '{"rL":3,"bad":0}';
+    const storage = createStorage({ '@mastery_日本語': raw });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    let category = '日本語';
+    const renderHook = () => useContrastPairs(japanesePairs(), category);
+
+    let result = await settleAll(harness, renderHook);
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    const plan = await result.prepareRecovery();
+    const applyForJapanese = result.applyRecovery;
+
+    category = '中文';
+    await settleAll(harness, renderHook);
+    let error;
+    await applyForJapanese(plan).catch((caught) => (error = caught));
+    assert.ok(error, 'refused');
+    assert.strictEqual(storage.values.get('@mastery_日本語'), raw, 'left blocked and intact');
+    assert.strictEqual(storage.values.has('@mastery_中文'), false);
+  });
+
+  await runTest('a replacement that committed but was reported as failed is finished by trying again', async () => {
+    const raw = '{"rL":3,"bad":0}';
+    const storage = createStorage({ '@mastery_日本語': raw });
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    result.promote('rL');
+    result = await settleAll(harness, renderHook);
+    const plan = await result.prepareRecovery();
+    const setItem = storage.setItem.bind(storage);
+    storage.setItem = async (key, value) => {
+      await setItem(key, value);
+      throw new Error('acknowledgement lost');
+    };
+    await result.applyRecovery(plan).catch(() => {});
+    storage.setItem = setItem;
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'blocked', 'not reported as recovered');
+
+    // Trying again finds a valid record and simply resumes from it.
+    assert.strictEqual(await result.prepareRecovery(), null);
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
+    assert.deepStrictEqual(plain(result.mastery), { rL: 4 });
+    assert.strictEqual(storage.values.get('@mastery_日本語'), JSON.stringify({ rL: 4 }));
+  });
+
+  await runTest('mastery blocked by a failed read is unblocked by recovery once storage is readable', async () => {
+    const storage = createStorage({ '@mastery_日本語': JSON.stringify({ rL: 3 }) }, true);
+    const calls = { reads: 0, writes: 0, migrations: 0 };
+    const harness = createHookHarness();
+    const useContrastPairs = loadHook(storage, harness, calls);
+    const renderHook = () => useContrastPairs(japanesePairs(), '日本語');
+
+    let result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'blocked');
+    let error;
+    await result.prepareRecovery().catch((caught) => (error = caught));
+    assert.ok(error, 'still unreadable: recovery reports failure');
+
+    storage.failRead = false;
+    assert.strictEqual(await result.prepareRecovery(), null);
+    result = await settleAll(harness, renderHook);
+    assert.strictEqual(result.persistence, 'saved');
+    assert.deepStrictEqual(plain(result.mastery), { rL: 3 });
+    assert.strictEqual(storage.writeAttempts, 0);
+  });
+
   await runTest('placement writes per-contrast practice tiers and can never record level 7', async () => {
     const storage = createStorage({
       '@mastery_日本語': JSON.stringify({ rL: 7, bV: 5 }),

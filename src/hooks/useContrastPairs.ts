@@ -24,6 +24,11 @@ import {
   readCompatibleMastery,
   writeCompatibleMastery,
 } from '@/src/storage/masteryCompatibility';
+import {
+  assertPlanStillValid,
+  writeVerifiedBackup,
+  type RecoveryPlan,
+} from '@/src/storage/recoveryBackup';
 import { writeWithRetry } from '@/src/storage/writeRetry';
 
 /**
@@ -83,6 +88,13 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
   const writeFailing = useRef(false);
   // Bumped by reset so reads issued before it cannot resurrect cleared mastery.
   const readGeneration = useRef(0);
+  // The latest render's state and key, for callbacks that outlive a render.
+  const latest = useRef({ state, storageKey });
+  latest.current = { state, storageKey };
+  // The malformed bytes this key was hydrated from, when that is why it is
+  // blocked. While it matches storage, the in-memory mastery is exactly those
+  // bytes' valid levels plus what the learner did since.
+  const blockedRaw = useRef<{ key: string; raw: string } | null>(null);
 
   const bumpRevision = useCallback((key: string) => {
     keyRevisions.current.set(key, (keyRevisions.current.get(key) ?? 0) + 1);
@@ -221,6 +233,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
             if (stored.status === 'malformed') {
               // Not "no saved mastery": hydrating it as writable would let
               // the next save destroy it. Its valid levels stay readable.
+              blockedRaw.current = raw === null ? null : { key: storageKey, raw };
               settle(hydrated(storageKey, 'failed', stored.mastery));
               setPersistenceError(new Error(MALFORMED_MASTERY_ERROR));
               return;
@@ -449,6 +462,94 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     storageKey,
   ]);
 
+  /**
+   * Recovery step 1 for this category's blocked mastery (see
+   * recoveryBackup.ts): backs up the malformed stored value and reports what
+   * would be kept. Legacy scheme only; it never touches another category.
+   *
+   * Resolves null when the stored value turns out to be valid (the key was
+   * blocked by a failed read, or an earlier recovery's write did land): the
+   * hook simply resumes from it. Rejects while storage cannot be read.
+   */
+  const prepareRecovery = useCallback(async (): Promise<RecoveryPlan | null> => {
+    if (stablePathEnabled) return null;
+    const raw = await readCurrent(storageKey);
+    const stored = readStoredMastery(raw);
+    if (raw === null || stored.status === 'ok') {
+      blockedRaw.current = null;
+      setPersistenceError(null);
+      setState((current) =>
+        current.key === storageKey && current.hydration === 'failed'
+          ? hydrated(storageKey, 'ready', stored.mastery)
+          : current
+      );
+      return null;
+    }
+    const backupKey = await writeVerifiedBackup(AsyncStorage, storageKey, raw);
+    return {
+      raw,
+      backupKey,
+      keptCount: Object.keys(stored.mastery).length,
+    };
+  }, [readCurrent, stablePathEnabled, storageKey]);
+
+  /**
+   * Recovery step 2, after the learner confirmed. Runs as the writer's only
+   * operation, so no write or reset for any key can interleave with it, and
+   * replaces the value only if storage still holds exactly what was backed
+   * up. Rejects, changing nothing, if this hook has moved to another category
+   * or a write or reset for this key was issued meanwhile.
+   *
+   * What is written is the learner's current mastery for this category — the
+   * recovered levels plus whatever they did while saving was blocked,
+   * including a placement that replaced those levels. If the session did not
+   * start from this stored value, only the recovered levels are written.
+   */
+  const applyRecovery = useCallback(
+    async (plan: RecoveryPlan): Promise<void> => {
+      // Wait for the writer, then hold it for the duration.
+      while (flushing.current) await flushing.current.catch(() => undefined);
+      const replacing = (async () => {
+        const { state: now, storageKey: currentKey } = latest.current;
+        if (currentKey !== storageKey || now.key !== storageKey) {
+          throw new Error('Recovery was prepared for another category');
+        }
+        if (pendingWrites.current.has(storageKey)) {
+          throw new Error('Mastery has changed since recovery was prepared');
+        }
+        await assertPlanStillValid(AsyncStorage, storageKey, plan);
+        const sessionStartedFromPlan =
+          now.hydration === 'failed' &&
+          blockedRaw.current?.key === storageKey &&
+          blockedRaw.current.raw === plan.raw;
+        const target = sessionStartedFromPlan
+          ? now.mastery
+          : readStoredMastery(plan.raw).mastery;
+        await AsyncStorage.setItem(storageKey, serializeMastery(target));
+        bumpRevision(storageKey);
+        blockedRaw.current = null;
+        setPersistenceError(null);
+        // A reset or placement issued during the write is newer and stands.
+        if (!pendingWrites.current.has(storageKey)) {
+          setState((current) =>
+            current.key === storageKey && current.hydration === 'failed'
+              ? hydrated(storageKey, 'ready', target)
+              : current
+          );
+        }
+      })();
+      flushing.current = replacing
+        .catch(() => undefined)
+        .finally(() => {
+          flushing.current = null;
+          // Anything queued behind the recovery is written now.
+          if (pendingWrites.current.size > 0) void flushPendingWrites();
+        });
+      await replacing;
+    },
+    [bumpRevision, flushPendingWrites, storageKey]
+  );
+
   // Learner progress over a failed read cannot be saved; retry the read. On
   // success stored mastery replaces the in-session state, whose baseline was
   // unknown, and later mutations persist normally.
@@ -487,5 +588,7 @@ export const useContrastPairs = (pairs: Pair[], categoryKey: string) => {
     saveNeedsAttention:
       persistence === 'blocked' || unsaved.failing || stableSaveFailed,
     retryPendingSave: flushPendingWrites,
+    prepareRecovery,
+    applyRecovery,
   };
 };

@@ -82,8 +82,9 @@ export default function HomeScreen() {
     nextLevelProgress,
     playbackFailureReason,
     playedIdx,
-    progressNotSaved,
+    progressSaveProblem,
     promotedLevel,
+    recoverProgress,
     safePairIndex,
     selectedPair,
     setPlacementLevels,
@@ -181,8 +182,12 @@ export default function HomeScreen() {
         highlightProgress={feedback === 'correct'}
       />
 
-      {progressNotSaved && (
-        <ProgressNotSavedNotice style={styles.contrastInstruction} />
+      {progressSaveProblem && (
+        <ProgressNotSavedNotice
+          state={progressSaveProblem}
+          onRecover={recoverProgress}
+          style={styles.contrastInstruction}
+        />
       )}
 
       <View style={styles.mainCard}>

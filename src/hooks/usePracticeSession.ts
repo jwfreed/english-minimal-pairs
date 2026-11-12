@@ -45,6 +45,7 @@ import {
   practiceTierOf,
 } from '@/src/domain/masteryLevel';
 import { useHaptics } from '@/src/hooks/useHaptics';
+import { useProgressRecovery } from '@/src/hooks/useProgressRecovery';
 import {
   FAST_STREAK_NEEDED,
   FAST_THRESHOLD_MS,
@@ -65,8 +66,13 @@ export function usePracticeSession({
   isPracticeReady,
 }: UsePracticeSessionOptions) {
   const { translate } = useLanguage();
-  const { recordAttempt, saveNeedsAttention: historyNeedsAttention } =
-    usePairProgress();
+  const {
+    recordAttempt,
+    persistence: historyPersistence,
+    saveNeedsAttention: historyNeedsAttention,
+    prepareRecovery: prepareHistoryRecovery,
+    applyRecovery: applyHistoryRecovery,
+  } = usePairProgress();
   const { getNextVoice } = useSettings();
   const { triggerHaptic } = useHaptics();
   const debugLog = useCallback(
@@ -104,9 +110,39 @@ export function usePracticeSession({
     mastery,
     setPlacementLevels,
     isLoading,
+    persistence: masteryPersistence,
     saveNeedsAttention: masteryNeedsAttention,
     retryPendingSave,
+    prepareRecovery: prepareMasteryRecovery,
+    applyRecovery: applyMasteryRecovery,
   } = useContrastPairs(catObj.pairs, catObj.category);
+
+  const masteryBlocked = masteryPersistence === 'blocked';
+  const historyBlocked = historyPersistence === 'blocked';
+  const recoverProgress = useProgressRecovery(
+    useMemo(
+      () => [
+        {
+          blocked: masteryBlocked,
+          prepare: prepareMasteryRecovery,
+          apply: applyMasteryRecovery,
+        },
+        {
+          blocked: historyBlocked,
+          prepare: prepareHistoryRecovery,
+          apply: applyHistoryRecovery,
+        },
+      ],
+      [
+        applyHistoryRecovery,
+        applyMasteryRecovery,
+        historyBlocked,
+        masteryBlocked,
+        prepareHistoryRecovery,
+        prepareMasteryRecovery,
+      ]
+    )
+  );
 
   const timerRef = useRef<SessionTimerHandle | null>(null);
   const [pairIndex, setPairIndex] = useState(0);
@@ -667,9 +703,15 @@ export function usePracticeSession({
     playbackFailureReason:
       playbackState.status === 'failed' ? playbackState.reason : null,
     playbackStatus: playbackState.status,
-    // Shown when progress is blocked or a save has failed — not for the
-    // moment an ordinary write is in flight.
-    progressNotSaved: Boolean(masteryNeedsAttention || historyNeedsAttention),
+    // 'blocked': saved progress cannot be read and needs the recovery flow.
+    // 'failing': a save was rejected and is being retried. null otherwise —
+    // including the moment an ordinary write is in flight.
+    progressSaveProblem: (masteryBlocked || historyBlocked
+      ? 'blocked'
+      : masteryNeedsAttention || historyNeedsAttention
+        ? 'failing'
+        : null) as 'blocked' | 'failing' | null,
+    recoverProgress,
     promotedLevel,
     safePairIndex,
     selectedPair,

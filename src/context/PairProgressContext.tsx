@@ -13,10 +13,13 @@ import {
   saveAttempt,
   getProgress,
   clearProgress,
+  applyProgressRecovery,
   getProgressPersistence,
+  prepareProgressRecovery,
   PairStats,
   PairAttempt,
 } from '@/src/storage/progressStorage';
+import type { RecoveryPlan } from '@/src/storage/recoveryBackup';
 
 interface PairProgressContextType {
   progress: Record<string, PairStats>;
@@ -27,6 +30,9 @@ interface PairProgressContextType {
   persistence: 'saved' | 'pending' | 'blocked';
   /** True when blocked or a write has failed and awaits retry. */
   saveNeedsAttention: boolean;
+  /** Recovery of blocked history; see recoveryBackup.ts. */
+  prepareRecovery: () => Promise<RecoveryPlan | null>;
+  applyRecovery: (plan: RecoveryPlan) => Promise<void>;
 }
 
 const PairProgressContext = createContext<PairProgressContextType | undefined>(undefined);
@@ -121,6 +127,28 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
     syncSaveState();
   }, [syncSaveState]);
 
+  // The history on screen is already the readable entries plus this
+  // session's attempts — what storage holds once recovery and the pending
+  // attempts land — so it is not reloaded; only the save state is refreshed.
+  const prepareRecovery = useCallback(async () => {
+    try {
+      return await prepareProgressRecovery();
+    } finally {
+      syncSaveState();
+    }
+  }, [syncSaveState]);
+
+  const applyRecovery = useCallback(
+    async (plan: RecoveryPlan) => {
+      try {
+        await applyProgressRecovery(plan);
+      } finally {
+        syncSaveState();
+      }
+    },
+    [syncSaveState]
+  );
+
   const value = useMemo(
     () => ({
       progress,
@@ -129,8 +157,18 @@ export const PairProgressProvider = ({ children }: { children: ReactNode }) => {
       isLoading,
       persistence: saveState.persistence,
       saveNeedsAttention: saveState.needsAttention,
+      prepareRecovery,
+      applyRecovery,
     }),
-    [progress, recordAttempt, resetProgress, isLoading, saveState]
+    [
+      progress,
+      recordAttempt,
+      resetProgress,
+      isLoading,
+      saveState,
+      prepareRecovery,
+      applyRecovery,
+    ]
   );
 
   return (

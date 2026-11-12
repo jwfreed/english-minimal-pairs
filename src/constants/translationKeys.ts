@@ -65,6 +65,13 @@ export const tKeys = {
   audioError: 'audioError',
   audioPlaybackFailed: 'audioPlaybackFailed',
   progressNotSaved: 'progressNotSaved',
+  progressBlocked: 'progressBlocked',
+  recoverProgress: 'recoverProgress',
+  recoverConfirmKeep: 'recoverConfirmKeep',
+  recoverConfirmReset: 'recoverConfirmReset',
+  recoverFailed: 'recoverFailed',
+  recoverDone: 'recoverDone',
+  cancel: 'cancel',
   audioInitializing: 'audioInitializing',
   hr: 'hr',
   // Voice selection

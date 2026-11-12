@@ -548,6 +548,64 @@ module.exports = (async () => {
     view.unmount();
   });
 
+  await runTest('two legitimate attempts with identical values are both kept when their write is retried', async () => {
+    const storage = createStorage();
+    const modules = loadModules(storage);
+    // Same pair, same millisecond, same outcome and duration.
+    storage.failWrites = 1;
+    await Promise.all([
+      modules.saveAttempt('rL:rock:lock', true, 0.01, 1234),
+      modules.saveAttempt('rL:rock:lock', true, 0.01, 1234),
+    ]);
+    const persisted = modules.parseStoredProgress(storage.values.get('@pairProgress_v2'));
+    assert.strictEqual(persisted['rL:rock:lock'].attempts.length, 2);
+  });
+
+  await runTest('an attempt equal to one already stored is still recorded after a retry', async () => {
+    const stored = { 'rL:rock:lock': { attempts: [{ isCorrect: true, timestamp: 1234, durationMin: 0.01 }] } };
+    const storage = createStorage({ '@pairProgress_v2': JSON.stringify(stored) });
+    const modules = loadModules(storage);
+    storage.failWrites = 1;
+    await modules.saveAttempt('rL:rock:lock', true, 0.01, 1234);
+    const persisted = modules.parseStoredProgress(storage.values.get('@pairProgress_v2'));
+    assert.strictEqual(persisted['rL:rock:lock'].attempts.length, 2);
+  });
+
+  await runTest('a write that committed but was reported as failed is recognised from the stored bytes', async () => {
+    const storage = createStorage();
+    const modules = loadModules(storage);
+    const setItem = storage.setItem.bind(storage);
+    let commits = 0;
+    let lie = true; // the first write commits, then reports failure
+    storage.setItem = async (key, value) => {
+      await setItem(key, value);
+      commits += 1;
+      if (lie) {
+        lie = false;
+        throw new Error('acknowledgement lost');
+      }
+    };
+    await modules.saveAttempt('rL:rock:lock', true, 0.01, 1);
+    // The retry saw its own value in storage and wrote nothing more.
+    assert.strictEqual(commits, 1);
+    assert.strictEqual(modules.getProgressPersistence().persistence, 'saved');
+    await modules.saveAttempt('rL:rock:lock', false, 0.02, 2);
+    const attempts = modules.parseStoredProgress(storage.values.get('@pairProgress_v2'))['rL:rock:lock'].attempts;
+    assert.deepStrictEqual(plain(attempts.map((attempt) => attempt.timestamp)), [1, 2]);
+  });
+
+  await runTest('a rejected write that did not commit is written again in full', async () => {
+    const storage = createStorage();
+    const modules = loadModules(storage);
+    storage.failWrites = 3; // the whole retry budget, nothing committed
+    await modules.saveAttempt('rL:rock:lock', true, 0.01, 1).catch(() => {});
+    assert.strictEqual(modules.getProgressPersistence().persistence, 'pending');
+    await modules.saveAttempt('rL:rock:lock', false, 0.02, 2);
+    const attempts = modules.parseStoredProgress(storage.values.get('@pairProgress_v2'))['rL:rock:lock'].attempts;
+    assert.deepStrictEqual(plain(attempts.map((attempt) => attempt.timestamp)), [1, 2]);
+    assert.strictEqual(modules.getProgressPersistence().persistence, 'saved');
+  });
+
   await runTest('a stored pair ID that collides with an object built-in is not silently dropped on save', async () => {
     const raw = '{"__proto__":{"attempts":[{"isCorrect":true,"timestamp":1,"durationMin":0.01}],"note":"keep"}}';
     const storage = createStorage({ '@pairProgress_v2': raw });

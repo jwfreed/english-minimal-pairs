@@ -19,6 +19,10 @@ let resetEpoch = 0;
 // A reset storage has not acknowledged. It is applied before any later write,
 // so history from before the reset is never merged back in.
 let resetPending = false;
+// A write storage rejected: the exact value it tried to store and how many
+// unsaved attempts that value included. A rejected write may still have been
+// committed, and only the stored bytes can tell.
+let uncertainWrite: { serialized: string; attemptCount: number } | null = null;
 // The last write was rejected by storage and is awaiting retry.
 let writeFailing = false;
 // The stored history could not be read, or holds data that is not understood.
@@ -123,12 +127,6 @@ function setEntry(
   });
 }
 
-const sameAttempt = (a: unknown, b: PairAttempt): boolean =>
-  isRecord(a) &&
-  a.timestamp === b.timestamp &&
-  a.isCorrect === b.isCorrect &&
-  a.durationMin === b.durationMin;
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -196,7 +194,7 @@ const inspectStorage = async () => {
   }
   const inspected = inspectStoredProgress(raw);
   unreadable = !inspected.intact;
-  return inspected;
+  return { raw, ...inspected };
 };
 
 const enqueue = <T>(operation: () => Promise<T>): Promise<T> => {
@@ -207,9 +205,9 @@ const enqueue = <T>(operation: () => Promise<T>): Promise<T> => {
 
 /**
  * One write pass, retried as a whole: apply a pending reset, then save every
- * unsaved attempt in one write. `isRetry` is true from the second attempt on.
+ * unsaved attempt in one write.
  */
-async function writePending(isRetry: boolean): Promise<void> {
+async function writePending(): Promise<void> {
   const epoch = resetEpoch;
   try {
     if (resetPending) {
@@ -217,28 +215,40 @@ async function writePending(isRetry: boolean): Promise<void> {
       if (epoch === resetEpoch) resetPending = false;
       unreadable = false;
     }
-    const batch = unsavedAttempts.slice();
-    if (batch.length > 0) {
-      const { progress, intact } = await inspectStorage();
+    if (unsavedAttempts.length > 0) {
+      const { raw, progress, intact } = await inspectStorage();
       // Malformed history is never normalized and replaced.
       if (!intact) throw malformedProgressError();
-      for (const { pairId, attempt } of batch) {
-        const stored = progress[pairId]?.attempts ?? [];
-        // A write can commit and still be reported as failed. On a retry, an
-        // attempt storage already holds is not appended a second time.
-        if (isRetry && stored.some((existing) => sameAttempt(existing, attempt))) {
-          continue;
-        }
-        setEntry(progress, pairId, {
-          ...progress[pairId],
-          attempts: appendAttempt(stored, attempt),
-        });
+      // Exactly-once across a rejected write: if storage now holds precisely
+      // what that write tried to store, it was committed after all, and its
+      // attempts must not be appended again. Attempts are never compared by
+      // value, so two identical legitimate attempts are both kept.
+      if (uncertainWrite && epoch === resetEpoch && raw === uncertainWrite.serialized) {
+        unsavedAttempts = unsavedAttempts.slice(uncertainWrite.attemptCount);
       }
-      await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serializeProgress(progress));
-      // A reset during the write discarded this batch already; attempts
-      // recorded during the write were appended after it.
-      if (epoch === resetEpoch) {
-        unsavedAttempts = unsavedAttempts.slice(batch.length);
+      uncertainWrite = null;
+      const batch = unsavedAttempts.slice();
+      if (batch.length > 0) {
+        for (const { pairId, attempt } of batch) {
+          setEntry(progress, pairId, {
+            ...progress[pairId],
+            attempts: appendAttempt(progress[pairId]?.attempts ?? [], attempt),
+          });
+        }
+        const serialized = serializeProgress(progress);
+        try {
+          await AsyncStorage.setItem(PAIR_PROGRESS_STORAGE_KEY, serialized);
+        } catch (error) {
+          if (epoch === resetEpoch) {
+            uncertainWrite = { serialized, attemptCount: batch.length };
+          }
+          throw error;
+        }
+        // A reset during the write discarded this batch already; attempts
+        // recorded during the write were appended after it.
+        if (epoch === resetEpoch) {
+          unsavedAttempts = unsavedAttempts.slice(batch.length);
+        }
       }
     }
     writeFailing = false;
@@ -249,13 +259,9 @@ async function writePending(isRetry: boolean): Promise<void> {
 }
 
 const enqueueWritePending = (): Promise<void> =>
-  enqueue(() => {
-    let attempts = 0;
-    return writeWithRetry(
-      () => writePending(attempts++ > 0),
-      (error) => !isMalformedProgressError(error)
-    );
-  });
+  enqueue(() =>
+    writeWithRetry(writePending, (error) => !isMalformedProgressError(error))
+  );
 
 /* ─── public API ──────────────────────────────────────────────────────────── */
 /**
@@ -293,6 +299,7 @@ export async function saveAttempt(
 export async function clearProgress() {
   resetEpoch += 1;
   unsavedAttempts = [];
+  uncertainWrite = null;
   resetPending = true;
   await enqueueWritePending();
 }
